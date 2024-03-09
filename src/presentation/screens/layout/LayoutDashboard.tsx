@@ -1,11 +1,11 @@
-
-import { Disclosure, } from '@headlessui/react'
-import { navigation, } from './navigation'
-import { ChevronRightIcon } from '@heroicons/react/16/solid';
-
+import React, { useState } from 'react';
+import { Disclosure } from '@headlessui/react';
+import { XMarkIcon } from '@heroicons/react/24/outline';
+import { ChevronRightIcon, Bars3Icon } from '@heroicons/react/16/solid'; 
+import { navigation } from './navigation';
 
 function classNames(...classes: string[]) {
-  return classes.filter(Boolean).join(' ')
+  return classes.filter(Boolean).join(' ');
 }
 
 interface Props {
@@ -13,109 +13,99 @@ interface Props {
 }
 
 const LayoutDashboard = ({ children }: Props) => {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   return (
     <div className="flex h-screen">
-      <div className="flex w-44 flex-col gap-y-5 overflow-y-auto border-r border-gray-200 overflow-hidden bg-white px-4">
-        <div className="flex h-16 shrink-0 items-center">
-          <img
-            className="h-8 w-auto"
-            src="https://tailwindui.com/img/logos/mark.svg?color=indigo&shade=600"
-            alt="Your Company"
-          />
-        </div>
-        <nav className="flex flex-1 flex-col">
-          <ul role="list" className="flex flex-1 flex-col gap-y-7">
-            <li>
-              <ul role="list" className="-mx-2 space-y-1">
-                {navigation.map((item) => (
-                  <li key={item.name} className="w-36">
-                    {!item.children ? (
-                      <a
-                        href={item.href}
-                        className={classNames(
-                          item.current ? 'bg-indigo-100' : 'hover:bg-indigo-100',
-                          'group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold text-gray-700'
-                        )}
-                      >
-                        <item.icon className="h-6 w-6 shrink-0 text-gray-400" aria-hidden="true" />
-                        {item.name}
-                      </a>
-                    ) : (
-                      <Disclosure as="div">
-                        {({ open }) => (
-                          <>
-                            <Disclosure.Button
-                              className={classNames(
-                                item.current ? 'bg-indigo-100' : 'hover:bg-indigo-100',
-                                'flex items-center w-full text-left rounded-md p-2 gap-x-3 text-sm leading-6 font-semibold text-gray-700'
-                              )}
-                            >
-                              <item.icon className="h-6 w-6 shrink-0 text-gray-400" aria-hidden="true" />
-                              {item.name}
-                              <ChevronRightIcon
-                                className={classNames(
-                                  open ? 'rotate-90 text-gray-500' : 'text-gray-400',
-                                  'ml-auto h-5 w-5 shrink-0'
-                                )}
-                                aria-hidden="true"
-                              />
-                            </Disclosure.Button>
-                            <Disclosure.Panel as="ul" className="mt-1 px-2">
-                              {item.children.map((subItem: { name: string; href: string; current?: boolean }) => (
-                                <li key={subItem.name}>
-                                  {/* 44px */}
-                                  <Disclosure.Button
-                                    as="a"
-                                    href={subItem.href}
-                                    className={classNames(
-                                      subItem.current ? 'bg-indigo-100' : 'hover:bg-indigo-100',
-                                      'block rounded-md py-2 pr-2 pl-9 text-sm leading-6 text-gray-700'
-                                    )}
-                                  >
-                                    {subItem.name}
-                                  </Disclosure.Button>
-                                </li>
-                              ))}
-                            </Disclosure.Panel>
-                          </>
-                        )}
-                      </Disclosure>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </li>
-            <li className="-mx-6 mt-auto">
-              <a
-                href="#"
-                className="flex items-center gap-x-4 px-6 py-3 text-sm font-semibold leading-6 text-gray-900 hover:bg-indigo-200"
-              >
-                <img
-                  className="h-8 w-8 rounded-full bg-gray-50"
-                  src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
-                  alt=""
-                />
-                <span className="sr-only">Your profile</span>
-                <span aria-hidden="true">Tom Cook</span>
-              </a>
-            </li>
-          </ul>
-        </nav>
-        <div className="xl:pl-72">
+      {/* Mobile menu button */}
+      <div className="md:hidden px-1 py-4">
+        <button
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          className="text-gray-500 hover:text-gray-600 focus:outline-none "
+        >
+          <span className="sr-only">Open main menu</span>
+          {isMobileMenuOpen ? (
+            <XMarkIcon className="block h-6 w-6" aria-hidden="true" />
+          ) : (
+            <Bars3Icon className="block h-6 w-6" aria-hidden="true" />
+          )}
+        </button>
+      </div>
+
+      {/* Sidebar/menu content */}
+      <div
+        className={`${
+          isMobileMenuOpen ? 'block' : 'hidden'
+        } md:block  w-52 md:w-56 lg:w-56 border-r border-gray-200`}
+      >
+        <div className="flex flex-col w-full">
+          <div className="flex items-center justify-between h-16 border-b w- border-gray-200 p-4">
+            <img
+              className="h-8 w-auto"
+              src="https://tailwindui.com/img/logos/mark.svg?color=indigo&shade=600"
+              alt="Your Company"
+            />
+          </div>
+          <nav className="flex-1 overflow-y-auto" aria-label="Sidebar">
+            <ul className="py-6 space-y-2">
+              {navigation.map((item) => (
+                <li key={item.name}>
+                  {!item.children ? (
+                    <a
+                      href={item.href}
+                      className={classNames(
+                        item.current ? 'bg-indigo-100' : 'hover:bg-indigo-100',
+                        'group flex items-center px-4 py-2 text-sm font-medium text-gray-700 rounded-md'
+                      )}
+                    >
+                      <item.icon className="mr-3 h-6 w-6 text-gray-400" aria-hidden="true" />
+                      {item.name}
+                    </a>
+                  ) : (
+                    <Disclosure as="div" className="space-y-1">
+                      {({ open }) => (
+                        <>
+                          <Disclosure.Button
+                            className={classNames(
+                              item.current ? 'bg-indigo-100' : 'hover:bg-indigo-100',
+                              'group w-full flex items-center  px-4 py-2 text-left text-sm font-medium text-gray-600 rounded-md focus:outline-none '
+                            )}
+                          >
+                            <item.icon className="mr-3 h-6 w-6 text-gray-400" aria-hidden="true" />
+                            {item.name}
+                            <ChevronRightIcon
+                              className={`${open ? 'transform rotate-90' : ''} ml-auto h-5 w-5 transition-transform`}
+                            />
+                          </Disclosure.Button>
+                          <Disclosure.Panel className="space-y-1">
+                            {item.children.map((subItem) => (
+                              <Disclosure.Button
+                                key={subItem.name}
+                                as="a"
+                                href={subItem.href}
+                                className="group w-full flex items-center pl-11 pr-2 py-2 text-sm font-medium text-gray-700 rounded-md hover:bg-indigo-100"
+                              >
+                                {subItem.name}
+                              </Disclosure.Button>
+                            ))}
+                          </Disclosure.Panel>
+                        </>
+                      )}
+                    </Disclosure>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </nav>
         </div>
       </div>
 
-     {/* Create a section with children  */}
-      <div className="flex-1 flex  flex-grow flex-col overflow-hidden">
-        <main className="flex-1 overflow-y-auto focus:outline-none">
-          <div className="relative max-w-4xl px-4 sm:px-6 lg:px-8">
-            <div className="py-6">{children}</div>
-          </div>
-        </main>
+      {/* Main content */}
+      <div className="flex-1 overflow-y-auto">
+        <main className="p-4">{children}</main>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default LayoutDashboard
+export default LayoutDashboard;
