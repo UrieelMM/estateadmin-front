@@ -3,6 +3,7 @@ import { Disclosure } from '@headlessui/react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import { ChevronRightIcon, Bars3Icon } from '@heroicons/react/16/solid'; 
 import { navigation } from './navigation';
+import Navbar from '../../components/shared/Navbar';
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(' ');
@@ -102,6 +103,9 @@ const LayoutDashboard = ({ children }: Props) => {
 
       {/* Main content */}
       <div className="flex-1 overflow-y-auto">
+      <nav>
+        <Navbar />
+      </nav>
         <main className="p-4">{children}</main>
       </div>
     </div>

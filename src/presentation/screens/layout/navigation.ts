@@ -1,29 +1,30 @@
-import { FolderIcon, CalendarIcon, ChartPieIcon, DocumentDuplicateIcon, HomeIcon, UsersIcon } from "@heroicons/react/24/outline"
+import { CalendarIcon, HomeIcon, UsersIcon, ChartBarIcon, UserGroupIcon, WrenchIcon, TruckIcon, BuildingStorefrontIcon } from "@heroicons/react/24/outline"
 
 export const navigation = [
-  { name: 'Dashboard', href: '#', icon: HomeIcon, current: false },
+  { name: 'Inicio', href: '/dashboard/home', icon: HomeIcon, current: false },
   {
-    name: 'Teams',
+    name: 'Usuarios',
     icon: UsersIcon,
     current: false,
     children: [
-      { name: 'Engineering', href: '#' },
-      { name: 'Human Resources', href: '#' },
-      { name: 'Customer Success', href: '#' },
+      { name: 'Registro de usuarios', href: '/dashboard/users-registration' },
+      { name: 'Gestión de usuarios', href: '/dashboard/users-managment' },
+      { name: 'Usuarios', href: '/dashboard/users' },
     ],
   },
   {
-    name: 'Projects',
-    icon: FolderIcon,
+    name: 'Finanzas',
+    icon: ChartBarIcon,
     current: false,
     children: [
-      { name: 'GraphQL API', href: '#' },
-      { name: 'iOS App', href: '#' },
-      { name: 'Android App', href: '#' },
-      { name: 'New Customer Portal', href: '#' },
+      { name: 'Facturación', href: '#' },
+      { name: 'Egresos', href: '#' },
+      { name: 'Ingresos', href: '#' },
     ],
   },
-  { name: 'Calendar', href: '#', icon: CalendarIcon, current: false },
-  { name: 'Documents', href: '#', icon: DocumentDuplicateIcon, current: false },
-  { name: 'Reports', href: '#', icon: ChartPieIcon, current: false },
-  ]
+  { name: 'Calendario', href: '/dashboard/calendar', icon: CalendarIcon, current: false },
+  { name: 'Áreas comunes', href: '/dasboard/common-areas', icon: UserGroupIcon, current: false },
+  { name: 'Paquetería', href: '/dasboard/parcel-reception', icon: TruckIcon, current: false },
+  { name: 'Mantenimiento', href: '/dasboard/maintenance', icon: WrenchIcon, current: false },
+  { name: 'Proveedores', href: '/dasboard/providers', icon: BuildingStorefrontIcon, current: false },
+]
