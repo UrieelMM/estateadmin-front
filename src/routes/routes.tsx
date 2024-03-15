@@ -1,7 +1,7 @@
 import CalendarEvents from "../presentation/screens/dashboard/calendar/CalendarEvents";
 import DashboardHome from "../presentation/screens/dashboard/home/DashboardHome";
+import ParcelReception from "../presentation/screens/dashboard/parcel-reception/ParcelReception";
 import ProviderList from "../presentation/screens/dashboard/providers/ProvidersList";
-import UsersManagment from "../presentation/screens/dashboard/users/UsersManagment";
 import UsersRegistration from "../presentation/screens/dashboard/users/UsersRegistration";
 import UsersScreen from "../presentation/screens/dashboard/users/UsersScreen";
 
@@ -21,13 +21,6 @@ export const routesApp = [
     component: <UsersRegistration />,
   },
   {
-    to: "/dashboard/users-managment",
-    icon: "fa-solid fa-spell-check",
-    title: "Usuarios",
-    description: "Gestión de usuarios",
-    component: <UsersManagment />,
-  },
-  {
     to: "/dashboard/users",
     icon: "fa-solid fa-spell-check",
     title: "Usuarios",
@@ -40,6 +33,13 @@ export const routesApp = [
     title: "Calendario",
     description: "Calendario de eventos en el condominio",
     component: <CalendarEvents />,
+  },
+  {
+    to: "/dasboard/parcel-reception",
+    icon: "fa-solid fa-spell-check",
+    title: "Paquetería",
+    description: "Gestión de paquetería en el condominio",
+    component: <ParcelReception />,
   },
   {
     to: "/dasboard/providers",

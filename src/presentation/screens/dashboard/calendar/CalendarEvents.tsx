@@ -18,8 +18,8 @@ const CalendarEvents = () => {
 
   return (
     <>
-      <header className="bg-gray-100 shadow-md flex w-full h-16 justify-between px-2 rounded-md items-center mb-2">
-        <p className="tex-md font-bold">Registro y reservaciones</p>
+      <header className="bg-gray-50 shadow-md flex w-full h-16 justify-between px-2 rounded-md items-center mb-4">
+        <p className="tex-md font-medium ">Registro y reservaciones</p>
         <button className="btn-primary h-10 mb-3" onClick={onClose}>Agregar evento</button>
       </header>
       <div className="md:grid h-screen md:grid-cols-2 md:divide-x md:divide-gray-200">
@@ -44,13 +44,13 @@ const CalendarEvents = () => {
             </button>
           </div>
           <div className="mt-10 grid grid-cols-7 text-center text-xs leading-6 text-gray-500">
+            <div>L</div>
             <div>M</div>
-            <div>T</div>
-            <div>W</div>
-            <div>T</div>
-            <div>F</div>
+            <div>M</div>
+            <div>J</div>
+            <div>V</div>
             <div>S</div>
-            <div>S</div>
+            <div>D</div>
           </div>
           <div className="mt-2 min-h-full grid grid-cols-7 text-sm">
             {days.map((day, dayIdx) => (
@@ -92,7 +92,7 @@ const CalendarEvents = () => {
         </div>
         <section className="mt-12 md:mt-0 md:pl-14">
           <h2 className="text-base font-semibold leading-6 text-gray-900">
-            Schedule for <time dateTime="2022-01-21">January 21, 2022</time>
+            Reservas para <time dateTime="2022-01-21">Enero 21, 2024</time>
           </h2>
           <ol className="mt-4 space-y-1 text-sm leading-6 text-gray-500">
             {meetings.map((meeting) => (
@@ -106,7 +106,8 @@ const CalendarEvents = () => {
                   className="h-10 w-10 flex-none rounded-full"
                 />
                 <div className="flex-auto">
-                  <p className="text-gray-900">{meeting.name}</p>
+                  <p className="text-gray-900 font-bold">{meeting.name}</p>
+                  <p className="text-gray-900">{meeting.commonArea}</p>
                   <p className="mt-0.5">
                     <time dateTime={meeting.startDatetime}>
                       {meeting.start}

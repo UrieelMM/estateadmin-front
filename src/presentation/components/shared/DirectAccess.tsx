@@ -1,9 +1,7 @@
 import {
-    AcademicCapIcon,
     BanknotesIcon,
     CheckBadgeIcon,
     ClockIcon,
-    ReceiptRefundIcon,
     UsersIcon,
   } from '@heroicons/react/24/outline'
   
@@ -36,20 +34,6 @@ import {
       iconForeground: 'text-yellow-700',
       iconBackground: 'bg-yellow-50',
     },
-    {
-      title: 'Submit an expense',
-      href: '#',
-      icon: ReceiptRefundIcon,
-      iconForeground: 'text-rose-700',
-      iconBackground: 'bg-rose-50',
-    },
-    {
-      title: 'Training',
-      href: '#',
-      icon: AcademicCapIcon,
-      iconForeground: 'text-indigo-700',
-      iconBackground: 'bg-indigo-50',
-    },
   ]
   
   function classNames(...classes: string[]) {
@@ -58,7 +42,7 @@ import {
   
   const DirectAccess = () => {
     return (
-      <div className="divide-y divide-gray-200 overflow-hidden rounded-lg bg-gray-200 shadow-md sm:grid  mt-8 sm:grid-cols-2 sm:gap-px sm:divide-y-0">
+      <div className="divide-y mt-8 xl:mt-0 divide-gray-200 overflow-hidden rounded-md bg-gray-200 shadow-lg sm:grid sm:grid-cols-2 sm:gap-px sm:divide-y-0">
         {actions.map((action, actionIdx) => (
           <div
             key={action.title}

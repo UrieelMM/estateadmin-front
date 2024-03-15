@@ -1,36 +1,45 @@
-import { Fragment } from 'react'
+import { Fragment, useState, useEffect } from 'react'
 import { Disclosure, Menu, Transition } from '@headlessui/react'
 import ConboBox from './ComboBox'
-
-const navigation = [
-  { name: 'Dashboard', href: '#', current: true },
-  { name: 'Team', href: '#', current: false },
-  { name: 'Projects', href: '#', current: false },
-  { name: 'Calendar', href: '#', current: false },
-]
+import { getCurrentDateWithGreeting } from '../../../utils/getCurrentDate'
+import useUserStore from '../../../store/UserDataStore'
+import { UserData } from '../../../interfaces/UserData'
 
 function classNames(...classes: string[]) {
     return classes.filter(Boolean).join(' ')
 }
 
-const Navbar = () => {
-  return (
-    <Disclosure as="nav" className="bg-gradient-to-r from-indigo-700 to-indigo-600">
-        <>
-          <div className="w-full px-2 lg:px-8">
-            <div className="relative flex h-16 items-center justify-between">
-              <div className="absolute inset-y-0 left-0 flex items-center sm:hidden">
-                {/* Mobile menu button*/}
-                <Disclosure.Button className="relative inline-flex items-center justify-center rounded-md p-2 text-gray-400 hover:bg-gray-700 hover:text-white focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white">
-                  <span className="absolute -inset-0.5" />
-                  <span className="sr-only">Open main menu</span>
 
-                </Disclosure.Button>
-              </div>
+
+const Navbar = () => {
+  const [currentDate, setCurrentDate] = useState("")
+  const [userData, setUserData] = useState<UserData | null>(null)
+  const {fetchUserData, user } = useUserStore(state => ({
+    user: state.user,
+    fetchUserData: state.fetchUserData,
+  }));
+
+  useEffect(() => {
+    setCurrentDate(getCurrentDateWithGreeting())
+  }, [])
+
+  useEffect(() => {
+    fetchUserData();
+    if (user) {
+      setUserData(user)
+    }
+  }, [fetchUserData, user]);
+
+  return (
+    <Disclosure as="nav" className="bg-gradient-to-r shadow-lg from-indigo-700 to-indigo-600">
+        <>
+          <div className="w-full px-2 lg:pr-8">
+            <div className="relative flex h-16 items-center justify-between">
               <div className="flex flex-1 items-center justify-start sm:items-stretch sm:justify-start">
                 <div className="sm:ml-6 sm:block">
-                  <div className="flex space-x-4">
+                  <div className="flex space-x-4 items-center">
                     <ConboBox />
+                    <p className="text-white align-middle"><span className="font-bold">Hola, {userData?.name} </span>{currentDate}</p>
                   </div>
                 </div>
               </div>
@@ -39,14 +48,24 @@ const Navbar = () => {
                 {/* Profile dropdown */}
                 <Menu as="div" className="relative ml-3">
                   <div>
-                    <Menu.Button className="relative flex rounded-full bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800">
+                    <Menu.Button className="relative flex rounded-full bg-gray-800 text-sm focus:outline-none">
                       <span className="absolute -inset-1.5" />
                       <span className="sr-only">Open user menu</span>
-                      <img
-                        className="h-8 w-8 rounded-full"
-                        src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
-                        alt=""
-                      />
+                      {
+                        userData?.photoURL ? (
+                          <img
+                          className="h-12 w-12 rounded-full"
+                          src={userData?.photoURL as string}
+                          alt=""
+                        />
+                        ) : 
+                        (
+                          <p className="bg-indigo-300 text-white rounded-full w-12 h-12 flex justify-center items-center">
+                            {userData?.name?.charAt(0)}
+                          </p>
+                        )
+                      }
+                      
                     </Menu.Button>
                   </div>
                   <Transition
@@ -65,7 +84,7 @@ const Navbar = () => {
                             href="#"
                             className={classNames(active ? 'bg-gray-100' : '', 'block px-4 py-2 text-sm text-gray-700')}
                           >
-                            Your Profile
+                            Perfil
                           </a>
                         )}
                       </Menu.Item>
@@ -75,7 +94,7 @@ const Navbar = () => {
                             href="#"
                             className={classNames(active ? 'bg-gray-100' : '', 'block px-4 py-2 text-sm text-gray-700')}
                           >
-                            Settings
+                            Configuración
                           </a>
                         )}
                       </Menu.Item>
@@ -85,7 +104,7 @@ const Navbar = () => {
                             href="#"
                             className={classNames(active ? 'bg-gray-100' : '', 'block px-4 py-2 text-sm text-gray-700')}
                           >
-                            Sign out
+                            Cerrar sesión
                           </a>
                         )}
                       </Menu.Item>
@@ -95,25 +114,6 @@ const Navbar = () => {
               </div>
             </div>
           </div>
-
-          <Disclosure.Panel className="sm:hidden">
-            <div className="space-y-1 px-2 pb-3 pt-2">
-              {navigation.map((item) => (
-                <Disclosure.Button
-                  key={item.name}
-                  as="a"
-                  href={item.href}
-                  className={classNames(
-                    item.current ? 'bg-gray-900 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white',
-                    'block rounded-md px-3 py-2 text-base font-medium'
-                  )}
-                  aria-current={item.current ? 'page' : undefined}
-                >
-                  {item.name}
-                </Disclosure.Button>
-              ))}
-            </div>
-          </Disclosure.Panel>
         </>
 
     </Disclosure>

@@ -1,9 +1,81 @@
-
+import { useEffect, useState } from "react";
+import useAuthStore from "../../../store/AuthStore";
+import { useNavigate } from "react-router-dom";
+import toast from 'react-hot-toast';
+import { auth } from "../../../firebase/firebase";
+import Loading from "../../components/shared/loaders/Loading";
 
 const LoginScreen = () => {
+  
+
+  const loginWithEmailAndPassword = useAuthStore(
+    (state) => state.loginWithEmailAndPassword
+  );
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [loasingSession, setLoadingSession] = useState(true);
+
+  const navigate = useNavigate();
+
+  //validar si hay un usuario logeado
+  useEffect(() => {
+      setLoadingSession(true);
+      const unsubscribe = auth.onAuthStateChanged((user) => {
+        if (user) {
+          navigate("/dashboard/home");
+        }
+      });
+      setTimeout(() => {
+        setLoadingSession(false);
+      }, 400);
+      return () => unsubscribe();
+  }, [navigate]);
+
+  const handleLoginWithEmailAndPassword = async (e: React.SyntheticEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      const successLogingUser = await loginWithEmailAndPassword!({
+        email,
+        password,
+      });
+      if (successLogingUser) {
+        navigate("/dashboard/home");
+      }
+      setLoading(false);
+    } catch (error) {
+      console.log("Error al iniciar sesión:", error);
+      let errorMessage = "Error al iniciar sesión:";
+      switch ((error as { code: string }).code) {
+        case "auth/user-not-found":
+          errorMessage = "Usuario no encontrado";
+          break;
+        case "auth/wrong-password":
+          errorMessage = "Contraseña incorrecta";
+          break;
+        case "auth/invalid-credential":
+          errorMessage = "Correo o contraseña incorrectas";
+          break;
+        case "auth/too-many-requests":
+          errorMessage = "Demasiados intentos, intente más tarde";
+          break;
+        default:
+          errorMessage = "Usuario o contraseña incorrectos";
+          break;
+      }
+      toast.error(errorMessage);
+      setLoading(false);
+    }
+  };
+
+  if(loasingSession) return (<Loading />);
+
   return (
     <>
-      <div className="flex min-h-full  flex-1 flex-col justify-center px-6 py-12 lg:px-8">
+      <div className="flex min-h-full h-screen flex-1 flex-col justify-center px-6 py-12 lg:px-8">
         <div className="sm:mx-auto sm:w-full sm:max-w-sm">
           <img
             className="mx-auto h-10 w-auto"
@@ -11,21 +83,27 @@ const LoginScreen = () => {
             alt="Your Company"
           />
           <h2 className="mt-10 text-center text-2xl font-bold leading-9 tracking-tight text-gray-900">
-            Sign in to your account
+            Ingresa a tu cuenta
           </h2>
         </div>
 
         <div className="mt-10 sm:mx-auto sm:w-full sm:max-w-sm">
-          <form className="space-y-6" action="#" method="POST">
+          <form
+            onSubmit={(e) => handleLoginWithEmailAndPassword(e)}
+            className="space-y-6"
+            action="#"
+            method="POST"
+          >
             <div>
               <label
                 htmlFor="email"
                 className="block text-sm font-medium leading-6 text-gray-900"
               >
-                Email address
+                Email
               </label>
               <div className="mt-2">
                 <input
+                  onChange={(e) => setEmail(e.target.value)}
                   id="email"
                   name="email"
                   type="email"
@@ -42,19 +120,20 @@ const LoginScreen = () => {
                   htmlFor="password"
                   className="block text-sm font-medium leading-6 text-gray-900"
                 >
-                  Password
+                  Contraseña
                 </label>
                 <div className="text-sm">
                   <a
                     href="#"
                     className="font-semibold text-indigo-600 hover:text-indigo-500"
                   >
-                    Forgot password?
+                    ¿Olvidaste tu contraseña?
                   </a>
                 </div>
               </div>
               <div className="mt-2">
                 <input
+                  onChange={(e) => setPassword(e.target.value)}
                   id="password"
                   name="password"
                   type="password"
@@ -70,24 +149,34 @@ const LoginScreen = () => {
                 type="submit"
                 className="flex w-full justify-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
               >
-                Sign in
+                {loading ? (
+                  <svg
+                    className="animate-spin h-5 w-5 mr-3 border-t-2 border-b-2 border-indigo-100 rounded-full"
+                    viewBox="0 0 24 24"
+                  ></svg>
+                ) : (
+                  "Iniciar sesión"
+                )}
               </button>
             </div>
           </form>
 
+          <div className="flex-col justify-center items-center">
           <p className="mt-10 text-center text-sm text-gray-500">
-            Not a member?{" "}
-            <a
-              href="#"
-              className="font-semibold leading-6 text-indigo-600 hover:text-indigo-500"
-            >
-              Start a 14 day free trial
-            </a>
+            ¿No tienes una cuenta?{" "}
+            
           </p>
+          <a
+              href="#"
+              className="font-semibold leading-6 text-center block text-indigo-600 hover:text-indigo-500"
+            >
+              Contáctanos para unirte a nuestros servicios
+            </a>
+          </div>
         </div>
       </div>
     </>
-  )
-}
+  );
+};
 
-export default LoginScreen
+export default LoginScreen;

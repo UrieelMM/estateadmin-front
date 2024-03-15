@@ -6,7 +6,8 @@ import {
     Outlet,
   } from "react-router-dom";
   import LayoutDashboard from "../presentation/screens/layout/LayoutDashboard";
-import LoginScreen from "../presentation/screens/login/LoginScreen";
+  import LoginScreen from "../presentation/screens/login/LoginScreen";
+  import Hero from "../presentation/screens/hero/Hero";
   import { routesApp } from "./routes";
 
   
@@ -16,7 +17,9 @@ import LoginScreen from "../presentation/screens/login/LoginScreen";
       <Router>
       <Routes>
         {/* Página de inicio de sesión */}
-        <Route path="/login" element={<LoginScreen />} />
+        <Route path="/login"  element={<LoginScreen />}/>
+        <Route path="/presentation" element={<Hero />} />
+        
     
         {/* Rutas dentro del Layout */}
         <Route

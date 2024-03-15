@@ -14,17 +14,17 @@ function classNames(...classes: string[]) {
 const StatsHome
  = () => {
   return (
-    <div>
-      <h3 className="text-base font-semibold leading-6 text-gray-900">Last 30 days</h3>
+    <div className="mt-4">
+      <h3 className="text-base font-semibold leading-6 text-gray-900">Últimos 30 días</h3>
 
       <dl className="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {stats.map((item) => (
           <div
             key={item.id}
-            className="relative overflow-hidden rounded-lg bg-white px-4 pb-12 pt-5 shadow sm:px-6 sm:pt-6"
+            className="relative overflow-hidden rounded-md bg-white px-4 pb-12 pt-5 shadow-lg sm:px-6 sm:pt-6"
           >
             <dt>
-              <div className="absolute rounded-md bg-indigo-500 p-3">
+              <div className="absolute rounded-md bg-green-400 p-3">
                 <item.icon className="h-6 w-6 text-white" aria-hidden="true" />
               </div>
               <p className="ml-16 truncate text-sm font-medium text-gray-500">{item.name}</p>

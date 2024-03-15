@@ -46,6 +46,7 @@ const meetings = [
   {
     id: 1,
     name: 'Leslie Alexander',
+    commonArea: 'Salón de eventos',
     imageUrl:
       'https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
     start: '1:00 PM',
@@ -56,6 +57,7 @@ const meetings = [
   {
     id: 1,
     name: 'Leslie Alexander',
+    commonArea: 'Salón de eventos',
     imageUrl:
       'https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
     start: '1:00 PM',
@@ -66,6 +68,7 @@ const meetings = [
   {
     id: 1,
     name: 'Leslie Alexander',
+    commonArea: 'Salón de eventos',
     imageUrl:
       'https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
     start: '1:00 PM',
@@ -76,6 +79,7 @@ const meetings = [
   {
     id: 1,
     name: 'Leslie Alexander',
+    commonArea: 'Salón de eventos',
     imageUrl:
       'https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
     start: '1:00 PM',
@@ -86,12 +90,13 @@ const meetings = [
   {
     id: 1,
     name: 'Leslie Alexander',
+    commonArea: 'Salón de eventos',
     imageUrl:
       'https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
     start: '1:00 PM',
-    startDatetime: '2022-01-21T13:00',
+    startDatetime: '2022-01-22T13:00',
     end: '2:30 PM',
-    endDatetime: '2022-01-21T14:30',
+    endDatetime: '2022-01-22T14:30',
   },
 ]
 export { days, meetings }
