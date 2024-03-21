@@ -3,11 +3,11 @@ import {create} from 'zustand'
 import { getAuth, getIdTokenResult } from 'firebase/auth';
 
 interface CondominiumState {
-    sendExcel: (file: File, condominiumName: string) => Promise<void>;
+    sendExcel: (file: File, condominiumId: string) => Promise<void>;
   }
   
   export const useCondominiumStore = create<CondominiumState>(() => ({
-      sendExcel: async (file: File, condominiumName: string) => {
+      sendExcel: async (file: File, condominiumId: string) => {
         if (!file.name.match(/\.(xls|xlsx)$/)) {
           alert('El archivo debe ser un Excel (.xls, .xlsx)');
           return;
@@ -37,10 +37,10 @@ interface CondominiumState {
         try {
           const formData = new FormData();
           formData.append('file', file);
-          formData.append('condominiumName', condominiumName);
+          formData.append('condominiumId', condominiumId);
           formData.append('clientId', String(clientId));
     
-          const response = await fetch('http://localhost:3000/users-auth/register-condominiums', {
+          const response = await fetch('https://5jm8tk3r-3000.usw3.devtunnels.ms/users-auth/register-condominiums', {
             method: 'POST',
             body: formData,
             headers: {

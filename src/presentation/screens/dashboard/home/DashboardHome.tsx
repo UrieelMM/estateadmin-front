@@ -7,7 +7,7 @@ const DashboardHome = () => {
   return (
     <div>
       <StatsHome />
-      <div className="flex flex-col-reverse xl:flex-row justify-between items-start mt-12 mb-12">
+      <div className="flex flex-col-reverse xl:flex-row justify-between items-start mt-8 lg:mt-12 mb-12">
         <DirectAccess />
         <UsersListAdmin />
       </div>

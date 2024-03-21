@@ -14,5 +14,5 @@ export const getCurrentDateWithGreeting = () => {
         greeting = "Buenas noches";
     }
 
-    return `${greeting} ${day}/${month}/${year}`;
+    return `${greeting}`;
 };

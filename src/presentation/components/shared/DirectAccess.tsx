@@ -1,95 +1,96 @@
 import {
-    BanknotesIcon,
-    CheckBadgeIcon,
-    ClockIcon,
-    UsersIcon,
-  } from '@heroicons/react/24/outline'
-  
-  const actions = [
-    {
-      title: 'Request time off',
-      href: '#',
-      icon: ClockIcon,
-      iconForeground: 'text-teal-700',
-      iconBackground: 'bg-teal-50',
-    },
-    {
-      title: 'Benefits',
-      href: '#',
-      icon: CheckBadgeIcon,
-      iconForeground: 'text-purple-700',
-      iconBackground: 'bg-purple-50',
-    },
-    {
-      title: 'Schedule a one-on-one',
-      href: '#',
-      icon: UsersIcon,
-      iconForeground: 'text-sky-700',
-      iconBackground: 'bg-sky-50',
-    },
-    {
-      title: 'Payroll',
-      href: '#',
-      icon: BanknotesIcon,
-      iconForeground: 'text-yellow-700',
-      iconBackground: 'bg-yellow-50',
-    },
-  ]
-  
-  function classNames(...classes: string[]) {
-    return classes.filter(Boolean).join(' ')
-  }
-  
-  const DirectAccess = () => {
-    return (
-      <div className="divide-y mt-8 xl:mt-0 divide-gray-200 overflow-hidden rounded-md bg-gray-200 shadow-lg sm:grid sm:grid-cols-2 sm:gap-px sm:divide-y-0">
-        {actions.map((action, actionIdx) => (
-          <div
-            key={action.title}
-            className={classNames(
-              actionIdx === 0 ? 'rounded-tl-lg rounded-tr-lg sm:rounded-tr-none' : '',
-              actionIdx === 1 ? 'sm:rounded-tr-lg' : '',
-              actionIdx === actions.length - 2 ? 'sm:rounded-bl-lg' : '',
-              actionIdx === actions.length - 1 ? 'rounded-bl-lg rounded-br-lg sm:rounded-bl-none' : '',
-              'group relative bg-white p-6 focus-within:ring-2 focus-within:ring-inset focus-within:ring-indigo-500'
-            )}
-          >
-            <div>
-              <span
+  Bars4Icon,
+  CalendarIcon,
+  ClockIcon,
+  PhotoIcon,
+  TableCellsIcon,
+  ViewColumnsIcon,
+} from '@heroicons/react/24/outline'
+
+const items = [
+  {
+    title: 'Create a List',
+    description: 'Another to-do system you’ll try but eventually give up on.',
+    icon: Bars4Icon,
+    background: 'bg-pink-500',
+  },
+  {
+    title: 'Create a Calendar',
+    description: 'Stay on top of your deadlines, or don’t — it’s up to you.',
+    icon: CalendarIcon,
+    background: 'bg-yellow-500',
+  },
+  {
+    title: 'Create a Gallery',
+    description: 'Great for mood boards and inspiration.',
+    icon: PhotoIcon,
+    background: 'bg-green-500',
+  },
+  {
+    title: 'Create a Board',
+    description: 'Track tasks in different stages of your project.',
+    icon: ViewColumnsIcon,
+    background: 'bg-blue-500',
+  },
+  {
+    title: 'Create a Spreadsheet',
+    description: 'Lots of numbers and things — good for nerds.',
+    icon: TableCellsIcon,
+    background: 'bg-indigo-500',
+  },
+  {
+    title: 'Create a Timeline',
+    description: 'Get a birds-eye-view of your procrastination.',
+    icon: ClockIcon,
+    background: 'bg-purple-500',
+  },
+]
+
+function classNames(...classes: string[]) {
+  return classes.filter(Boolean).join(' ')
+}
+
+const DirectAccess = () => {
+  return (
+    <div className="w-[100%] mt-4 lg:mt-8 xl:mt-0">
+      <h2 className="text-base font-semibold leading-6 text-gray-900">Accesos directos</h2>
+      <p className="mt-1 text-sm text-gray-500">
+        Comineza a gestionar tu condominio con estas herramientas.
+      </p>
+      <ul role="list" className="mt-6 w-[100%] lg:h-[400px] grid grid-cols-1 gap-6 border-b border-t border-gray-200 py-6 sm:grid-cols-2">
+        {items.map((item, itemIdx) => (
+          <li key={itemIdx} className="flow-root">
+            <div className="relative -m-2 flex items-center space-x-4 rounded-xl p-2 focus-within:ring-2 focus-within:ring-indigo-500 hover:bg-gray-50">
+              <div
                 className={classNames(
-                  action.iconBackground,
-                  action.iconForeground,
-                  'inline-flex rounded-lg p-3 ring-4 ring-white'
+                  item.background,
+                  'flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-lg'
                 )}
               >
-                <action.icon className="h-6 w-6" aria-hidden="true" />
-              </span>
+                <item.icon className="h-6 w-6 text-white" aria-hidden="true" />
+              </div>
+              <div>
+                <h3 className="text-sm font-medium text-gray-900">
+                  <a href="#" className="focus:outline-none">
+                    <span className="absolute inset-0" aria-hidden="true" />
+                    <span>{item.title}</span>
+                    <span aria-hidden="true"> &rarr;</span>
+                  </a>
+                </h3>
+                <p className="mt-1 text-sm text-gray-500">{item.description}</p>
+              </div>
             </div>
-            <div className="mt-8">
-              <h3 className="text-base font-semibold leading-6 text-gray-900">
-                <a href={action.href} className="focus:outline-none">
-                  {/* Extend touch target to entire panel */}
-                  <span className="absolute inset-0" aria-hidden="true" />
-                  {action.title}
-                </a>
-              </h3>
-              <p className="mt-2 text-sm text-gray-500">
-                Doloribus dolores nostrum quia qui natus officia quod et dolorem. Sit repellendus qui ut at blanditiis et
-                quo et molestiae.
-              </p>
-            </div>
-            <span
-              className="pointer-events-none absolute right-6 top-6 text-gray-300 group-hover:text-gray-400"
-              aria-hidden="true"
-            >
-              <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M20 4h1a1 1 0 00-1-1v1zm-1 12a1 1 0 102 0h-2zM8 3a1 1 0 000 2V3zM3.293 19.293a1 1 0 101.414 1.414l-1.414-1.414zM19 4v12h2V4h-2zm1-1H8v2h12V3zm-.707.293l-16 16 1.414 1.414 16-16-1.414-1.414z" />
-              </svg>
-            </span>
-          </div>
+          </li>
         ))}
+      </ul>
+      <div className="mt-4 flex">
+        <a href="#" className="text-sm font-medium text-indigo-600 hover:text-indigo-500">
+          Or start from an empty project
+          <span aria-hidden="true"> &rarr;</span>
+        </a>
       </div>
-    )
-  }
+    </div>
+  )
+}
 
 export default DirectAccess

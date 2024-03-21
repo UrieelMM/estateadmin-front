@@ -14,6 +14,7 @@ import useAuthStore from "../../../store/AuthStore";
 import useUserStore from "../../../store/UserDataStore";
 import Loading from "../../components/shared/loaders/Loading";
 import { auth } from "../../../firebase/firebase";
+import logo from "../../../assets/logo.png";
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(" ");
@@ -54,7 +55,7 @@ const LayoutDashboard = ({ children }: Props) => {
     fetchUserData();
     setTimeout(() => {
       setIsLoadingData(false);
-    }, 700);
+    }, 1000);
   }, [fetchUserData]);
 
   const handleLogout = async () => {
@@ -101,7 +102,7 @@ const LayoutDashboard = ({ children }: Props) => {
           <div className="flex items-center justify-between h-16 border-b w- border-gray-200 p-4">
             <img
               className="h-8 w-auto"
-              src="https://tailwindui.com/img/logos/mark.svg?color=indigo&shade=600"
+              src={logo}
               alt="Your Company"
             />
           </div>

@@ -39,7 +39,7 @@ const Navbar = () => {
                 <div className="sm:ml-6 sm:block">
                   <div className="flex space-x-4 items-center">
                     <ConboBox />
-                    <p className="text-white align-middle"><span className="font-bold">Hola, {userData?.name} </span>{currentDate}</p>
+                    <p className="text-white text-sm lg:text-base align-middle"><span className="font-bold">Hola, {userData?.name} </span>{currentDate}</p>
                   </div>
                 </div>
               </div>
@@ -50,7 +50,6 @@ const Navbar = () => {
                   <div>
                     <Menu.Button className="relative flex rounded-full bg-gray-800 text-sm focus:outline-none">
                       <span className="absolute -inset-1.5" />
-                      <span className="sr-only">Open user menu</span>
                       {
                         userData?.photoURL ? (
                           <img

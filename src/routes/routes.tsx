@@ -2,6 +2,7 @@ import CalendarEvents from "../presentation/screens/dashboard/calendar/CalendarE
 import DashboardHome from "../presentation/screens/dashboard/home/DashboardHome";
 import ParcelReception from "../presentation/screens/dashboard/parcel-reception/ParcelReception";
 import ProviderList from "../presentation/screens/dashboard/providers/ProvidersList";
+import Publications from "../presentation/screens/dashboard/publications/Publications";
 import UsersRegistration from "../presentation/screens/dashboard/users/UsersRegistration";
 import UsersScreen from "../presentation/screens/dashboard/users/UsersScreen";
 
@@ -47,6 +48,13 @@ export const routesApp = [
     title: "Proveedores",
     description: "Gestión de proveedores en el condominio",
     component: <ProviderList />,
+  },
+  {
+    to: "/dasboard/publications",
+    icon: "fa-solid fa-spell-check",
+    title: "Publicaciones",
+    description: "Gestión de publicaciones en el condominio",
+    component: <Publications  />,
   },
 
 ];

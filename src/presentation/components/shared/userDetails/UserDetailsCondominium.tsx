@@ -3,7 +3,7 @@ import { Dialog, Menu, Transition } from '@headlessui/react'
 import { EllipsisVerticalIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import { UserData } from '../../../../interfaces/UserData';
 
-interface UserDetailsAdminProps {
+interface UserDetailsProps {
     open: boolean;
     setOpen: (open: boolean) => void;
     userDetails: UserData | null;
@@ -12,7 +12,7 @@ interface UserDetailsAdminProps {
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(' ')
 }
-const UserDetailsAdmin = ({open, setOpen, userDetails} : UserDetailsAdminProps) => {
+const UserDetailsCondominium = ({open, setOpen, userDetails} : UserDetailsProps) => {
   
 
   return (
@@ -97,7 +97,6 @@ const UserDetailsAdmin = ({open, setOpen, userDetails} : UserDetailsAdminProps) 
                                 <Menu as="div" className="relative inline-block text-left">
                                   <Menu.Button className="relative inline-flex items-center rounded-md bg-white p-2 text-gray-400 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
                                     <span className="absolute -inset-1" />
-                                    <span className="sr-only">Open options menu</span>
                                     <EllipsisVerticalIcon className="h-5 w-5" aria-hidden="true" />
                                   </Menu.Button>
                                   <Transition
@@ -120,20 +119,7 @@ const UserDetailsAdmin = ({open, setOpen, userDetails} : UserDetailsAdminProps) 
                                                 'block px-4 py-2 text-sm'
                                               )}
                                             >
-                                              View profile
-                                            </a>
-                                          )}
-                                        </Menu.Item>
-                                        <Menu.Item>
-                                          {({ active }) => (
-                                            <a
-                                              href="#"
-                                              className={classNames(
-                                                active ? 'bg-gray-100 text-gray-900' : 'text-gray-700',
-                                                'block px-4 py-2 text-sm'
-                                              )}
-                                            >
-                                              Copy profile link
+                                              Ver perfil
                                             </a>
                                           )}
                                         </Menu.Item>
@@ -149,37 +135,41 @@ const UserDetailsAdmin = ({open, setOpen, userDetails} : UserDetailsAdminProps) 
                       <div className="px-4 py-5 sm:px-0 sm:py-0">
                         <dl className="space-y-8 sm:space-y-0 sm:divide-y sm:divide-gray-200">
                           <div className="sm:flex sm:px-6 sm:py-5">
-                            <dt className="text-sm font-medium text-gray-500 sm:w-40 sm:flex-shrink-0 lg:w-48">Bio</dt>
+                            <dt className="text-sm font-medium text-gray-500 sm:w-40 sm:flex-shrink-0 lg:w-48">Dirección fiscal</dt>
                             <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:ml-6 sm:mt-0">
                               <p>
-                                Enim feugiat ut ipsum, neque ut. Tristique mi id elementum praesent. Gravida in tempus
-                                feugiat netus enim aliquet a, quam scelerisque. Dictumst in convallis nec in bibendum
-                                aenean arcu.
+                                {
+                                  userDetails?.taxResidence
+                                }
                               </p>
                             </dd>
                           </div>
                           <div className="sm:flex sm:px-6 sm:py-5">
                             <dt className="text-sm font-medium text-gray-500 sm:w-40 sm:flex-shrink-0 lg:w-48">
-                              Location
+                              RFC
                             </dt>
-                            <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:ml-6 sm:mt-0">
-                              New York, NY, USA
+                            <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:ml-6 sm:mt-0">   
+                            {
+                              userDetails?.RFC
+                            }   
                             </dd>
                           </div>
                           <div className="sm:flex sm:px-6 sm:py-5">
                             <dt className="text-sm font-medium text-gray-500 sm:w-40 sm:flex-shrink-0 lg:w-48">
-                              Website
+                              Régimen fiscal
                             </dt>
                             <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:ml-6 sm:mt-0">
-                              ashleyporter.com
+                              {
+                                userDetails?.taxtRegime
+                              }
                             </dd>
                           </div>
                           <div className="sm:flex sm:px-6 sm:py-5">
                             <dt className="text-sm font-medium text-gray-500 sm:w-40 sm:flex-shrink-0 lg:w-48">
-                              Birthday
+                              Razón social
                             </dt>
                             <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:ml-6 sm:mt-0">
-                              <time dateTime="1982-06-23">June 23, 1982</time>
+                              <time dateTime="1982-06-23">{userDetails?.businessName}</time>
                             </dd>
                           </div>
                         </dl>
@@ -196,4 +186,4 @@ const UserDetailsAdmin = ({open, setOpen, userDetails} : UserDetailsAdminProps) 
   )
 }
 
-export default UserDetailsAdmin
+export default UserDetailsCondominium

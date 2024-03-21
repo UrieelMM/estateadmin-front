@@ -13,10 +13,11 @@ export interface UserData {
     businessName?: string;
     taxResidence?: string;
     taxtRegime?: string;
-    photoURL?: File | string;
+    photoURL?: string | undefined;
     uid: string;
     companyName?: string;
     condominiumName?: string[];
     role: string;
     departament?: string;
+    condominiumUids?: string[];
 }
