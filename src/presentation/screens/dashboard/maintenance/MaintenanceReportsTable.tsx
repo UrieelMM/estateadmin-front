@@ -11,7 +11,7 @@ const MaintenanceReportsTable: React.FC<MaintenanceReportsTableProps> = ({ onEdi
   // Estados para filtros
   const [year, setYear] = useState<string>("");
   const [month, setMonth] = useState<string>("");
-  const [area, setArea] = useState<string>("");
+  const [area, _setArea] = useState<string>("");
 
   // Estado para la paginación
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -39,33 +39,33 @@ const MaintenanceReportsTable: React.FC<MaintenanceReportsTableProps> = ({ onEdi
     { value: "12", label: "Diciembre" },
   ];
 
-  const areaOptions = [
-    "Lobby",
-    "Recepción",
-    "Vestíbulo",
-    "Pasillos",
-    "Ascensores",
-    "Escaleras",
-    "Garaje",
-    "Zonas Verdes",
-    "Área de Juegos",
-    "Piscina",
-    "Gimnasio",
-    "Sauna",
-    "Terraza",
-    "Azotea",
-    "Baños Comunes",
-    "Salón de Eventos",
-    "Cocina Comunal",
-    "Jardín",
-    "Estacionamiento",
-    "Área de Barbacoa",
-    "Cuarto de Basura",
-    "Mantenimiento General",
-    "Sistemas Eléctricos",
-    "Plomería",
-    "Administración"
-  ];
+  // const areaOptions = [
+  //   "Lobby",
+  //   "Recepción",
+  //   "Vestíbulo",
+  //   "Pasillos",
+  //   "Ascensores",
+  //   "Escaleras",
+  //   "Garaje",
+  //   "Zonas Verdes",
+  //   "Área de Juegos",
+  //   "Piscina",
+  //   "Gimnasio",
+  //   "Sauna",
+  //   "Terraza",
+  //   "Azotea",
+  //   "Baños Comunes",
+  //   "Salón de Eventos",
+  //   "Cocina Comunal",
+  //   "Jardín",
+  //   "Estacionamiento",
+  //   "Área de Barbacoa",
+  //   "Cuarto de Basura",
+  //   "Mantenimiento General",
+  //   "Sistemas Eléctricos",
+  //   "Plomería",
+  //   "Administración"
+  // ];
 
   // Si se selecciona un mes sin año, se asume el año actual
   useEffect(() => {

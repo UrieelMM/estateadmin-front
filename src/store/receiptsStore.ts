@@ -36,7 +36,7 @@ export const useReceiptStore = create<ReceiptStoreState>((set) => ({
       }
       let email = "";
       try {
-        const dataUserActive = JSON.parse(dataUserActiveStr);
+        // const dataUserActive = JSON.parse(dataUserActiveStr);
         // email = dataUserActive.email;
         email = "urieel.mm@gmail.com";
       } catch (error) {

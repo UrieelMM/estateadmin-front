@@ -177,7 +177,9 @@ export default function CalendarReservations() {
     setCurrentDate(newDate.format('YYYY-MM-DD'));
   };
 
+  // eslint-disable-next-line no-unused-vars
   let mainLabel = '';
+  console.log(mainLabel);
   if (view === 'day') mainLabel = dayjs(currentDate).format('D [de] MMMM YYYY');
   else if (view === 'week' || view === 'month') mainLabel = dayjs(currentDate).format('MMMM YYYY');
   else mainLabel = dayjs(currentDate).format('YYYY');

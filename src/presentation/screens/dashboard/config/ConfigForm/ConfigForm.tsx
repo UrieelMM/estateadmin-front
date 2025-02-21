@@ -31,7 +31,7 @@ const ConfigForm = () => {
   const [paymentProof, setPaymentProof] = useState<File | null>(null);
 
   // Datos dummy para la tabla de facturas
-  const [invoices, setInvoices] = useState([
+  const [invoices, _setInvoices] = useState([
     { id: "inv1", date: "2025-01-10", concept: "Factura Enero", downloadUrl: "#" },
     { id: "inv2", date: "2025-02-10", concept: "Factura Febrero", downloadUrl: "#" },
   ]);

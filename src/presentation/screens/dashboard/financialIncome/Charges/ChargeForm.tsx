@@ -34,7 +34,7 @@ const ChargeForm = () => {
   const [selectedUser, setSelectedUser] = useState<string>("");
   const [concept, setConcept] = useState<string>("Cuota de mantenimiento");
   const [amount, setAmount] = useState<number>(0);
-  const [generatedAt] = useState<string>(() => {
+  const [_generatedAt] = useState<string>(() => {
     const now = new Date();
     const year = now.getFullYear();
     const mm = String(now.getMonth() + 1).padStart(2, "0");
