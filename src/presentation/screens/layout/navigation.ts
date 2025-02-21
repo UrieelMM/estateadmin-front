@@ -16,9 +16,9 @@ export const navigation = [
     icon: ChartBarIcon,
     current: false,
     children: [
-      { name: 'Facturación', href: '#' },
       { name: 'Egresos', href: '#' },
-      { name: 'Ingresos', href: '#' },
+      { name: 'Ingresos', href: '/dashborad/income' },
+      { name: 'Cargos', href: '/dashborad/charges' },
     ],
   },
   { name: 'Comunidad', href: '/dasboard/community', icon: UserGroupIcon, current: false, children: [
@@ -29,6 +29,6 @@ export const navigation = [
     { name: 'Votaciones', href: '/dashboard/home' },
   ]},
   { name: 'Paquetería', href: '/dasboard/parcel-reception', icon: TruckIcon, current: false },
-  { name: 'Mantenimiento', href: '/dasboard/maintenance', icon: WrenchIcon, current: false },
+  { name: 'Mantenimiento', href: '/dasboard/maintenance-reports', icon: WrenchIcon, current: false },
   { name: 'Proveedores', href: '/dasboard/providers', icon: BuildingStorefrontIcon, current: false },
 ]

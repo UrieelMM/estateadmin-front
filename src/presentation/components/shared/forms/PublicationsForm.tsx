@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import ReactQuill from "react-quill";
 import { useDropzone } from "react-dropzone";
 import { DocumentPlusIcon } from "@heroicons/react/24/solid";
-import { usePublicationStore } from "../../../../store/PublicationsStore";
+import { usePublicationStore } from "../../../../store/usePublicationStore";
 import "react-quill/dist/quill.snow.css";
 import useUserStore from "../../../../store/UserDataStore";
 import toast from "react-hot-toast";
@@ -78,10 +78,13 @@ const PublicationsForm = ({ isOpen, onClose }: PublicationFormProps) => {
       return;
     }
 
+    if (file && file.size > 20971520) {
+      toast.error("El archivo no puede ser mayor a 20MB");
+      return;
+    }
+
     try {
       const condominiumName = condominiumsList.find((condominium: Condominium) => condominium.uid === condominiumSelected)?.name;
-
-      console.log({ condominiumSelected});
 
       await addPublication({ title, author, tags, content, file, condominiumId: condominiumSelected, condominiumName: condominiumName || "", sendTo: sendToSelected});
       toast.success("Publicación enviada correctamente");
@@ -92,6 +95,7 @@ const PublicationsForm = ({ isOpen, onClose }: PublicationFormProps) => {
       setFile(null);
       setFileName("");
       setCondominiumSelected("");
+      onClose();
     } catch (error) {
       toast.error("Error al enviar el formulario");
       console.error("Error al enviar el formulario:", error);

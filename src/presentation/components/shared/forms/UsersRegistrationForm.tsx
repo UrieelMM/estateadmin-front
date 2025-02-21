@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useDropzone } from "react-dropzone";
-import { useCondominiumStore } from "../../../../store/RegisterUsersStore";
+import { useCondominiumStore } from "../../../../store/useRegisterUserStore";
 import { DocumentPlusIcon } from "@heroicons/react/24/solid";
 import toast from "react-hot-toast";
 import LoadingRegister from "../loaders/LoadingRegister";

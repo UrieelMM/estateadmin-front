@@ -193,7 +193,7 @@ const LayoutDashboard = ({ children }: Props) => {
               </li>
               <li>
                 <Link
-                  to="/login"
+                  to="/dashborad/client-config"
                   className="group flex items-center px-4 py-2 text-sm font-medium text-gray-700 rounded-md"
                 >
                   <Cog6ToothIcon
@@ -219,7 +219,7 @@ const LayoutDashboard = ({ children }: Props) => {
       </div>
 
       {/* Main content */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1">
         <nav>
           <Navbar />
         </nav>

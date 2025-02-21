@@ -1,5 +1,6 @@
 import { Fragment, useState, useEffect } from 'react'
 import { Disclosure, Menu, Transition } from '@headlessui/react'
+import { Link } from "react-router-dom";
 import ConboBox from './ComboBox'
 import { getCurrentDateWithGreeting } from '../../../utils/getCurrentDate'
 import useUserStore from '../../../store/UserDataStore'
@@ -89,12 +90,12 @@ const Navbar = () => {
                       </Menu.Item>
                       <Menu.Item>
                         {({ active }) => (
-                          <a
-                            href="#"
+                          <Link
+                            to="/dashborad/client-config"
                             className={classNames(active ? 'bg-gray-100' : '', 'block px-4 py-2 text-sm text-gray-700')}
                           >
                             Configuración
-                          </a>
+                          </Link>
                         )}
                       </Menu.Item>
                       <Menu.Item>

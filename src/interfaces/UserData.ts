@@ -20,4 +20,5 @@ export interface UserData {
     role: string;
     departament?: string;
     condominiumUids?: string[];
+    totalCreditBalance?: number;
 }

@@ -50,6 +50,8 @@ const useUserStore = create<UserState>((set, get) => ({
             const clientId = token.claims.clientId;
             const condominiumId = token.claims.condominiumId;
 
+            if(condominiumId) localStorage.setItem("condominiumId", condominiumId as string);
+
             if (clientId && condominiumId) {
               const db = getFirestore();
               const usersRef = collection(db, `clients/${clientId}/condominiums/${condominiumId}/users`);
@@ -178,13 +180,16 @@ const useUserStore = create<UserState>((set, get) => ({
           const db = getFirestore();
           const user = get().user;
           if (user && user.condominiumUids) {
-            let users: UserData[] = [];
-            for (const condominiumUid of user.condominiumUids) {
+            // Utiliza Promise.all para ejecutar las consultas en paralelo
+            const promises = user.condominiumUids.map(async condominiumUid => {
               const usersRef = collection(db, `clients/${clientId}/condominiums/${condominiumUid}/users`);
               const q = query(usersRef, where("role", "not-in", ["admin", "admin-assistant"]));
               const querySnapshot = await getDocs(q);
-              users = users.concat(querySnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }) as unknown as UserData));
-            }
+              return querySnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }) as unknown as UserData);
+
+            });
+            const usersArrays = await Promise.all(promises);
+            const users = usersArrays.flat();
             set({ condominiumsUsers: users, condominiumsUsersFetched: true });
           }
         } else {
@@ -232,41 +237,50 @@ const useUserStore = create<UserState>((set, get) => ({
   searchUsersByName: async (name: string, pageSize: number, page: number) => {
     const userAuth = auth.currentUser;
     if (userAuth) {
-      const token = await getIdTokenResult(userAuth);
-      const clientId = token.claims.clientId;
-      const userRole = token.claims.role;
-      if (clientId && (userRole === 'admin' || userRole === 'admin-assistant')) {
-        const db = getFirestore();
-        const user = get().user;
-        if (user && user.condominiumUids) {
-          const startIdx = (page - 1) * pageSize;
-          const endIdx = startIdx + pageSize;
-  
-          const filteredUsers: UserData[] = [];
-  
-          for (const condominiumUid of user.condominiumUids) {
-            const usersRef = collection(db, `clients/${clientId}/condominiums/${condominiumUid}/users`);
-            const q = query(usersRef, where("role", "not-in", ["admin", "admin-assistant"]));
-            const querySnapshot = await getDocs(q);
-  
-            const usersSnapshot = querySnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }) as unknown as UserData);
-            filteredUsers.push(...usersSnapshot);
-          }
-  
-          // Filtrar los usuarios por nombre en el cliente
-          const filteredUsersByName = filteredUsers.filter(user => user.name.toLowerCase().includes(name.toLowerCase()));
-  
-          const paginatedUsers = filteredUsersByName.slice(startIdx, endIdx);
-          return paginatedUsers;
+        const token = await getIdTokenResult(userAuth);
+        const clientId = token.claims.clientId;
+        const userRole = token.claims.role;
+        if (clientId && (userRole === 'admin' || userRole === 'admin-assistant')) {
+            const db = getFirestore();
+            const user = get().user;
+            if (user && user.condominiumUids) {
+                const startIdx = (page - 1) * pageSize;
+                const endIdx = startIdx + pageSize;
+
+                const filteredUsers: UserData[] = [];
+
+                for (const condominiumUid of user.condominiumUids) {
+                    const usersRef = collection(db, `clients/${clientId}/condominiums/${condominiumUid}/users`);
+                    const q = query(usersRef, where("role", "not-in", ["admin", "admin-assistant"]));
+                    const querySnapshot = await getDocs(q);
+
+                    const usersSnapshot = querySnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }) as unknown as UserData);
+                    filteredUsers.push(...usersSnapshot);
+                }
+
+                // Función para normalizar y remover acentos de una cadena de texto
+                const normalizeText = (text: string) =>
+                    text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+
+                // Normalizar el término de búsqueda
+                const normalizedSearchName = normalizeText(name);
+
+                // Filtrar los usuarios por nombre en el cliente, después de normalizar
+                const filteredUsersByName = filteredUsers.filter(user =>
+                    normalizeText(user.name).includes(normalizedSearchName)
+                );
+
+                const paginatedUsers = filteredUsersByName.slice(startIdx, endIdx);
+                return paginatedUsers;
+            }
+        } else {
+            console.error("El usuario no tiene permisos para realizar esta acción.");
         }
-      } else {
-        console.error("El usuario no tiene permisos para realizar esta acción.");
-      }
     } else {
-      console.error("No authenticated user found.");
+        console.error("No authenticated user found.");
     }
     return [];
-  }
+}
 }));
 
 export default useUserStore;
