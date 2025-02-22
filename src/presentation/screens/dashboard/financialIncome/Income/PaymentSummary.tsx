@@ -57,9 +57,9 @@ const GrowthCard = ({ title, current, previous }: GrowthCardProps) => {
       <dt className="text-base font-normal text-gray-900">{title}</dt>
       <dd className="mt-1 flex items-baseline justify-between md:block lg:flex">
         <div className="flex items-baseline text-xl font-semibold text-indigo-600">
-          {"$" + current.toLocaleString()}
+          {"$" + current.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           <span className="ml-2 text-sm font-medium text-gray-500">
-            desde {"$" + previous.toLocaleString()}
+            desde {"$" + previous.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </span>
         </div>
         <div
@@ -111,9 +111,9 @@ const GrowthRow = ({ label, current, previous }: GrowthRowProps) => {
       <div className="text-sm font-normal text-gray-900">{label}</div>
       <div className="flex items-center">
         <div className="text-lg font-semibold text-indigo-600">
-          {"$" + current.toLocaleString()}
+          {"$" + current.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           <span className="ml-2 text-sm font-medium text-gray-500">
-            desde {"$" + previous.toLocaleString()}
+            desde {"$" + previous.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </span>
         </div>
         <div
@@ -190,7 +190,7 @@ const GrowthConceptCard = ({ concept, records, maxMonth }: GrowthConceptCardProp
 
   if (dataByMonth.length < 2) {
     return (
-      <div className="px-2 py-3 sm:p-6 bg-white shadow rounded-lg w-full 2xl:w-[49%]">
+      <div className="px-2 py-3 sm:p-6 bg-white shadow rounded-lg w-full lg:w-[49%]">
         <h4 className="text-base font-semibold text-gray-900">{concept}</h4>
         <p className="mt-1 text-sm text-gray-500">
           No hay suficientes datos para calcular crecimiento.
@@ -203,7 +203,7 @@ const GrowthConceptCard = ({ concept, records, maxMonth }: GrowthConceptCardProp
   const currentData = dataByMonth[dataByMonth.length - 1];
 
   return (
-    <div className="px-2 py-3 sm:p-6 bg-white shadow rounded-lg w-full 2xl:w-[49%]">
+    <div className="px-2 py-3 sm:p-6 bg-white shadow rounded-lg w-full lg:w-[49%]">
       <h4 className="text-base font-semibold text-gray-900 mb-4">{concept}</h4>
       <div className="space-y-4">
         <GrowthRow
@@ -250,7 +250,6 @@ const PaymentSummary = () => {
 
   const [year, setYear] = useState(selectedYear);
   const [showAllConceptCards, setShowAllConceptCards] = useState(false);
-
 
   const fetchCondominiumsUsers = useUserStore((state) => state.fetchCondominiumsUsers);
   const condominiumsUsers = useUserStore((state) => state.condominiumsUsers);
@@ -360,7 +359,7 @@ const PaymentSummary = () => {
                   Total ingresos:
                 </span>
                 <span className="text-2xl font-semibold text-default-700">
-                  {"$" + totalIncome.toFixed(2)}
+                  {"$" + totalIncome.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
               </div>
             </Card>
@@ -370,7 +369,7 @@ const PaymentSummary = () => {
                   Total pendiente:
                 </span>
                 <span className="text-2xl font-semibold text-default-700">
-                  {"$" + totalPending.toFixed(2)}
+                  {"$" + totalPending.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
               </div>
             </Card>
@@ -469,9 +468,9 @@ const PaymentSummary = () => {
                   {sortedMonthlyStats.map((row) => (
                     <tr key={row.month}>
                       <td className="border p-2">{monthNames[row.month] || row.month}</td>
-                      <td className="border p-2">{"$" + row.paid.toFixed(2)}</td>
-                      <td className="border p-2">{"$" + row.pending.toFixed(2)}</td>
-                      <td className="border p-2">{"$" + row.saldo.toFixed(2)}</td>
+                      <td className="border p-2">{"$" + row.paid.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                      <td className="border p-2">{"$" + row.pending.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                      <td className="border p-2">{"$" + row.saldo.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                       <td className="border p-2">{row.complianceRate.toFixed(2)}%</td>
                       <td className="border p-2">{row.delinquencyRate.toFixed(2)}%</td>
                     </tr>
@@ -481,10 +480,45 @@ const PaymentSummary = () => {
             </div>
           </div>
 
+          {/* Sección: Crecimiento por concepto */}
+          {conceptRecords && Object.keys(conceptRecords).length > 0 && (
+            <div className="mb-8 w-full">
+              <h3 className="text-xl font-bold mb-4">
+                Recaudación por concepto{" "}
+                <span className="text-xs font-medium text-gray-500">
+                  En comparación al mes anterior
+                </span>
+              </h3>
+              <div className="flex justify-start flex-wrap gap-4">
+                {(showAllConceptCards
+                  ? Object.entries(conceptRecords)
+                  : Object.entries(conceptRecords).slice(0, 2)
+                ).map(([concept, records]) => (
+                  <GrowthConceptCard
+                    key={concept}
+                    concept={concept}
+                    records={records}
+                    maxMonth={year === currentYear ? currentMonthNumber : undefined}
+                  />
+                ))}
+              </div>
+              {Object.entries(conceptRecords).length > 2 && (
+                <div className="mt-4 flex justify-center">
+                  <button
+                    className="btn-primary px-4 py-2"
+                    onClick={() => setShowAllConceptCards(!showAllConceptCards)}
+                  >
+                    {showAllConceptCards ? "Mostrar menos" : "Mostrar más"}
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="mb-8 flex flex-col lg:flex-row gap-4">
             {/* Ingresos por concepto (tabla detallada) */}
             {conceptRecords && Object.keys(conceptRecords).length > 0 && (
-              <div className="mb-8 w-full lg:w-3/5">
+              <div className="mb-8 w-full">
                 <h3 className="text-xl font-bold mb-2">Ingresos por concepto</h3>
                 {Object.entries(conceptRecords).map(([concept, records]) => (
                   <details key={concept} className="mb-6 border rounded">
@@ -540,9 +574,9 @@ const PaymentSummary = () => {
                           return (
                             <tr key={m}>
                               <td className="border p-2">{monthNames[m] || m}</td>
-                              <td className="border p-2">{"$" + paid.toFixed(2)}</td>
-                              <td className="border p-2">{"$" + pending.toFixed(2)}</td>
-                              <td className="border p-2">{"$" + credit.toFixed(2)}</td>
+                              <td className="border p-2">{"$" + paid.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                              <td className="border p-2">{"$" + pending.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                              <td className="border p-2">{"$" + credit.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                               <td className="border p-2">{compliance.toFixed(2)}%</td>
                               <td className="border p-2">{delinquency.toFixed(2)}%</td>
                             </tr>
@@ -571,9 +605,9 @@ const PaymentSummary = () => {
                                   {rows}
                                   <tr>
                                     <td className="border p-2 font-bold">Total</td>
-                                    <td className="border p-2 font-bold">{"$" + totalPaid.toFixed(2)}</td>
-                                    <td className="border p-2 font-bold">{"$" + totalPending.toFixed(2)}</td>
-                                    <td className="border p-2 font-bold">{"$" + totalCredit.toFixed(2)}</td>
+                                    <td className="border p-2 font-bold">{"$" + totalPaid.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                    <td className="border p-2 font-bold">{"$" + totalPending.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                    <td className="border p-2 font-bold">{"$" + totalCredit.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                                     <td className="border p-2 font-bold">{totalCompliance.toFixed(2)}%</td>
                                     <td className="border p-2 font-bold">{totalDelinquency.toFixed(2)}%</td>
                                   </tr>
@@ -606,40 +640,6 @@ const PaymentSummary = () => {
                     </div>
                   </details>
                 ))}
-              </div>
-            )}
-            {/* Sección: Crecimiento por concepto */}
-            {conceptRecords && Object.keys(conceptRecords).length > 0 && (
-              <div className="mb-8 w-full lg:w-2/5">
-                <h3 className="text-xl font-bold mb-4">
-                  Recaudación por concepto{" "}
-                  <span className="text-xs font-medium text-gray-500">
-                    En comparación al mes anterior
-                  </span>
-                </h3>
-                <div className="flex justify-between flex-wrap gap-4">
-                  {(showAllConceptCards
-                    ? Object.entries(conceptRecords)
-                    : Object.entries(conceptRecords).slice(0, 4)
-                  ).map(([concept, records]) => (
-                    <GrowthConceptCard
-                      key={concept}
-                      concept={concept}
-                      records={records}
-                      maxMonth={year === currentYear ? currentMonthNumber : undefined}
-                    />
-                  ))}
-                </div>
-                {Object.entries(conceptRecords).length > 4 && (
-                  <div className="mt-4 flex justify-center">
-                    <button
-                      className="btn-primary px-4 py-2"
-                      onClick={() => setShowAllConceptCards(!showAllConceptCards)}
-                    >
-                      {showAllConceptCards ? "Mostrar menos" : "Mostrar más"}
-                    </button>
-                  </div>
-                )}
               </div>
             )}
           </div>
