@@ -59,7 +59,7 @@ const GrowthCard = ({ title, current, previous }: GrowthCardProps) => {
         <div className="flex items-baseline text-xl font-semibold text-indigo-600">
           {"$" + current.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           <span className="ml-2 text-sm font-medium text-gray-500">
-            desde {"$" + previous.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            - {"$" + previous.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </span>
         </div>
         <div
@@ -113,7 +113,7 @@ const GrowthRow = ({ label, current, previous }: GrowthRowProps) => {
         <div className="text-lg font-semibold text-indigo-600">
           {"$" + current.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           <span className="ml-2 text-sm font-medium text-gray-500">
-            desde {"$" + previous.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            - {"$" + previous.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </span>
         </div>
         <div
@@ -505,7 +505,7 @@ const PaymentSummary = () => {
               {Object.entries(conceptRecords).length > 2 && (
                 <div className="mt-4 flex justify-center">
                   <button
-                    className="btn-primary px-4 py-2"
+                    className="px-4 py-2 border-b border-indigo-500 text-indigo-500 bg-transparent hover:bg-indigo-300 hover:text-white"
                     onClick={() => setShowAllConceptCards(!showAllConceptCards)}
                   >
                     {showAllConceptCards ? "Mostrar menos" : "Mostrar más"}
@@ -522,7 +522,7 @@ const PaymentSummary = () => {
                 <h3 className="text-xl font-bold mb-2">Ingresos por concepto</h3>
                 {Object.entries(conceptRecords).map(([concept, records]) => (
                   <details key={concept} className="mb-6 border rounded">
-                    <summary className="cursor-pointer bg-indigo-500 px-4 py-2 text-white font-bold">
+                    <summary className="cursor-pointer bg-gray-100 px-4 py-2 text-black font-bold">
                       {concept}
                     </summary>
                     <div className="p-4">

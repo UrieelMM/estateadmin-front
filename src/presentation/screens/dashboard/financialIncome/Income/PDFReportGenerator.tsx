@@ -552,12 +552,14 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({
   };
 
   return (
-    <button
+    <div className="w-full flex justify-end">
+      <button
       onClick={generatePDF}
-      className="bg-indigo-600 text-white py-2 px-4 rounded w-full font-bold"
+      className="bg-indigo-600 text-white py-2 px-4 rounded w-full lg:w-[300px] font-bold hover:bg-indigo-500"
     >
       {concept ? `Generar reporte para ${concept}` : "Generar reporte General"}
     </button>
+    </div>
   );
 };
 

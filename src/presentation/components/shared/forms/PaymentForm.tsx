@@ -391,15 +391,18 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                                           {`${charge.concept} | Mes: ${charge.month || "Sin mes"} | Monto: $${charge.amount}`}
                                         </span>
                                         {isChecked && (
-                                          <input
-                                            type="number"
-                                            min="0"
-                                            step="any"
-                                            className="w-18 rounded-md border-gray-300"
-                                            placeholder="Monto a aplicar"
-                                            value={selectedCharges.find((sc) => sc.chargeId === charge.id)?.amount || ""}
-                                            onChange={(e) => handleAmountChange(charge.id, Number(e.target.value))}
-                                          />
+                                          <div className="relative">
+                                            <span className="absolute left-2 top-1">$</span>
+                                            <input
+                                              type="number"
+                                              min="0"
+                                              step="any"
+                                              className="w-18 rounded-md border-gray-300 pl-5 h-8"
+                                              placeholder="Monto a aplicar"
+                                              value={selectedCharges.find((sc) => sc.chargeId === charge.id)?.amount || ""}
+                                              onChange={(e) => handleAmountChange(charge.id, Number(e.target.value))}
+                                            />
+                                          </div>
                                         )}
                                       </div>
                                     );
@@ -407,7 +410,7 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                                 </div>
                                 <div className="mt-2">
                                   <span className="text-sm font-bold">
-                                    Saldo restante: ${remainingEffective.toFixed(2)}
+                                    Saldo restante a aplicar: ${remainingEffective.toFixed(2)}
                                   </span>
                                 </div>
                               </div>
