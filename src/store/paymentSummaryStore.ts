@@ -99,7 +99,7 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>((set) => ({
         throw new Error("Condominio no seleccionado");
       }
 
-      // Obtener datos del cliente (administradora) desde clients/${clientId}
+      // Obtener datos del cliente (administradora)
       const clientDocRef = doc(db, "clients", clientId);
       const clientDocSnap = await getDoc(clientDocRef);
       let adminCompany = "";
@@ -141,7 +141,7 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>((set) => ({
       const totalCondominiums = users.length;
 
       const paymentRecords: PaymentRecord[] = [];
-      // Contadores por mes: total de cargos y cargos pagados (para estadísticas mensuales)
+      // Contadores por mes para cargos y cargos pagados (para estadísticas mensuales)
       const chargeCount: Record<string, number> = {};
       const paidChargeCount: Record<string, number> = {};
       for (let i = 1; i <= 12; i++) {
@@ -160,7 +160,7 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>((set) => ({
         const chargesSnapshot = await getDocs(chargesRef);
         for (const chargeDoc of chargesSnapshot.docs) {
           const chargeData = chargeDoc.data();
-          // Se consideran los cargos que tengan startAt y pertenezcan al año seleccionado
+          // Considerar solo cargos con startAt del año seleccionado
           if (!chargeData.startAt || typeof chargeData.startAt !== "string") continue;
           if (!chargeData.startAt.startsWith(year || new Date().getFullYear().toString()))
             continue;
@@ -173,29 +173,35 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>((set) => ({
             paidChargeCount[monthCode] = (paidChargeCount[monthCode] || 0) + 1;
           }
 
-          // 3. Agregar los datos de la subcolección de payments (si existen) de forma agregada
+          // 3. Agregar datos de la subcolección de payments (si existen)
           const paymentsRef = collection(
             db,
             `clients/${clientId}/condominiums/${condominiumId}/users/${userObj.id}/charges/${chargeDoc.id}/payments`
           );
           const paymentsSnapshot = await getDocs(paymentsRef);
           let totalAmountPaid = 0;
-          let totalAmountPending = 0;
+          let totalAmountPendingFromPayments = 0;
           let totalCreditBalance = 0;
           paymentsSnapshot.forEach((paymentDoc) => {
             const paymentData = paymentDoc.data();
             totalAmountPaid += parseFloat(paymentData.amountPaid) || 0;
-            totalAmountPending += parseFloat(paymentData.amountPending) || 0;
+            totalAmountPendingFromPayments += parseFloat(paymentData.amountPending) || 0;
             totalCreditBalance += parseFloat(paymentData.creditBalance) || 0;
           });
-          // Si no hay registros de payments, se crean con valores 0 para que el cargo se cuente
+          // Si el cargo NO está pagado, se debe usar el monto pendiente declarado en chargeData (campo "amount")
+          // Asumimos que chargeData.amount contiene el monto total a recaudar para ese cargo
+          const pendingAmount =
+            chargeData.paid === false
+              ? parseFloat(chargeData.amount) || 0
+              : totalAmountPendingFromPayments;
+
           const record: PaymentRecord = {
-            id: chargeDoc.id, // Se puede usar el id del cargo
+            id: chargeDoc.id,
             clientId,
             numberCondominium,
             month: monthCode,
             amountPaid: totalAmountPaid,
-            amountPending: totalAmountPending,
+            amountPending: pendingAmount,
             concept: chargeData.concept || "Desconocido",
             creditBalance: totalCreditBalance,
             paid: chargeData.paid === true,
@@ -214,10 +220,13 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>((set) => ({
       let totalPending = 0;
       paymentRecords.forEach((pr) => {
         chartData[pr.month].paid += pr.amountPaid;
-        chartData[pr.month].pending += pr.amountPending;
+        // Solo se suma pendiente de cargos no pagados
+        if (!pr.paid) {
+          chartData[pr.month].pending += pr.amountPending;
+          totalPending += pr.amountPending;
+        }
         chartData[pr.month].saldo += pr.creditBalance;
         totalIncome += pr.amountPaid;
-        totalPending += pr.amountPending;
       });
 
       // 5. Construir el array de estadísticas mensuales (monthlyStats)
@@ -267,7 +276,7 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>((set) => ({
         totalPending,
         detailed,
         conceptRecords,
-        comparativePercentages: {}, // Se puede calcular a partir de monthlyStats si se requiere
+        comparativePercentages: {},
         monthlyStats,
         totalCondominiums,
         adminCompany,

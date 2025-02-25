@@ -2,7 +2,8 @@
 import React from "react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { PaymentRecord } from "../../../../../store/paymentSummaryStore";
+import { PaymentRecord, MonthlyStat, usePaymentSummaryStore } from "../../../../../store/paymentSummaryStore";
+import useUserStore from "../../../../../store/UserDataStore";
 
 interface Condominium {
   number: string;
@@ -11,41 +12,21 @@ interface Condominium {
 
 export interface PDFReportGeneratorProps {
   year: string;
-  totalIncome: number;
-  totalPending: number;
-  maxMonth: string;
-  minMonth: string;
-  monthlyStats: Array<{
-    month: string; // en formato "01", "02", etc.
-    paid: number;
-    pending: number;
-    saldo: number; // Saldo a favor (suma de creditBalance)
-    complianceRate: number;
-    delinquencyRate: number;
-  }>;
-  detailed: Record<
-    string,
-    Array<{
-      month: string; // se espera "YYYY-MM" o "MM"
-      amountPaid: number;
-      amountPending: number;
-      creditBalance?: number;
-      concept?: string;
-    }>
-  >;
-  allCondominiums: Condominium[];
-  logoBase64: string;
-  signatureBase64: string;
-  adminCompany: string; // Administradora: companyName
-  adminPhone: string; // Teléfono: phoneNumber
-  adminEmail: string; // Contacto: email
-
-  // Propiedades opcionales para reporte individual por concepto
   concept?: string;
-  conceptData?: PaymentRecord[];
-
-  // Propiedad opcional para reporte general: ingresos por concepto
+  totalIncome?: number;
+  totalPending?: number;
+  monthlyStats?: MonthlyStat[];
+  detailed?: Record<string, PaymentRecord[]>;
+  maxMonth?: string;
+  minMonth?: string;
+  logoBase64?: string;
+  signatureBase64?: string;
+  adminCompany?: string;
+  adminPhone?: string;
+  adminEmail?: string;
   conceptRecords?: Record<string, PaymentRecord[]>;
+  allCondominiums?: Condominium[];
+  conceptData?: PaymentRecord[];
 }
 
 const monthNames: Record<string, string> = {
@@ -63,24 +44,42 @@ const monthNames: Record<string, string> = {
   "12": "Diciembre",
 };
 
-const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({
-  year,
-  totalIncome,
-  totalPending,
-  maxMonth,
-  minMonth,
-  monthlyStats,
-  detailed,
-  allCondominiums,
-  logoBase64,
-  signatureBase64,
-  adminCompany,
-  adminPhone,
-  adminEmail,
-  concept,      // opcional
-  conceptData,  // opcional
-  conceptRecords, // opcional
-}) => {
+const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({ year, concept }) => {
+  // Obtener datos del store
+  const {
+    totalIncome,
+    totalPending,
+    monthlyStats,
+    detailed,
+    logoBase64,
+    signatureBase64,
+    adminCompany,
+    adminPhone,
+    adminEmail,
+    conceptRecords,
+  } = usePaymentSummaryStore((state) => ({
+    totalIncome: state.totalIncome,
+    totalPending: state.totalPending,
+    monthlyStats: state.monthlyStats,
+    detailed: state.detailed,
+    logoBase64: state.logoBase64,
+    signatureBase64: state.signatureBase64,
+    adminCompany: state.adminCompany,
+    adminPhone: state.adminPhone,
+    adminEmail: state.adminEmail,
+    conceptRecords: state.conceptRecords,
+  }));
+
+  // Obtener los condominios desde el store de usuarios
+  const condominiumsUsers = useUserStore((state) => state.condominiumsUsers);
+  const allCondominiums: Condominium[] = condominiumsUsers.map((user) => ({
+    number: String(user.number),
+    name: user.name,
+  }));
+
+  // Si se pasa un concepto, obtener la data correspondiente del store
+  const computedConceptData: PaymentRecord[] | undefined = concept ? conceptRecords[concept] : undefined;
+
   const generatePDF = () => {
     const doc = new jsPDF();
 
@@ -92,18 +91,40 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({
         maximumFractionDigits: 2,
       }).format(value);
 
-    // --- Encabezado (Logo y Datos Generales) ---
-    doc.addImage(logoBase64, "PNG", 160, 10, 30, 30);
-    doc.setFontSize(14);
-
-    if (concept) {
-      // Reporte individual por concepto
-      doc.text(`Reporte de ingresos - Concepto: ${concept}`, 14, 20);
-    } else {
-      // Reporte general
-      doc.text("Reporte general de ingresos", 14, 20);
+    // --- Cálculo de mes con mayor y menor ingresos ---
+    const sortedMonthlyStats = [...monthlyStats].sort((a, b) => parseInt(a.month) - parseInt(b.month));
+    const now = new Date();
+    const currentYear = now.getFullYear().toString();
+    const currentMonthNumber = now.getMonth() + 1;
+    const currentStats: MonthlyStat[] =
+      year === currentYear
+        ? sortedMonthlyStats.filter((stat) => parseInt(stat.month) <= currentMonthNumber)
+        : sortedMonthlyStats;
+    const nonZeroStats = currentStats.filter((stat) => stat.paid > 0);
+    let computedMinMonth = "";
+    let computedMaxMonth = "";
+    if (currentStats.length > 0) {
+      if (nonZeroStats.length > 0) {
+        const sortedByPaidAsc = [...nonZeroStats].sort((a, b) => a.paid - b.paid);
+        computedMinMonth = monthNames[sortedByPaidAsc[0].month] || sortedByPaidAsc[0].month;
+        const sortedByPaidDesc = [...nonZeroStats].sort((a, b) => b.paid - a.paid);
+        computedMaxMonth = monthNames[sortedByPaidDesc[0].month] || sortedByPaidDesc[0].month;
+      } else {
+        const sortedByPaidAsc = [...currentStats].sort((a, b) => a.paid - b.paid);
+        computedMinMonth = monthNames[sortedByPaidAsc[0].month] || sortedByPaidAsc[0].month;
+        const sortedByPaidDesc = [...currentStats].sort((a, b) => b.paid - a.paid);
+        computedMaxMonth = monthNames[sortedByPaidDesc[0].month] || sortedByPaidDesc[0].month;
+      }
     }
 
+    // --- Encabezado: Logo y Datos Generales ---
+    doc.addImage(logoBase64, "PNG", 160, 10, 30, 30);
+    doc.setFontSize(14);
+    if (concept) {
+      doc.text(`Reporte de ingresos - Concepto: ${concept}`, 14, 20);
+    } else {
+      doc.text("Reporte general de ingresos", 14, 20);
+    }
     doc.setFontSize(12);
     const reportDate = new Date().toLocaleString();
     doc.setFont("helvetica", "bold");
@@ -131,28 +152,27 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({
       doc.setFont("helvetica", "bold");
       doc.text("Mes con mayor ingresos:", 14, 70);
       doc.setFont("helvetica", "normal");
-      doc.text(maxMonth, 14 + doc.getTextWidth("Mes con mayor ingresos:") + 5, 70);
+      doc.text(computedMaxMonth, 14 + doc.getTextWidth("Mes con mayor ingresos:") + 5, 70);
 
       doc.setFont("helvetica", "bold");
       doc.text("Mes con menor ingresos:", 14, 80);
       doc.setFont("helvetica", "normal");
-      doc.text(minMonth, 14 + doc.getTextWidth("Mes con menor ingresos:") + 5, 80);
+      doc.text(computedMinMonth, 14 + doc.getTextWidth("Mes con menor ingresos:") + 5, 80);
     }
 
-    if (concept && conceptData) {
-      // --- Reporte individual por concepto ---
-      const monthKeys = [
-        "01", "02", "03", "04", "05", "06",
-        "07", "08", "09", "10", "11", "12",
-      ];
+    // --- Reporte Individual por Concepto ---
+    if (concept && computedConceptData) {
+      const monthKeys = ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"];
       let totalPaid = 0,
         totalPendingConcept = 0,
         totalCredit = 0;
       let globalTotalRecords = 0,
         globalPaidRecords = 0;
       const rows = monthKeys.map((m) => {
-        let paid = 0, pending = 0, credit = 0;
-        const recsForMonth = conceptData.filter((rec) => {
+        let paid = 0,
+          pending = 0,
+          credit = 0;
+        const recsForMonth = computedConceptData.filter((rec) => {
           let recMonth = rec.month;
           if (recMonth.includes("-")) {
             recMonth = recMonth.split("-")[1];
@@ -162,7 +182,7 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({
         recsForMonth.forEach((rec) => {
           paid += rec.amountPaid;
           pending += rec.amountPending;
-          credit += rec.creditBalance || 0;
+          credit += rec.creditBalance;
         });
         totalPaid += paid;
         totalPendingConcept += pending;
@@ -182,8 +202,7 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({
           delinquency.toFixed(2) + "%",
         ];
       });
-      const totalCompliance =
-        globalTotalRecords > 0 ? (globalPaidRecords / globalTotalRecords) * 100 : 0;
+      const totalCompliance = globalTotalRecords > 0 ? (globalPaidRecords / globalTotalRecords) * 100 : 0;
       const totalDelinquency = 100 - totalCompliance;
       rows.push([
         "Total",
@@ -216,21 +235,17 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({
         },
       });
 
-      // Ordenar condóminos de forma natural
+      // Detalle por condomino filtrado por concepto
       const sortedCondominiums = [...allCondominiums].sort((a, b) =>
         a.number.localeCompare(b.number, undefined, { numeric: true })
       );
-      // Detalle por condomino filtrado por concepto
       let currentY = (doc as any).lastAutoTable
         ? (doc as any).lastAutoTable.finalY + 10
         : 95;
       sortedCondominiums.forEach((cond) => {
         const condDataFull = detailed[cond.number] || [];
         const condData = condDataFull.filter((item) => item.concept === concept);
-        const monthKeys = [
-          "01", "02", "03", "04", "05", "06",
-          "07", "08", "09", "10", "11", "12",
-        ];
+        const monthKeys = ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"];
         let totalPaidCond = 0,
           totalPendingCond = 0,
           totalCreditCond = 0;
@@ -244,7 +259,7 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({
           });
           const amountPaid = recordsForMonth.reduce((sum: number, r) => sum + r.amountPaid, 0);
           const amountPending = recordsForMonth.reduce((sum: number, r) => sum + r.amountPending, 0);
-          const creditBalance = recordsForMonth.reduce((sum: number, r) => sum + (r.creditBalance || 0), 0);
+          const creditBalance = recordsForMonth.reduce((sum: number, r) => sum + r.creditBalance, 0);
           totalPaidCond += amountPaid;
           totalPendingCond += amountPending;
           totalCreditCond += creditBalance;
@@ -287,7 +302,6 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({
       });
     } else {
       // --- Reporte General ---
-      // 1. Tabla comparativa global mes a mes (se modifica para incluir los % totales)
       const compRows = monthlyStats.map((stat) => [
         monthNames[stat.month] || stat.month,
         formatCurrency(stat.paid),
@@ -304,16 +318,13 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({
         totalPendingGlobal += stat.pending;
         totalSaldoGlobal += stat.saldo;
       });
-      // Calcular promedios de porcentajes (simple promedio de los 12 meses)
       const avgCompliance =
         monthlyStats.length > 0
-          ? monthlyStats.reduce((sum, stat) => sum + stat.complianceRate, 0) /
-            monthlyStats.length
+          ? monthlyStats.reduce((sum, stat) => sum + stat.complianceRate, 0) / monthlyStats.length
           : 0;
       const avgDelinquency =
         monthlyStats.length > 0
-          ? monthlyStats.reduce((sum, stat) => sum + stat.delinquencyRate, 0) /
-            monthlyStats.length
+          ? monthlyStats.reduce((sum, stat) => sum + stat.delinquencyRate, 0) / monthlyStats.length
           : 0;
       compRows.push([
         "Total",
@@ -324,7 +335,6 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({
         avgDelinquency.toFixed(2) + "%",
       ]);
 
-      // ----- NUEVO: Texto "Ingresos totales" antes de la primera tabla -----
       doc.setFont("helvetica", "bold");
       doc.setFontSize(12);
       doc.text("Ingresos totales", 14, 90);
@@ -351,7 +361,6 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({
         },
       });
 
-      // ----- NUEVO: Texto explicativo justo abajo de la primera tabla -----
       const afterTableY = (doc as any).lastAutoTable
         ? (doc as any).lastAutoTable.finalY + 5
         : 100;
@@ -363,7 +372,6 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({
         afterTableY
       );
 
-      // 2. Ingresos por concepto: se generan tablas por cada concepto
       let currentY = (doc as any).lastAutoTable
         ? (doc as any).lastAutoTable.finalY + 15
         : 95;
@@ -373,10 +381,7 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({
           doc.setFont("helvetica", "bold");
           doc.text(`Ingresos - Concepto: ${conceptKey}`, 14, currentY);
           currentY += 6;
-          const monthKeys = [
-            "01", "02", "03", "04", "05", "06",
-            "07", "08", "09", "10", "11", "12",
-          ];
+          const monthKeys = ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"];
           let totalPaidConcept = 0,
             totalPendingConcept = 0,
             totalCreditConcept = 0;
@@ -421,14 +426,7 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({
           autoTable(doc, {
             startY: currentY,
             head: [
-              [
-                "Mes",
-                "Monto Abonado",
-                "Monto Pendiente",
-                "Saldo a favor",
-                "% Cumplimiento",
-                "% Morosidad",
-              ],
+              ["Mes", "Monto Abonado", "Monto Pendiente", "Saldo a favor", "% Cumplimiento", "% Morosidad"],
             ],
             body: rows,
             headStyles: { fillColor: [75, 68, 224], textColor: 255, fontStyle: "bold" },
@@ -445,8 +443,6 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({
         });
       }
 
-      // 3. Detalle por condomino para el reporte general...
-      // Ordenar los condominios de forma natural
       const sortedCondominiums = [...allCondominiums].sort((a, b) =>
         a.number.localeCompare(b.number, undefined, { numeric: true })
       );
@@ -459,12 +455,8 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({
           currentY
         );
         currentY += 6;
-
         const condData = detailed[cond.number] || [];
-        const monthKeys = [
-          "01", "02", "03", "04", "05", "06",
-          "07", "08", "09", "10", "11", "12",
-        ];
+        const monthKeys = ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"];
         let totalPaidCond = 0,
           totalPendingCond = 0,
           totalCreditCond = 0;
@@ -482,12 +474,7 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({
           totalPaidCond += amountPaid;
           totalPendingCond += amountPending;
           totalCreditCond += creditBalance;
-          return [
-            monthNames[m],
-            formatCurrency(amountPaid),
-            formatCurrency(amountPending),
-            formatCurrency(creditBalance),
-          ];
+          return [monthNames[m], formatCurrency(amountPaid), formatCurrency(amountPending), formatCurrency(creditBalance)];
         });
         rows.push([
           "Total",
@@ -513,7 +500,7 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({
       });
     }
 
-    // --- Nueva página para la firma y datos de la administradora ---
+    // --- Nueva página para firma y datos de la administradora ---
     doc.addPage();
     const pageHeight = doc.internal.pageSize.height;
     const margin = 14;
@@ -554,11 +541,11 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({
   return (
     <div className="w-full flex justify-end">
       <button
-      onClick={generatePDF}
-      className="bg-indigo-600 text-white py-2 px-4 rounded w-full lg:w-[300px] font-bold hover:bg-indigo-500"
-    >
-      {concept ? `Generar reporte para ${concept}` : "Generar reporte General"}
-    </button>
+        onClick={generatePDF}
+        className="bg-indigo-600 text-white py-2 px-4 rounded w-full lg:w-[300px] font-bold hover:bg-indigo-500"
+      >
+        {concept ? `Generar reporte para ${concept}` : "Generar reporte General"}
+      </button>
     </div>
   );
 };

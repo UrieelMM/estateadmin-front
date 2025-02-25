@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useState } from "react";
+import { Fragment, useEffect, useState} from "react";
 import { Transition, Dialog } from "@headlessui/react";
 import { PhotoIcon, XMarkIcon } from "@heroicons/react/16/solid";
 import useUserStore from "../../../../store/UserDataStore";
@@ -6,6 +6,9 @@ import { UserData } from "../../../../interfaces/UserData";
 import { usePaymentStore } from "../../../../store/usePaymentStore";
 import { useDropzone } from "react-dropzone";
 import toast from "react-hot-toast";
+import { usePaymentSummaryStore } from "../../../../store/paymentSummaryStore";
+
+ 
 
 interface FormParcelReceptionProps {
   open: boolean;
@@ -17,13 +20,6 @@ interface SelectedCharge {
   amount: number;
 }
 
-/**
- * Este componente registra pagos permitiendo distribuir un monto entre cargos.
- * Si se usa saldo a favor, se considera el total efectivo = monto abonado + crédito disponible.
- * La validación se realiza en función de:
- * - Si se usa crédito: la suma asignada debe ser igual a (monto abonado + crédito disponible).
- * - De lo contrario: debe ser igual a monto abonado.
- */
 const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
   const [users, setUsers] = useState<UserData[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
@@ -55,6 +51,11 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
 
   // Estado para cargos seleccionados (multi-cargo o único)
   const [selectedCharges, setSelectedCharges] = useState<SelectedCharge[]>([]);
+
+  // Importamos fetchSummary y selectedYear desde el store de PaymentSummary,
+  // para que al registrar un pago podamos actualizar ese componente.
+  const fetchSummary = usePaymentSummaryStore((state) => state.fetchSummary);
+  const selectedYear = usePaymentSummaryStore((state) => state.selectedYear);
 
   useEffect(() => {
     fetchCondominiumsUsers();
@@ -108,7 +109,7 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
     event.preventDefault();
     setLoading(true);
 
-    // Validar campos obligatorios
+    // Validaciones
     if (!amountPaid && !useCreditBalance) {
       toast.error("El campo 'monto abonado' es obligatorio.");
       setLoading(false);
@@ -130,9 +131,6 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
       return;
     }
 
-    // Validar que la suma asignada sea la esperada:
-    // Si se usa crédito, se espera que totalAssigned sea igual al effectiveTotal.
-    // De lo contrario, totalAssigned debe igualar al monto abonado.
     if (useCreditBalance) {
       if (Number(effectiveTotal).toFixed(2) !== Number(totalAssigned).toFixed(2)) {
         toast.error(
@@ -149,7 +147,6 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
       }
     }
 
-    // Validar que, si se quiere usar saldo a favor, el usuario tenga crédito disponible
     if (useCreditBalance && (!selectedUser?.totalCreditBalance || Number(selectedUser.totalCreditBalance) <= 0)) {
       toast.error("No tienes saldo a favor disponible.");
       setLoading(false);
@@ -187,6 +184,9 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
       setOpen(false);
       setLoading(false);
       toast.success("Pago registrado correctamente");
+
+      // Actualizar PaymentSummary invocando fetchSummary (para el año seleccionado)
+      fetchSummary(selectedYear);
     } catch (error) {
       setLoading(false);
       console.error(error);
@@ -276,7 +276,6 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                                 </select>
                               </div>
                             </div>
-
                             {/* Monto abonado */}
                             <div>
                               <label htmlFor="amountPaid" className="block text-sm font-medium leading-6 text-gray-900">
@@ -296,7 +295,6 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                                 </div>
                               </div>
                             </div>
-
                             {/* Tipo de pago */}
                             <div>
                               <label htmlFor="paymentType" className="block text-sm font-medium leading-6 text-gray-900">
@@ -317,7 +315,6 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                                 </select>
                               </div>
                             </div>
-
                             {/* Monto pendiente */}
                             <div>
                               <label htmlFor="amountPending" className="block text-sm font-medium leading-6 text-gray-900">
@@ -337,8 +334,7 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                                 </div>
                               </div>
                             </div>
-
-                            {/* Sección para usar saldo a favor (solo si hay crédito disponible) */}
+                            {/* Saldo a favor */}
                             {selectedUser && Number(selectedUser.totalCreditBalance) > 0 && (
                               <div>
                                 <label className="block text-sm font-medium leading-6 text-gray-900">
@@ -370,8 +366,7 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                                 </div>
                               </div>
                             )}
-
-                            {/* Lista de cargos pendientes para selección múltiple */}
+                            {/* Lista de cargos pendientes */}
                             {numberCondominium && charges.length > 0 && (
                               <div>
                                 <label className="block text-sm font-medium leading-6 text-gray-900">
@@ -415,8 +410,7 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                                 </div>
                               </div>
                             )}
-
-                            {/* Dropzone para archivo */}
+                            {/* Dropzone */}
                             <div {...getRootProps()} className="mt-12 h-auto flex items-center justify-center rounded-lg border border-dashed border-gray-900/25 px-6 py-4">
                               <input {...getInputProps()} />
                               <div className="text-center">
@@ -433,7 +427,6 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                                 <p className="text-xs leading-5 text-gray-600">Hasta 10MB</p>
                               </div>
                             </div>
-
                             {/* Comentarios */}
                             <div>
                               <label htmlFor="comments" className="block text-sm font-medium leading-6 text-gray-900">
@@ -454,7 +447,6 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                         </div>
                       </div>
                     </div>
-
                     {/* Botones de acción */}
                     <div className="flex flex-shrink-0 justify-end px-4 py-4">
                       <button
