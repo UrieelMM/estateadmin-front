@@ -312,6 +312,7 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                                   <option value="Transferencia">Transferencia</option>
                                   <option value="Efectivo">Efectivo</option>
                                   <option value="Tarjeta">Tarjeta</option>
+                                  <option value="Tarjeta">Depósito</option>
                                 </select>
                               </div>
                             </div>

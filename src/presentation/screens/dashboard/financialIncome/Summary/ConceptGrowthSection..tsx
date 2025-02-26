@@ -138,7 +138,7 @@ const ConceptGrowthSection: React.FC = React.memo(() => {
   return (
     <div className="mb-8 w-full">
       <h3 className="text-xl font-bold mb-4">
-        Recaudación por concepto - Estadísticas Adicionales
+        Recaudación por concepto - (Mes Actual)
       </h3>
 
       {/* Bloque de estadísticas adicionales */}
@@ -171,7 +171,7 @@ const ConceptGrowthSection: React.FC = React.memo(() => {
 
       {/* Gráfica de pastel para distribución de recaudación (mes actual) */}
       <h4 className="text-lg font-bold mb-2">
-        Distribución de Recaudación (Mes Actual)
+        Distribución de recaudación
       </h4>
       <div style={{ width: "100%", height: 300 }}>
         <ResponsiveContainer>

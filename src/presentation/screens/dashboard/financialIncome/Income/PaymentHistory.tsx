@@ -1,20 +1,32 @@
 // src/components/PaymentHistory.tsx
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { usePaymentHistoryStore, PaymentRecord } from "../../../../../store/paymentHistoryStore";
 import useUserStore from "../../../../../store/UserDataStore";
 import {
-  BarChart,
-  Bar,
+  LineChart,
+  Line,
   XAxis,
   YAxis,
   Tooltip,
   ResponsiveContainer,
   Legend,
+  CartesianGrid,
 } from "recharts";
 import LoadingApp from "../../../../components/shared/loaders/LoadingApp";
 import PDFReportGeneratorSingle from "./PDFReportGeneratorSingle";
 
+const chartColors = ["#8093E8", "#74B9E7", "#A7CFE6", "#B79FE6", "#C2ABE6"];
+
+/**
+ * Formato de moneda: $2,500.00
+ */
+const formatCurrency = (value: number): string => {
+  return "$" + value.toLocaleString("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+};
 
 const PaymentHistory = () => {
   const [selectedUserUid, setSelectedUserUid] = useState<string>("");
@@ -28,13 +40,12 @@ const PaymentHistory = () => {
   const {
     payments,
     detailed,
-    detailedByConcept, // <-- nuevo: para reporte por concepto
+    detailedByConcept,
     loading,
     error,
     selectedYear,
     fetchPayments,
     setSelectedYear,
-    // Datos de la administradora y base64
     adminCompany,
     adminPhone,
     adminEmail,
@@ -66,27 +77,12 @@ const PaymentHistory = () => {
     }
   };
 
-  // Reconsultar historial si cambia el condomino o el año
+  // Reconsultar historial si cambia el condómino o el año
   useEffect(() => {
     if (selectedCondominiumNumber && selectedYear) {
       fetchPayments(selectedCondominiumNumber, selectedYear);
     }
   }, [selectedCondominiumNumber, selectedYear, fetchPayments]);
-
-  // Preparar datos para la gráfica: agrupar por mes (se extrae el mes de "YYYY-MM")
-  const chartData = payments.reduce(
-    (acc: Record<string, { paid: number; pending: number; saldo: number }>, payment: PaymentRecord) => {
-      const month = payment.month.split("-")[1]; // ej: "01"
-      if (!acc[month]) {
-        acc[month] = { paid: 0, pending: 0, saldo: 0 };
-      }
-      acc[month].paid += payment.amountPaid;
-      acc[month].pending += payment.amountPending;
-      acc[month].saldo += payment.creditBalance;
-      return acc;
-    },
-    {}
-  );
 
   const monthNames: Record<string, string> = {
     "01": "Enero",
@@ -103,13 +99,66 @@ const PaymentHistory = () => {
     "12": "Diciembre",
   };
 
+  // Preparar datos para la gráfica: agrupar por mes (YYYY-MM) => { paid, pending, saldo }
+  const chartData = payments.reduce(
+    (
+      acc: Record<string, { paid: number; pending: number; saldo: number }>,
+      payment: PaymentRecord
+    ) => {
+      // Si payment.month incluye "YYYY-", dividimos
+      let [yearPart, monthPart] = ["", ""];
+      if (payment.month.includes("-")) {
+        [yearPart, monthPart] = payment.month.split("-");
+      } else {
+        // O a veces solo "MM"
+        monthPart = payment.month;
+      }
+
+      if (!acc[monthPart]) {
+        acc[monthPart] = { paid: 0, pending: 0, saldo: 0 };
+      }
+      acc[monthPart].paid += payment.amountPaid;
+      acc[monthPart].pending += payment.amountPending;
+      acc[monthPart].saldo += payment.creditBalance;
+      return acc;
+    },
+    {}
+  );
+
+  // Convertimos el objeto en un array ordenado por mes
   const chartArray = Object.entries(chartData)
     .sort((a, b) => parseInt(a[0]) - parseInt(b[0]))
     .map(([month, data]) => ({
       month: monthNames[month] || month,
-      ...data,
+      paid: data.paid,
+      pending: data.pending,
+      saldo: data.saldo,
     }));
 
+  // Cálculos interesantes: totalPaid, totalPending, totalSaldo, etc.
+  const { totalPaidYear, totalPendingYear, totalSaldoYear, bestMonthName } = useMemo(() => {
+    let totalPaidYear = 0;
+    let totalPendingYear = 0;
+    let totalSaldoYear = 0;
+    let monthMaxIndex = -1;
+    let maxPaid = 0;
+
+    chartArray.forEach((item, idx) => {
+      totalPaidYear += item.paid;
+      totalPendingYear += item.pending;
+      totalSaldoYear += item.saldo;
+      // Mes con mayor "paid"
+      if (item.paid > maxPaid) {
+        maxPaid = item.paid;
+        monthMaxIndex = idx;
+      }
+    });
+
+    const bestMonthName = monthMaxIndex !== -1 ? chartArray[monthMaxIndex].month : "N/A";
+    return { totalPaidYear, totalPendingYear, totalSaldoYear, bestMonthName };
+  }, [chartArray]);
+
+  // Obtenemos el condómino seleccionado (para el PDF)
   const selectedCondo = condominiumsUsers.find((u) => u.uid === selectedUserUid);
 
   return (
@@ -117,14 +166,14 @@ const PaymentHistory = () => {
       {/* Filtros: Selección de Condomino y Año */}
       <div className="flex flex-col gap-4 mb-4 mt-6">
         <div>
-          <h2 className="text-xl font-bold mb-4">Resumen individual por condomino</h2>
-          <label className="block font-medium mb-1">Selecciona un Condomino</label>
+          <h2 className="text-xl font-bold mb-4">Resumen individual por condómino</h2>
+          <label className="block font-medium mb-1">Selecciona un Condómino</label>
           <select
             value={selectedUserUid}
             onChange={handleUserChange}
             className="border border-gray-300 rounded p-2 w-full"
           >
-            <option value="">-- Selecciona un condomino --</option>
+            <option value="">-- Selecciona un condómino --</option>
             {condominiumsUsers
               .filter(
                 (user) =>
@@ -158,20 +207,79 @@ const PaymentHistory = () => {
       {loading && <LoadingApp />}
       {error && <p className="text-red-500">Error: {error}</p>}
 
-      {/* Gráfica: Resumen por Mes */}
-      <div className="mt-8">
-        <h3 className="text-xl font-semibold mb-2">Resumen por Mes</h3>
+      {/* 
+        Tarjetas con datos interesantes del año 
+        Ejemplo: total pagado, total pendiente, saldo total, mes con mayor recaudación
+      */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <div className="p-4 shadow-md rounded-md">
+          <p className="text-sm text-gray-600">Total Pagado en el Año</p>
+          <p className="text-2xl font-semibold">
+            {formatCurrency(totalPaidYear)}
+          </p>
+        </div>
+        <div className="p-4 shadow-md rounded-md">
+          <p className="text-sm text-gray-600">Total Pendiente</p>
+          <p className="text-2xl font-semibold">
+            {formatCurrency(totalPendingYear)}
+          </p>
+        </div>
+        <div className="p-4 shadow-md rounded-md">
+          <p className="text-sm text-gray-600">Saldo a favor total</p>
+          <p className="text-2xl font-semibold">
+            {formatCurrency(totalSaldoYear)}
+          </p>
+        </div>
+        <div className="p-4 shadow-md rounded-md">
+          <p className="text-sm text-gray-600">Mes con mayor recaudación</p>
+          <p className="text-2xl font-semibold">{bestMonthName}</p>
+        </div>
+      </div>
+
+      {/* Gráfica: Resumen por Mes (LineChart con 3 líneas) */}
+      <div className="mt-4">
+        <h3 className="text-xl font-semibold mb-2">Resumen por Mes (Gráfica de Líneas)</h3>
         {chartArray.length > 0 ? (
           <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={chartArray}>
+            <LineChart data={chartArray} margin={{ top: 20, right: 20, left: 0, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="month" />
-              <YAxis />
-              <Tooltip />
+              <YAxis
+                tickFormatter={(val: number) => formatCurrency(val)}
+                width={80}
+              />
+              <Tooltip formatter={(val: number) => formatCurrency(val)} />
               <Legend />
-              <Bar dataKey="paid" fill="#4D44E0" name="Monto Abonado" />
-              <Bar dataKey="pending" fill="#819CFB" name="Monto Pendiente" />
-              <Bar dataKey="saldo" fill="#9dcdfa" name="Saldo a favor" />
-            </BarChart>
+
+              {/* paid, pending, saldo con diferentes colores */}
+              <Line
+                type="monotone"
+                dataKey="paid"
+                name="Monto Abonado"
+                stroke={chartColors[0]}
+                strokeWidth={2}
+                dot={{ r: 3 }}
+                activeDot={{ r: 5 }}
+              />
+              <Line
+                type="monotone"
+                dataKey="pending"
+                name="Monto Pendiente"
+                stroke={chartColors[1]}
+                strokeWidth={2}
+                dot={{ r: 3 }}
+                activeDot={{ r: 5 }}
+              />
+              <Line
+                type="monotone"
+                dataKey="saldo"
+                name="Saldo a favor"
+                stroke={chartColors[2]}
+                strokeWidth={2}
+                dot={{ r: 3 }}
+                activeDot={{ r: 5 }}
+              />
+            </LineChart>
           </ResponsiveContainer>
         ) : (
           <p>No hay datos para mostrar en el gráfico.</p>
@@ -194,7 +302,7 @@ const PaymentHistory = () => {
           adminCompany={adminCompany}
           adminPhone={adminPhone}
           adminEmail={adminEmail}
-          // Se pasa el logo y firma desde el store, no desde utils/base64
+          // Se pasa el logo y firma desde el store
           logoBase64={logoBase64}
           signatureBase64={signatureBase64}
         />
