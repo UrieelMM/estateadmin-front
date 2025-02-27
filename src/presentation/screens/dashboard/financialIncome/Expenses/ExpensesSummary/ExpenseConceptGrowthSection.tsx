@@ -66,9 +66,9 @@ const ExpenseConceptGrowthSection: React.FC = () => {
           (Comparación Mes Actual vs. Mes Anterior)
         </span>
       </h3>
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-1 lg:flex-row lg:flex-wrap">
         {visibleConcepts.map((item) => (
-          <div key={item.concept} className="flex items-center gap-4 p-4 border rounded shadow">
+          <div key={item.concept} className="flex items-center gap-4 p-4 shadow-md rounded-md w-full lg:w-[24%]" >
             <div className="flex-1">
               <p className="text-base font-bold">{item.concept}</p>
               <p className="text-sm text-gray-500">

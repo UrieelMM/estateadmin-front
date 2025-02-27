@@ -106,9 +106,9 @@ const PaymentHistory = () => {
       payment: PaymentRecord
     ) => {
       // Si payment.month incluye "YYYY-", dividimos
-      let [yearPart, monthPart] = ["", ""];
+      let [_yearPart, monthPart] = ["", ""];
       if (payment.month.includes("-")) {
-        [yearPart, monthPart] = payment.month.split("-");
+        [_yearPart, monthPart] = payment.month.split("-");
       } else {
         // O a veces solo "MM"
         monthPart = payment.month;

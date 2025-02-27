@@ -61,7 +61,6 @@ const ExpenseSummary: React.FC = () => {
 
   return (
     <div className="p-4">
-      <h2 className="text-xl font-bold mb-4">Reporte general de Egresos</h2>
 
       {/* Selector de Año */}
       <div className="flex flex-col md:flex-row gap-4 mb-4">

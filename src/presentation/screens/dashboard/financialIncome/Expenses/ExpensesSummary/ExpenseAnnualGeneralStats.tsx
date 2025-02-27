@@ -63,7 +63,7 @@ const ExpenseAnnualGeneralStats: React.FC = () => {
 
       {/* Tarjeta (opcional) con totalSpent */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div className="p-4 border rounded shadow">
+        <div className="p-4 shadow-md rounded-md">
           <p className="text-sm text-gray-600">Total de Egresos (Año)</p>
           <p className="text-2xl font-semibold">{formatCurrency(totalSpent)}</p>
         </div>
