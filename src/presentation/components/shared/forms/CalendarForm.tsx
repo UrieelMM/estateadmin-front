@@ -3,6 +3,7 @@ import toast from "react-hot-toast";
 import { Modal } from "antd";
 import useUserStore from "../../../../store/UserDataStore";
 import { useCalendarEventsStore } from "../../../../store/useReservationStore";
+import { UserIcon, MapPinIcon, CalendarIcon, ClockIcon, PencilIcon } from "@heroicons/react/24/solid";
 
 interface CalendarEvent {
   id: string;
@@ -47,7 +48,7 @@ const FormCalendar = ({ isOpen, onClose }: FormCalendarProps) => {
 
     // Validar que se haya seleccionado un residente
     if (!selectedResidentId) {
-      toast.error("Debe seleccionar un residente.");
+      toast.error("Debe seleccionar un condomino.");
       return;
     }
 
@@ -56,7 +57,7 @@ const FormCalendar = ({ isOpen, onClose }: FormCalendarProps) => {
       (user) => user.uid === selectedResidentId
     );
     if (!resident) {
-      toast.error("Residente no encontrado.");
+      toast.error("Condomino no encontrado.");
       return;
     }
 
@@ -148,91 +149,121 @@ const FormCalendar = ({ isOpen, onClose }: FormCalendarProps) => {
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label htmlFor="resident" className="block mb-2 text-sm font-medium text-gray-900">
-                Residente
+                Condomino
               </label>
-              <select
-                id="resident"
-                value={selectedResidentId}
-                onChange={(e) => setSelectedResidentId(e.target.value)}
-                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5"
-                required
-              >
-                <option value="">Seleccione un residente</option>
-                {condominiumsUsers.map((user) => (
-                  <option key={user.uid} value={user.uid}>
-                    {user.name} - {user.number}
-                  </option>
-                ))}
-              </select>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                  <UserIcon className="h-5 w-5 text-gray-400" />
+                </div>
+                <select
+                  id="resident"
+                  value={selectedResidentId}
+                  onChange={(e) => setSelectedResidentId(e.target.value)}
+                  className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5 pl-10 placeholder:animate-pulse"
+                  required
+                >
+                  <option value="">Seleccione un condomino</option>
+                  {condominiumsUsers.map((user) => (
+                    <option key={user.uid} value={user.uid}>
+                      {user.name} - {user.number}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
             <div>
               <label htmlFor="commonArea" className="block mb-2 text-sm font-medium text-gray-900">
                 Área Común
               </label>
-              <select
-                id="commonArea"
-                value={commonArea}
-                onChange={(e) => setCommonArea(e.target.value)}
-                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5"
-                required
-              >
-                <option value="">Seleccione un área</option>
-                <option value="Salón de fiestas">Salón de fiestas</option>
-                <option value="Gimnasio">Gimnasio</option>
-                <option value="Alberca">Alberca</option>
-                <option value="Cancha de tenis">Cancha de tenis</option>
-              </select>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                  <MapPinIcon className="h-5 w-5 text-gray-400" />
+                </div>
+                <select
+                  id="commonArea"
+                  value={commonArea}
+                  onChange={(e) => setCommonArea(e.target.value)}
+                  className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5 pl-10 placeholder:animate-pulse"
+                  required
+                >
+                  <option value="">Seleccione un área</option>
+                  <option value="Salón de fiestas">Salón de fiestas</option>
+                  <option value="Gimnasio">Gimnasio</option>
+                  <option value="Alberca">Alberca</option>
+                  <option value="Cancha de tenis">Cancha de tenis</option>
+                </select>
+              </div>
             </div>
             <div>
               <label htmlFor="eventDate" className="block mb-2 text-sm font-medium text-gray-900">
                 Día del Evento
               </label>
-              <input
-                type="date"
-                id="eventDate"
-                value={eventDate}
-                onChange={(e) => setEventDate(e.target.value)}
-                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5"
-                required
-              />
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                  <CalendarIcon className="h-5 w-5 text-gray-400" />
+                </div>
+                <input
+                  type="date"
+                  id="eventDate"
+                  value={eventDate}
+                  onChange={(e) => setEventDate(e.target.value)}
+                  className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5 pl-10 placeholder:animate-pulse"
+                  required
+                />
+              </div>
             </div>
             <div>
               <label htmlFor="startTime" className="block mb-2 text-sm font-medium text-gray-900">
                 Inicio del Evento
               </label>
-              <input
-                type="time"
-                id="startTime"
-                value={startTime}
-                onChange={(e) => setStartTime(e.target.value)}
-                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5"
-                required
-              />
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                  <ClockIcon className="h-5 w-5 text-gray-400" />
+                </div>
+                <input
+                  type="time"
+                  id="startTime"
+                  value={startTime}
+                  onChange={(e) => setStartTime(e.target.value)}
+                  className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5 pl-10 placeholder:animate-pulse"
+                  required
+                />
+              </div>
             </div>
             <div>
               <label htmlFor="endTime" className="block mb-2 text-sm font-medium text-gray-900">
                 Fin del Evento
               </label>
-              <input
-                type="time"
-                id="endTime"
-                value={endTime}
-                onChange={(e) => setEndTime(e.target.value)}
-                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5"
-                required
-              />
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                  <ClockIcon className="h-5 w-5 text-gray-400" />
+                </div>
+                <input
+                  type="time"
+                  id="endTime"
+                  value={endTime}
+                  onChange={(e) => setEndTime(e.target.value)}
+                  className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5 pl-10 placeholder:animate-pulse"
+                  required
+                />
+              </div>
             </div>
             <div className="md:col-span-2">
               <label htmlFor="comments" className="block mb-2 text-sm font-medium text-gray-900">
                 Comentarios
               </label>
-              <textarea
-                id="comments"
-                value={comments}
-                onChange={(e) => setComments(e.target.value)}
-                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5"
-                placeholder="Comentarios sobre el evento (opcional)"
-              ></textarea>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                  <PencilIcon className="h-5 w-5 text-gray-400" />
+                </div>
+                <textarea
+                  id="comments"
+                  value={comments}
+                  onChange={(e) => setComments(e.target.value)}
+                  className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5 pl-10 placeholder:animate-pulse"
+                  placeholder="Comentarios sobre el evento (opcional)"
+                ></textarea>
+              </div>
             </div>
             <div className="md:col-span-2 flex justify-end gap-4">
               <button type="button" onClick={onClose} className="btn-secundary">
@@ -268,7 +299,7 @@ const FormCalendar = ({ isOpen, onClose }: FormCalendarProps) => {
         <ul className="list-disc pl-5 my-2">
           {unpaidCharges.map((charge) => (
             <li key={charge.id}>
-              Concepto: <span className="font-bold">{charge.concept}</span> Monto: <span className="font-bold">${charge.amount}</span>  
+              Concepto: <span className="font-bold">{charge.concept}</span> Monto: <span className="font-bold">${charge.amount}</span>
             </li>
           ))}
         </ul>

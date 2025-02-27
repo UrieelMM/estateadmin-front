@@ -1,14 +1,12 @@
-import { Fragment, useEffect, useState} from "react";
+import { Fragment, useEffect, useState } from "react";
 import { Transition, Dialog } from "@headlessui/react";
-import { PhotoIcon, XMarkIcon } from "@heroicons/react/16/solid";
+import { PhotoIcon, XMarkIcon, UserIcon, CurrencyDollarIcon, CreditCardIcon, ClipboardIcon } from "@heroicons/react/16/solid";
 import useUserStore from "../../../../store/UserDataStore";
 import { UserData } from "../../../../interfaces/UserData";
 import { usePaymentStore } from "../../../../store/usePaymentStore";
 import { useDropzone } from "react-dropzone";
 import toast from "react-hot-toast";
 import { usePaymentSummaryStore } from "../../../../store/paymentSummaryStore";
-
- 
 
 interface FormParcelReceptionProps {
   open: boolean;
@@ -252,12 +250,15 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                               <label htmlFor="nameRecipient" className="block text-sm font-medium leading-6 text-gray-900">
                                 Condomino
                               </label>
-                              <div className="mt-2">
+                              <div className="mt-2 relative">
+                                <div className="absolute left-2 top-1/2 flex items-center transform -translate-y-1/2">
+                                  <UserIcon className="h-5 w-5 text-gray-400" />
+                                </div>
                                 <select
                                   onChange={handleRecipientChange}
                                   name="nameRecipient"
                                   id="nameRecipient"
-                                  className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                                  className="block w-full rounded-md border-0 pl-10 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
                                   value={users.find((u) => u.number === numberCondominium)?.uid || ""}
                                 >
                                   <option value="">Selecciona un condomino</option>
@@ -281,18 +282,18 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                               <label htmlFor="amountPaid" className="block text-sm font-medium leading-6 text-gray-900">
                                 Monto abonado
                               </label>
-                              <div className="mt-2">
-                                <div className="relative">
-                                  <span className="absolute left-2 top-1">$</span>
-                                  <input
-                                    onChange={(e) => setAmountPaid(e.target.value)}
-                                    type="number"
-                                    name="amountPaid"
-                                    id="amountPaid"
-                                    className="block w-full rounded-md border-0 pl-5 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-                                    value={amountPaid}
-                                  />
+                              <div className="mt-2 relative">
+                                <div className="absolute left-2 top-1/2 flex items-center transform -translate-y-1/2">
+                                  <CurrencyDollarIcon className="h-5 w-5 text-gray-400" />
                                 </div>
+                                <input
+                                  onChange={(e) => setAmountPaid(e.target.value)}
+                                  type="number"
+                                  name="amountPaid"
+                                  id="amountPaid"
+                                  className="block w-full rounded-md border-0 pl-10 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                                  value={amountPaid}
+                                />
                               </div>
                             </div>
                             {/* Tipo de pago */}
@@ -300,19 +301,22 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                               <label htmlFor="paymentType" className="block text-sm font-medium leading-6 text-gray-900">
                                 Tipo de pago
                               </label>
-                              <div className="mt-2">
+                              <div className="mt-2 relative">
+                                <div className="absolute left-2 top-1/2 flex items-center transform -translate-y-1/2">
+                                  <CreditCardIcon className="h-5 w-5 text-gray-400" />
+                                </div>
                                 <select
                                   onChange={(e) => setPaymentType(e.target.value)}
                                   name="paymentType"
                                   id="paymentType"
-                                  className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                                  className="block w-full rounded-md border-0 pl-10 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
                                   value={paymentType}
                                 >
                                   <option value="">Selecciona un tipo de pago</option>
                                   <option value="Transferencia">Transferencia</option>
                                   <option value="Efectivo">Efectivo</option>
                                   <option value="Tarjeta">Tarjeta</option>
-                                  <option value="Tarjeta">Depósito</option>
+                                  <option value="Depósito">Depósito</option>
                                 </select>
                               </div>
                             </div>
@@ -321,18 +325,18 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                               <label htmlFor="amountPending" className="block text-sm font-medium leading-6 text-gray-900">
                                 Monto pendiente
                               </label>
-                              <div className="mt-2">
-                                <div className="relative">
-                                  <span className="absolute left-2 top-1">$</span>
-                                  <input
-                                    onChange={(e) => setAmountPending(e.target.value)}
-                                    type="number"
-                                    name="amountPending"
-                                    id="amountPending"
-                                    className="block w-full rounded-md border-0 pl-5 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-                                    value={amountPending}
-                                  />
+                              <div className="mt-2 relative">
+                                <div className="absolute left-2 top-1/2 flex items-center transform -translate-y-1/2">
+                                  <ClipboardIcon className="h-5 w-5 text-gray-400" />
                                 </div>
+                                <input
+                                  onChange={(e) => setAmountPending(e.target.value)}
+                                  type="number"
+                                  name="amountPending"
+                                  id="amountPending"
+                                  className="block w-full rounded-md border-0 pl-10 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                                  value={amountPending}
+                                />
                               </div>
                             </div>
                             {/* Saldo a favor */}
@@ -388,7 +392,9 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                                         </span>
                                         {isChecked && (
                                           <div className="relative">
-                                            <span className="absolute left-2 top-1">$</span>
+                                            <span className="absolute left-2 top-1/2 flex items-center transform -translate-y-1/2">
+                                              $
+                                            </span>
                                             <input
                                               type="number"
                                               min="0"

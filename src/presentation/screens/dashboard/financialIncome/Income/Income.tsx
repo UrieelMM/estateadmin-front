@@ -6,7 +6,7 @@ import PaymentSummary from "./PaymentSummary";
 import MorosidadView from "../Summary/MorosidadView";
 
 
-const Maintenance = () => {
+const Income = () => {
   const [open, setOpen] = useState(false);
   // Ahora el estado puede ser: "summary", "history" o "morosidad"
   const [activeTab, setActiveTab] = useState("summary");
@@ -97,4 +97,4 @@ const Maintenance = () => {
   );
 };
 
-export default Maintenance;
+export default Income;

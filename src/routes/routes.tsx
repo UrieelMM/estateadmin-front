@@ -1,6 +1,7 @@
 import Calendar from "../presentation/screens/dashboard/calendar/Calendar";
 import ClientConfig from "../presentation/screens/dashboard/config/ClientConfig";
 import Charges from "../presentation/screens/dashboard/financialIncome/Charges/Charges";
+import Expenses from "../presentation/screens/dashboard/financialIncome/Expenses/Expenses";
 import Income from "../presentation/screens/dashboard/financialIncome/Income/Income";
 import DashboardHome from "../presentation/screens/dashboard/home/DashboardHome";
 import Maintenance from "../presentation/screens/dashboard/maintenance/Maintenance";
@@ -88,5 +89,12 @@ export const routesApp = [
     title: "Mantenimiento de condominio",
     description: "Gestión de reportes de mantenimiento",
     component: <Maintenance />,
+  },
+  {
+    to: "/dashboard/expenses",
+    icon: "fa-solid fa-spell-check",
+    title: "Registro de gastos",
+    description: "Gestión de gastos",
+    component: <Expenses />,
   },
 ];
