@@ -35,7 +35,7 @@ const ExpenseMonthComparisonTable: React.FC = () => {
 
   return (
     <div className="mb-8 w-full">
-      <h3 className="text-xl font-bold mb-4">Comparativa Mensual</h3>
+      <h3 className="text-xl font-bold mb-4">Comparativa mensual</h3>
       {sortedStats.length === 0 ? (
         <p className="text-gray-600">No hay datos para mostrar.</p>
       ) : (

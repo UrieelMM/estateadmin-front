@@ -3,6 +3,21 @@
 import React, { useMemo } from "react";
 import { useExpenseSummaryStore } from "../../../../../../store/expenseSummaryStore";
 
+// Mapeo de mes: "01" -> "Enero", "02" -> "Febrero", etc.
+const MONTH_NAMES: Record<string, string> = {
+  "01": "Enero",
+  "02": "Febrero",
+  "03": "Marzo",
+  "04": "Abril",
+  "05": "Mayo",
+  "06": "Junio",
+  "07": "Julio",
+  "08": "Agosto",
+  "09": "Septiembre",
+  "10": "Octubre",
+  "11": "Noviembre",
+  "12": "Diciembre",
+};
 
 /**
  * Tarjetas con datos globales:
@@ -15,12 +30,8 @@ const ExpenseSummaryCards: React.FC = () => {
   const expenses = useExpenseSummaryStore((state) => state.expenses);
   const totalSpent = useExpenseSummaryStore((state) => state.totalSpent);
 
-  // Calcular "concepto estrella", "peor concepto", y mes con mayor/menor gastos
-  const {
-    bestConcept,
-    bestMonth,
-    worstMonth,
-  } = useMemo(() => {
+  // Calcular "concepto estrella", "mes con mayor gasto" y "mes con menor gasto"
+  const { bestConcept, bestMonth, worstMonth } = useMemo(() => {
     // Agrupar por concepto
     const conceptMap: Record<string, number> = {};
     // Agrupar por mes
@@ -33,28 +44,16 @@ const ExpenseSummaryCards: React.FC = () => {
       monthMap[mm] = (monthMap[mm] || 0) + exp.amount;
     });
 
-    // Concepto con mayor gasto
+    // Ordenar conceptos por gasto descendente
     const conceptList = Object.entries(conceptMap).sort((a, b) => b[1] - a[1]);
     const bestConcept = conceptList[0] || ["N/A", 0];
 
-    // Concepto con menor gasto (mayor a 0)
-    const worstConceptIdx = conceptList
-      .slice()
-      .reverse()
-      .findIndex(([_, val]) => val > 0);
-    let worstConcept: [string, number] = ["N/A", 0];
-    if (worstConceptIdx !== -1) {
-      worstConcept = conceptList[conceptList.length - 1 - worstConceptIdx];
-    }
-
-    // Mes con mayor / menor gasto
+    // Ordenar meses por gasto descendente
     const monthList = Object.entries(monthMap).sort((a, b) => b[1] - a[1]);
     const bestMonth = monthList[0] || ["N/A", 0];
 
-    const worstMonthIdx = monthList
-      .slice()
-      .reverse()
-      .findIndex(([_, val]) => val > 0);
+    // Mes con menor gasto (mayor a 0)
+    const worstMonthIdx = monthList.slice().reverse().findIndex(([_, val]) => val > 0);
     let worstMonth: [string, number] = ["N/A", 0];
     if (worstMonthIdx !== -1) {
       worstMonth = monthList[monthList.length - 1 - worstMonthIdx];
@@ -62,7 +61,6 @@ const ExpenseSummaryCards: React.FC = () => {
 
     return {
       bestConcept,
-      worstConcept,
       bestMonth,
       worstMonth,
     };
@@ -85,21 +83,25 @@ const ExpenseSummaryCards: React.FC = () => {
       {/* Tarjeta 2: Concepto Estrella */}
       <div className="p-4 shadow-md rounded-md">
         <p className="text-sm text-gray-600">Concepto Estrella</p>
-        <p className="text-base font-semibold">{bestConcept[0]}</p>
+        <p className="text-base font-semibold text-indigo-500">{bestConcept[0]}</p>
         <p className="text-2xl font-semibold">{formatCurrency(bestConcept[1])}</p>
       </div>
 
       {/* Tarjeta 3: Mes con mayor gasto */}
       <div className="p-4 shadow-md rounded-md">
         <p className="text-sm text-gray-600">Mes con mayor gasto</p>
-        <p className="text-base font-semibold">{bestMonth[0]}</p>
+        <p className="text-base font-semibold text-indigo-500">
+          {MONTH_NAMES[bestMonth[0]] || bestMonth[0]}
+        </p>
         <p className="text-2xl font-semibold">{formatCurrency(bestMonth[1])}</p>
       </div>
 
       {/* Tarjeta 4: Mes con menor gasto */}
       <div className="p-4 shadow-md rounded-md">
         <p className="text-sm text-gray-600">Mes con menor gasto</p>
-        <p className="text-base font-semibold">{worstMonth[0]}</p>
+        <p className="text-base font-semibold text-indigo-500">
+          {MONTH_NAMES[worstMonth[0]] || worstMonth[0]}
+        </p>
         <p className="text-2xl font-semibold">{formatCurrency(worstMonth[1])}</p>
       </div>
     </div>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { UserIcon, CurrencyDollarIcon, CalendarIcon, CheckCircleIcon, ClipboardIcon } from "@heroicons/react/16/solid";
 import { useChargeStore } from "../../../../../store/useChargeStore";
 import useUserStore from "../../../../../store/UserDataStore";
 
@@ -127,50 +128,62 @@ const ChargeForm = () => {
         {chargeType === "individual" && (
           <div className="mb-4">
             <label className="font-semibold block mb-1">Usuario (condómino):</label>
-            <select
-              className="border rounded p-1 w-full"
-              value={selectedUser}
-              onChange={(e) => setSelectedUser(e.target.value)}
-            >
-              <option value="">-- Selecciona un usuario --</option>
-              {condominiumsUsers
-                .filter(
-                  (user) =>
-                    user.role !== "admin" &&
-                    user.role !== "super-admin" &&
-                    user.role !== "security"
-                )
-                .map((user) => (
-                  <option key={user.uid} value={user.uid}>
-                    {user.number} {user.name}
-                  </option>
-                ))}
-            </select>
+            <div className="relative">
+              <div className="absolute left-2 top-1/2 flex items-center transform -translate-y-1/2">
+                <UserIcon className="h-5 w-5 text-gray-400" />
+              </div>
+              <select
+                className="border rounded p-1 w-full pl-10"
+                value={selectedUser}
+                onChange={(e) => setSelectedUser(e.target.value)}
+              >
+                <option value="">-- Selecciona un usuario --</option>
+                {condominiumsUsers
+                  .filter(
+                    (user) =>
+                      user.role !== "admin" &&
+                      user.role !== "super-admin" &&
+                      user.role !== "security"
+                  )
+                  .map((user) => (
+                    <option key={user.uid} value={user.uid}>
+                      {user.number} {user.name}
+                    </option>
+                  ))}
+              </select>
+            </div>
           </div>
         )}
 
         <div className="mb-4">
           <label className="font-semibold block mb-1">Concepto:</label>
-          <select
-            className="border rounded p-1 w-full"
-            value={concept}
-            onChange={(e) => setConcept(e.target.value)}
-          >
-            {commonConcepts.map((item) => (
-              <option key={item} value={item}>
-                {item}
-              </option>
-            ))}
-          </select>
+          <div className="relative">
+            <div className="absolute left-2 top-1/2 flex items-center transform -translate-y-1/2">
+              <ClipboardIcon className="h-5 w-5 text-gray-400" />
+            </div>
+            <select
+              className="border rounded p-1 w-full pl-10"
+              value={concept}
+              onChange={(e) => setConcept(e.target.value)}
+            >
+              {commonConcepts.map((item) => (
+                <option key={item} value={item}>
+                  {item}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
         <div className="mb-4">
           <label className="font-semibold block mb-1">Monto:</label>
           <div className="relative">
-            <span className="absolute left-2 top-1">$</span>
+            <div className="absolute left-2 top-1/2 flex items-center transform -translate-y-1/2">
+              <CurrencyDollarIcon className="h-5 w-5 text-gray-400" />
+            </div>
             <input
               type="number"
-              className="border rounded p-1 w-full pl-5"
+              className="border rounded p-1 w-full pl-10"
               value={amount === 0 ? "" : amount}
               onChange={handleAmountChange}
               placeholder="Ejemplo: $1500"
@@ -181,32 +194,45 @@ const ChargeForm = () => {
 
         <div className="mb-4">
           <label className="font-semibold block mb-1">Fecha y hora de inicio del cargo:</label>
-          <input
-            type="datetime-local"
-            className="border rounded p-1 w-full"
-            value={startAt}
-            onChange={(e) => setStartAt(e.target.value)}
-          />
+          <div className="relative">
+            <div className="absolute left-2 top-1/2 flex items-center transform -translate-y-1/2">
+              <CalendarIcon className="h-5 w-5 text-gray-400" />
+            </div>
+            <input
+              type="datetime-local"
+              className="border rounded p-1 w-full pl-10"
+              value={startAt}
+              onChange={(e) => setStartAt(e.target.value)}
+            />
+          </div>
         </div>
 
         <div className="mb-4">
           <label className="font-semibold block mb-1">Fecha y hora límite de pago:</label>
-          <input
-            type="datetime-local"
-            className="border rounded p-1 w-full"
-            value={dueDate}
-            onChange={(e) => setDueDate(e.target.value)}
-          />
+          <div className="relative">
+            <div className="absolute left-2 top-1/2 flex items-center transform -translate-y-1/2">
+              <CalendarIcon className="h-5 w-5 text-gray-400" />
+            </div>
+            <input
+              type="datetime-local"
+              className="border rounded p-1 w-full pl-10"
+              value={dueDate}
+              onChange={(e) => setDueDate(e.target.value)}
+            />
+          </div>
         </div>
 
         <div className="mb-4">
           <label className="font-semibold block mb-1">¿Está pagado?:</label>
-          <input
-            type="checkbox"
-            checked={paid}
-            onChange={(e) => setPaid(e.target.checked)}
-          />
-          <span className="ml-1">Pagado</span>
+          <div className="flex items-center">
+            <input
+              type="checkbox"
+              checked={paid}
+              onChange={(e) => setPaid(e.target.checked)}
+            />
+            <span className="ml-1">Pagado</span>
+            <CheckCircleIcon className="h-5 w-5 text-gray-400 ml-2" />
+          </div>
         </div>
 
         <button

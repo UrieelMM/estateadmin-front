@@ -1,10 +1,10 @@
 import { useState } from "react";
 import ExpenseForm from "../../../../components/shared/forms/ExpensesForm";
-import ExpensesSummary from "./ExpensesSummary";
-import ExpenseDetailedConceptsTableAdvanced from "./ExpensesSummary/ExpenseDetailedConceptsTableAdvanced";
+import BalanceSummary from "./BalanceSummary";
 
 
-const Expenses = () => {
+
+const Balance = () => {
     const [open, setOpen] = useState(false);
     // Ahora el estado puede ser: "summary", "history" o "morosidad"
     const [activeTab, setActiveTab] = useState("summary");
@@ -13,13 +13,7 @@ const Expenses = () => {
         <>
             <div className="px-4 shadow-lg rounded-md sm:px-6 lg:px-8">
                 <header className="bg-gray-50 font-medium shadow-md flex w-full h-16 justify-between px-2 rounded-md items-center mb-2">
-                    <p className="text-md">Egresos</p>
-                    <button
-                        className="btn-primary h-10 mb-3"
-                        onClick={() => setOpen(!open)}
-                    >
-                        Registrar Gasto
-                    </button>
+                    <p className="text-md">Balance General</p>
                 </header>
 
                 {/* Tab Layout */}
@@ -66,16 +60,16 @@ const Expenses = () => {
                     {activeTab === "summary" && (
                         <>
                             <h2 className="text-2xl font-bold text-indigo-600 mb-4">
-                                Resumen General de Egresos
+                                Balance General de Ingresos y Egresos
                             </h2>
-                            <ExpensesSummary />
+                            <BalanceSummary />
 
                         </>
                     )}
                     {activeTab === "history" && (
                         <div className="w-full flex justify-start mt-8">
                             <div className="w-[100%]">
-                                <ExpenseDetailedConceptsTableAdvanced />
+                                
                             </div>
                         </div>
                     )}
@@ -91,4 +85,4 @@ const Expenses = () => {
     );
 };
 
-export default Expenses;
+export default Balance;

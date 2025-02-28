@@ -16,8 +16,9 @@ export const navigation = [
     icon: ChartBarIcon,
     current: false,
     children: [
-      { name: 'Egresos', href: '/dashboard/expenses' },
       { name: 'Ingresos', href: '/dashborad/income' },
+      { name: 'Egresos', href: '/dashboard/expenses' },
+      { name: 'Balance general', href: '/dashboard/balance' },
       { name: 'Cargos', href: '/dashborad/charges' },
     ],
   },

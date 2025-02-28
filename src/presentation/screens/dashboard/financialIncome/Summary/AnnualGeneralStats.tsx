@@ -236,7 +236,7 @@ const AnnualGeneralStats: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
         <div className="p-4 shadow-md rounded-md">
           <p className="text-sm text-gray-600">Concepto estrella (Año)</p>
-          <p className="text-base font-semibold">{bestConcept[0]}</p>
+          <p className="text-base font-semibold text-indigo-500">{bestConcept[0]}</p>
           <p className="text-2xl font-semibold">
             {formatCurrency(bestConcept[1])}
           </p>
@@ -244,7 +244,7 @@ const AnnualGeneralStats: React.FC = () => {
 
         <div className="p-4 shadow-md rounded-md">
           <p className="text-sm text-gray-600">Concepto rezagado (Año)</p>
-          <p className="text-base font-semibold">{worstConcept[0]}</p>
+          <p className="text-base font-semibold text-indigo-500">{worstConcept[0]}</p>
           <p className="text-2xl font-semibold">
             {formatCurrency(worstConcept[1])}
           </p>
@@ -252,7 +252,7 @@ const AnnualGeneralStats: React.FC = () => {
 
         <div className="p-4 shadow-md rounded-md">
           <p className="text-sm text-gray-600">Mes con mayor recaudación</p>
-          <p className="text-base font-semibold">
+          <p className="text-base font-semibold text-indigo-500">
             {getMonthName(bestMonth[0])}
           </p>
           <p className="text-2xl font-semibold">
@@ -262,7 +262,7 @@ const AnnualGeneralStats: React.FC = () => {
 
         <div className="p-4 shadow-md rounded-md">
           <p className="text-sm text-gray-600">Mes con menor recaudación</p>
-          <p className="text-base font-semibold">
+          <p className="text-base font-semibold text-indigo-500">
             {getMonthName(worstMonth[0])}
           </p>
           <p className="text-2xl font-semibold">
@@ -277,7 +277,7 @@ const AnnualGeneralStats: React.FC = () => {
       </div>
 
       {/* Gráfica de pastel: Distribución anual por concepto (Top 5 + Otros) */}
-      <h3 className="text-lg font-bold mb-2">Distribución de Recaudación Anual por Concepto</h3>
+      <h3 className="text-lg font-bold mb-2">Distribución de recaudación anual por concepto</h3>
       <div style={{ width: "100%", height: 320 }}>
         <ResponsiveContainer>
           <PieChart>
@@ -305,7 +305,7 @@ const AnnualGeneralStats: React.FC = () => {
 
       {/* Gráfica de ÁREAS APILADAS: Evolución mensual de los top 5 conceptos (y "Otros") */}
       <h3 className="text-lg font-bold mt-8 mb-2">
-        Evolución Mensual (Top 5 Conceptos + Otros)
+        Evolución mensual <span className="text-xs font-medium text-gray-500">(5 principales conceptos + otros)</span>
       </h3>
       <div style={{ width: "100%", height: 400 }}>
         <ResponsiveContainer>

@@ -1,5 +1,6 @@
 import Calendar from "../presentation/screens/dashboard/calendar/Calendar";
 import ClientConfig from "../presentation/screens/dashboard/config/ClientConfig";
+import Balance from "../presentation/screens/dashboard/financialIncome/Balance/Balance";
 import Charges from "../presentation/screens/dashboard/financialIncome/Charges/Charges";
 import Expenses from "../presentation/screens/dashboard/financialIncome/Expenses/Expenses";
 import Income from "../presentation/screens/dashboard/financialIncome/Income/Income";
@@ -96,5 +97,12 @@ export const routesApp = [
     title: "Registro de gastos",
     description: "Gestión de gastos",
     component: <Expenses />,
+  },
+  {
+    to: "/dashboard/balance",
+    icon: "fa-solid fa-spell-check",
+    title: "Balance general",
+    description: "Balance general de ingresos y egresos",
+    component: <Balance />,
   },
 ];

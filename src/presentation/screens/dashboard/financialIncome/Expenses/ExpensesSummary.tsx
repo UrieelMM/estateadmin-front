@@ -7,9 +7,10 @@ import useUserStore from "../../../../../store/UserDataStore";
 import LoadingApp from "../../../../components/shared/loaders/LoadingApp";
 import ExpenseAnnualGeneralStats from "./ExpensesSummary/ExpenseAnnualGeneralStats";
 import ExpenseConceptGrowthSection from "./ExpensesSummary/ExpenseConceptGrowthSection";
-import ExpenseDetailedConceptsTable from "./ExpensesSummary/ExpenseDetailedConceptsTable";
+import ExpenseConceptAnalyticsAdvanced from "./ExpensesSummary/ExpenseConceptAnalyticsAdvanced";
 import ExpenseMonthComparisonTable from "./ExpensesSummary/ExpenseMonthComparisonTable";
 import ExpenseSummaryCards from "./ExpensesSummary/ExpenseSummaryCards";
+import PDFExpenseReportGenerator from "./ExpensesSummary/PDFExpenseReportGenerator";
 
 
 // import ExpensePDFReportGenerator from "./ExpensePDFReportGenerator"; // Si deseas PDF
@@ -27,7 +28,7 @@ const ExpenseSummary: React.FC = () => {
     fetchSummary,
     setSelectedYear,
     monthlyStats, // si lo usas
-    } = useExpenseSummaryStore(
+  } = useExpenseSummaryStore(
     (state) => ({
       loading: state.loading,
       error: state.error,
@@ -87,8 +88,13 @@ const ExpenseSummary: React.FC = () => {
       {/* Si ya no está loading o sí hay data, mostramos secciones */}
       {!showSpinner && (
         <>
+
           {/* Tarjetas con totales, mes con mayor/menor gasto, etc. */}
           <ExpenseSummaryCards />
+
+          
+          {/* Tabla detallada con truncado de descripción */}
+          <ExpenseConceptAnalyticsAdvanced />
 
           {/* Gráfica(s) anual(es) y estadísticas (distribución por concepto, etc.) */}
           <ExpenseAnnualGeneralStats />
@@ -96,14 +102,12 @@ const ExpenseSummary: React.FC = () => {
           {/* Comparativa de egresos por concepto en el tiempo (tipo Growth) */}
           <ExpenseConceptGrowthSection />
 
+
           {/* Tabla comparativa mensual */}
           <ExpenseMonthComparisonTable />
 
-          {/* Tabla detallada con truncado de descripción */}
-          <ExpenseDetailedConceptsTable />
-
           {/* Opcional: Generar PDF con toda la info */}
-          {/* <ExpensePDFReportGenerator year={selectedYear} /> */}
+          <PDFExpenseReportGenerator year={selectedYear} />
         </>
       )}
     </div>

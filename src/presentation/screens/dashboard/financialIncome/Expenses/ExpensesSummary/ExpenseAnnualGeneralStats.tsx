@@ -3,124 +3,105 @@
 import React, { useMemo } from "react";
 import { useExpenseSummaryStore } from "../../../../../../store/expenseSummaryStore";
 import {
-  PieChart,
-  Pie,
-  Cell,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-  BarChart,
-  Bar,
+  LineChart,
+  Line,
   XAxis,
   YAxis,
   CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
 } from "recharts";
 
-
-/**
- * Paleta de colores
- */
 const chartColors = ["#8093E8", "#74B9E7", "#A7CFE6", "#B79FE6", "#C2ABE6"];
 
 const ExpenseAnnualGeneralStats: React.FC = () => {
   const expenses = useExpenseSummaryStore((state) => state.expenses);
-  const totalSpent = useExpenseSummaryStore((state) => state.totalSpent);
-
-  // Agrupar por concepto (para el PieChart)
-  const pieData = useMemo(() => {
-    const conceptMap: Record<string, number> = {};
-    expenses.forEach((exp) => {
-      conceptMap[exp.concept] = (conceptMap[exp.concept] || 0) + exp.amount;
-    });
-    return Object.entries(conceptMap)
-      .map(([name, value]) => ({ name, value }))
-      .sort((a, b) => b.value - a.value);
-  }, [expenses]);
-
-  // Agrupar por mes (para el BarChart)
-  // expenseDate = "YYYY-MM-DD HH:mm"
-  const barData = useMemo(() => {
-    const monthlyMap: Record<string, number> = {};
-    expenses.forEach((exp) => {
-      const mm = exp.expenseDate.substring(5, 7);
-      monthlyMap[mm] = (monthlyMap[mm] || 0) + exp.amount;
-    });
-    // Convertir a array y ordenarlo
-    return Object.entries(monthlyMap)
-      .map(([month, spent]) => ({
-        month,
-        spent,
-      }))
-      .sort((a, b) => parseInt(a.month) - parseInt(b.month));
-  }, [expenses]);
+  // const totalSpent = useExpenseSummaryStore((state) => state.totalSpent);
 
   const formatCurrency = (val: number) =>
-    `$${val.toLocaleString("en-US", { minimumFractionDigits: 2 })}`;
+    `$${val.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+  // Obtener los 5 conceptos con mayor gasto total
+  const topConcepts = useMemo(() => {
+    const conceptMap: Record<string, number> = {};
+    expenses.forEach(exp => {
+      conceptMap[exp.concept] = (conceptMap[exp.concept] || 0) + exp.amount;
+    });
+    const sorted = Object.entries(conceptMap).sort((a, b) => b[1] - a[1]);
+    return sorted.slice(0, 5).map(([concept]) => concept);
+  }, [expenses]);
+
+  // Preparar datos para la gráfica de líneas:
+  // Por cada mes, sumar el monto gastado de cada uno de los topConcepts.
+  const lineData = useMemo(() => {
+    // Inicializamos 12 meses (en formato "01" a "12") y agregamos los topConcepts a cada registro.
+    const months = Array.from({ length: 12 }, (_, i) => {
+      const mm = (i + 1).toString().padStart(2, "0");
+      const record: Record<string, any> = { month: mm };
+      topConcepts.forEach((concept) => {
+        record[concept] = 0;
+      });
+      return record;
+    });
+    // Acumular gasto para cada concepto por mes
+    expenses.forEach(exp => {
+      if (topConcepts.includes(exp.concept)) {
+        const mm = exp.expenseDate.substring(5, 7);
+        const monthRecord = months.find(r => r.month === mm);
+        if (monthRecord) {
+          monthRecord[exp.concept] += exp.amount;
+        }
+      }
+    });
+    // Mapear el mes numérico a nombre
+    const monthNames: Record<string, string> = {
+      "01": "Enero",
+      "02": "Febrero",
+      "03": "Marzo",
+      "04": "Abril",
+      "05": "Mayo",
+      "06": "Junio",
+      "07": "Julio",
+      "08": "Agosto",
+      "09": "Septiembre",
+      "10": "Octubre",
+      "11": "Noviembre",
+      "12": "Diciembre",
+    };
+    return months.map(record => ({
+      month: monthNames[record.month] || record.month,
+      ...record,
+    }));
+  }, [expenses, topConcepts]);
 
   return (
     <div className="mb-8 w-full">
-      <h3 className="text-xl font-bold mb-4">Estadísticas Anuales de Egresos</h3>
-
-      {/* Tarjeta (opcional) con totalSpent */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div className="p-4 shadow-md rounded-md">
-          <p className="text-sm text-gray-600">Total de Egresos (Año)</p>
-          <p className="text-2xl font-semibold">{formatCurrency(totalSpent)}</p>
-        </div>
-        {/* Puedes agregar más tarjetas si deseas */}
-      </div>
-
-      {/* Gráfica de pastel: distribución por concepto */}
-      <h4 className="text-lg font-bold mb-2">Distribución por Concepto</h4>
-      <div style={{ width: "100%", height: 320 }}>
-        <ResponsiveContainer>
-          <PieChart>
-            <Pie
-              data={pieData}
-              dataKey="value"
-              nameKey="name"
-              cx="50%"
-              cy="50%"
-              outerRadius={100}
-              label={({ name, value }) => `${name}: ${formatCurrency(value)}`}
-            >
-              {pieData.map((_entry, index) => (
-                <Cell
-                  key={`cell-${index}`}
-                  fill={chartColors[index % chartColors.length]}
-                />
-              ))}
-            </Pie>
-            <Tooltip
-              formatter={(value: number) => formatCurrency(value)}
-            />
-            <Legend />
-          </PieChart>
-        </ResponsiveContainer>
-      </div>
-
-      {/* Gráfica de barras: gasto mensual */}
-      <h4 className="text-lg font-bold mt-8 mb-2">Gasto Mensual (Barras)</h4>
+      {/* Gráfica de líneas: Evolución mensual de los 5 conceptos que más gastan */}
+      <h4 className="text-lg font-bold mt-8 mb-2">
+        Evolución mensual
+      </h4>
       <div style={{ width: "100%", height: 300 }}>
         <ResponsiveContainer>
-          <BarChart
-            data={barData}
-            margin={{ top: 20, right: 20, left: 0, bottom: 0 }}
-          >
+          <LineChart data={lineData} margin={{ top: 20, right: 20, left: 0, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="month" />
-            <YAxis
-              tickFormatter={(val: number) => formatCurrency(val)}
-              width={80}
-            />
+            <YAxis tickFormatter={(val: number) => formatCurrency(val)} width={80} />
             <Tooltip formatter={(val: number) => formatCurrency(val)} />
             <Legend />
-            <Bar
-              dataKey="spent"
-              fill={chartColors[0]}
-              name="Gasto Mensual"
-            />
-          </BarChart>
+            {topConcepts.map((concept, idx) => (
+              <Line
+                key={concept}
+                type="monotone"
+                dataKey={concept}
+                name={concept}
+                stroke={chartColors[idx % chartColors.length]}
+                strokeWidth={2}
+                dot={{ r: 3 }}
+                activeDot={{ r: 5 }}
+              />
+            ))}
+          </LineChart>
         </ResponsiveContainer>
       </div>
     </div>

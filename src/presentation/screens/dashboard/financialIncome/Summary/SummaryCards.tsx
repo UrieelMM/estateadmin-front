@@ -16,7 +16,7 @@ const SummaryCards: React.FC = React.memo(() => {
 
   return (
     <>
-      <h2 className="text-xl font-bold mb-4">Estadísticas Anuales Generales</h2>
+      <h2 className="text-xl font-bold mb-4">Estadísticas anuales generales</h2>
       <div className="grid w-full grid-cols-1 gap-5 mb-8 sm:grid-cols-2">
         <Card className="p-4 shadow-md rounded-md">
           <div className="flex flex-col gap-y-2">

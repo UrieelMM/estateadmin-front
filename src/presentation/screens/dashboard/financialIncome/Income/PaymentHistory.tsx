@@ -238,7 +238,7 @@ const PaymentHistory = () => {
 
       {/* Gráfica: Resumen por Mes (LineChart con 3 líneas) */}
       <div className="mt-4">
-        <h3 className="text-xl font-semibold mb-2">Resumen por Mes (Gráfica de Líneas)</h3>
+        <h3 className="text-xl font-semibold mb-2">Resumen por mes</h3>
         {chartArray.length > 0 ? (
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={chartArray} margin={{ top: 20, right: 20, left: 0, bottom: 0 }}>

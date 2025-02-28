@@ -539,7 +539,7 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({ year, concept }
   };
 
   return (
-    <div className="w-full flex justify-end">
+    <div className="w-full flex">
       <button
         onClick={generatePDF}
         className="bg-indigo-600 text-white py-2 px-4 rounded w-full lg:w-[300px] font-bold hover:bg-indigo-500"
