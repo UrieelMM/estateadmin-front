@@ -168,7 +168,7 @@ const MaintenanceReportForm: React.FC<MaintenanceReportFormProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex justify-center items-center bg-black bg-opacity-50">
-      <div className="bg-white p-5 rounded-lg w-full max-w-2xl">
+      <div className="bg-white p-5 rounded-lg w-full max-w-2xl dark:bg-gray-900">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-lg font-semibold">
             {initialData ? "Editar Reporte de Mantenimiento" : "Crear Reporte de Mantenimiento"}
@@ -188,7 +188,7 @@ const MaintenanceReportForm: React.FC<MaintenanceReportFormProps> = ({
               type="date"
               value={fecha}
               onChange={(e) => setFecha(e.target.value)}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+              className="px-2 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm  ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
             />
           </div>
 
@@ -198,7 +198,7 @@ const MaintenanceReportForm: React.FC<MaintenanceReportFormProps> = ({
             <select
               value={area}
               onChange={(e) => setArea(e.target.value)}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+              className="px-2 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm  ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
             >
               <option value="">Seleccione un área</option>
               {areaOptions.map((option, index) => (
@@ -217,7 +217,7 @@ const MaintenanceReportForm: React.FC<MaintenanceReportFormProps> = ({
               placeholder="Encargado"
               value={encargado}
               onChange={(e) => setEncargado(e.target.value)}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+              className="px-2 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm  ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
             />
           </div>
 

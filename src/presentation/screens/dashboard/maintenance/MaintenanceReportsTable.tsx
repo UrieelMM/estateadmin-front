@@ -122,7 +122,7 @@ const MaintenanceReportsTable: React.FC<MaintenanceReportsTableProps> = ({ onEdi
         <select
           value={year}
           onChange={(e) => setYear(e.target.value)}
-          className="rounded-md border-gray-300 p-2 w-20"
+          className="rounded-md border-gray-300 p-2 w-20 dark:bg-gray-900"
         >
           <option value="">Año</option>
           {yearOptions.map((yr) => (
@@ -132,7 +132,7 @@ const MaintenanceReportsTable: React.FC<MaintenanceReportsTableProps> = ({ onEdi
         <select
           value={month}
           onChange={(e) => setMonth(e.target.value)}
-          className="rounded-md border-gray-300 p-2"
+          className="rounded-md border-gray-300 p-2 dark:bg-gray-900"
         >
           {monthOptions.map((m) => (
             <option key={m.value} value={m.value}>{m.label}</option>
@@ -143,22 +143,22 @@ const MaintenanceReportsTable: React.FC<MaintenanceReportsTableProps> = ({ onEdi
 
       {/* Tabla de reportes */}
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-50">
+          <thead className="bg-gray-50 dark:bg-gray-800">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Área</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Encargado</th>
-              <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-100">Fecha</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-100">Área</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-100">Encargado</th>
+              <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-100">Acciones</th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="bg-white divide-y divide-gray-200 dark:divide-gray-500 dark:bg-gray-800 dark:shadow-xl">
             {currentReports && currentReports.length > 0 ? (
               currentReports.map((report) => (
-                <tr key={report.id}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{formatDate(report.fecha)}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{report.area}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{report.encargado}</td>
+                <tr key={report.id} className=" hover:bg-gray-50 transition-colors dark:hover:bg-gray-700 cursor-pointer">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{formatDate(report.fecha)}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{report.area}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{report.encargado}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
                     <button
                       onClick={() => setReportToView(report)}

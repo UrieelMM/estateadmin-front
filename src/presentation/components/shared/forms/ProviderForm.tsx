@@ -27,10 +27,10 @@ const FormProvider = ({ open, setOpen }: FormCalendarProps) => {
                             >
                                 <Dialog.Panel className="pointer-events-auto w-screen max-w-md">
                                     <form className="flex h-full flex-col divide-y divide-gray-200 bg-white shadow-xl">
-                                        <div className="h-0 flex-1 overflow-y-auto">
-                                            <div className="bg-indigo-700 px-4 py-6 sm:px-6">
+                                        <div className="h-0 flex-1 overflow-y-auto dark:bg-gray-900">
+                                            <div className="bg-indigo-700 px-4 py-6 sm:px-6 dark:bg-gray-800">
                                                 <div className="flex items-center justify-between">
-                                                    <Dialog.Title className="text-base font-semibold leading-6 text-white">
+                                                    <Dialog.Title className="text-base font-semibold leading-6 text-white dark:text-gray-100">
                                                         Registrar proveedor
                                                     </Dialog.Title>
                                                     <div className="ml-3 flex h-7 items-center">
@@ -57,7 +57,7 @@ const FormProvider = ({ open, setOpen }: FormCalendarProps) => {
                                                         <div>
                                                             <label
                                                                 htmlFor="nameProvider"
-                                                                className="block text-sm font-medium leading-6 text-gray-900"
+                                                                className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100"
                                                             >
                                                                 Nombre del proveedor
                                                             </label>
@@ -66,20 +66,20 @@ const FormProvider = ({ open, setOpen }: FormCalendarProps) => {
                                                                     type="text"
                                                                     name="nameProvider"
                                                                     id="nameProvider"
-                                                                    className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                                                                    className="block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm  ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
                                                                 />
                                                             </div>
                                                         </div>
                                                         <div>
                                                             <label
                                                                 htmlFor="nameService"
-                                                                className="block text-sm font-medium leading-6 text-gray-900"
+                                                                className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100"
                                                             >
                                                                 Servicio
                                                             </label>
                                                             <div className="mt-2">
                                                                 <select  name="nameService"
-                                                                    id="nameService"className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-">
+                                                                    id="nameService"className="block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm  ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500">
                                                                     <option value="0">Selecciona un servicio</option>
                                                                     <option value="1">Telefonía e internet</option>
                                                                     <option value="2">Limpieza</option>
@@ -93,7 +93,7 @@ const FormProvider = ({ open, setOpen }: FormCalendarProps) => {
                                                         <div>
                                                             <label
                                                                 htmlFor="phoneProvider"
-                                                                className="block text-sm font-medium leading-6 text-gray-900"
+                                                                className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100"
                                                             >
                                                                 Teléfono
                                                             </label>
@@ -102,14 +102,14 @@ const FormProvider = ({ open, setOpen }: FormCalendarProps) => {
                                                                     type="phone"
                                                                     name="phoneProvider"
                                                                     id="phoneProvider"
-                                                                    className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                                                                    className="block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm  ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
                                                                 />
                                                             </div>
                                                         </div>
                                                         <div>
                                                             <label
                                                                 htmlFor="emailProvider"
-                                                                className="block text-sm font-medium leading-6 text-gray-900"
+                                                                className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100"
                                                             >
                                                                 Email
                                                             </label>
@@ -118,14 +118,14 @@ const FormProvider = ({ open, setOpen }: FormCalendarProps) => {
                                                                     type="email"
                                                                     name="emailProvider"
                                                                     id="emailProvider"
-                                                                    className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                                                                    className="block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm  ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
                                                                 />
                                                             </div>
                                                         </div>
                                                         <div>
                                                             <label
                                                                 htmlFor="comments"
-                                                                className="block text-sm font-medium leading-6 text-gray-900"
+                                                                className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100"
                                                             >
                                                                 Comentarios
                                                             </label>
@@ -134,7 +134,7 @@ const FormProvider = ({ open, setOpen }: FormCalendarProps) => {
                                                                     id="comments"
                                                                     name="comments"
                                                                     rows={4}
-                                                                    className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                                                                    className="block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm  ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500" 
                                                                     defaultValue={''}
                                                                 />
                                                             </div>
@@ -143,7 +143,7 @@ const FormProvider = ({ open, setOpen }: FormCalendarProps) => {
                                                 </div>
                                             </div>
                                         </div>
-                                        <div className="flex flex-shrink-0 justify-end px-4 py-4">
+                                        <div className="flex flex-shrink-0 justify-end px-4 py-4 dark:bg-gray-900 bg:shadow-xl">
                                             <button
                                                 type="button"
                                                 className="rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"

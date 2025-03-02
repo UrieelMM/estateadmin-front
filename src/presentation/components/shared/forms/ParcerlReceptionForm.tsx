@@ -127,8 +127,8 @@ const ParcelReceptionForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                     onSubmit={handleSubmit}
                     className="flex h-full flex-col divide-y divide-gray-200 bg-white shadow-xl"
                   >
-                    <div className="h-0 flex-1 overflow-y-auto">
-                      <div className="bg-indigo-700 px-4 py-6 sm:px-6">
+                    <div className="h-0 flex-1 overflow-y-auto dark:bg-gray-900">
+                      <div className="bg-indigo-700 px-4 py-6 sm:px-6 dark:bg-gray-800">
                         <div className="flex items-center justify-between">
                           <Dialog.Title className="text-base font-semibold leading-6 text-white">
                             Registrar paquete
@@ -148,14 +148,14 @@ const ParcelReceptionForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                           </div>
                         </div>
                         <div className="mt-1">
-                          <p className="text-sm text-indigo-300">
+                          <p className="text-sm text-indigo-300 dark:text-indigo-400">
                             Registra un nuevo paquete para que los condominos lo
                             puedan recoger.
                           </p>
                         </div>
                       </div>
                       <div className="flex flex-1 flex-col justify-between">
-                        <div className="divide-y divide-gray-200 px-4 sm:px-6">
+                        <div className="divide-y divide-gray-200 px-4 sm:px-6 dark:bg-gray-900 dark:divide-gray-400">
                           <div className="space-y-6 pb-5 pt-6">
                             <div>
                               <label
@@ -170,7 +170,7 @@ const ParcelReceptionForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                                   type="text"
                                   name="nameReceptor"
                                   id="nameReceptor"
-                                  className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                                  className="px-2 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm  ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
                                 />
                               </div>
                             </div>
@@ -186,7 +186,7 @@ const ParcelReceptionForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                                   onChange={handleRecipientChange}
                                   name="nameRecipient"
                                   id="nameRecipient"
-                                  className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                                  className="px-2 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm  ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
                                 >
                                   <option value="">
                                     Selecciona un destinatario
@@ -222,7 +222,7 @@ const ParcelReceptionForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                                   type="date"
                                   name="dateReception"
                                   id="dateReception"
-                                  className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                                  className="px-2 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm  ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
                                 />
                               </div>
                             </div>
@@ -241,13 +241,13 @@ const ParcelReceptionForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                                   type="time"
                                   name="hourReception"
                                   id="hourReception"
-                                  className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                                  className="px-2 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm  ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
                                 />
                               </div>
                             </div>
                             <div
                               {...getRootProps()}
-                              className="mt-12 h-auto align-middle items-center flex justify-center rounded-lg border border-dashed border-gray-900/25 px-6 py-4"
+                              className="mt-12 h-auto align-middle items-center flex justify-center rounded-lg border border-dashed border-gray-900/25 px-6 py-4 dark:border-gray-100/25"
                             >
                               <input {...getInputProps()} />
                               <div className="text-center">
@@ -266,7 +266,7 @@ const ParcelReceptionForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                                       : "Arrastra y suelta la foto aquí o haz click para seleccionarlo"}
                                   </p>
                                 )}
-                                <p className="text-xs leading-5 text-gray-600">
+                                <p className="text-xs leading-5 text-gray-600 dark:text-gray-100">
                                   Hasta 10MB
                                 </p>
                               </div>
@@ -284,7 +284,7 @@ const ParcelReceptionForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                                   id="comments"
                                   name="comments"
                                   rows={4}
-                                  className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                                  className="px-2 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm  ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
                                   defaultValue={""}
                                 />
                               </div>
@@ -293,7 +293,7 @@ const ParcelReceptionForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                         </div>
                       </div>
                     </div>
-                    <div className="flex flex-shrink-0 justify-end px-4 py-4">
+                    <div className="flex flex-shrink-0 justify-end px-4 py-4 dark:bg-gray-900">
                       <button
                         type="button"
                         className="rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"

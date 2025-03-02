@@ -3,7 +3,7 @@ import React, { useEffect } from "react";
 import { shallow } from "zustand/shallow";
 import { usePaymentSummaryStore } from "../../../../../store/paymentSummaryStore";
 import useUserStore from "../../../../../store/UserDataStore";
-import LoadingApp from "../../../../components/shared/loaders/LoadingApp";
+
 import PDFReportGenerator from "./PDFReportGenerator";
 import PDFReportMaintenance from "./PDFReportMaintenance";
 import SummaryCards from "../Summary/SummaryCards";
@@ -13,6 +13,7 @@ import MonthComparisonTable from "../Summary/MonthComparisonTable";
 import DetailedConceptsTable from "../Summary/DetailedConceptsTable";
 import ConceptGrowthSection from "../Summary/ConceptGrowthSection.";
 import { DocumentTextIcon, WrenchScrewdriverIcon } from "@heroicons/react/24/solid";
+import SkeletonLoading from "../../../../components/shared/loaders/SkeletonLoading";
 
 const PaymentSummary: React.FC = () => {
   const {
@@ -58,7 +59,7 @@ const PaymentSummary: React.FC = () => {
           <select
             value={selectedYear}
             onChange={handleYearChange}
-            className="border border-gray-300 rounded py-2 px-4"
+            className="border border-gray-300 rounded py-2 px-4 dark:bg-gray-900 dark:ring-0 dark:border-none"
           >
             {["2022", "2023", "2024", "2025"].map((y) => (
               <option key={y} value={y}>
@@ -69,7 +70,7 @@ const PaymentSummary: React.FC = () => {
         </div>
       </div>
 
-      {showSpinner && <LoadingApp />}
+      {showSpinner && <SkeletonLoading />}
       {error && <p className="text-red-500">{error}</p>}
 
       {!showSpinner && (
@@ -89,7 +90,7 @@ const PaymentSummary: React.FC = () => {
                 <DocumentTextIcon className="text-indigo-600 h-8 w-8" />
                 <h3 className="font-bold text-xl">Reporte de Ingresos</h3>
               </div>
-              <p className="text-sm text-gray-600 mb-4">
+              <p className="text-sm text-gray-600 mb-4 dark:text-gray-100">
                 Genera el reporte de ingresos por concepto de cuota de mantenimiento.
               </p>
               <PDFReportGenerator year={selectedYear} />
@@ -100,7 +101,7 @@ const PaymentSummary: React.FC = () => {
                 <WrenchScrewdriverIcon className="text-green-600 h-8 w-8" />
                 <h3 className="font-bold text-xl">Reporte de Mantenimiento</h3>
               </div>
-              <p className="text-sm text-gray-600 mb-4">
+              <p className="text-sm text-gray-600 mb-4 dark:text-gray-100">
                 Reporte detallado de los egresos de mantenimiento.
               </p>
               <PDFReportMaintenance year={selectedYear} />

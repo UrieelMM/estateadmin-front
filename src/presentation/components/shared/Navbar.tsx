@@ -32,7 +32,7 @@ const Navbar = () => {
   }, [fetchUserData, user]);
 
   return (
-    <Disclosure as="nav" className="bg-gradient-to-r shadow-lg from-indigo-700 to-indigo-600">
+    <Disclosure as="nav" className="bg-gradient-to-r shadow-lg from-indigo-700 to-indigo-600 dark:from-gray-900 dark:to-gray-900">
         <>
           <div className="w-full px-2 lg:pr-8">
             <div className="relative flex h-16 items-center justify-between">

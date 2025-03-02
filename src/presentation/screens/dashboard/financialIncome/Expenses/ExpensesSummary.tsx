@@ -4,13 +4,14 @@ import React, { useEffect } from "react";
 import { shallow } from "zustand/shallow";
 import { useExpenseSummaryStore } from "../../../../../store/expenseSummaryStore";
 import useUserStore from "../../../../../store/UserDataStore";
-import LoadingApp from "../../../../components/shared/loaders/LoadingApp";
+
 import ExpenseAnnualGeneralStats from "./ExpensesSummary/ExpenseAnnualGeneralStats";
 import ExpenseConceptGrowthSection from "./ExpensesSummary/ExpenseConceptGrowthSection";
 import ExpenseConceptAnalyticsAdvanced from "./ExpensesSummary/ExpenseConceptAnalyticsAdvanced";
 import ExpenseMonthComparisonTable from "./ExpensesSummary/ExpenseMonthComparisonTable";
 import ExpenseSummaryCards from "./ExpensesSummary/ExpenseSummaryCards";
 import PDFExpenseReportGenerator from "./ExpensesSummary/PDFExpenseReportGenerator";
+import SkeletonLoading from "../../../../components/shared/loaders/SkeletonLoading";
 
 
 // import ExpensePDFReportGenerator from "./ExpensePDFReportGenerator"; // Si deseas PDF
@@ -82,7 +83,7 @@ const ExpenseSummary: React.FC = () => {
       </div>
 
       {/* Loading / Error */}
-      {showSpinner && <LoadingApp />}
+      {showSpinner && <SkeletonLoading />}
       {error && <p className="text-red-500">{error}</p>}
 
       {/* Si ya no está loading o sí hay data, mostramos secciones */}

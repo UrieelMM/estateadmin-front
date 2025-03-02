@@ -70,7 +70,7 @@ const DetailedConceptsTable: React.FC<DetailedConceptsTableProps> = React.memo(
           <h3 className="text-xl font-bold mb-2">Ingresos por concepto</h3>
           {Object.entries(conceptRecords).map(([concept, records]) => (
             <details key={concept} className="mb-6 border rounded">
-              <summary className="cursor-pointer bg-gray-100 px-4 py-2 text-black font-bold">
+              <summary className="cursor-pointer bg-gray-100 px-4 py-2 text-black font-bold dark:bg-gray-800 dark:border-gray-200 dark:text-gray-100 dark:ring-0">
                 {concept}
               </summary>
               <div className="p-4">
@@ -99,7 +99,7 @@ const DetailedConceptsTable: React.FC<DetailedConceptsTableProps> = React.memo(
                     const delinquency = 100 - compliance;
 
                     return (
-                      <tr key={m}>
+                      <tr key={m} className="hover:bg-gray-50 transition-colors dark:hover:bg-gray-700 cursor-pointer">
                         <td className="border p-2">{monthNames[m] || m}</td>
                         <td className="border p-2">
                           {"$" +

@@ -30,20 +30,20 @@ const MonthComparisonTable: React.FC = React.memo(() => {
     <div className="mb-8 flex flex-col lg:flex-row gap-4">
       <div className="mb-8 w-full">
         <h3 className="text-xl font-bold mb-2">Comparativa mes a mes (totales)</h3>
-        <table className="min-w-full border-collapse border border-indigo-200">
+        <table className="min-w-full border-collapse border border-indigo-200 dark:border-gray-800">
           <thead>
-            <tr className="bg-indigo-500">
-              <th className="border p-2 text-white">Mes</th>
-              <th className="border p-2 text-white">Monto abonado</th>
-              <th className="border p-2 text-white">Monto pendiente</th>
-              <th className="border p-2 text-white">Saldo a favor</th>
-              <th className="border p-2 text-white">% Cumplimiento</th>
-              <th className="border p-2 text-white">% Morosidad</th>
+            <tr className="bg-indigo-500 dark:bg-gray-900">
+              <th className="border p-2 text-white dark:text-gray-100">Mes</th>
+              <th className="border p-2 text-white dark:text-gray-100">Monto abonado</th>
+              <th className="border p-2 text-white dark:text-gray-100">Monto pendiente</th>
+              <th className="border p-2 text-white dark:text-gray-100">Saldo a favor</th>
+              <th className="border p-2 text-white dark:text-gray-100">% Cumplimiento</th>
+              <th className="border p-2 text-white dark:text-gray-100">% Morosidad</th>
             </tr>
           </thead>
           <tbody>
             {sortedMonthlyStats.map((row) => (
-              <tr key={row.month}>
+              <tr key={row.month} className="hover:bg-gray-50 transition-colors dark:hover:bg-gray-700 cursor-pointer">
                 <td className="border p-2">{monthNames[row.month] || row.month}</td>
                 <td className="border p-2">
                   {"$" +

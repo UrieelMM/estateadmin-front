@@ -3,11 +3,12 @@ import React, { useEffect } from "react";
 import { shallow } from "zustand/shallow";
 import { useExpenseSummaryStore } from "../../../../../store/expenseSummaryStore";
 import { usePaymentSummaryStore } from "../../../../../store/paymentSummaryStore";
-import LoadingApp from "../../../../components/shared/loaders/LoadingApp";
+
 import BalanceGeneralCards from "./BalanceSummary/BalanceGeneralCards";
 import BalanceGeneralDetailTable from "./BalanceSummary/BalanceGeneralDetailTable";
 import BalanceGeneralGraph from "./BalanceSummary/BalanceGeneralGraph";
 import PDFBalanceGeneralReport from "./BalanceSummary/PDFBalanceGeneralReport";
+import SkeletonLoading from "../../../../components/shared/loaders/SkeletonLoading";
 
 const BalanceGeneral: React.FC = () => {
   // Datos de ingresos
@@ -97,7 +98,7 @@ const BalanceGeneral: React.FC = () => {
       </div>
 
       {/* Loading / Error */}
-      {loading && <LoadingApp />}
+      {loading && <SkeletonLoading />}
       {error && <p className="text-red-500">{error}</p>}
 
       {/* Se muestran las secciones cuando ya no se está cargando */}

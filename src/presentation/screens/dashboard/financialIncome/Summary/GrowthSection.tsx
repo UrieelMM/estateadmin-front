@@ -52,7 +52,7 @@ const GrowthSection: React.FC = React.memo(() => {
       <h3 className="text-xl font-bold mb-4">
         Recaudación respecto al mes anterior
       </h3>
-      <dl className="mt-5 grid grid-cols-1 divide-y divide-gray-200 rounded-lg bg-white shadow md:grid-cols-3 md:divide-x md:divide-y-0 mb-8">
+      <dl className="mt-5 grid grid-cols-1 divide-y divide-gray-200 rounded-lg bg-white shadow md:grid-cols-3 md:divide-x md:divide-y-0 mb-8 dark:bg-gray-800 dark:divide-gray-700">
         {overallGrowthMetrics.map((metric) => (
           <GrowthCard
             key={metric.title}

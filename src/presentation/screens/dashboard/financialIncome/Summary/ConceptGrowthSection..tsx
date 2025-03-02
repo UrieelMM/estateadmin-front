@@ -144,25 +144,25 @@ const ConceptGrowthSection: React.FC = React.memo(() => {
       {/* Bloque de estadísticas adicionales */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div className="p-4 shadow-md rounded-md">
-          <p className="text-sm text-gray-600">Ingreso promedio por concepto activo</p>
+          <p className="text-sm text-gray-600 dark:text-gray-100">Ingreso promedio por concepto activo</p>
           <p className="text-2xl font-semibold">
             {formatCurrency(additionalMetrics.avgIncome)}
           </p>
         </div>
         <div className="p-4 shadow-md rounded-md">
-          <p className="text-sm text-gray-600">Concepto con más ingresos</p>
+          <p className="text-sm text-gray-600 dark:text-gray-100">Concepto con más ingresos</p>
           <p className="text-lg font-semibold">
             {additionalMetrics.starConcept.concept}{" "}
-            <span className="text-sm text-gray-600">
+            <span className="text-sm text-gray-600 dark:text-gray-100">
               ({formatCurrency(additionalMetrics.starConcept.currentValue)})
             </span>
           </p>
         </div>
         <div className="p-4 shadow-md rounded-md">
-          <p className="text-sm text-gray-600">Concepto rezagado</p>
+          <p className="text-sm text-gray-600 dark:text-gray-100">Concepto rezagado</p>
           <p className="text-lg font-semibold">
             {additionalMetrics.worstConcept.concept}{" "}
-            <span className="text-sm text-gray-600">
+            <span className="text-sm text-gray-600 dark:text-gray-100">
               ({formatCurrency(additionalMetrics.worstConcept.currentValue)})
             </span>
           </p>
@@ -251,7 +251,7 @@ const ConceptGrowthSection: React.FC = React.memo(() => {
       {/* Botón para mostrar/ocultar detalles */}
       <div className="mt-4 flex justify-center">
         <button
-          className="px-4 py-2 border-b border-indigo-500 text-indigo-500 bg-transparent hover:border-indigo-700 hover:text-indigo-700"
+          className="px-4 py-2 border-b border-indigo-500 text-indigo-500 bg-transparent hover:border-indigo-700 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-500"
           onClick={() => setShowDetails(!showDetails)}
         >
           {showDetails ? "Ocultar detalles" : "Mostrar detalles"}

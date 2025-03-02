@@ -25,7 +25,7 @@ const GrowthCard: React.FC<GrowthCardProps> = ({ title, current, previous }) => 
 
   return (
     <div className="px-4 py-5 sm:p-6">
-      <dt className="text-base font-normal text-gray-900">{title}</dt>
+      <dt className="text-base font-normal text-gray-900 dark:text-gray-100">{title}</dt>
       <dd className="mt-1 flex items-baseline justify-between md:block lg:flex">
         <div className="flex items-baseline text-xl font-semibold text-indigo-600">
           {"$" +
@@ -33,7 +33,7 @@ const GrowthCard: React.FC<GrowthCardProps> = ({ title, current, previous }) => 
               minimumFractionDigits: 2,
               maximumFractionDigits: 2,
             })}
-          <span className="ml-2 text-sm font-medium text-gray-500">
+          <span className="ml-2 text-sm font-medium text-gray-500 dark:text-gray-100">
             -{" "}
             {"$" +
               previous.toLocaleString("en-US", {

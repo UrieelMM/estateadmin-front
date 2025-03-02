@@ -235,7 +235,7 @@ const AnnualGeneralStats: React.FC = () => {
       {/* Tarjetas con métricas nuevas */}
       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
         <div className="p-4 shadow-md rounded-md">
-          <p className="text-sm text-gray-600">Concepto estrella (Año)</p>
+          <p className="text-sm text-gray-600 dark:text-gray-100">Concepto estrella (Año)</p>
           <p className="text-base font-semibold text-indigo-500">{bestConcept[0]}</p>
           <p className="text-2xl font-semibold">
             {formatCurrency(bestConcept[1])}
@@ -243,7 +243,7 @@ const AnnualGeneralStats: React.FC = () => {
         </div>
 
         <div className="p-4 shadow-md rounded-md">
-          <p className="text-sm text-gray-600">Concepto rezagado (Año)</p>
+          <p className="text-sm text-gray-600 dark:text-gray-100">Concepto rezagado (Año)</p>
           <p className="text-base font-semibold text-indigo-500">{worstConcept[0]}</p>
           <p className="text-2xl font-semibold">
             {formatCurrency(worstConcept[1])}
@@ -251,7 +251,7 @@ const AnnualGeneralStats: React.FC = () => {
         </div>
 
         <div className="p-4 shadow-md rounded-md">
-          <p className="text-sm text-gray-600">Mes con mayor recaudación</p>
+          <p className="text-sm text-gray-600 dark:text-gray-100">Mes con mayor recaudación</p>
           <p className="text-base font-semibold text-indigo-500">
             {getMonthName(bestMonth[0])}
           </p>
@@ -261,7 +261,7 @@ const AnnualGeneralStats: React.FC = () => {
         </div>
 
         <div className="p-4 shadow-md rounded-md">
-          <p className="text-sm text-gray-600">Mes con menor recaudación</p>
+          <p className="text-sm text-gray-600 dark:text-gray-100">Mes con menor recaudación</p>
           <p className="text-base font-semibold text-indigo-500">
             {getMonthName(worstMonth[0])}
           </p>
@@ -271,7 +271,7 @@ const AnnualGeneralStats: React.FC = () => {
         </div>
 
         <div className="p-4 shadow-md rounded-md">
-          <p className="text-sm text-gray-600">Ingreso promedio mensual</p>
+          <p className="text-sm text-gray-600 dark:text-gray-100">Ingreso promedio mensual</p>
           <p className="text-2xl font-semibold">{formatCurrency(monthlyAverage)}</p>
         </div>
       </div>
@@ -305,7 +305,7 @@ const AnnualGeneralStats: React.FC = () => {
 
       {/* Gráfica de ÁREAS APILADAS: Evolución mensual de los top 5 conceptos (y "Otros") */}
       <h3 className="text-lg font-bold mt-8 mb-2">
-        Evolución mensual <span className="text-xs font-medium text-gray-500">(5 principales conceptos + otros)</span>
+        Evolución mensual <span className="text-xs font-medium text-gray-500 dark:text-gray-100">(5 principales conceptos + otros)</span>
       </h3>
       <div style={{ width: "100%", height: 400 }}>
         <ResponsiveContainer>
