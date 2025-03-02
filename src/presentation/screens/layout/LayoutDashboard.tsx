@@ -19,7 +19,7 @@ import useUserStore from "../../../store/UserDataStore";
 import Loading from "../../components/shared/loaders/Loading";
 import { auth } from "../../../firebase/firebase";
 import logo from "../../../assets/logo.png";
-// import InitialSetupSteps from "../dashboard/InitialSetup/InitialSetupSteps";
+import InitialSetupSteps from "../dashboard/InitialSetup/InitialSetupSteps";
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(" ");
@@ -84,7 +84,7 @@ const LayoutDashboard = ({ children }: Props) => {
 
   return !isLoadingData && componentIsVisible ? (
     <div className="min-h-screen bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100">
-      {/* <InitialSetupSteps /> */}
+      <InitialSetupSteps />
 
       {/* Botón móvil (arriba a la izquierda) para abrir/cerrar sidebar */}
       <div className="lg:hidden px-1 py-4">
