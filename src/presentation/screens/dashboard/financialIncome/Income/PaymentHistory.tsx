@@ -51,6 +51,8 @@ const PaymentHistory = () => {
     adminEmail,
     logoBase64,
     signatureBase64,
+    currentCreditBalance, // NUEVO: saldo actual
+    pendingAmount,        // NUEVO: monto pendiente (suma de cargos no pagados)
   } = usePaymentHistoryStore();
 
   // Cargar usuarios al montar
@@ -105,12 +107,10 @@ const PaymentHistory = () => {
       acc: Record<string, { paid: number; pending: number; saldo: number }>,
       payment: PaymentRecord
     ) => {
-      // Si payment.month incluye "YYYY-", dividimos
       let [_yearPart, monthPart] = ["", ""];
       if (payment.month.includes("-")) {
         [_yearPart, monthPart] = payment.month.split("-");
       } else {
-        // O a veces solo "MM"
         monthPart = payment.month;
       }
 
@@ -125,7 +125,7 @@ const PaymentHistory = () => {
     {}
   );
 
-  // Convertimos el objeto en un array ordenado por mes
+  // Convertir objeto en array ordenada por mes
   const chartArray = Object.entries(chartData)
     .sort((a, b) => parseInt(a[0]) - parseInt(b[0]))
     .map(([month, data]) => ({
@@ -135,19 +135,14 @@ const PaymentHistory = () => {
       saldo: data.saldo,
     }));
 
-  // Cálculos interesantes: totalPaid, totalPending, totalSaldo, etc.
-  const { totalPaidYear, totalPendingYear, totalSaldoYear, bestMonthName } = useMemo(() => {
+  // Cálculos interesantes: totalPaidYear y mes con mayor recaudación se basan en el gráfico
+  const { totalPaidYear, bestMonthName } = useMemo(() => {
     let totalPaidYear = 0;
-    let totalPendingYear = 0;
-    let totalSaldoYear = 0;
     let monthMaxIndex = -1;
     let maxPaid = 0;
 
     chartArray.forEach((item, idx) => {
       totalPaidYear += item.paid;
-      totalPendingYear += item.pending;
-      totalSaldoYear += item.saldo;
-      // Mes con mayor "paid"
       if (item.paid > maxPaid) {
         maxPaid = item.paid;
         monthMaxIndex = idx;
@@ -155,7 +150,7 @@ const PaymentHistory = () => {
     });
 
     const bestMonthName = monthMaxIndex !== -1 ? chartArray[monthMaxIndex].month : "N/A";
-    return { totalPaidYear, totalPendingYear, totalSaldoYear, bestMonthName };
+    return { totalPaidYear, bestMonthName };
   }, [chartArray]);
 
   // Obtenemos el condómino seleccionado (para el PDF)
@@ -163,7 +158,7 @@ const PaymentHistory = () => {
 
   return (
     <div className="p-4">
-      {/* Filtros: Selección de Condomino y Año */}
+      {/* Filtros: Selección de Condómino y Año */}
       <div className="flex flex-col gap-4 mb-4 mt-6">
         <div>
           <h2 className="text-xl font-bold mb-4">Resumen individual por condómino</h2>
@@ -171,7 +166,7 @@ const PaymentHistory = () => {
           <select
             value={selectedUserUid}
             onChange={handleUserChange}
-            className="border border-gray-300 rounded p-2 w-full"
+            className="w-full pl-2 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
           >
             <option value="">-- Selecciona un condómino --</option>
             {condominiumsUsers
@@ -193,7 +188,7 @@ const PaymentHistory = () => {
           <select
             value={selectedYear}
             onChange={handleYearChange}
-            className="border border-gray-300 rounded p-2 w-full"
+            className="w-full pl-2 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
           >
             {["2022", "2023", "2024", "2025"].map((year) => (
               <option key={year} value={year}>
@@ -207,10 +202,7 @@ const PaymentHistory = () => {
       {loading && <LoadingApp />}
       {error && <p className="text-red-500">Error: {error}</p>}
 
-      {/* 
-        Tarjetas con datos interesantes del año 
-        Ejemplo: total pagado, total pendiente, saldo total, mes con mayor recaudación
-      */}
+      {/* Tarjetas con datos interesantes del año */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
         <div className="p-4 shadow-md rounded-md">
           <p className="text-sm text-gray-600">Total Pagado en el Año</p>
@@ -221,13 +213,13 @@ const PaymentHistory = () => {
         <div className="p-4 shadow-md rounded-md">
           <p className="text-sm text-gray-600">Total Pendiente</p>
           <p className="text-2xl font-semibold">
-            {formatCurrency(totalPendingYear)}
+            {formatCurrency(pendingAmount)}
           </p>
         </div>
         <div className="p-4 shadow-md rounded-md">
           <p className="text-sm text-gray-600">Saldo a favor total</p>
           <p className="text-2xl font-semibold">
-            {formatCurrency(totalSaldoYear)}
+            {formatCurrency(currentCreditBalance)}
           </p>
         </div>
         <div className="p-4 shadow-md rounded-md">
@@ -236,7 +228,7 @@ const PaymentHistory = () => {
         </div>
       </div>
 
-      {/* Gráfica: Resumen por Mes (LineChart con 3 líneas) */}
+      {/* Gráfica: Resumen por Mes */}
       <div className="mt-4">
         <h3 className="text-xl font-semibold mb-2">Resumen por mes</h3>
         {chartArray.length > 0 ? (
@@ -244,14 +236,9 @@ const PaymentHistory = () => {
             <LineChart data={chartArray} margin={{ top: 20, right: 20, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="month" />
-              <YAxis
-                tickFormatter={(val: number) => formatCurrency(val)}
-                width={80}
-              />
+              <YAxis tickFormatter={(val: number) => formatCurrency(val)} width={80} />
               <Tooltip formatter={(val: number) => formatCurrency(val)} />
               <Legend />
-
-              {/* paid, pending, saldo con diferentes colores */}
               <Line
                 type="monotone"
                 dataKey="paid"
@@ -286,7 +273,7 @@ const PaymentHistory = () => {
         )}
       </div>
 
-      {/* Componente para generar reporte PDF individual */}
+      {/* Reporte PDF individual */}
       {selectedUserUid && selectedCondo && (
         <PDFReportGeneratorSingle
           year={selectedYear}
@@ -294,15 +281,11 @@ const PaymentHistory = () => {
             number: selectedCondo.number || "",
             name: selectedCondo.name || "",
           }}
-          // Se pasa la agrupación por mes para el reporte general
           detailed={detailed}
-          // Se pasa la agrupación por concepto para el reporte por concepto
           detailedByConcept={detailedByConcept}
-          // Se pasan los datos de la administradora
           adminCompany={adminCompany}
           adminPhone={adminPhone}
           adminEmail={adminEmail}
-          // Se pasa el logo y firma desde el store
           logoBase64={logoBase64}
           signatureBase64={signatureBase64}
         />

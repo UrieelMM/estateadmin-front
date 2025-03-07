@@ -52,7 +52,7 @@ const UsersScreen = () => {
   return (
     <>
       <div className="px-4 shadow-lg  py-4 rounded-md sm:px-6 lg:px-8">
-        <header className="bg-gray-50 shadow-md flex w-full h-16 justify-center px-2 rounded-md items-center mb-2">
+        <header className="bg-gray-50 font-medium shadow-lg flex w-full h-16 justify-between px-2 rounded-md items-center mb-6 dark:shadow-2xl dark:bg-gray-800 dark:text-gray-100">
           <p className="text-xl font-medium">Condominos</p>
         </header>
         <form className="my-8" onSubmit={handleSearch}>
@@ -80,7 +80,7 @@ const UsersScreen = () => {
               onChange={(e) => setSearchTerm(e.target.value)}
               id="user-search"
               style={{backgroundColor: "white !important", color: "black !important", }}
-              className="block w-full p-4 pl-10 text-sm border border-indigo-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-50"
+              className="block w-full p-4 pl-10 text-sm border outline-none border-indigo-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-50 dark:bg-gray-900 dark:text-gray-100 dark:ring-0 dark:focus:border-indigo-300"
               placeholder="Buscar por nombre"
             />
             <button
@@ -97,69 +97,69 @@ const UsersScreen = () => {
               <tr>
                 <th
                   scope="col"
-                  className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-0"
+                  className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-0 dark:text-gray-100"
                 >
                   Nombre
                 </th>
                 <th
                   scope="col"
-                  className="hidden px-3 py-3.5 text-left text-sm font-semibold text-gray-900 lg:table-cell"
+                  className="hidden px-3 py-3.5 text-left text-sm font-semibold text-gray-900 lg:table-cell dark:text-gray-100"
                 >
                   Teléfono
                 </th>
                 <th
                   scope="col"
-                  className="hidden px-3 py-3.5 text-left text-sm font-semibold text-gray-900 sm:table-cell"
+                  className="hidden px-3 py-3.5 text-left text-sm font-semibold text-gray-900 sm:table-cell dark:text-gray-100"
                 >
                   Email
                 </th>
                 <th
                   scope="col"
-                  className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
+                  className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-gray-100"
                 >
                   Role
                 </th>
                 <th
                   scope="col"
-                  className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
+                  className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-gray-100"
                 >
                   Departamento
                 </th>
                 <th
                   scope="col"
-                  className="hidden px-3 py-3.5 text-left text-sm font-semibold text-gray-900 sm:table-cell"
+                  className="hidden px-3 py-3.5 text-left text-sm font-semibold text-gray-900 sm:table-cell dark:text-gray-100"
                 >
                   Acciones
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200 bg-white">
+            <tbody className="divide-y divide-gray-200 bg-white dark:bg-gray-800 dark:divide-gray-100">
               {users.map((user) => (
-                <tr key={user.email}>
-                  <td className="w-full max-w-0 py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:w-auto sm:max-w-none sm:pl-0">
+                <tr key={user.email} className="hover:bg-gray-50 transition-colors dark:hover:bg-gray-700 cursor-pointer">
+                  <td className="w-full max-w-0 py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:w-auto sm:max-w-none sm:pl-0 dark:text-gray-100">
                     {user.name} {user.lastName}
                     <dl className="font-normal lg:hidden">
-                      <dd className="mt-1 truncate text-gray-700">
+                      <dd className="mt-1 truncate text-gray-700 dark:text-gray-100">
                         {user.phone}
                       </dd>
-                      <dd className="mt-1 truncate text-gray-500 sm:hidden">
+                      <dd className="mt-1 truncate text-gray-500 sm:hidden dark:text-gray-100">
                         {user.email}
                       </dd>
                     </dl>
                   </td>
-                  <td className="hidden px-3 py-4 text-sm text-gray-500 lg:table-cell">
+                  <td className="hidden px-3 py-4 text-sm text-gray-500 lg:table-cell dark:text-gray-100">
                     {user.phone}
                   </td>
-                  <td className="hidden px-3 py-4 text-sm text-gray-500 sm:table-cell">
+                  <td className="hidden px-3 py-4 text-sm text-gray-500 sm:table-cell dark:text-gray-100">
                     {user.email}
                   </td>
-                  <td className="px-3 py-4 text-sm text-gray-500">
+                  <td className="px-3 py-4 text-sm text-gray-500 dark:text-gray-100">
                     {user.role}
                   </td>
-                  <td className="px-3 py-4 text-sm text-gray-500">
+                  <td className="px-3 py-4 text-sm text-gray-500 dark:text-gray-100">
                     {user.number}
                   </td>
-                  <td className="hidden px-3 py-4 text-sm text-gray-500 sm:table-cell">
+                  <td className="hidden px-3 py-4 text-sm text-gray-500 sm:table-cell dark:text-gray-100">
                     <div className="flex-col lg:flex-row">
                       <a
                         href="#"

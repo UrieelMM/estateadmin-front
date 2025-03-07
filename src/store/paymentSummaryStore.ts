@@ -23,33 +23,54 @@ async function getBase64FromUrl(url: string): Promise<string> {
   });
 }
 
+// NUEVO: Para convertir centavos (enteros) a pesos (float)
+function centsToPesos(val: any): number {
+  const intVal = parseInt(val, 10);
+  if (isNaN(intVal)) return 0;
+  return intVal / 100;
+}
+
+// NUEVA función auxiliar para formatear una fecha a "dd/mm/aaaa"
+function formatDate(d: Date): string {
+  const day = ("0" + d.getDate()).slice(-2);
+  const month = ("0" + (d.getMonth() + 1)).slice(-2);
+  const year = d.getFullYear();
+  return `${day}/${month}/${year}`;
+}
+
 export interface PaymentRecord {
   id: string;
   clientId: string;
   numberCondominium: string;
-  month: string; // Mes en formato "MM" obtenido de charge.startAt
-  amountPaid: number;
-  amountPending: number;
-  concept: string; // Tipo de cargo (por ejemplo, "Cuota de mantenimiento", "Electricidad", etc.)
-  creditBalance: number; // Puede ser 0 si no se reporta
-  paid: boolean; // Indica si el cargo fue pagado (cumplimiento) o no (morosidad)
+  month: string; // "MM"
+  amountPaid: number;     // en pesos
+  amountPending: number;  // en pesos
+  concept: string;
+  // Se mantienen los valores de saldo a favor pero ahora se resta el crédito usado
+  creditBalance: number;  // en pesos
+  creditUsed?: number;    // NUEVO: crédito utilizado (en pesos)
+  paid: boolean;
+  // NUEVO: Se agrega el ID de la cuenta financiera a la que se aplicó el pago
+  financialAccountId: string;
+  // NUEVO: Campo de fecha de pago, formateado a "dd/mm/aaaa"
+  paymentDate?: string;
 }
 
 export type MonthlyStat = {
-  month: string; // "01", "02", ...
-  paid: number;      // Suma de amountPaid
-  pending: number;   // Suma de amountPending
-  saldo: number;     // Suma de creditBalance
-  complianceRate: number;  // % de cargos pagados ese mes
-  delinquencyRate: number; // 100 - complianceRate
+  month: string; 
+  paid: number;      
+  pending: number;   
+  saldo: number;     
+  complianceRate: number;  
+  delinquencyRate: number; 
 };
 
 type PaymentSummaryState = {
   payments: PaymentRecord[];
   totalIncome: number;
   totalPending: number;
-  detailed: Record<string, PaymentRecord[]>; // Agrupados por número de condómino
-  conceptRecords: Record<string, PaymentRecord[]>; // Registros agrupados por concepto
+  detailed: Record<string, PaymentRecord[]>;
+  conceptRecords: Record<string, PaymentRecord[]>;
   comparativePercentages: Record<string, { compliance: number; default: number }>;
   monthlyStats: MonthlyStat[];
   totalCondominiums: number;
@@ -61,6 +82,8 @@ type PaymentSummaryState = {
   loading: boolean;
   error: string | null;
   selectedYear: string;
+  // NUEVO: Agrupación de registros por financial account
+  byFinancialAccount: Record<string, PaymentRecord[]>;
   fetchSummary: (year?: string) => Promise<void>;
   setSelectedYear: (year: string) => void;
 };
@@ -82,6 +105,7 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>((set) => ({
   loading: false,
   error: null,
   selectedYear: new Date().getFullYear().toString(),
+  byFinancialAccount: {},
 
   fetchSummary: async (year?: string) => {
     set({ loading: true, error: null });
@@ -99,7 +123,7 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>((set) => ({
         throw new Error("Condominio no seleccionado");
       }
 
-      // Obtener datos del cliente (administradora)
+      // Obtener datos de la administradora
       const clientDocRef = doc(db, "clients", clientId);
       const clientDocSnap = await getDoc(clientDocRef);
       let adminCompany = "";
@@ -122,7 +146,7 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>((set) => ({
         }
       }
 
-      // 1. Obtener todos los usuarios (condóminos) del condominio (excluyendo roles administrativos)
+      // 1. Obtener todos los usuarios (condóminos)
       const usersQuery = collection(
         db,
         `clients/${clientId}/condominiums/${condominiumId}/users`
@@ -141,7 +165,6 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>((set) => ({
       const totalCondominiums = users.length;
 
       const paymentRecords: PaymentRecord[] = [];
-      // Contadores por mes para cargos y cargos pagados (para estadísticas mensuales)
       const chargeCount: Record<string, number> = {};
       const paidChargeCount: Record<string, number> = {};
       for (let i = 1; i <= 12; i++) {
@@ -150,7 +173,9 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>((set) => ({
         paidChargeCount[m] = 0;
       }
 
-      // 2. Recorrer cada usuario y sus cargos (charges)
+      const selectedYearStr = year || new Date().getFullYear().toString();
+
+      // 2. Recorrer usuarios y cargos
       for (const userObj of users) {
         const numberCondominium = String(userObj.number);
         const chargesRef = collection(
@@ -158,59 +183,84 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>((set) => ({
           `clients/${clientId}/condominiums/${condominiumId}/users/${userObj.id}/charges`
         );
         const chargesSnapshot = await getDocs(chargesRef);
+
         for (const chargeDoc of chargesSnapshot.docs) {
           const chargeData = chargeDoc.data();
-          // Considerar solo cargos con startAt del año seleccionado
           if (!chargeData.startAt || typeof chargeData.startAt !== "string") continue;
-          if (!chargeData.startAt.startsWith(year || new Date().getFullYear().toString()))
-            continue;
-          // Extraer el mes (por ejemplo, "2025-01-01 00:00" → "01")
+          if (!chargeData.startAt.startsWith(selectedYearStr)) continue;
+
+          // Extraer el mes del campo startAt (asumido formato "YYYY-MM-DD ...")
           const monthCode = chargeData.startAt.substring(5, 7);
 
-          // Contabilizar el cargo para el mes
           chargeCount[monthCode] = (chargeCount[monthCode] || 0) + 1;
           if (chargeData.paid === true) {
             paidChargeCount[monthCode] = (paidChargeCount[monthCode] || 0) + 1;
           }
 
-          // 3. Agregar datos de la subcolección de payments (si existen)
+          // 3. Subcolección de payments
           const paymentsRef = collection(
             db,
             `clients/${clientId}/condominiums/${condominiumId}/users/${userObj.id}/charges/${chargeDoc.id}/payments`
           );
           const paymentsSnapshot = await getDocs(paymentsRef);
+
           let totalAmountPaid = 0;
           let totalAmountPendingFromPayments = 0;
           let totalCreditBalance = 0;
+          let totalCreditUsed = 0;
+          let accountId = ""; // Para obtener el financialAccountId
+          // Inicializar variable para la fecha; si hay más de un pago, se sobrescribe (o se podría concatenar)
+          let formattedDate = "";
           paymentsSnapshot.forEach((paymentDoc) => {
             const paymentData = paymentDoc.data();
-            totalAmountPaid += parseFloat(paymentData.amountPaid) || 0;
-            totalAmountPendingFromPayments += parseFloat(paymentData.amountPending) || 0;
-            totalCreditBalance += parseFloat(paymentData.creditBalance) || 0;
+            totalAmountPaid += centsToPesos(paymentData.amountPaid) || 0;
+            totalAmountPendingFromPayments += centsToPesos(paymentData.amountPending) || 0;
+            totalCreditBalance += centsToPesos(paymentData.creditBalance) || 0;
+            totalCreditUsed += paymentData.creditUsed ? centsToPesos(paymentData.creditUsed) : 0;
+            if (!accountId && paymentData.financialAccountId) {
+              accountId = paymentData.financialAccountId;
+            }
+            // Procesar paymentDate y formatearlo a "dd/mm/aaaa"
+            if (paymentData.paymentDate) {
+              if (paymentData.paymentDate.toDate) {
+                const d = paymentData.paymentDate.toDate();
+                formattedDate = formatDate(d);
+              } else if (typeof paymentData.paymentDate === "string") {
+                const d = new Date(paymentData.paymentDate);
+                if (!isNaN(d.getTime())) {
+                  formattedDate = formatDate(d);
+                } else {
+                  formattedDate = paymentData.paymentDate;
+                }
+              }
+            }
           });
-          // Si el cargo NO está pagado, se debe usar el monto pendiente declarado en chargeData (campo "amount")
-          // Asumimos que chargeData.amount contiene el monto total a recaudar para ese cargo
-          const pendingAmount =
-            chargeData.paid === false
-              ? parseFloat(chargeData.amount) || 0
-              : totalAmountPendingFromPayments;
+
+          let pendingAmount = 0;
+          if (chargeData.paid === false) {
+            pendingAmount = centsToPesos(chargeData.amount) || 0;
+          } else {
+            pendingAmount = totalAmountPendingFromPayments;
+          }
 
           const record: PaymentRecord = {
             id: chargeDoc.id,
             clientId,
             numberCondominium,
             month: monthCode,
-            amountPaid: totalAmountPaid,
-            amountPending: pendingAmount,
+            amountPaid: parseFloat(totalAmountPaid.toFixed(2)),
+            amountPending: parseFloat(pendingAmount.toFixed(2)),
             concept: chargeData.concept || "Desconocido",
-            creditBalance: totalCreditBalance,
+            creditBalance: parseFloat(totalCreditBalance.toFixed(2)),
+            creditUsed: parseFloat(totalCreditUsed.toFixed(2)),
             paid: chargeData.paid === true,
+            financialAccountId: accountId || "N/A",
+            paymentDate: formattedDate, // Se asigna la fecha formateada
           };
           paymentRecords.push(record);
         }
       }
 
-      // 4. Calcular totales mensuales a partir de los PaymentRecord
       const chartData: Record<string, { paid: number; pending: number; saldo: number }> = {};
       for (let i = 1; i <= 12; i++) {
         const m = i.toString().padStart(2, "0");
@@ -220,16 +270,15 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>((set) => ({
       let totalPending = 0;
       paymentRecords.forEach((pr) => {
         chartData[pr.month].paid += pr.amountPaid;
-        // Solo se suma pendiente de cargos no pagados
         if (!pr.paid) {
           chartData[pr.month].pending += pr.amountPending;
           totalPending += pr.amountPending;
         }
-        chartData[pr.month].saldo += pr.creditBalance;
+        // Calcular saldo a favor: creditBalance - creditUsed
+        chartData[pr.month].saldo += (pr.creditBalance - (pr.creditUsed || 0));
         totalIncome += pr.amountPaid;
       });
 
-      // 5. Construir el array de estadísticas mensuales (monthlyStats)
       const monthlyStats: MonthlyStat[] = [];
       for (let i = 1; i <= 12; i++) {
         const m = i.toString().padStart(2, "0");
@@ -242,15 +291,14 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>((set) => ({
         const delinquency = 100 - compliance;
         monthlyStats.push({
           month: m,
-          paid,
-          pending,
-          saldo,
+          paid: parseFloat(paid.toFixed(2)),
+          pending: parseFloat(pending.toFixed(2)),
+          saldo: parseFloat(saldo.toFixed(2)),
           complianceRate: parseFloat(compliance.toFixed(2)),
           delinquencyRate: parseFloat(delinquency.toFixed(2)),
         });
       }
 
-      // 6. Agrupar los PaymentRecord por número de condómino para la vista detallada
       const detailed: Record<string, PaymentRecord[]> = {};
       paymentRecords.forEach((pr) => {
         const key = pr.numberCondominium || "Desconocido";
@@ -260,7 +308,6 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>((set) => ({
         detailed[key].push(pr);
       });
 
-      // 7. Agrupar los PaymentRecord por concepto para la vista por concepto
       const conceptRecords: Record<string, PaymentRecord[]> = {};
       paymentRecords.forEach((pr) => {
         const key = pr.concept || "Desconocido";
@@ -268,6 +315,15 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>((set) => ({
           conceptRecords[key] = [];
         }
         conceptRecords[key].push(pr);
+      });
+
+      const byFinancialAccount: Record<string, PaymentRecord[]> = {};
+      paymentRecords.forEach((pr) => {
+        const key = pr.financialAccountId;
+        if (!byFinancialAccount[key]) {
+          byFinancialAccount[key] = [];
+        }
+        byFinancialAccount[key].push(pr);
       });
 
       set({
@@ -285,6 +341,7 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>((set) => ({
         logoBase64,
         signatureBase64,
         loading: false,
+        byFinancialAccount,
       });
     } catch (error: any) {
       console.error("Error fetching payment summary:", error);

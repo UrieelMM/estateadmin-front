@@ -1,6 +1,13 @@
 import { Fragment, useEffect, useState } from "react";
 import { Transition, Dialog } from "@headlessui/react";
-import { PhotoIcon, XMarkIcon, UserIcon, CurrencyDollarIcon, CreditCardIcon, ClipboardIcon } from "@heroicons/react/16/solid";
+import {
+  PhotoIcon,
+  XMarkIcon,
+  UserIcon,
+  CurrencyDollarIcon,
+  CreditCardIcon,
+  ClipboardIcon,
+} from "@heroicons/react/16/solid";
 import useUserStore from "../../../../store/UserDataStore";
 import { UserData } from "../../../../interfaces/UserData";
 import { usePaymentStore } from "../../../../store/usePaymentStore";
@@ -30,11 +37,17 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
   const [comments, setComments] = useState<string>("");
   const [paymentType, setPaymentType] = useState<string>("");
 
+  // Fecha y hora de pago (se almacena como Date)
+  const [paymentDate, setPaymentDate] = useState<Date | null>(null);
+
+  // ID de la cuenta financiera
+  const [financialAccountId, setFinancialAccountId] = useState<string>("");
+
   // Archivo adjunto
   const [file, setFile] = useState<File | File[] | null>(null);
   const [fileName, setFileName] = useState("");
 
-  // Estado para el usuario seleccionado y para el uso de saldo a favor
+  // Estado para el usuario seleccionado y uso de saldo a favor
   const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
   const [useCreditBalance, setUseCreditBalance] = useState<boolean>(false);
 
@@ -42,25 +55,37 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
   const fetchCondominiumsUsers = useUserStore((state) => state.fetchCondominiumsUsers);
   const condominiumsUsers = useUserStore((state) => state.condominiumsUsers);
 
-  // Store de pagos y cargos
-  const addMaintenancePayment = usePaymentStore((state) => state.addMaintenancePayment);
-  const fetchUserCharges = usePaymentStore((state) => state.fetchUserCharges);
-  const charges = usePaymentStore((state) => state.charges);
+  // Store de pagos
+  const {
+    charges,
+    addMaintenancePayment,
+    fetchUserCharges,
+    financialAccounts,
+    fetchFinancialAccounts,
+  } = usePaymentStore((state) => ({
+    charges: state.charges,
+    addMaintenancePayment: state.addMaintenancePayment,
+    fetchUserCharges: state.fetchUserCharges,
+    financialAccounts: state.financialAccounts,
+    fetchFinancialAccounts: state.fetchFinancialAccounts,
+  }));
 
-  // Estado para cargos seleccionados (multi-cargo o único)
+  // Store de PaymentSummary
+  const { fetchSummary, selectedYear } = usePaymentSummaryStore((state) => ({
+    fetchSummary: state.fetchSummary,
+    selectedYear: state.selectedYear,
+  }));
+
+  // Estado para cargos seleccionados (multi-cargo)
   const [selectedCharges, setSelectedCharges] = useState<SelectedCharge[]>([]);
-
-  // Importamos fetchSummary y selectedYear desde el store de PaymentSummary,
-  // para que al registrar un pago podamos actualizar ese componente.
-  const fetchSummary = usePaymentSummaryStore((state) => state.fetchSummary);
-  const selectedYear = usePaymentSummaryStore((state) => state.selectedYear);
 
   useEffect(() => {
     fetchCondominiumsUsers();
     if (condominiumsUsers) {
       setUsers(condominiumsUsers);
     }
-  }, [fetchCondominiumsUsers, condominiumsUsers]);
+    fetchFinancialAccounts();
+  }, [fetchCondominiumsUsers, fetchFinancialAccounts, condominiumsUsers]);
 
   const handleRecipientChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const uid = e.target.value;
@@ -70,9 +95,9 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
       setNumberCondominium(user.number || "");
       setSelectedUser(user);
       if (user.number) {
-        fetchUserCharges(user.number).catch((err) =>
-          console.error("Error fetching user charges:", err)
-        );
+        fetchUserCharges(user.number).catch((err) => {
+          console.error("Error fetching user charges:", err);
+        });
       }
       setSelectedCharges([]);
     }
@@ -88,18 +113,29 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
 
   const handleAmountChange = (chargeId: string, newAmount: number) => {
     setSelectedCharges((prev) =>
-      prev.map((sc) => (sc.chargeId === chargeId ? { ...sc, amount: newAmount } : sc))
+      prev.map((sc) =>
+        sc.chargeId === chargeId ? { ...sc, amount: newAmount } : sc
+      )
     );
   };
 
-  // Sumar los montos asignados
+  // Sumar montos asignados
   const totalAssigned = selectedCharges.reduce((sum, sc) => sum + sc.amount, 0);
 
-  // Si se usa crédito, el total efectivo es: monto abonado + crédito disponible; de lo contrario, es solo monto abonado.
+  // Convertir el saldo a favor del usuario (que viene en centavos) a pesos
+  const userCreditInPesos =
+    selectedUser && selectedUser.totalCreditBalance
+      ? Number(selectedUser.totalCreditBalance) / 100
+      : 0;
+
+  // Si se usa crédito, sumar el saldo convertido
   const effectiveTotal =
     useCreditBalance && selectedUser
-      ? Number(amountPaid) + Number(selectedUser.totalCreditBalance || 0)
+      ? Number(amountPaid) + userCreditInPesos
       : Number(amountPaid);
+
+  // Calcular el crédito usado (si se utiliza, se envía el total del saldo disponible)
+  const creditUsed = useCreditBalance ? userCreditInPesos : 0;
 
   const remainingEffective = effectiveTotal - totalAssigned;
 
@@ -107,7 +143,16 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
     event.preventDefault();
     setLoading(true);
 
-    // Validaciones
+    if (!paymentDate) {
+      toast.error("La fecha de pago es obligatoria.");
+      setLoading(false);
+      return;
+    }
+    if (!financialAccountId) {
+      toast.error("La cuenta es obligatoria.");
+      setLoading(false);
+      return;
+    }
     if (!amountPaid && !useCreditBalance) {
       toast.error("El campo 'monto abonado' es obligatorio.");
       setLoading(false);
@@ -139,13 +184,18 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
       }
     } else {
       if (Number(amountPaid).toFixed(2) !== Number(totalAssigned).toFixed(2)) {
-        toast.error("El monto abonado debe coincidir exactamente con la suma de los cargos asignados.");
+        toast.error(
+          "El monto abonado debe coincidir exactamente con la suma de los cargos asignados."
+        );
         setLoading(false);
         return;
       }
     }
 
-    if (useCreditBalance && (!selectedUser?.totalCreditBalance || Number(selectedUser.totalCreditBalance) <= 0)) {
+    if (
+      useCreditBalance &&
+      (!selectedUser?.totalCreditBalance || Number(selectedUser.totalCreditBalance) / 100 <= 0)
+    ) {
       toast.error("No tienes saldo a favor disponible.");
       setLoading(false);
       return;
@@ -162,8 +212,10 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
         selectedCharges,
         useCreditBalance,
         paymentType,
+        paymentDate: paymentDate.toISOString(),
+        financialAccountId,
+        creditUsed, // Se envía el crédito utilizado
       };
-
       await addMaintenancePayment(paymentObj);
 
       // Resetear formulario
@@ -178,12 +230,12 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
       setSelectedCharges([]);
       setSelectedUser(null);
       setUseCreditBalance(false);
+      setPaymentDate(null);
+      setFinancialAccountId("");
 
       setOpen(false);
       setLoading(false);
       toast.success("Pago registrado correctamente");
-
-      // Actualizar PaymentSummary invocando fetchSummary (para el año seleccionado)
       fetchSummary(selectedYear);
     } catch (error) {
       setLoading(false);
@@ -218,9 +270,12 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                 leaveTo="translate-x-full"
               >
                 <Dialog.Panel className="pointer-events-auto w-screen max-w-3xl">
-                  <form onSubmit={handleSubmit} className="flex h-full flex-col divide-y divide-gray-200 bg-white shadow-xl">
-                    <div className="h-0 flex-1 overflow-y-auto">
-                      <div className="bg-indigo-700 px-4 py-6 sm:px-6">
+                  <form
+                    onSubmit={handleSubmit}
+                    className="flex h-full flex-col divide-y divide-gray-200 bg-white shadow-xl"
+                  >
+                    <div className="h-0 flex-1 overflow-y-auto dark:bg-gray-900">
+                      <div className="bg-indigo-700 px-4 py-6 sm:px-6 dark:bg-gray-800">
                         <div className="flex items-center justify-between">
                           <Dialog.Title className="text-base font-semibold leading-6 text-white">
                             Registrar pago
@@ -245,10 +300,13 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                       <div className="flex flex-1 flex-col justify-between">
                         <div className="divide-y divide-gray-200 px-4 sm:px-6">
                           <div className="space-y-6 pb-5 pt-6">
-                            {/* Selección de condomino */}
+                            {/* Seleccionar condómino */}
                             <div>
-                              <label htmlFor="nameRecipient" className="block text-sm font-medium leading-6 text-gray-900">
-                                Condomino
+                              <label
+                                htmlFor="nameRecipient"
+                                className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100"
+                              >
+                                Condómino
                               </label>
                               <div className="mt-2 relative">
                                 <div className="absolute left-2 top-1/2 flex items-center transform -translate-y-1/2">
@@ -258,17 +316,12 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                                   onChange={handleRecipientChange}
                                   name="nameRecipient"
                                   id="nameRecipient"
-                                  className="block w-full rounded-md border-0 pl-10 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                                  className="block w-full rounded-md border-0 pl-10 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
                                   value={users.find((u) => u.number === numberCondominium)?.uid || ""}
                                 >
-                                  <option value="">Selecciona un condomino</option>
+                                  <option value="">Selecciona un condómino</option>
                                   {users
-                                    .filter(
-                                      (user) =>
-                                        user.role !== "admin" &&
-                                        user.role !== "super-admin" &&
-                                        user.role !== "security"
-                                    )
+                                    .filter((user) => user.role !== "admin" && user.role !== "super-admin" && user.role !== "security")
                                     .map((user) => (
                                       <option key={user.uid} value={user.uid}>
                                         {user.number} {user.name}
@@ -277,9 +330,31 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                                 </select>
                               </div>
                             </div>
+                            {/* Fecha y hora de pago */}
+                            <div>
+                              <label
+                                htmlFor="paymentDate"
+                                className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100"
+                              >
+                                Fecha y hora de pago
+                              </label>
+                              <div className="mt-2 relative">
+                                <input
+                                  onChange={(e) => setPaymentDate(new Date(e.target.value))}
+                                  type="datetime-local"
+                                  name="paymentDate"
+                                  id="paymentDate"
+                                  className="block w-full rounded-md border-0 py-1.5 pl-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
+                                  value={paymentDate ? paymentDate.toISOString().slice(0, 16) : ""}
+                                />
+                              </div>
+                            </div>
                             {/* Monto abonado */}
                             <div>
-                              <label htmlFor="amountPaid" className="block text-sm font-medium leading-6 text-gray-900">
+                              <label
+                                htmlFor="amountPaid"
+                                className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100"
+                              >
                                 Monto abonado
                               </label>
                               <div className="mt-2 relative">
@@ -291,14 +366,17 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                                   type="number"
                                   name="amountPaid"
                                   id="amountPaid"
-                                  className="block w-full rounded-md border-0 pl-10 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                                  className="block w-full rounded-md border-0 pl-10 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
                                   value={amountPaid}
                                 />
                               </div>
                             </div>
                             {/* Tipo de pago */}
                             <div>
-                              <label htmlFor="paymentType" className="block text-sm font-medium leading-6 text-gray-900">
+                              <label
+                                htmlFor="paymentType"
+                                className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100"
+                              >
                                 Tipo de pago
                               </label>
                               <div className="mt-2 relative">
@@ -309,7 +387,7 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                                   onChange={(e) => setPaymentType(e.target.value)}
                                   name="paymentType"
                                   id="paymentType"
-                                  className="block w-full rounded-md border-0 pl-10 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                                  className="block w-full rounded-md border-0 pl-10 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
                                   value={paymentType}
                                 >
                                   <option value="">Selecciona un tipo de pago</option>
@@ -320,9 +398,37 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                                 </select>
                               </div>
                             </div>
+                            {/* Selección de la cuenta */}
+                            <div>
+                              <label
+                                htmlFor="financialAccountId"
+                                className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100"
+                              >
+                                Cuenta
+                              </label>
+                              <div className="mt-2 relative">
+                                <select
+                                  onChange={(e) => setFinancialAccountId(e.target.value)}
+                                  name="financialAccountId"
+                                  id="financialAccountId"
+                                  className="block w-full rounded-md border-0 pl-3 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
+                                  value={financialAccountId}
+                                >
+                                  <option value="">Selecciona una cuenta</option>
+                                  {financialAccounts.map((acc) => (
+                                    <option key={acc.id} value={acc.id}>
+                                      {acc.name}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                            </div>
                             {/* Monto pendiente */}
                             <div>
-                              <label htmlFor="amountPending" className="block text-sm font-medium leading-6 text-gray-900">
+                              <label
+                                htmlFor="amountPending"
+                                className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100"
+                              >
                                 Monto pendiente
                               </label>
                               <div className="mt-2 relative">
@@ -334,7 +440,7 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                                   type="number"
                                   name="amountPending"
                                   id="amountPending"
-                                  className="block w-full rounded-md border-0 pl-10 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                                  className="block w-full rounded-md border-0 pl-10 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
                                   value={amountPending}
                                 />
                               </div>
@@ -342,11 +448,11 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                             {/* Saldo a favor */}
                             {selectedUser && Number(selectedUser.totalCreditBalance) > 0 && (
                               <div>
-                                <label className="block text-sm font-medium leading-6 text-gray-900">
-                                  Saldo a favor disponible: ${Number(selectedUser.totalCreditBalance).toFixed(2)}
+                                <label className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100">
+                                  Saldo a favor disponible: ${ (Number(selectedUser.totalCreditBalance) / 100).toFixed(2) }
                                 </label>
                                 <div className="mt-2 flex items-center space-x-4">
-                                  <label className="flex items-center">
+                                  <label className="flex items-center dark:text-gray-100">
                                     <input
                                       type="radio"
                                       name="useCreditBalance"
@@ -357,7 +463,7 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                                     />
                                     No utilizar saldo a favor
                                   </label>
-                                  <label className="flex items-center">
+                                  <label className="flex items-center dark:text-gray-100">
                                     <input
                                       type="radio"
                                       name="useCreditBalance"
@@ -374,7 +480,7 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                             {/* Lista de cargos pendientes */}
                             {numberCondominium && charges.length > 0 && (
                               <div>
-                                <label className="block text-sm font-medium leading-6 text-gray-900">
+                                <label className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100">
                                   Selecciona cargos a pagar
                                 </label>
                                 <div className="mt-2 space-y-2">
@@ -387,19 +493,19 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                                           checked={isChecked}
                                           onChange={(e) => handleToggleCharge(charge.id, e.target.checked)}
                                         />
-                                        <span className="flex-1">
-                                          {`${charge.concept} | Mes: ${charge.month || "Sin mes"} | Monto: $${charge.amount}`}
+                                        <span className="flex-1 dark:text-gray-100">
+                                          {`${charge.concept} | Mes: ${charge.month || "Sin mes"} | Monto: $${(charge.amount / 100).toFixed(2)}`}
                                         </span>
                                         {isChecked && (
                                           <div className="relative">
-                                            <span className="absolute left-2 top-1/2 flex items-center transform -translate-y-1/2">
+                                            <span className="absolute left-2 top-1/2 flex items-center transform -translate-y-1/2 dark:text-gray-100">
                                               $
                                             </span>
                                             <input
                                               type="number"
                                               min="0"
                                               step="any"
-                                              className="w-18 rounded-md border-gray-300 pl-5 h-8"
+                                              className="w-18 rounded-md border-gray-300 pl-5 h-8 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
                                               placeholder="Monto a aplicar"
                                               value={selectedCharges.find((sc) => sc.chargeId === charge.id)?.amount || ""}
                                               onChange={(e) => handleAmountChange(charge.id, Number(e.target.value))}
@@ -411,14 +517,14 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                                   })}
                                 </div>
                                 <div className="mt-2">
-                                  <span className="text-sm font-bold">
+                                  <span className="text-sm font-bold dark:text-gray-100">
                                     Saldo restante a aplicar: ${remainingEffective.toFixed(2)}
                                   </span>
                                 </div>
                               </div>
                             )}
                             {/* Dropzone */}
-                            <div {...getRootProps()} className="mt-12 h-auto flex items-center justify-center rounded-lg border border-dashed border-gray-900/25 px-6 py-4">
+                            <div {...getRootProps()} className="mt-12 h-auto flex items-center justify-center rounded-lg border border-dashed border-gray-900/25 px-6 py-4 dark:border-indigo-900">
                               <input {...getInputProps()} />
                               <div className="text-center">
                                 <PhotoIcon className="mx-auto h-12 w-12 text-gray-300" aria-hidden="true" />
@@ -426,9 +532,7 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                                   <p className="mt-4 text-sm leading-6 text-gray-600">{fileName}</p>
                                 ) : (
                                   <p className="mt-4 text-sm leading-6 font-medium text-indigo-600">
-                                    {isDragActive
-                                      ? "Suelta el archivo aquí..."
-                                      : "Arrastra y suelta el comprobante aquí o haz click para seleccionarlo"}
+                                    {isDragActive ? "Suelta el archivo aquí..." : "Arrastra y suelta el comprobante aquí o haz click para seleccionarlo"}
                                   </p>
                                 )}
                                 <p className="text-xs leading-5 text-gray-600">Hasta 10MB</p>
@@ -436,7 +540,7 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                             </div>
                             {/* Comentarios */}
                             <div>
-                              <label htmlFor="comments" className="block text-sm font-medium leading-6 text-gray-900">
+                              <label htmlFor="comments" className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100">
                                 Comentarios
                               </label>
                               <div className="mt-2">
@@ -445,7 +549,7 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                                   id="comments"
                                   name="comments"
                                   rows={4}
-                                  className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                                  className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
                                   value={comments}
                                 />
                               </div>
@@ -455,7 +559,7 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                       </div>
                     </div>
                     {/* Botones de acción */}
-                    <div className="flex flex-shrink-0 justify-end px-4 py-4">
+                    <div className="flex flex-shrink-0 justify-end px-4 py-4 dark:bg-gray-900">
                       <button
                         type="button"
                         className="rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
@@ -468,10 +572,7 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                         className="ml-4 inline-flex justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
                       >
                         {loading ? (
-                          <svg
-                            className="animate-spin h-5 w-5 mr-3 border-t-2 border-b-2 border-indigo-100 rounded-full"
-                            viewBox="0 0 24 24"
-                          ></svg>
+                          <svg className="animate-spin h-5 w-5 mr-3 border-t-2 border-b-2 border-indigo-100 rounded-full" viewBox="0 0 24 24"></svg>
                         ) : (
                           "Guardar"
                         )}

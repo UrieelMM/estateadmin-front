@@ -29,7 +29,7 @@ export const useReceiptStore = create<ReceiptStoreState>((set) => ({
         throw new Error("ID del condominio no encontrado");
       }
 
-      // Obtener el email desde dataUserActive (se espera un JSON con la propiedad "email")
+      // Obtener el email (aquí se usa un email de prueba; descomenta y ajusta según corresponda)
       const dataUserActiveStr = localStorage.getItem("dataUserActive");
       if (!dataUserActiveStr) {
         throw new Error("dataUserActive no encontrada en localStorage");
@@ -46,9 +46,14 @@ export const useReceiptStore = create<ReceiptStoreState>((set) => ({
         throw new Error("Email no encontrado en dataUserActive");
       }
 
-      // Construir la URL del endpoint (reemplaza "your-project" por el ID real de tu proyecto)
-      const endpoint = `https://us-central1-administracioncondominio-93419.cloudfunctions.net/sendReceiptsByEmail?year=${year}&month=${month}&clientId=${clientId}&condominiumId=${condominiumId}&email=${encodeURIComponent(email)}&docType=${docType}`;
+      // Asegurar que el mes esté en formato de dos dígitos (ej: "03")
+      const monthFormatted = month.toString().padStart(2, "0");
+
+      // Construir el endpoint usando el campo compuesto esperado (yearMonth = "yyyy-MM")
+      const endpoint = `https://us-central1-administracioncondominio-93419.cloudfunctions.net/sendReceiptsByEmail?year=${year}&month=${monthFormatted}&clientId=${clientId}&condominiumId=${condominiumId}&email=${encodeURIComponent(email)}&docType=${docType}`;
       
+      console.log("Endpoint:", endpoint); // Para depuración
+
       const response = await axios.get(endpoint);
       alert(response.data);
     } catch (error: any) {

@@ -97,7 +97,7 @@ const ChargeForm = () => {
   };
 
   return (
-    <div className="bg-white p-4 rounded shadow-md">
+    <div className="bg-white p-4 rounded shadow-md dark:bg-gray-800 dark:text-gray-100">
       <h2 className="text-xl font-bold mb-4">Asignar Cargo</h2>
       {error && <p className="text-red-500 mb-2">{error}</p>}
       <form onSubmit={handleSubmit}>
@@ -133,9 +133,10 @@ const ChargeForm = () => {
                 <UserIcon className="h-5 w-5 text-gray-400" />
               </div>
               <select
-                className="border rounded p-1 w-full pl-10"
+                className="w-full pl-10 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
                 value={selectedUser}
                 onChange={(e) => setSelectedUser(e.target.value)}
+                
               >
                 <option value="">-- Selecciona un usuario --</option>
                 {condominiumsUsers
@@ -162,7 +163,7 @@ const ChargeForm = () => {
               <ClipboardIcon className="h-5 w-5 text-gray-400" />
             </div>
             <select
-              className="border rounded p-1 w-full pl-10"
+              className="w-full pl-10 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
               value={concept}
               onChange={(e) => setConcept(e.target.value)}
             >
@@ -183,7 +184,7 @@ const ChargeForm = () => {
             </div>
             <input
               type="number"
-              className="border rounded p-1 w-full pl-10"
+              className="w-full pl-10 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
               value={amount === 0 ? "" : amount}
               onChange={handleAmountChange}
               placeholder="Ejemplo: $1500"
@@ -200,7 +201,7 @@ const ChargeForm = () => {
             </div>
             <input
               type="datetime-local"
-              className="border rounded p-1 w-full pl-10"
+              className="w-full pl-10 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
               value={startAt}
               onChange={(e) => setStartAt(e.target.value)}
             />
@@ -215,7 +216,7 @@ const ChargeForm = () => {
             </div>
             <input
               type="datetime-local"
-              className="border rounded p-1 w-full pl-10"
+              className="w-full pl-10 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
               value={dueDate}
               onChange={(e) => setDueDate(e.target.value)}
             />

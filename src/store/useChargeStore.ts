@@ -1,4 +1,5 @@
 // useChargeStore.ts
+
 import { create } from "zustand";
 import { getAuth, getIdTokenResult } from "firebase/auth";
 import {
@@ -6,19 +7,16 @@ import {
   collection,
   addDoc,
   getDocs,
+  Timestamp
 } from "firebase/firestore";
-import { Timestamp } from "firebase/firestore";
-
 
 /**
  * Interfaz para la creación de cargos.
- * startAt y dueDate ahora vendrán como string con fecha y hora,
- * p.ej. "2025-02-01 00:00" y "2025-02-01 23:59"
+ * startAt y dueDate: "YYYY-MM-DD HH:mm"
  */
 interface CreateChargeOptions {
   concept: string;
-  amount: number;
-  // Se guardarán como string
+  amount: number; // En pesos (float), se convertirá a centavos antes de guardar
   startAt: string; // "YYYY-MM-DD HH:mm"
   dueDate: string; // "YYYY-MM-DD HH:mm"
   paid: boolean;
@@ -59,22 +57,22 @@ export const useChargeStore = create<ChargeState>((set) => ({
         `clients/${clientId}/condominiums/${condominiumId}/users/${userId}/charges`
       );
 
-      // generatedAt sí la guardamos como Date (Timestamp), porque queremos
-      // tener la marca de tiempo de cuando se creó el cargo
+      // Convierte el monto en pesos a centavos, y lo guardamos como entero
+      const amountCents = Math.round(options.amount * 100);
+
       const now = new Date();
 
       const parseDateString = (dateString: string) => {
-        // Reemplaza el espacio por 'T' y agrega ":00" para los segundos.
+        // Reemplaza el espacio por 'T' y agrega ":00" para segundos
         const isoString = dateString.replace(" ", "T") + ":00";
         return new Date(isoString);
-      }
+      };
 
-      // Registrar el cargo con startAt y dueDate como string
       await addDoc(chargesRef, {
         concept: options.concept,
-        amount: options.amount,
-        generatedAt: now, // Se guarda como Date, correcto
-        // Convertir startAt y dueDate a Timestamp usando la función de parseo
+        // GUARDAMOS EN CENTAVOS
+        amount: amountCents,
+        generatedAt: now, // Date real
         startAt: Timestamp.fromDate(parseDateString(options.startAt)),
         dueDate: Timestamp.fromDate(parseDateString(options.dueDate)),
         paid: options.paid,
@@ -106,17 +104,24 @@ export const useChargeStore = create<ChargeState>((set) => ({
       }
 
       const db = getFirestore();
-      const usersRef = collection(db, `clients/${clientId}/condominiums/${condominiumId}/users`);
+      const usersRef = collection(
+        db,
+        `clients/${clientId}/condominiums/${condominiumId}/users`
+      );
       const usersSnapshot = await getDocs(usersRef);
+
+      // Convierte el monto en pesos a centavos
+      const amountCents = Math.round(options.amount * 100);
 
       const now = new Date();
 
       const batchPromises: Promise<void>[] = [];
+
       usersSnapshot.forEach((docUser) => {
         const userData = docUser.data();
         const role = userData.role || "owner";
 
-        // Excluir roles admin, admin-assistant
+        // Excluir roles admin, admin-assistant, etc. si procede
         if (role === "admin" || role === "admin-assistant") {
           return;
         }
@@ -127,14 +132,14 @@ export const useChargeStore = create<ChargeState>((set) => ({
           `clients/${clientId}/condominiums/${condominiumId}/users/${userId}/charges`
         );
 
-        // Registrar el cargo con startAt y dueDate como string
+        // Registramos el cargo con startAt, dueDate y amountCents
         batchPromises.push(
           addDoc(chargesRef, {
             concept: options.concept,
-            amount: options.amount,
-            generatedAt: now,        // Timestamp real
-            startAt: options.startAt, // "YYYY-MM-DD HH:mm"
-            dueDate: options.dueDate, // "YYYY-MM-DD HH:mm"
+            amount: amountCents, // GUARDADO EN CENTAVOS
+            generatedAt: now,
+            startAt: options.startAt,  // Se almacena como string
+            dueDate: options.dueDate,  // String
             paid: options.paid,
           }).then(() => Promise.resolve())
         );

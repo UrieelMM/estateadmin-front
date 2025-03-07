@@ -11,6 +11,7 @@ import {
 } from "recharts";
 
 const ConceptGrowthSection: React.FC = React.memo(() => {
+  // Se consume conceptRecords del nuevo store (ahora incluyen creditBalance y creditUsed)
   const conceptRecords = usePaymentSummaryStore(
     (state) => state.conceptRecords
   );
@@ -32,82 +33,47 @@ const ConceptGrowthSection: React.FC = React.memo(() => {
     });
   };
 
-  // Cálculos por concepto (para el mes actual y anterior)
-  const { totalCurrent, dataArr, growthArr } =
-    useMemo(() => {
-      let totalCurrent = 0;
-      let totalPrevious = 0;
-      const dataArr: { concept: string; currentValue: number }[] = [];
-      const growthArr: {
-        concept: string;
-        growth: number;
-        currentValue: number;
-        previousValue: number;
-      }[] = [];
+  /**
+   * Cálculos por concepto (para el mes actual y anterior) basados en amountPaid.
+   * Nota: La nueva lógica de saldo a favor se aplica en otros componentes; aquí se mantiene el enfoque en recaudación.
+   */
+  const { totalCurrent, dataArr, growthArr } = useMemo(() => {
+    let totalCurrent = 0;
+    let totalPrevious = 0;
+    const dataArr: { concept: string; currentValue: number }[] = [];
+    const growthArr: {
+      concept: string;
+      growth: number;
+      currentValue: number;
+      previousValue: number;
+    }[] = [];
 
-      Object.entries(conceptRecords).forEach(([concept, records]) => {
-        // Sumar los ingresos (amountPaid) del mes actual y anterior
-        const currentValue = records
-          .filter((record) => record.month === currentMonthString)
-          .reduce((sum, record) => sum + record.amountPaid, 0);
-        const previousValue = previousMonthString
-          ? records
-              .filter((record) => record.month === previousMonthString)
-              .reduce((sum, record) => sum + record.amountPaid, 0)
+    Object.entries(conceptRecords).forEach(([concept, records]) => {
+      // Se suman los ingresos (amountPaid) del mes actual y anterior
+      const currentValue = records
+        .filter((record) => record.month === currentMonthString)
+        .reduce((sum, record) => sum + record.amountPaid, 0);
+      const previousValue = previousMonthString
+        ? records
+            .filter((record) => record.month === previousMonthString)
+            .reduce((sum, record) => sum + record.amountPaid, 0)
+        : 0;
+
+      totalCurrent += currentValue;
+      totalPrevious += previousValue;
+      const growth =
+        previousValue !== 0
+          ? ((currentValue - previousValue) / previousValue) * 100
           : 0;
 
-        totalCurrent += currentValue;
-        totalPrevious += previousValue;
-        const growth =
-          previousValue !== 0
-            ? ((currentValue - previousValue) / previousValue) * 100
-            : 0;
+      dataArr.push({ concept, currentValue });
+      growthArr.push({ concept, growth, currentValue, previousValue });
+    });
 
-        dataArr.push({ concept, currentValue });
-        growthArr.push({ concept, growth, currentValue, previousValue });
-      });
+    return { totalCurrent, totalPrevious, dataArr, growthArr };
+  }, [conceptRecords, currentMonthString, previousMonthString]);
 
-      const overallGrowth =
-        totalPrevious !== 0
-          ? ((totalCurrent - totalPrevious) / totalPrevious) * 100
-          : 0;
-      return { totalCurrent, totalPrevious, overallGrowth, dataArr, growthArr };
-    }, [conceptRecords, currentMonthString, previousMonthString]);
-
-  // Estadísticas adicionales basadas en los datos del mes actual
-  const additionalMetrics = useMemo(() => {
-    // Filtrar solo conceptos con ingreso > 0 (activos)
-    const activeConcepts = dataArr.filter((item) => item.currentValue > 0);
-    const activeCount = activeConcepts.length;
-    const avgIncome =
-      activeCount > 0 ? totalCurrent / activeCount : 0;
-
-    // Ordenar para obtener el concepto estrella y el rezagado (entre los activos)
-    const sortedDesc = [...activeConcepts].sort(
-      (a, b) => b.currentValue - a.currentValue
-    );
-    const sortedAsc = [...activeConcepts].sort(
-      (a, b) => a.currentValue - b.currentValue
-    );
-    const starConcept = sortedDesc[0] || { concept: "N/A", currentValue: 0 };
-    const worstConcept = sortedAsc[0] || { concept: "N/A", currentValue: 0 };
-
-    // Ingreso anual total (sumando todos los registros del año)
-    const annualTotal = Object.values(conceptRecords).reduce(
-      (acc, records) => acc + records.reduce((sum, rec) => sum + rec.amountPaid, 0),
-      0
-    );
-
-    return {
-      activeCount,
-      avgIncome,
-      starConcept,
-      worstConcept,
-      annualTotal,
-    };
-  }, [dataArr, totalCurrent, conceptRecords]);
-
-  // Datos para la gráfica de pastel: Top 5 conceptos por recaudación en el mes actual
+  // Datos para la gráfica de pastel: Top 5 + "Otros" (basado en amountPaid)
   const pieData = useMemo(() => {
     const sorted = [...dataArr].sort((a, b) => b.currentValue - a.currentValue);
     const topFive = sorted.slice(0, 5);
@@ -121,7 +87,7 @@ const ConceptGrowthSection: React.FC = React.memo(() => {
     }));
   }, [dataArr]);
 
-  // Ranking de crecimiento (comparación mes actual vs mes anterior)
+  // Ranking de crecimiento (comparación mes actual vs mes anterior) basado en amountPaid
   const topGrowth = useMemo(() => {
     const sorted = [...growthArr].sort((a, b) => b.growth - a.growth);
     return sorted.slice(0, 5);
@@ -132,7 +98,6 @@ const ConceptGrowthSection: React.FC = React.memo(() => {
     return sorted.slice(0, 5);
   }, [growthArr]);
 
-  // Colores pastel (más vivos) para la gráfica
   const pastelColors = ["#8093E8", "#74B9E7", "#A7CFE6", "#B79FE6", "#C2ABE6"];
 
   return (
@@ -144,26 +109,34 @@ const ConceptGrowthSection: React.FC = React.memo(() => {
       {/* Bloque de estadísticas adicionales */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div className="p-4 shadow-md rounded-md">
-          <p className="text-sm text-gray-600 dark:text-gray-100">Ingreso promedio por concepto activo</p>
+          <p className="text-sm text-gray-600 dark:text-gray-100">
+            Ingreso promedio por concepto activo
+          </p>
           <p className="text-2xl font-semibold">
-            {formatCurrency(additionalMetrics.avgIncome)}
+            {formatCurrency(totalCurrent / (dataArr.length || 1))}
           </p>
         </div>
         <div className="p-4 shadow-md rounded-md">
-          <p className="text-sm text-gray-600 dark:text-gray-100">Concepto con más ingresos</p>
+          <p className="text-sm text-gray-600 dark:text-gray-100">
+            Concepto con más ingresos
+          </p>
           <p className="text-lg font-semibold">
-            {additionalMetrics.starConcept.concept}{" "}
+            {dataArr.sort((a, b) => b.currentValue - a.currentValue)[0]?.concept || "N/A"}{" "}
             <span className="text-sm text-gray-600 dark:text-gray-100">
-              ({formatCurrency(additionalMetrics.starConcept.currentValue)})
+              ({formatCurrency(
+                dataArr.sort((a, b) => b.currentValue - a.currentValue)[0]?.currentValue || 0
+              )})
             </span>
           </p>
         </div>
         <div className="p-4 shadow-md rounded-md">
           <p className="text-sm text-gray-600 dark:text-gray-100">Concepto rezagado</p>
           <p className="text-lg font-semibold">
-            {additionalMetrics.worstConcept.concept}{" "}
+            {dataArr.sort((a, b) => a.currentValue - b.currentValue)[0]?.concept || "N/A"}{" "}
             <span className="text-sm text-gray-600 dark:text-gray-100">
-              ({formatCurrency(additionalMetrics.worstConcept.currentValue)})
+              ({formatCurrency(
+                dataArr.sort((a, b) => a.currentValue - b.currentValue)[0]?.currentValue || 0
+              )})
             </span>
           </p>
         </div>

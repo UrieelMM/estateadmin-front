@@ -18,13 +18,23 @@ const monthNames: Record<string, string> = {
 };
 
 const MonthComparisonTable: React.FC = React.memo(() => {
-  // Nos suscribimos directamente a monthlyStats desde el store
+  // Consumimos monthlyStats del nuevo store
   const monthlyStats = usePaymentSummaryStore((state) => state.monthlyStats);
 
-  // Ordenamos los datos usando useMemo para evitar recalcular si monthlyStats no cambia
+  // Ordenamos usando parseInt con base 10
   const sortedMonthlyStats: MonthlyStat[] = useMemo(() => {
-    return [...monthlyStats].sort((a, b) => parseInt(a.month) - parseInt(b.month));
+    return [...monthlyStats].sort(
+      (a, b) => parseInt(a.month, 10) - parseInt(b.month, 10)
+    );
   }, [monthlyStats]);
+
+  // Función de formateo de moneda (con dos decimales)
+  const formatCurrency = (value: number): string =>
+    "$" +
+    value.toLocaleString("en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
 
   return (
     <div className="mb-8 flex flex-col lg:flex-row gap-4">
@@ -45,27 +55,9 @@ const MonthComparisonTable: React.FC = React.memo(() => {
             {sortedMonthlyStats.map((row) => (
               <tr key={row.month} className="hover:bg-gray-50 transition-colors dark:hover:bg-gray-700 cursor-pointer">
                 <td className="border p-2">{monthNames[row.month] || row.month}</td>
-                <td className="border p-2">
-                  {"$" +
-                    row.paid.toLocaleString("en-US", {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}
-                </td>
-                <td className="border p-2">
-                  {"$" +
-                    row.pending.toLocaleString("en-US", {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}
-                </td>
-                <td className="border p-2">
-                  {"$" +
-                    row.saldo.toLocaleString("en-US", {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}
-                </td>
+                <td className="border p-2">{formatCurrency(row.paid)}</td>
+                <td className="border p-2">{formatCurrency(row.pending)}</td>
+                <td className="border p-2">{formatCurrency(row.saldo)}</td>
                 <td className="border p-2">{row.complianceRate.toFixed(2)}%</td>
                 <td className="border p-2">{row.delinquencyRate.toFixed(2)}%</td>
               </tr>

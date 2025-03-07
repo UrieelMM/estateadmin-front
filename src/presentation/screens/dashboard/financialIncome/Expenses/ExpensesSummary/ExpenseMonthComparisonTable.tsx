@@ -41,7 +41,7 @@ const ExpenseMonthComparisonTable: React.FC = () => {
       ) : (
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm border">
-            <thead className="bg-gray-100">
+            <thead className="bg-gray-100 dark:bg-gray-900 dark:text-gray-100">
               <tr>
                 <th className="py-2 px-4 text-left border-b">Mes</th>
                 <th className="py-2 px-4 text-right border-b">Gasto</th>

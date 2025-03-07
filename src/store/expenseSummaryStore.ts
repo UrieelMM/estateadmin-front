@@ -26,13 +26,18 @@ async function getBase64FromUrl(url: string): Promise<string> {
 }
 
 /**
- * Estructura base de un egreso.
- * Ajusta los campos según lo que guardas en Firestore.
+ * NUEVO: Función para convertir centavos (enteros) a pesos (float)
  */
+function centsToPesos(value: any): number {
+  const intVal = parseInt(value, 10);
+  if (isNaN(intVal)) return 0;
+  return intVal / 100;
+}
+
 export interface ExpenseRecord {
   id: string;
-  folio: string;           // "EA-... "
-  amount: number;          // Monto del egreso
+  folio: string;           // "EA-..."
+  amount: number;          // Monto del egreso en pesos (float)
   concept: string;         // Concepto del egreso
   paymentType: string;     // Tipo de pago
   expenseDate: string;     // "YYYY-MM-DD HH:mm"
@@ -47,17 +52,13 @@ export interface ExpenseRecord {
 export interface ExpenseMonthlyStat {
   month: string;   // "01", "02", etc.
   spent: number;   // Suma de amount
-  // Puedes añadir otros campos si lo deseas (topConcept, etc.)
 }
 
-/**
- * Estado del store: estadísticas y resúmenes de egresos.
- */
 interface ExpenseSummaryState {
-  expenses: ExpenseRecord[];                       // Todos los egresos (filtrados por año, si se pasa)
-  totalSpent: number;                              // Suma de todos los amount
-  conceptRecords: Record<string, ExpenseRecord[]>; // Agrupar por concepto
-  monthlyStats: ExpenseMonthlyStat[];              // Lista con {month, spent}
+  expenses: ExpenseRecord[];
+  totalSpent: number;
+  conceptRecords: Record<string, ExpenseRecord[]>;
+  monthlyStats: ExpenseMonthlyStat[];
   adminCompany: string;
   adminPhone: string;
   adminEmail: string;
@@ -82,19 +83,12 @@ export const useExpenseSummaryStore = create<ExpenseSummaryState>((set) => ({
   signatureBase64: "",
   loading: false,
   error: null,
-  selectedYear: new Date().getFullYear().toString(), // Por defecto, año actual
+  selectedYear: new Date().getFullYear().toString(),
 
-  /**
-   * setSelectedYear: Actualiza el año seleccionado en el store
-   */
   setSelectedYear: (year: string) => {
     set({ selectedYear: year });
   },
 
-  /**
-   * fetchSummary: Carga todos los egresos de la subcolección "expenses"
-   * y calcula totales, agrupaciones por concepto, etc.
-   */
   fetchSummary: async (year?: string) => {
     set({ loading: true, error: null });
     try {
@@ -139,34 +133,32 @@ export const useExpenseSummaryStore = create<ExpenseSummaryState>((set) => ({
         db,
         `clients/${clientId}/condominiums/${condominiumId}/expenses`
       );
-      // Obtener todos los documentos
       const snap = await getDocs(expensesRef);
 
-      // Arreglo de ExpenseRecord
-      const expenseRecords: ExpenseRecord[] = [];
-      snap.forEach((docSnap) => {
+      let fetched: ExpenseRecord[] = snap.docs.map((docSnap) => {
         const data = docSnap.data();
-        // Filtrar por 'year' si "expenseDate" (ej: "2025-01-15 10:00") no empieza con year
-        if (year && !data.expenseDate?.startsWith(year)) {
-          return; // Filtra localmente
-        }
-        expenseRecords.push({
+        return {
           id: docSnap.id,
           folio: data.folio || "",
-          amount: data.amount || 0,
+          // Convertir 'amount' de centavos a pesos
+          amount: centsToPesos(data.amount),
           concept: data.concept || "Desconocido",
           paymentType: data.paymentType || "Desconocido",
           expenseDate: data.expenseDate || "",
           registerDate: data.registerDate || "",
           invoiceUrl: data.invoiceUrl || undefined,
           description: data.description || "",
-        });
+        };
       });
+
+      // Filtrar por año, si se pasa
+      if (year) {
+        fetched = fetched.filter((ex) => ex.expenseDate.startsWith(year));
+      }
 
       // Calcular totalSpent, agrupar por concepto y estadísticas mensuales
       let totalSpent = 0;
       const conceptRecords: Record<string, ExpenseRecord[]> = {};
-      // Auxiliar para monthlyStats
       const monthlyMap: Record<string, number> = {
         "01": 0,
         "02": 0,
@@ -182,30 +174,27 @@ export const useExpenseSummaryStore = create<ExpenseSummaryState>((set) => ({
         "12": 0,
       };
 
-      expenseRecords.forEach((exp) => {
+      fetched.forEach((exp) => {
         totalSpent += exp.amount;
-
-        // Agrupar por concepto
         if (!conceptRecords[exp.concept]) {
           conceptRecords[exp.concept] = [];
         }
         conceptRecords[exp.concept].push(exp);
 
-        // Agregar monto al mes (asumiendo exp.expenseDate = "YYYY-MM-DD HH:mm")
+        // Asumiendo que expenseDate es "YYYY-MM-DD HH:mm"
         const mm = exp.expenseDate.substring(5, 7);
         if (monthlyMap[mm] !== undefined) {
           monthlyMap[mm] += exp.amount;
         }
       });
 
-      // Construir monthlyStats
       const monthlyStats = Object.entries(monthlyMap).map(([m, spent]) => ({
         month: m,
         spent,
       }));
 
       set({
-        expenses: expenseRecords,
+        expenses: fetched,
         totalSpent,
         conceptRecords,
         monthlyStats,

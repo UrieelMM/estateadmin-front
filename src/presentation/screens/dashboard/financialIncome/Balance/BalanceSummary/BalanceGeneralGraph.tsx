@@ -59,8 +59,8 @@ const BalanceGeneralGraph: React.FC<BalanceGeneralGraphProps> = ({
   });
 
   return (
-    <div className="bg-white shadow rounded p-4 mb-4">
-      <h3 className="text-lg font-bold mb-2">Comparativa Mensual</h3>
+    <div className="bg-white shadow rounded p-4 mb-4 dark:bg-gray-800">
+      <h3 className="text-lg font-bold mb-2 dark:text-gray-100">Comparativa Mensual</h3>
       <ResponsiveContainer width="100%" height={300}>
         <LineChart data={data}>
           <CartesianGrid strokeDasharray="3 3" />
@@ -68,8 +68,8 @@ const BalanceGeneralGraph: React.FC<BalanceGeneralGraphProps> = ({
           <YAxis />
           <Tooltip formatter={(value: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(value)} />
           <Legend />
-          <Line type="monotone" dataKey="Ingresos" stroke="#4CAF50" activeDot={{ r: 8 }} />
-          <Line type="monotone" dataKey="Egresos" stroke="#F44336" />
+          <Line type="monotone" dataKey="Ingresos" stroke="#8093E8" activeDot={{ r: 8 }} />
+          <Line type="monotone" dataKey="Egresos" stroke="#74B9E7" />
         </LineChart>
       </ResponsiveContainer>
     </div>

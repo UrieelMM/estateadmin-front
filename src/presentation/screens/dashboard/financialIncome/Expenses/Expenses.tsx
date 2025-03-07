@@ -12,7 +12,7 @@ const Expenses = () => {
     return (
         <>
             <div className="px-4 shadow-lg rounded-md sm:px-6 lg:px-8">
-                <header className="bg-gray-50 font-medium shadow-md flex w-full h-16 justify-between px-2 rounded-md items-center mb-2">
+                <header className="bg-gray-50 font-medium shadow-lg flex w-full h-16 justify-between px-2 rounded-md items-center mb-6 dark:shadow-2xl dark:bg-gray-800 dark:text-gray-100">
                     <p className="text-md">Egresos</p>
                     <button
                         className="btn-primary h-10 mb-3"

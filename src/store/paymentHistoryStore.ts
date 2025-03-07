@@ -9,6 +9,7 @@ import {
   getDocs,
   doc,
   getDoc,
+  Timestamp,
 } from "firebase/firestore";
 import { getAuth, getIdTokenResult } from "firebase/auth";
 
@@ -26,36 +27,57 @@ async function getBase64FromUrl(url: string): Promise<string> {
   });
 }
 
+// Se agregó la propiedad opcional creditUsed
 export interface PaymentRecord {
   id: string;
   numberCondominium: string;
-  month: string; // se espera formato "YYYY-MM"
-  amountPaid: number;
-  amountPending: number;
-  creditBalance: number;
-  concept: string; // Nuevo campo para capturar el concepto
+  month: string; // "YYYY-MM"
+  amountPaid: number;    // en pesos, float
+  amountPending: number; // en pesos, float
+  creditBalance: number; // en pesos, float
+  creditUsed?: number;   // NUEVO: crédito utilizado (en pesos, float)
+  concept: string;
+  paymentDate?: string;  
 }
 
 type PaymentHistoryState = {
   payments: PaymentRecord[];
-  detailed: Record<string, PaymentRecord[]>; // agrupados por mes (clave: "YYYY-MM")
-  detailedByConcept: Record<string, Record<string, PaymentRecord[]>>; // agrupados por concepto -> mes
+  detailed: Record<string, PaymentRecord[]>;
+  detailedByConcept: Record<string, Record<string, PaymentRecord[]>>;
   loading: boolean;
   error: string | null;
   selectedYear: string;
 
-  // Datos de la empresa administradora (tomados de clients/${clientId})
   adminCompany: string;
   adminPhone: string;
   adminEmail: string;
-
-  // Logo y firma en base64
   logoBase64: string;
   signatureBase64: string;
+
+  // NUEVAS propiedades para saldo actual y monto pendiente
+  currentCreditBalance: number;
+  pendingAmount: number;
 
   fetchPayments: (selectedNumber: string, year?: string) => Promise<void>;
   setSelectedYear: (year: string) => void;
 };
+
+// Conviertes un valor (entero en centavos) a float en pesos
+function centsToPesos(value: any): number {
+  // Aseguramos parsear a entero
+  const intVal = parseInt(value, 10);
+  if (isNaN(intVal)) return 0;
+  return intVal / 100; // ejemplo: 25520 => 255.20
+}
+
+// Convierte un Timestamp de Firestore a string en español
+function timestampToSpanishString(ts: Timestamp): string {
+  const d = ts.toDate();
+  const day = d.getDate();
+  const year = d.getFullYear();
+  const monthName = d.toLocaleString("es-MX", { month: "long" }); 
+  return `${day} de ${monthName} de ${year}`; 
+}
 
 export const usePaymentHistoryStore = create<PaymentHistoryState>((set) => ({
   payments: [],
@@ -69,6 +91,8 @@ export const usePaymentHistoryStore = create<PaymentHistoryState>((set) => ({
   adminEmail: "",
   logoBase64: "",
   signatureBase64: "",
+  currentCreditBalance: 0,
+  pendingAmount: 0,
 
   fetchPayments: async (selectedNumber: string, year?: string) => {
     set({ loading: true, error: null });
@@ -82,8 +106,6 @@ export const usePaymentHistoryStore = create<PaymentHistoryState>((set) => ({
 
       const tokenResult = await getIdTokenResult(user);
       const clientId = tokenResult.claims["clientId"] as string;
-
-      // Se obtiene el condominiumId guardado en localStorage
       const condominiumId = localStorage.getItem("condominiumId");
       if (!condominiumId) {
         set({ error: "Condominio no seleccionado", loading: false });
@@ -92,7 +114,7 @@ export const usePaymentHistoryStore = create<PaymentHistoryState>((set) => ({
 
       const db = getFirestore();
 
-      // 1. Obtener datos de la empresa administradora (clients/${clientId})
+      // 1. Obtener datos de la administradora
       const clientDocRef = doc(db, "clients", clientId);
       const clientDocSnap = await getDoc(clientDocRef);
 
@@ -119,7 +141,7 @@ export const usePaymentHistoryStore = create<PaymentHistoryState>((set) => ({
         }
       }
 
-      // 2. Buscar el usuario (condómino) por su número
+      // 2. Buscar el usuario (condómino)
       const usersRef = collection(
         db,
         `clients/${clientId}/condominiums/${condominiumId}/users`
@@ -131,33 +153,42 @@ export const usePaymentHistoryStore = create<PaymentHistoryState>((set) => ({
         set({ error: "Usuario no encontrado", loading: false });
         return;
       }
-
       const userDoc = userSnapshot.docs[0];
+      const userData = userDoc.data();
       const userId = userDoc.id;
+      // Se obtiene el saldo a favor actual directamente del usuario
+      const currentCreditBalance = parseFloat(userData.totalCreditBalance || '0');
 
-      const paymentRecords: PaymentRecord[] = [];
-
-      // 3. Consultar la colección de charges del usuario
+      // 3. Cargar todos los cargos
       const chargesRef = collection(
         db,
         `clients/${clientId}/condominiums/${condominiumId}/users/${userId}/charges`
       );
       const chargesSnapshot = await getDocs(chargesRef);
 
+      // Calcular el monto pendiente total de cargos no pagados (sin filtrar por año)
+      let pendingAmount = 0;
+      chargesSnapshot.docs.forEach((chargeDoc) => {
+        const chargeData = chargeDoc.data();
+        if (!chargeData.paid) {
+          pendingAmount += centsToPesos(chargeData.amount);
+        }
+      });
+
       const yearToCheck = year || new Date().getFullYear().toString();
 
-      // 4. Recorrer cada charge y consultar la subcolección payments
+      const paymentRecords: PaymentRecord[] = [];
+
+      // 4. Recorrer cargos y subcolección payments (filtrando por año)
       for (const chargeDoc of chargesSnapshot.docs) {
         const chargeData = chargeDoc.data();
-
-        // Filtramos únicamente los charges que tengan startAt perteneciente al año seleccionado
         if (!chargeData.startAt || typeof chargeData.startAt !== "string") continue;
         if (!chargeData.startAt.startsWith(yearToCheck)) continue;
 
-        // Extraer el mes en formato "YYYY-MM"
+        // "YYYY-MM"
         const monthValue = chargeData.startAt.substring(0, 7);
 
-        // Subcolección payments
+        // payments subcollection
         const paymentsRef = collection(
           db,
           `clients/${clientId}/condominiums/${condominiumId}/users/${userId}/charges/${chargeDoc.id}/payments`
@@ -166,20 +197,35 @@ export const usePaymentHistoryStore = create<PaymentHistoryState>((set) => ({
 
         paymentsSnapshot.forEach((paymentDoc) => {
           const paymentData = paymentDoc.data();
+
+          // Detectar si paymentDate es Timestamp o string
+          let finalDateStr = "";
+          if (paymentData.paymentDate) {
+            if ((paymentData.paymentDate as any).toDate) {
+              finalDateStr = timestampToSpanishString(paymentData.paymentDate as Timestamp);
+            } else if (typeof paymentData.paymentDate === "string") {
+              finalDateStr = paymentData.paymentDate;
+            }
+          }
+
+          // AQUÍ convertimos centavos a pesos y extraemos creditUsed si existe
           const record: PaymentRecord = {
             id: paymentDoc.id,
             numberCondominium: selectedNumber,
             month: monthValue,
-            amountPaid: parseFloat(paymentData.amountPaid) || 0,
-            amountPending: parseFloat(paymentData.amountPending) || 0,
-            creditBalance: parseFloat(paymentData.creditBalance) || 0,
+            amountPaid: centsToPesos(paymentData.amountPaid),
+            amountPending: centsToPesos(paymentData.amountPending),
+            creditBalance: centsToPesos(paymentData.creditBalance),
+            creditUsed: paymentData.creditUsed ? centsToPesos(paymentData.creditUsed) : 0,
             concept: chargeData.concept || "Sin concepto",
+            paymentDate: finalDateStr,
           };
+
           paymentRecords.push(record);
         });
       }
 
-      // 5. Agrupar los registros por mes (clave: "YYYY-MM")
+      // 5. Agrupar por mes
       const detailed: Record<string, PaymentRecord[]> = {};
       paymentRecords.forEach((pr) => {
         const key = pr.month || "Desconocido";
@@ -188,8 +234,7 @@ export const usePaymentHistoryStore = create<PaymentHistoryState>((set) => ({
         }
         detailed[key].push(pr);
       });
-
-      // Asegurar 12 meses en detailed, incluso si no hay datos
+      // Forzar 12 meses
       for (let i = 1; i <= 12; i++) {
         const m = i.toString().padStart(2, "0");
         const key = `${yearToCheck}-${m}`;
@@ -198,16 +243,11 @@ export const usePaymentHistoryStore = create<PaymentHistoryState>((set) => ({
         }
       }
 
-      // 6. Generar estructura adicional agrupada por concepto y por mes
+      // 6. Agrupar por concepto
       const detailedByConcept: Record<string, Record<string, PaymentRecord[]>> = {};
-
-      // Todos los conceptos distintos
       const conceptsSet = new Set<string>();
-      paymentRecords.forEach((pr) => {
-        conceptsSet.add(pr.concept);
-      });
+      paymentRecords.forEach((pr) => conceptsSet.add(pr.concept));
 
-      // Inicializar cada concepto con sus 12 meses
       conceptsSet.forEach((concept) => {
         detailedByConcept[concept] = {};
         for (let i = 1; i <= 12; i++) {
@@ -217,7 +257,6 @@ export const usePaymentHistoryStore = create<PaymentHistoryState>((set) => ({
         }
       });
 
-      // Llenar con los registros correspondientes
       paymentRecords.forEach((pr) => {
         if (!detailedByConcept[pr.concept][pr.month]) {
           detailedByConcept[pr.concept][pr.month] = [];
@@ -225,7 +264,7 @@ export const usePaymentHistoryStore = create<PaymentHistoryState>((set) => ({
         detailedByConcept[pr.concept][pr.month].push(pr);
       });
 
-      // 7. Actualizar el estado
+      // 7. Setear estado incluyendo el saldo actual y el monto pendiente
       set({
         payments: paymentRecords,
         detailed,
@@ -236,6 +275,8 @@ export const usePaymentHistoryStore = create<PaymentHistoryState>((set) => ({
         adminEmail,
         logoBase64,
         signatureBase64,
+        currentCreditBalance,
+        pendingAmount,
       });
     } catch (error: any) {
       console.error("Error fetching payments:", error);

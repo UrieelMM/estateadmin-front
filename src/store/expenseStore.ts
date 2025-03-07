@@ -23,26 +23,25 @@ import {
 export interface ExpenseRecord {
   id: string;                   // ID del documento en Firestore
   folio: string;                // "EA-xxxxxx" 
-  amount: number;               // Monto del egreso
+  amount: number;               // Monto del egreso en pesos (float)
   concept: string;              // Concepto (select con ~30 tipos)
   paymentType: string;          // Tipo de pago (efectivo, transferencia, etc.)
-  expenseDate: string;          // Fecha del egreso (el usuario la elige, ej: "2025-06-30 14:00")
-  registerDate: string;         // Fecha/hora en que se registra (auto, ej: "2025-06-30 14:55")
+  expenseDate: string;          // Fecha del egreso (ej: "2025-06-30 14:00")
+  registerDate: string;         // Fecha/hora en que se registra (ej: "2025-06-30 14:55")
   invoiceUrl?: string;          // URL o referencia al archivo de factura/recibo
   description?: string;         // Descripción opcional
 }
 
 /**
- * Datos que se requieren para crear un nuevo egreso.
- * Se omite el id, folio y registerDate porque se generan automáticamente.
+ * Datos para crear un egreso.
  */
 export interface ExpenseCreateInput {
-  amount: number;
+  amount: number;               // en pesos (ej: 255.20)
   concept: string;
   paymentType: string;
-  expenseDate: string;         // Formato "YYYY-MM-DD HH:mm"
+  expenseDate: string;          // "YYYY-MM-DD HH:mm"
   description?: string;
-  file?: File;                 // Comprobante, facturas, etc. (opcional)
+  file?: File;                  // Comprobante, factura, etc.
 }
 
 interface ExpenseState {
@@ -50,7 +49,7 @@ interface ExpenseState {
   loading: boolean;
   error: string | null;
   /**
-   * fetchExpenses: Carga todos los egresos de un condominio (puedes filtrar por año).
+   * fetchExpenses: Carga todos los egresos de un condominio.
    */
   fetchExpenses: (condominiumId: string, year?: string) => Promise<void>;
   /**
@@ -59,15 +58,18 @@ interface ExpenseState {
   addExpense: (data: ExpenseCreateInput) => Promise<void>;
 }
 
+// NUEVO: Función para convertir centavos (enteros) a pesos (float)
+function centsToPesos(value: any): number {
+  const intVal = parseInt(value, 10);
+  if (isNaN(intVal)) return 0;
+  return intVal / 100;
+}
+
 export const useExpenseStore = create<ExpenseState>((set, _get) => ({
   expenses: [],
   loading: false,
   error: null,
 
-  /**
-   * fetchExpenses: Carga los egresos desde la subcolección "expenses" de un condominio.
-   * (Puedes filtrar localmente por 'year' si la fecha se guarda en un string con "YYYY-MM-DD".)
-   */
   fetchExpenses: async (condominiumId: string, year?: string) => {
     set({ loading: true, error: null });
     try {
@@ -90,7 +92,8 @@ export const useExpenseStore = create<ExpenseState>((set, _get) => ({
         return {
           id: docSnap.id,
           folio: data.folio ?? "",
-          amount: data.amount ?? 0,
+          // Convertir amount (que viene en centavos) a pesos
+          amount: centsToPesos(data.amount),
           concept: data.concept ?? "",
           paymentType: data.paymentType ?? "",
           expenseDate: data.expenseDate ?? "",
@@ -100,7 +103,6 @@ export const useExpenseStore = create<ExpenseState>((set, _get) => ({
         };
       });
 
-      // Filtrar localmente por 'year'
       if (year) {
         fetched = fetched.filter((ex) => ex.expenseDate.startsWith(year));
       }
@@ -112,10 +114,7 @@ export const useExpenseStore = create<ExpenseState>((set, _get) => ({
     }
   },
 
-  /**
-   * addExpense: Crea un nuevo egreso y sube el archivo de factura (opcional) a Storage.
-   */
-  addExpense: async (data) => {
+  addExpense: async (data: ExpenseCreateInput) => {
     set({ loading: true, error: null });
     try {
       const auth = getAuth();
@@ -134,45 +133,45 @@ export const useExpenseStore = create<ExpenseState>((set, _get) => ({
       // Generar folio secuencial sencillo: "EA-" + Date.now()
       const folio = `EA-${Date.now()}`;
 
-      // Fecha/hora de registro (automática)
+      // Fecha de registro
       const now = new Date();
       const registerDateStr = now.toISOString().slice(0, 16).replace("T", " ");
 
-      // Subir archivo (factura/recibo) a Storage si existe
+      // Subir archivo a Storage si existe
       let invoiceUrl = "";
       if (data.file) {
         const storage = getStorage();
-        // Ubicación en storage: "clients/{clientId}/condominiums/{condominiumId}/expenses/folio-{file.name}"
         const storageRef = ref(
           storage,
           `clients/${clientId}/condominiums/${condominiumId}/expenses/${folio}-${data.file.name}`
         );
         const uploadResult = await uploadBytes(storageRef, data.file);
-        // Obtener la URL de descarga
         invoiceUrl = await getDownloadURL(uploadResult.ref);
       }
 
-      // Preparar doc a guardar en Firestore
+      // Convertir amount de pesos a centavos
+      const amountCents = Math.round(data.amount * 100);
+
       const docData = {
         folio,
-        amount: data.amount,
+        amount: amountCents, // Guardado en centavos
         concept: data.concept,
         paymentType: data.paymentType,
-        expenseDate: data.expenseDate,  // "YYYY-MM-DD HH:mm"
-        registerDate: registerDateStr,  // "YYYY-MM-DD HH:mm" 
+        expenseDate: data.expenseDate,  // Se asume que viene en "YYYY-MM-DD HH:mm"
+        registerDate: registerDateStr,  // "YYYY-MM-DD HH:mm"
         invoiceUrl: invoiceUrl,
         description: data.description || "",
       };
 
-      // Crear doc en la subcolección
       const expensesRef = collection(db, `clients/${clientId}/condominiums/${condominiumId}/expenses`);
       const newDocRef = doc(expensesRef);
       await setDoc(newDocRef, docData);
 
-      // Actualizar el state local
       const newExpense = {
         id: newDocRef.id,
         ...docData,
+        // Convertir de centavos a pesos para que la vista muestre el valor correcto
+        amount: amountCents / 100,
       };
 
       set((state) => ({

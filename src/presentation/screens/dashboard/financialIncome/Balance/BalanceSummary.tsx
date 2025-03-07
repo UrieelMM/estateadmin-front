@@ -86,7 +86,7 @@ const BalanceGeneral: React.FC = () => {
           <select
             value={selectedYear}
             onChange={handleYearChange}
-            className="border border-gray-300 rounded py-2 px-8"
+            className="border border-gray-300 rounded py-2 px-8 dark:bg-gray-900 cursor-pointer"
           >
             {["2022", "2023", "2024", "2025"].map((y) => (
               <option key={y} value={y}>

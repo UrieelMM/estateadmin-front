@@ -99,7 +99,7 @@ const ExpenseConceptAnalyticsAdvanced: React.FC = () => {
           </h4>
           <div className="overflow-x-auto">
             <table className="min-w-full text-sm border">
-              <thead className="bg-gray-100">
+              <thead className="bg-gray-100 dark:bg-gray-900 dark:text-gray-100">
                 <tr>
                   <th className="py-2 px-4 border-b text-left">Concepto</th>
                   <th className="py-2 px-4 border-b text-center">

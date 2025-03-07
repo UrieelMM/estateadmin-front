@@ -18,15 +18,15 @@ const DownloadReceipts = () => {
   };
 
   return (
-    <div className="max-w-md mx-auto bg-white shadow-md rounded-lg p-6">
+    <div className="max-w-md mx-auto bg-white shadow-md rounded-lg p-6 dark:bg-gray-900">
       <h2 className="text-xl font-bold mb-4">Descargar recibos y comprobantes</h2>
       
       <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700">Año:</label>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-100">Año:</label>
         <select
           value={year}
           onChange={(e) => setYear(e.target.value)}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+          className="mt-1 w-full pl-2 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
         >
           {Array.from({ length: 11 }, (_, i) => 2020 + i).map((yearOption) => (
             <option key={yearOption} value={yearOption}>
@@ -37,11 +37,11 @@ const DownloadReceipts = () => {
       </div>
       
       <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700">Mes:</label>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-100">Mes:</label>
         <select
           value={month}
           onChange={(e) => setMonth(e.target.value)}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+          className="mt-1 w-full pl-2 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
         >
           {[
             { value: "01", label: "Enero" },
@@ -65,11 +65,11 @@ const DownloadReceipts = () => {
       </div>
       
       <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700">Tipo de documento:</label>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-100">Tipo de documento:</label>
         <select
           value={docType}
           onChange={(e) => setDocType(e.target.value)}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+          className="mt-1 w-full pl-2 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
         >
           <option value="comprobantes">Comprobantes</option>
           <option value="recibos">Recibos</option>
@@ -79,7 +79,7 @@ const DownloadReceipts = () => {
       <button
         onClick={handleSendReceipts}
         disabled={loading}
-        className="w-full bg-indigo-600 text-white font-bold py-2 px-4 rounded hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        className="mt-1 w-full bg-indigo-600 text-white font-bold py-2 px-4 rounded hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
       >
         {loading ? "Enviando..." : "Enviar documentos por email"}
       </button>

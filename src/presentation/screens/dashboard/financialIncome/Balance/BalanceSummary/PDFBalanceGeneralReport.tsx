@@ -170,7 +170,7 @@ const PDFBalanceGeneralReport: React.FC<PDFBalanceGeneralReportProps> = ({ year 
         onClick={generatePDF}
         className="bg-indigo-600 text-white py-2 px-4 rounded w-full lg:w-[300px] font-bold hover:bg-indigo-500"
       >
-        Generar Reporte Balance General (PDF)
+        Generar Reporte Balance General
       </button>
     </div>
   );

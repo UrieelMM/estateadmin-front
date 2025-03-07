@@ -94,24 +94,24 @@ const MorosidadView: React.FC = () => {
       {/* Tarjetas (cards) con detalles generales */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div className="p-4 shadow-md rounded-md">
-          <p className="text-sm text-gray-600">Total Pendiente</p>
+          <p className="text-sm text-gray-600 dark:text-gray-100">Total Pendiente</p>
           <p className="text-2xl font-semibold">
             {formatCurrency(totalPending)}
           </p>
         </div>
         <div className="p-4 shadow-md rounded-md">
-          <p className="text-sm text-gray-600">Condominos con deuda &gt; 0</p>
+          <p className="text-sm text-gray-600 dark:text-gray-100">Condominos con deuda &gt; 0</p>
           <p className="text-2xl font-semibold">{debtorsCount}</p>
         </div>
         <div className="p-4 shadow-md rounded-md">
-          <p className="text-sm text-gray-600">Deudor Máximo</p>
+          <p className="text-sm text-gray-600 dark:text-gray-100">Deudor Máximo</p>
           <p className="text-base font-semibold">#{maxDebtor.user}</p>
           <p className="text-2xl font-semibold">
             {formatCurrency(maxDebtor.amount)}
           </p>
         </div>
         <div className="p-4 shadow-md rounded-md">
-          <p className="text-sm text-gray-600">Promedio de Deuda</p>
+          <p className="text-sm text-gray-600 dark:text-gray-100">Promedio de Deuda</p>
           <p className="text-2xl font-semibold">
             {formatCurrency(averageDebt)}
           </p>
@@ -124,13 +124,13 @@ const MorosidadView: React.FC = () => {
         <table className="min-w-full border text-sm">
           <thead className="bg-gray-100">
             <tr>
-              <th className="py-2 px-4 text-left border-b"># Usuario</th>
-              <th className="py-2 px-4 text-left border-b">Monto Pendiente</th>
+              <th className="py-2 px-4 text-left border-b dark:bg-gray-900"># Usuario</th>
+              <th className="py-2 px-4 text-left border-b dark:bg-gray-900">Monto Pendiente</th>
             </tr>
           </thead>
           <tbody>
             {topDebtors.map((item) => (
-              <tr key={item.user}>
+              <tr key={item.user} className="hover:bg-gray-50 transition-colors dark:hover:bg-gray-700 cursor-pointer">
                 <td className="py-2 px-4 border-b">{item.user}</td>
                 <td className="py-2 px-4 border-b">
                   {formatCurrency(item.amount)}
@@ -174,7 +174,7 @@ const MorosidadView: React.FC = () => {
 
       {/* Botón para generar el reporte PDF de morosidad */}
       <div className="mt-6 text-right">
-        <p className="text-sm text-gray-600 mb-4">
+        <p className="text-sm text-gray-600 mb-4 dark:text-gray-100">
           Descarga un reporte detallado con la lista de cargos pendientes por condomino.
         </p>
         <MorosidadPDFReport />

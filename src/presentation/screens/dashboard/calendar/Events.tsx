@@ -277,24 +277,24 @@ export default function CalendarReservations() {
 
   return (
     <div className="flex h-full flex-col bg-white">
-      <header className="flex flex-none items-center justify-between border-b border-gray-200 px-6 py-4">
+      <header className="flex flex-none items-center justify-between border-b border-gray-200 px-6 py-4 dark:bg-gray-900">
         <div>
           {/* <h1 className="text-base font-semibold text-gray-900 capitalize">{mainLabel}</h1> */}
           {view === 'week' && (
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-gray-500 dark:text-gray-100">
               Semana del {dayjs(currentDate).startOf('isoWeek').format('D MMM')} al {dayjs(currentDate).startOf('isoWeek').add(6, 'day').format('D MMM')}
             </p>
           )}
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <div className="flex items-center space-x-1">
-            <button onClick={handlePrev} className="p-2 rounded hover:bg-gray-100">
+            <button onClick={handlePrev} className="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-900">
               <ChevronLeftIcon className="h-5 w-5 text-gray-600" />
             </button>
             <button onClick={handleToday} className="px-3 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-500">
               Hoy
             </button>
-            <button onClick={handleNext} className="p-2 rounded hover:bg-gray-100">
+            <button onClick={handleNext} className="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-900">
               <ChevronRightIcon className="h-5 w-5 text-gray-600" />
             </button>
           </div>
@@ -302,7 +302,7 @@ export default function CalendarReservations() {
             <select
               value={dayjs(currentDate).format('YYYY')}
               onChange={handleYearChange}
-              className="border p-1 text-sm w-20 border-gray-300 py-[0.450rem] rounded-lg text-black font-semibold"
+              className="border p-1 text-sm w-20 cursor-pointer border-gray-300 py-[0.450rem] rounded-lg text-black font-semibold dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-900"
             >
               {years.map((y) => (
                 <option key={y} value={y}>
@@ -313,7 +313,7 @@ export default function CalendarReservations() {
             <select
               value={dayjs(currentDate).format('MM')}
               onChange={handleMonthChange}
-              className="border p-1 text-sm w-28 border-gray-300 py-[0.450rem] rounded-lg text-black font-semibold"
+              className="border p-1 text-sm w-28 cursor-pointer border-gray-300 py-[0.450rem] rounded-lg text-black font-semibold dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-900"
             >
               {months.map((m) => (
                 <option key={m.value} value={m.value} style={{ textTransform: 'capitalize' }}>
@@ -323,36 +323,36 @@ export default function CalendarReservations() {
             </select>
           </div>
           <Menu as="div" className="relative">
-            <Menu.Button className="flex items-center gap-x-1.5 rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
+            <Menu.Button className="flex items-center gap-x-1.5 rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-900">
               {view === 'day' ? 'Día' : view === 'week' ? 'Semana' : view === 'month' ? 'Mes' : 'Año'}
               <ChevronDownIcon className="-mr-1 h-5 w-5 text-gray-400" aria-hidden="true" />
             </Menu.Button>
             <Menu.Items className="absolute right-0 z-10 mt-3 w-36 origin-top-right overflow-hidden rounded-md bg-white shadow-lg ring-1 ring-black/5 focus:outline-none">
-              <div className="py-1">
+              <div className="py-1 dark:py-0">
                 <Menu.Item>
                   {({ active }) => (
-                    <button onClick={() => setView('day')} className={classNames(active ? 'bg-gray-100' : '', 'block w-full text-left px-4 py-2 text-sm text-gray-700')}>
+                    <button onClick={() => setView('day')} className={classNames(active ? 'bg-gray-100' : '', 'block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-100 dark:bg-gray-900')}>
                       Día
                     </button>
                   )}
                 </Menu.Item>
                 <Menu.Item>
                   {({ active }) => (
-                    <button onClick={() => setView('week')} className={classNames(active ? 'bg-gray-100' : '', 'block w-full text-left px-4 py-2 text-sm text-gray-700')}>
+                    <button onClick={() => setView('week')} className={classNames(active ? 'bg-gray-100' : '', 'block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-100 dark:bg-gray-900')}>
                       Semana
                     </button>
                   )}
                 </Menu.Item>
                 <Menu.Item>
                   {({ active }) => (
-                    <button onClick={() => setView('month')} className={classNames(active ? 'bg-gray-100' : '', 'block w-full text-left px-4 py-2 text-sm text-gray-700')}>
+                    <button onClick={() => setView('month')} className={classNames(active ? 'bg-gray-100' : '', 'block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-100 dark:bg-gray-900')}>
                       Mes
                     </button>
                   )}
                 </Menu.Item>
                 <Menu.Item>
                   {({ active }) => (
-                    <button onClick={() => setView('year')} className={classNames(active ? 'bg-gray-100' : '', 'block w-full text-left px-4 py-2 text-sm text-gray-700')}>
+                    <button onClick={() => setView('year')} className={classNames(active ? 'bg-gray-100' : '', 'block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-100 dark:bg-gray-900')}>
                       Año
                     </button>
                   )}
@@ -369,17 +369,17 @@ export default function CalendarReservations() {
           {view === 'month' && <MonthView currentDate={currentDate} events={displayedEvents} />}
           {view === 'year' && <YearView currentDate={currentDate} events={displayedEvents} />}
         </div>
-        <aside className="w-80 border-l p-4 overflow-auto">
+        <aside className="w-80 border-l p-4 overflow-auto dark:bg-gray-800">
           <h2 className="text-lg font-semibold mb-4">Eventos de la Semana</h2>
-          <div className="flex items-center justify-between mb-4">
-            <button onClick={handleListPrevWeek} className="p-2 rounded hover:bg-gray-100">
-              <ChevronLeftIcon className="h-5 w-5 text-gray-600" />
+          <div className="flex items-center justify-between mb-4 dark:text-gray-100">
+            <button onClick={handleListPrevWeek} className="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-900">
+              <ChevronLeftIcon className="h-5 w-5 text-gray-600 dark:text-gray-100" />
             </button>
-            <span className="text-sm text-gray-700">
+            <span className="text-sm text-gray-700 dark:text-gray-100">
               {startListWeek.format('D MMM')} - {endListWeek.format('D MMM')}
             </span>
-            <button onClick={handleListNextWeek} className="p-2 rounded hover:bg-gray-100">
-              <ChevronRightIcon className="h-5 w-5 text-gray-600" />
+            <button onClick={handleListNextWeek} className="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-900">
+              <ChevronRightIcon className="h-5 w-5 text-gray-600 dark:text-gray-100" />
             </button>
           </div>
           <ul className="space-y-2">
@@ -401,7 +401,7 @@ export default function CalendarReservations() {
                 </li>
               ))
             ) : (
-              <li className="text-sm text-gray-500">No hay eventos para esta semana.</li>
+              <li className="text-sm text-gray-500 dark:text-gray-100">No hay eventos para esta semana.</li>
             )}
           </ul>
         </aside>
@@ -437,32 +437,25 @@ export default function CalendarReservations() {
                 leaveFrom="opacity-100 scale-100"
                 leaveTo="opacity-0 scale-95"
               >
-                <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 text-left shadow-xl transition-all">
-                  <Dialog.Title className="text-lg font-medium text-gray-900">
+                <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 text-left shadow-xl transition-all dark:bg-gray-800">
+                  <Dialog.Title className="text-lg font-medium text-gray-900 dark:text-gray-100">
                     Detalles del Evento
                   </Dialog.Title>
                   {selectedEvent && !isEditing && (
                     <div className="mt-2">
-                      <p className="text-sm text-gray-500">
+                      <p className="text-sm text-gray-500 dark:text-gray-100">
                         <strong>{selectedEvent.name}</strong> - {selectedEvent.number}
                       </p>
-                      <p className="text-sm text-gray-500">Área: {selectedEvent.commonArea}</p>
-                      <p className="text-sm text-gray-500">
+                      <p className="text-sm text-gray-500 dark:text-gray-100">Área: {selectedEvent.commonArea}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-100">
                         {dayjs(selectedEvent.eventDay).format('D MMM YYYY')} de{' '}
                         {dayjs(`${selectedEvent.eventDay} ${selectedEvent.startTime}`, 'YYYY-MM-DD HH:mm').format('h:mm A')} a{' '}
                         {dayjs(`${selectedEvent.eventDay} ${selectedEvent.endTime}`, 'YYYY-MM-DD HH:mm').format('h:mm A')}
                       </p>
                       {selectedEvent.comments && (
-                        <p className="mt-2 text-sm text-gray-500">{selectedEvent.comments}</p>
+                        <p className="mt-2 text-sm text-gray-500 dark:text-gray-100">{selectedEvent.comments}</p>
                       )}
                       <div className="mt-4 flex justify-end space-x-2">
-                        <button
-                          type="button"
-                          onClick={handleStartEdit}
-                          className="inline-flex rounded-md border border-gray-300 bg-white px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                        >
-                          Editar
-                        </button>
                         <button
                           type="button"
                           onClick={handleDelete}
@@ -472,8 +465,15 @@ export default function CalendarReservations() {
                         </button>
                         <button
                           type="button"
+                          onClick={handleStartEdit}
+                          className="inline-flex rounded-md border border-gray-300 bg-white px-4 py-2 text-sm text-gray-700 dark:text-gray-100 hover:bg-gray-100 dark:bg-gray-900 dark:hover:bg-gray-800"
+                        >
+                          Editar
+                        </button>
+                        <button
+                          type="button"
                           onClick={() => setSelectedEvent(null)}
-                          className="inline-flex rounded-md border border-gray-300 bg-white px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          className="inline-flex rounded-md border border-gray-300 bg-white px-4 py-2 text-sm text-gray-700 dark:text-gray-100 hover:bg-gray-100 dark:bg-gray-900 dark:hover:bg-gray-800"
                         >
                           Cerrar
                         </button>
@@ -483,24 +483,24 @@ export default function CalendarReservations() {
                   {selectedEvent && isEditing && editedEvent && (
                     <div className="mt-2 space-y-3">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700">Fecha</label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-100">Fecha</label>
                         <input
                           type="date"
                           value={editedEvent.eventDay}
                           onChange={(e) =>
                             setEditedEvent({ ...editedEvent, eventDay: e.target.value })
                           }
-                          className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                          className="w-full pl-2 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700">Área</label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-100">Área</label>
                         <select
                           value={editedEvent.commonArea}
                           onChange={(e) =>
                             setEditedEvent({ ...editedEvent, commonArea: e.target.value })
                           }
-                          className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                          className="w-full pl-2 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
                         >
                           <option value="">Seleccione un área</option>
                           <option value="Salón de fiestas">Salón de fiestas</option>
@@ -510,49 +510,50 @@ export default function CalendarReservations() {
                         </select>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700">Hora de inicio</label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-100">Hora de inicio</label>
                         <input
                           type="time"
                           value={editedEvent.startTime}
                           onChange={(e) =>
                             setEditedEvent({ ...editedEvent, startTime: e.target.value })
                           }
-                          className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                          className="w-full pl-2 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700">Hora de fin</label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-100">Hora de fin</label>
                         <input
                           type="time"
                           value={editedEvent.endTime}
                           onChange={(e) =>
                             setEditedEvent({ ...editedEvent, endTime: e.target.value })
                           }
-                          className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                          className="w-full pl-2 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700">Comentarios</label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-100">Comentarios</label>
                         <textarea
+                          rows={3}
                           value={editedEvent.comments || ""}
                           onChange={(e) =>
                             setEditedEvent({ ...editedEvent, comments: e.target.value })
                           }
-                          className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                          className="w-full pl-2  border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
                         />
                       </div>
                       <div className="mt-4 flex justify-end space-x-2">
                         <button
                           type="button"
                           onClick={handleSaveEdit}
-                          className="inline-flex rounded-md border border-gray-300 bg-white px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          className="inline-flex rounded-md border border-indigo-200 bg-indigo-600 px-4 py-2 text-sm text-gray-100 dark:text-gray-100 hover:bg-indigo-700 "
                         >
                           Guardar
                         </button>
                         <button
                           type="button"
                           onClick={handleCancelEdit}
-                          className="inline-flex rounded-md border border-gray-300 bg-white px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          className="inline-flex rounded-md border border-gray-300 bg-white px-4 py-2 text-sm text-gray-700 dark:text-gray-100 hover:bg-gray-100 dark:bg-gray-900 dark:hover:bg-gray-800"
                         >
                           Cancelar
                         </button>
@@ -577,7 +578,7 @@ function DayView({ currentDate, events, onEventClick }: { currentDate: string; e
         {dayjs(currentDate).format('dddd D [de] MMMM')}
       </h2>
       <div
-        className="relative grid grid-cols-[3rem,1fr] gap-0 border divide-x divide-y divide-gray-200 max-h-[calc(100vh-12rem)] overflow-auto"
+        className="relative grid grid-cols-[3rem,1fr] gap-0 border divide-x divide-y divide-gray-200 max-h-[calc(100vh-12rem)] overflow-auto custom-scrollbar"
         style={{ gridTemplateRows: 'repeat(32, 2.5rem)' }}
       >
         {hours.map((hour, idx) => (
@@ -636,7 +637,7 @@ function WeekView({ currentDate, events, onEventClick }: { currentDate: string; 
   return (
     <div className="flex flex-col">
       {/* Cabecera: columna de horas vacía + días */}
-      <div className="hidden sm:flex border-b border-gray-200 text-xs text-gray-500">
+      <div className="hidden sm:flex border-b border-gray-200 text-xs text-gray-500 dark:border-gray-900 dark:text-gray-100 dark:bg-gray-800">
         <div className="w-12" />
         <div className="flex-1 grid grid-cols-7">
           {weekDays.map((day) => (
@@ -645,20 +646,20 @@ function WeekView({ currentDate, events, onEventClick }: { currentDate: string; 
                 {day.dayName} {day.label}
               </p>
               {day.isToday && (
-                <p className="mt-1 text-indigo-600 font-semibold text-center">Hoy</p>
+                <p className="mt-1 text-indigo-600 font-semibold text-center  dark:text-indigo-300">Hoy</p>
               )}
             </div>
           ))}
         </div>
       </div>
       {/* Contenedor principal: columna de horas y grid de eventos */}
-      <div className="flex flex-auto">
+      <div className="flex flex-auto dark:bg-gray-800">
         {/* Columna de horas: ahora como grid con 32 filas */}
         <div className="w-12 grid" style={{ gridTemplateRows: `repeat(${totalRows}, 2.5rem)` }}>
           {hours.map((hour, idx) => (
             <div
               key={hour}
-              className="text-right pr-2 text-xs text-gray-400"
+              className="text-right pr-2 text-xs text-gray-400 dark:text-gray-100"
               style={{ gridRow: `${idx * 2 + 1} / span 2` }}
             >
               {dayjs().hour(hour).minute(0).format('h:mm A')}
@@ -666,9 +667,9 @@ function WeekView({ currentDate, events, onEventClick }: { currentDate: string; 
           ))}
         </div>
         {/* Grid de eventos: 7 columnas para cada día */}
-        <div className="flex-1 relative">
+        <div className="flex-1 relative dark:bg-gray-800">
           <div
-            className="grid gap-0 w-full border"
+            className="grid gap-0 w-full border dark:border-gray-900"
             style={{
               gridTemplateColumns: 'repeat(7, 1fr)',
               gridTemplateRows: `repeat(${totalRows}, 2.5rem)`,

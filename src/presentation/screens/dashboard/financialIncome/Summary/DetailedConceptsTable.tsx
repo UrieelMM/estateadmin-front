@@ -1,7 +1,6 @@
 // src/components/Summary/DetailedConceptsTable.tsx
 import React, { useMemo } from "react";
 import { usePaymentSummaryStore, PaymentRecord, MonthlyStat } from "../../../../../store/paymentSummaryStore";
-
 import PDFReportGenerator from "../Income/PDFReportGenerator";
 import useUserStore from "../../../../../store/UserDataStore";
 
@@ -34,7 +33,7 @@ const DetailedConceptsTable: React.FC<DetailedConceptsTableProps> = React.memo(
       totalIncome,
       totalPending,
       monthlyStats,
-      detailed, // se mantiene como boolean (por eso se hace el cast al pasarlo)
+      detailed,
       adminCompany,
       adminPhone,
       adminEmail,
@@ -61,7 +60,7 @@ const DetailedConceptsTable: React.FC<DetailedConceptsTableProps> = React.memo(
 
     // Calcular sortedMonthlyStats a partir de monthlyStats
     const sortedMonthlyStats: MonthlyStat[] = useMemo(() => {
-      return [...monthlyStats].sort((a, b) => parseInt(a.month) - parseInt(b.month));
+      return [...monthlyStats].sort((a, b) => parseInt(a.month, 10) - parseInt(b.month, 10));
     }, [monthlyStats]);
 
     return (
@@ -75,7 +74,7 @@ const DetailedConceptsTable: React.FC<DetailedConceptsTableProps> = React.memo(
               </summary>
               <div className="p-4">
                 {(() => {
-                  const monthKeys = ["01","02","03","04","05","06","07","08","09","10","11","12"];
+                  const monthKeys = ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"];
                   let totalPaid = 0,
                     totalPend = 0,
                     totalCredit = 0,
@@ -86,7 +85,8 @@ const DetailedConceptsTable: React.FC<DetailedConceptsTableProps> = React.memo(
                     const recs = records.filter((r) => r.month === m);
                     const paid = recs.reduce((sum, r) => sum + r.amountPaid, 0);
                     const pending = recs.reduce((sum, r) => sum + r.amountPending, 0);
-                    const credit = recs.reduce((sum, r) => sum + r.creditBalance, 0);
+                    // Nuevo: calcular saldo a favor como creditBalance - creditUsed
+                    const credit = recs.reduce((sum, r) => sum + (r.creditBalance - (r.creditUsed || 0)), 0);
 
                     totalPaid += paid;
                     totalPend += pending;
@@ -94,8 +94,7 @@ const DetailedConceptsTable: React.FC<DetailedConceptsTableProps> = React.memo(
                     totalRecords += recs.length;
                     totalPaidRecords += recs.filter((r) => r.paid).length;
 
-                    const compliance =
-                      recs.length > 0 ? (recs.filter((r) => r.paid).length / recs.length) * 100 : 0;
+                    const compliance = recs.length > 0 ? (recs.filter((r) => r.paid).length / recs.length) * 100 : 0;
                     const delinquency = 100 - compliance;
 
                     return (

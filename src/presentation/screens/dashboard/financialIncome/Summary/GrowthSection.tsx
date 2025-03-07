@@ -8,7 +8,9 @@ const GrowthSection: React.FC = React.memo(() => {
   const selectedYear = usePaymentSummaryStore((state) => state.selectedYear);
 
   const sortedMonthlyStats: MonthlyStat[] = useMemo(() => {
-    return [...monthlyStats].sort((a, b) => parseInt(a.month) - parseInt(b.month));
+    return [...monthlyStats].sort(
+      (a, b) => parseInt(a.month, 10) - parseInt(b.month, 10)
+    );
   }, [monthlyStats]);
 
   const now = new Date();
@@ -17,7 +19,9 @@ const GrowthSection: React.FC = React.memo(() => {
 
   const filteredMonthlyStats = useMemo(() => {
     if (selectedYear === currentYear) {
-      return sortedMonthlyStats.filter(stat => parseInt(stat.month) <= currentMonth);
+      return sortedMonthlyStats.filter(
+        (stat) => parseInt(stat.month, 10) <= currentMonth
+      );
     }
     return sortedMonthlyStats;
   }, [sortedMonthlyStats, selectedYear, currentYear, currentMonth]);

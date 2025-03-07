@@ -54,24 +54,24 @@ const BalanceGeneralDetailTable: React.FC<BalanceGeneralDetailTableProps> = ({
     }).format(value);
 
   return (
-    <div className="bg-white shadow rounded p-4 mb-4 overflow-x-auto">
+    <div className="bg-white shadow rounded p-4 mb-4 overflow-x-auto dark:bg-gray-800">
       <h3 className="text-lg font-bold mb-2">Detalle Mensual</h3>
       <table className="min-w-full">
         <thead>
           <tr>
-            <th className="border px-4 py-2">Mes</th>
-            <th className="border px-4 py-2">Ingresos</th>
-            <th className="border px-4 py-2">Egresos</th>
-            <th className="border px-4 py-2">Balance</th>
+            <th className="border px-4 py-2 dark:bg-gray-900 dark:text-gray-100">Mes</th>
+            <th className="border px-4 py-2 dark:bg-gray-900 dark:text-gray-100">Ingresos</th>
+            <th className="border px-4 py-2 dark:bg-gray-900 dark:text-gray-100">Egresos</th>
+            <th className="border px-4 py-2 dark:bg-gray-900 dark:text-gray-100">Balance</th>
           </tr>
         </thead>
         <tbody>
           {data.map((row, index) => (
             <tr key={index} className={index % 2 === 0 ? "bg-gray-50" : "bg-white"}>
-              <td className="border px-4 py-2">{row.month}</td>
-              <td className="border px-4 py-2">{formatCurrency(row.ingresos)}</td>
-              <td className="border px-4 py-2">{formatCurrency(row.egresos)}</td>
-              <td className="border px-4 py-2">{formatCurrency(row.balance)}</td>
+              <td className="border px-4 py-2 dark:bg-gray-800 dark:text-gray-100">{row.month}</td>
+              <td className="border px-4 py-2 dark:bg-gray-800 dark:text-gray-100">{formatCurrency(row.ingresos)}</td>
+              <td className="border px-4 py-2 dark:bg-gray-800 dark:text-gray-100">{formatCurrency(row.egresos)}</td>
+              <td className="border px-4 py-2 dark:bg-gray-800 dark:text-gray-100">{formatCurrency(row.balance)}</td>
             </tr>
           ))}
         </tbody>
