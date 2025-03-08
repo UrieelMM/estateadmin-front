@@ -1,14 +1,12 @@
-// Import the functions you need from the SDKs you need
+// firebase.ts
+
 import { initializeApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
-import { GoogleAuthProvider } from "firebase/auth";
+import { getAuth, GoogleAuthProvider } from "firebase/auth";
 import { getStorage } from "firebase/storage";
+import { getVertexAI, getGenerativeModel, Schema } from "firebase/vertexai";
+import { getMessaging } from "firebase/messaging"; // <-- Importa Messaging
 
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
-
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+// Config de tu proyecto Firebase
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_APIKEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTHDOMAIN,
@@ -19,9 +17,40 @@ const firebaseConfig = {
   measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENTID,
 };
 
-// Initialize Firebase
+// Inicializa la App
 export const app = initializeApp(firebaseConfig);
 
 export const storage = getStorage(app);
 export const auth = getAuth(app);
 export const provider = new GoogleAuthProvider();
+
+// Instancia Vertex AI a partir de tu app de Firebase
+const vertexAI = getVertexAI(app);
+
+export const model = getGenerativeModel(vertexAI, {
+  model: "gemini-2.0-flash",
+});
+
+const myJsonSchema = Schema.object({
+  properties: {
+    stats: Schema.array({
+      items: Schema.object({
+        properties: {
+          month: Schema.string(),
+          income: Schema.number(),
+          expenses: Schema.number(),
+        },
+      }),
+    }),
+  },
+});
+export const jsonModel = getGenerativeModel(vertexAI, {
+  model: "gemini-2.0-flash",
+  generationConfig: {
+    responseMimeType: "application/json",
+    responseSchema: myJsonSchema,
+  },
+});
+
+// Inicializa Firebase Messaging y expórtalo
+export const messaging = getMessaging(app);

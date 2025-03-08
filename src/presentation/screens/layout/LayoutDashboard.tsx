@@ -19,6 +19,7 @@ import useUserStore from "../../../store/UserDataStore";
 import Loading from "../../components/shared/loaders/Loading";
 import { auth } from "../../../firebase/firebase";
 import logo from "../../../assets/logo.png";
+import ChatBot from "../IA/ChatBot";
 // import InitialSetupSteps from "../dashboard/InitialSetup/InitialSetupSteps";
 
 function classNames(...classes: string[]) {
@@ -84,6 +85,7 @@ const LayoutDashboard = ({ children }: Props) => {
 
   return !isLoadingData && componentIsVisible ? (
     <div className="min-h-screen bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100">
+      <ChatBot />
       {/* <InitialSetupSteps /> */}
 
       {/* Botón móvil (arriba a la izquierda) para abrir/cerrar sidebar */}
@@ -329,10 +331,11 @@ const LayoutDashboard = ({ children }: Props) => {
                         aria-hidden="true"
                       />
                     </div>
-                    <p className="text-xs mt-2 mb-2 text-center">¿Necesitas ayuda?</p>
+                    <p className="text-xs mt-2 mb-2 text-center">¿Necesitas ayudaa?</p>
                     <button className="bg-indigo-400 text-xs text-center m-0 text-white rounded-md p-1">
                       <span className="block mb-0.5">Contacta a soporte</span>
                     </button>
+                    
                   </a>
                 </li>
                 <li>
