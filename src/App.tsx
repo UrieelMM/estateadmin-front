@@ -8,7 +8,7 @@ function App() {
   return (
     <ThemeProvider>
       <AppRouterPage />
-      <Notifications /> {/* Agrega este componente */}
+      <Notifications />
       <Toaster position="top-right" />
     </ThemeProvider>
   );

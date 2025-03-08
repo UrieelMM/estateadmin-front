@@ -51,7 +51,7 @@ const PaymentHistory = () => {
     adminEmail,
     logoBase64,
     signatureBase64,
-    currentCreditBalance, // NUEVO: saldo actual
+    currentCreditBalance, // NUEVO: saldo actual (en centavos)
     pendingAmount,        // NUEVO: monto pendiente (suma de cargos no pagados)
   } = usePaymentHistoryStore();
 
@@ -219,7 +219,7 @@ const PaymentHistory = () => {
         <div className="p-4 shadow-md rounded-md">
           <p className="text-sm text-gray-600">Saldo a favor total</p>
           <p className="text-2xl font-semibold">
-            {formatCurrency(currentCreditBalance)}
+            {formatCurrency(currentCreditBalance / 100)}
           </p>
         </div>
         <div className="p-4 shadow-md rounded-md">

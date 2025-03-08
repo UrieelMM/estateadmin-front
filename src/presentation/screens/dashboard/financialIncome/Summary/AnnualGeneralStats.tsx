@@ -66,7 +66,7 @@ const AnnualGeneralStats: React.FC = () => {
 
   /**
    * Cálculos principales (anuales) basados en conceptRecords.
-   * Ahora se calcula además globalSaldo = suma de (creditBalance – creditUsed)
+   * Se actualizó para que en los totales se considere amountPaid + creditBalance
    */
   const {
     conceptTotals,
@@ -86,11 +86,12 @@ const AnnualGeneralStats: React.FC = () => {
     Object.entries(conceptRecords).forEach(([concept, records]) => {
       let sumConcept = 0;
       records.forEach((rec) => {
-        sumConcept += rec.amountPaid;
+        // Ajuste: sumar amountPaid + creditBalance para reflejar el total pagado
+        sumConcept += rec.amountPaid + rec.creditBalance;
         if (monthlyTotals[rec.month] !== undefined) {
-          monthlyTotals[rec.month] += rec.amountPaid;
+          monthlyTotals[rec.month] += rec.amountPaid + rec.creditBalance;
         }
-        // Nuevo: sumar la diferencia entre creditBalance y creditUsed
+        // Sumar la diferencia entre creditBalance y creditUsed (saldo a favor)
         globalSaldo += rec.creditBalance - (rec.creditUsed || 0);
       });
       conceptTotals[concept] = sumConcept;
@@ -149,6 +150,7 @@ const AnnualGeneralStats: React.FC = () => {
 
   /**
    * Datos para la gráfica de áreas apiladas (Top 5 + "Otros")
+   * Se actualizó la suma mensual para incluir rec.amountPaid + rec.creditBalance.
    */
   const areaStackData = useMemo(() => {
     const sorted = Object.entries(conceptTotals).sort((a, b) => b[1] - a[1]);
@@ -159,14 +161,18 @@ const AnnualGeneralStats: React.FC = () => {
       const row: any = { month: m };
       topConcepts.forEach((concept) => {
         const recs = conceptRecords[concept] || [];
-        const sumThisMonth = recs.filter((r) => r.month === m).reduce((acc, r) => acc + r.amountPaid, 0);
+        const sumThisMonth = recs
+          .filter((r) => r.month === m)
+          .reduce((acc, r) => acc + r.amountPaid + r.creditBalance, 0);
         row[concept] = sumThisMonth;
       });
       if (otherConcepts.length > 0) {
         let sumOthers = 0;
         otherConcepts.forEach((concept) => {
           const recs = conceptRecords[concept] || [];
-          const sumThisMonth = recs.filter((r) => r.month === m).reduce((acc, r) => acc + r.amountPaid, 0);
+          const sumThisMonth = recs
+            .filter((r) => r.month === m)
+            .reduce((acc, r) => acc + r.amountPaid + r.creditBalance, 0);
           sumOthers += sumThisMonth;
         });
         row["Otros"] = sumOthers;

@@ -33,8 +33,8 @@ const GrowthSection: React.FC = React.memo(() => {
     return [
       {
         title: "Monto abonado",
-        current: currentMonthStats.paid,
-        previous: previousMonthStats.paid,
+        current: currentMonthStats.paid + currentMonthStats.saldo,
+        previous: previousMonthStats.paid + previousMonthStats.saldo,
       },
       {
         title: "Monto pendiente",

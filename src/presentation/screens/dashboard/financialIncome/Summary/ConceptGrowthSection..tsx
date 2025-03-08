@@ -49,14 +49,14 @@ const ConceptGrowthSection: React.FC = React.memo(() => {
     }[] = [];
 
     Object.entries(conceptRecords).forEach(([concept, records]) => {
-      // Se suman los ingresos (amountPaid) del mes actual y anterior
+      // Se suman los ingresos (amountPaid + creditBalance) del mes actual y anterior
       const currentValue = records
         .filter((record) => record.month === currentMonthString)
-        .reduce((sum, record) => sum + record.amountPaid, 0);
+        .reduce((sum, record) => sum + record.amountPaid + record.creditBalance, 0);
       const previousValue = previousMonthString
         ? records
-            .filter((record) => record.month === previousMonthString)
-            .reduce((sum, record) => sum + record.amountPaid, 0)
+          .filter((record) => record.month === previousMonthString)
+          .reduce((sum, record) => sum + record.amountPaid + record.creditBalance, 0)
         : 0;
 
       totalCurrent += currentValue;
@@ -72,6 +72,7 @@ const ConceptGrowthSection: React.FC = React.memo(() => {
 
     return { totalCurrent, totalPrevious, dataArr, growthArr };
   }, [conceptRecords, currentMonthString, previousMonthString]);
+
 
   // Datos para la gráfica de pastel: Top 5 + "Otros" (basado en amountPaid)
   const pieData = useMemo(() => {

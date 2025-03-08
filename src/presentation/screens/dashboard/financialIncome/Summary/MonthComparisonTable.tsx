@@ -55,7 +55,7 @@ const MonthComparisonTable: React.FC = React.memo(() => {
             {sortedMonthlyStats.map((row) => (
               <tr key={row.month} className="hover:bg-gray-50 transition-colors dark:hover:bg-gray-700 cursor-pointer">
                 <td className="border p-2">{monthNames[row.month] || row.month}</td>
-                <td className="border p-2">{formatCurrency(row.paid)}</td>
+                <td className="border p-2">{formatCurrency(row.paid + row.saldo)}</td>
                 <td className="border p-2">{formatCurrency(row.pending)}</td>
                 <td className="border p-2">{formatCurrency(row.saldo)}</td>
                 <td className="border p-2">{row.complianceRate.toFixed(2)}%</td>

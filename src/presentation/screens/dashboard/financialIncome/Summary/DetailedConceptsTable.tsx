@@ -83,7 +83,7 @@ const DetailedConceptsTable: React.FC<DetailedConceptsTableProps> = React.memo(
 
                   const rows = monthKeys.map((m) => {
                     const recs = records.filter((r) => r.month === m);
-                    const paid = recs.reduce((sum, r) => sum + r.amountPaid, 0);
+                    const paid = recs.reduce((sum, r) => sum + r.amountPaid + r.creditBalance, 0);
                     const pending = recs.reduce((sum, r) => sum + r.amountPending, 0);
                     // Nuevo: calcular saldo a favor como creditBalance - creditUsed
                     const credit = recs.reduce((sum, r) => sum + (r.creditBalance - (r.creditUsed || 0)), 0);

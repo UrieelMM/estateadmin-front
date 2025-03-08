@@ -15,7 +15,6 @@ const Notifications = () => {
     getToken(messaging, { vapidKey })
       .then((currentToken) => {
         if (currentToken) {
-          console.log("Token obtenido:", currentToken);
           setFcmToken(currentToken);
           // Si el usuario ya está autenticado, actualizamos el token de inmediato
           if (user) {

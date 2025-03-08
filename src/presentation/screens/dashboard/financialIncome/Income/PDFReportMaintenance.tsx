@@ -15,21 +15,7 @@ export interface PDFReportGeneratorProps {
   concept?: string;
 }
 
-// const monthNames: Record<string, string> = {
-//   "01": "Enero",
-//   "02": "Febrero",
-//   "03": "Marzo",
-//   "04": "Abril",
-//   "05": "Mayo",
-//   "06": "Junio",
-//   "07": "Julio",
-//   "08": "Agosto",
-//   "09": "Septiembre",
-//   "10": "Octubre",
-//   "11": "Noviembre",
-//   "12": "Diciembre",
-// };
-
+// Si no se pasa un concepto se asume "Cuota de mantenimiento"
 const PDFReportGeneratorMaintenance: React.FC<PDFReportGeneratorProps> = ({ year, concept }) => {
   // Se obtienen datos del store de pagos
   const {
@@ -56,7 +42,6 @@ const PDFReportGeneratorMaintenance: React.FC<PDFReportGeneratorProps> = ({ year
     name: user.name,
   }));
 
-  // Si no se pasa un concepto se asume "Cuota de mantenimiento"
   const reportConcept = concept ? concept : "Cuota de mantenimiento";
 
   // Función para formatear números como moneda
@@ -105,11 +90,11 @@ const PDFReportGeneratorMaintenance: React.FC<PDFReportGeneratorProps> = ({ year
     // Columna A: Nombre y Número de Condomino
     row.push(`${cond.number}${cond.name ? " - " + cond.name : ""}`);
     let totalPendingForCondo = 0;
-    // Para cada mes, se suma el monto abonado y se acumula el pendiente
+    // Para cada mes, se suma el monto abonado (amountPaid + creditBalance) y se acumula el pendiente
     for (let m = 1; m <= 12; m++) {
       const monthKey = m.toString().padStart(2, "0");
       const monthRecords = filteredRecords.filter((rec) => rec.month === monthKey);
-      const paidSum = monthRecords.reduce((sum, rec) => sum + rec.amountPaid, 0);
+      const paidSum = monthRecords.reduce((sum, rec) => sum + rec.amountPaid + rec.creditBalance, 0);
       const pendingSum = monthRecords.reduce((sum, rec) => sum + rec.amountPending, 0);
       row.push(formatCurrency(paidSum));
       totals[monthKey] += paidSum;
@@ -126,14 +111,12 @@ const PDFReportGeneratorMaintenance: React.FC<PDFReportGeneratorProps> = ({ year
     for (let m = 1; m <= 12; m++) {
       const monthKey = m.toString().padStart(2, "0");
       const monthRecords = filteredRecords.filter((rec) => rec.month === monthKey);
-      // Extraer y unir las fechas de pago (si existen)
       const dates = monthRecords
         .map((rec) => rec.paymentDate)
         .filter((d): d is string => !!d)
         .join(", ");
       dateRow.push(dates || "-");
     }
-    // Última columna: dejar vacío
     dateRow.push("-");
     tableBody.push(dateRow);
   });

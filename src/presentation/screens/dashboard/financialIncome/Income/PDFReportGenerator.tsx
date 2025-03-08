@@ -68,7 +68,7 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({ year, concept }
     adminPhone: state.adminPhone,
     adminEmail: state.adminEmail,
     conceptRecords: state.conceptRecords,
-  }));
+  }))
 
   // Obtener los condominios desde el store de usuarios
   const condominiumsUsers = useUserStore((state) => state.condominiumsUsers);
@@ -178,7 +178,8 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({ year, concept }
           }
           return recMonth === m;
         });
-        const paid = recsForMonth.reduce((sum, rec) => sum + rec.amountPaid, 0);
+        // Sumar amountPaid + creditBalance para reflejar el total pagado
+        const paid = recsForMonth.reduce((sum, rec) => sum + rec.amountPaid + rec.creditBalance, 0);
         const pending = recsForMonth.reduce((sum, rec) => sum + rec.amountPending, 0);
         // Saldo a favor: creditBalance - creditUsed
         const credit = recsForMonth.reduce(
@@ -258,12 +259,10 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({ year, concept }
             }
             return recMonth === m;
           });
-          const amountPaid = recordsForMonth.reduce((sum, r) => sum + r.amountPaid, 0);
+          // Sumar amountPaid + creditBalance para el total pagado
+          const amountPaid = recordsForMonth.reduce((sum, r) => sum + r.amountPaid + r.creditBalance, 0);
           const amountPending = recordsForMonth.reduce((sum, r) => sum + r.amountPending, 0);
-          const credit = recordsForMonth.reduce(
-            (sum, r) => sum + (r.creditBalance - (r.creditUsed || 0)),
-            0
-          );
+          const credit = recordsForMonth.reduce((sum, r) => sum + (r.creditBalance - (r.creditUsed || 0)), 0);
           totalPaidCond += amountPaid;
           totalPendingCond += amountPending;
           totalCreditCond += credit;
@@ -395,7 +394,8 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({ year, concept }
             const recordsForMonth = recs.filter((r) =>
               r.month.includes("-") ? r.month.split("-")[1] === m : r.month === m
             );
-            const paid = recordsForMonth.reduce((sum, r) => sum + r.amountPaid, 0);
+            // Sumar amountPaid + creditBalance para el total pagado
+            const paid = recordsForMonth.reduce((sum, r) => sum + r.amountPaid + r.creditBalance, 0);
             const pending = recordsForMonth.reduce((sum, r) => sum + r.amountPending, 0);
             // Ajuste: saldo a favor = creditBalance - creditUsed
             const credit = recordsForMonth.reduce((sum, r) => sum + (r.creditBalance - (r.creditUsed || 0)), 0);
@@ -468,7 +468,8 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({ year, concept }
             }
             return recMonth === m;
           });
-          const amountPaid = recordsForMonth.reduce((sum, r) => sum + r.amountPaid, 0);
+          // Sumar amountPaid + creditBalance para el total pagado
+          const amountPaid = recordsForMonth.reduce((sum, r) => sum + r.amountPaid + r.creditBalance, 0);
           const amountPending = recordsForMonth.reduce((sum, r) => sum + r.amountPending, 0);
           const credit = recordsForMonth.reduce((sum, r) => sum + (r.creditBalance - (r.creditUsed || 0)), 0);
           totalPaidCond += amountPaid;

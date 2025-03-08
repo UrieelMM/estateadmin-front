@@ -34,7 +34,7 @@ const SummaryCards: React.FC = React.memo(() => {
               Total ingresos:
             </span>
             <span className="text-2xl font-semibold text-default-700">
-              {formatCurrency(totalIncome)}
+              {formatCurrency(totalIncome + totalCreditGlobal)}
             </span>
           </div>
         </Card>
