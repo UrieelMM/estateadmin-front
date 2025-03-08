@@ -4,11 +4,12 @@ import DownloadReceipts from "./DownloadReceipts";
 import PaymentHistory from "./PaymentHistory";
 import PaymentSummary from "./PaymentSummary";
 import MorosidadView from "../Summary/MorosidadView";
+import PaymentSummaryByAccount from "./PaymentSummaryByAccount";
 
 
 const Income = () => {
   const [open, setOpen] = useState(false);
-  // Ahora el estado puede ser: "summary", "history" o "morosidad"
+  // Ahora el estado puede ser: "summary", "accountSummary", "history" o "morosidad"
   const [activeTab, setActiveTab] = useState("summary");
 
   return (
@@ -27,7 +28,10 @@ const Income = () => {
         {/* Tab Layout */}
         <div className="mb-4">
           <div className="border-b border-gray-200">
-            <nav className="-mb-px flex space-x-8 dark:border-gray-800" aria-label="Tabs">
+            <nav
+              className="-mb-px flex space-x-8 dark:border-gray-800"
+              aria-label="Tabs"
+            >
               {/* 1. Tab Resumen General */}
               <button
                 className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
@@ -40,7 +44,19 @@ const Income = () => {
                 Resumen General
               </button>
 
-              {/* 2. Tab Historial y Recibos */}
+              {/* 2. Tab Resumen por Cuenta */}
+              <button
+                className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === "accountSummary"
+                    ? "border-indigo-500 text-indigo-600 dark:text-gray-100"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400"
+                }`}
+                onClick={() => setActiveTab("accountSummary")}
+              >
+                Resumen por Cuenta
+              </button>
+
+              {/* 3. Tab Historial y Recibos */}
               <button
                 className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
                   activeTab === "history"
@@ -52,7 +68,7 @@ const Income = () => {
                 Historial y Recibos
               </button>
 
-              {/* 3. Tab Morosidad */}
+              {/* 4. Tab Morosidad */}
               <button
                 className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
                   activeTab === "morosidad"
@@ -76,6 +92,14 @@ const Income = () => {
               <PaymentSummary />
             </>
           )}
+          {activeTab === "accountSummary" && (
+            <>
+              <h2 className="text-2xl font-bold text-indigo-600 mb-4 dark:text-indigo-500">
+                Resumen por Cuenta
+              </h2>
+              <PaymentSummaryByAccount />
+            </>
+          )}
           {activeTab === "history" && (
             <div className="w-full flex justify-start mt-8">
               <div className="w-[70%]">
@@ -86,9 +110,7 @@ const Income = () => {
               </div>
             </div>
           )}
-          {activeTab === "morosidad" && (
-            <MorosidadView />
-          )}
+          {activeTab === "morosidad" && <MorosidadView />}
         </div>
       </div>
 

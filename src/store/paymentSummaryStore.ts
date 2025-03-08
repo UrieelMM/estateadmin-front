@@ -6,6 +6,9 @@ import {
   getDocs,
   doc,
   getDoc,
+  query,
+  where,
+  documentId,
 } from "firebase/firestore";
 import { getAuth, getIdTokenResult } from "firebase/auth";
 
@@ -48,21 +51,26 @@ export interface PaymentRecord {
   concept: string;
   // Se mantienen los valores de saldo a favor pero ahora se resta el crédito usado
   creditBalance: number;  // en pesos
-  creditUsed?: number;    // NUEVO: crédito utilizado (en pesos)
+  creditUsed?: number;    // crédito utilizado (en pesos)
   paid: boolean;
-  // NUEVO: Se agrega el ID de la cuenta financiera a la que se aplicó el pago
+  // ID de la cuenta financiera a la que se aplicó el pago
   financialAccountId: string;
-  // NUEVO: Campo de fecha de pago, formateado a "dd/mm/aaaa"
+  // Campo de fecha de pago, formateado a "dd/mm/aaaa"
   paymentDate?: string;
 }
 
 export type MonthlyStat = {
-  month: string; 
-  paid: number;      
-  pending: number;   
-  saldo: number;     
-  complianceRate: number;  
-  delinquencyRate: number; 
+  month: string;
+  paid: number;
+  pending: number;
+  saldo: number;
+  complianceRate: number;
+  delinquencyRate: number;
+};
+
+type FinancialAccountInfo = {
+  id: string;
+  name: string;
 };
 
 type PaymentSummaryState = {
@@ -82,8 +90,10 @@ type PaymentSummaryState = {
   loading: boolean;
   error: string | null;
   selectedYear: string;
-  // NUEVO: Agrupación de registros por financial account
   byFinancialAccount: Record<string, PaymentRecord[]>;
+  // NUEVO: Mapa con info de cada cuenta financiera
+  financialAccountsMap: Record<string, FinancialAccountInfo>;
+
   fetchSummary: (year?: string) => Promise<void>;
   setSelectedYear: (year: string) => void;
 };
@@ -106,9 +116,11 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>((set) => ({
   error: null,
   selectedYear: new Date().getFullYear().toString(),
   byFinancialAccount: {},
+  financialAccountsMap: {}, // ← NUEVO
 
   fetchSummary: async (year?: string) => {
     set({ loading: true, error: null });
+
     try {
       const db = getFirestore();
       const auth = getAuth();
@@ -175,7 +187,7 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>((set) => ({
 
       const selectedYearStr = year || new Date().getFullYear().toString();
 
-      // 2. Recorrer usuarios y cargos
+      // 2. Recorrer usuarios y sus cargos
       for (const userObj of users) {
         const numberCondominium = String(userObj.number);
         const chargesRef = collection(
@@ -189,7 +201,7 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>((set) => ({
           if (!chargeData.startAt || typeof chargeData.startAt !== "string") continue;
           if (!chargeData.startAt.startsWith(selectedYearStr)) continue;
 
-          // Extraer el mes del campo startAt (asumido formato "YYYY-MM-DD ...")
+          // Extraer el mes (formato "YYYY-MM-DD")
           const monthCode = chargeData.startAt.substring(5, 7);
 
           chargeCount[monthCode] = (chargeCount[monthCode] || 0) + 1;
@@ -208,30 +220,32 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>((set) => ({
           let totalAmountPendingFromPayments = 0;
           let totalCreditBalance = 0;
           let totalCreditUsed = 0;
-          let accountId = ""; // Para obtener el financialAccountId
-          // Inicializar variable para la fecha; si hay más de un pago, se sobrescribe (o se podría concatenar)
+          let accountId = "";
           let formattedDate = "";
+
           paymentsSnapshot.forEach((paymentDoc) => {
             const paymentData = paymentDoc.data();
             totalAmountPaid += centsToPesos(paymentData.amountPaid) || 0;
             totalAmountPendingFromPayments += centsToPesos(paymentData.amountPending) || 0;
             totalCreditBalance += centsToPesos(paymentData.creditBalance) || 0;
-            totalCreditUsed += paymentData.creditUsed ? centsToPesos(paymentData.creditUsed) : 0;
+            totalCreditUsed += paymentData.creditUsed
+              ? centsToPesos(paymentData.creditUsed)
+              : 0;
+
             if (!accountId && paymentData.financialAccountId) {
               accountId = paymentData.financialAccountId;
             }
-            // Procesar paymentDate y formatearlo a "dd/mm/aaaa"
+
+            // Procesar paymentDate y formatearlo
             if (paymentData.paymentDate) {
               if (paymentData.paymentDate.toDate) {
                 const d = paymentData.paymentDate.toDate();
                 formattedDate = formatDate(d);
               } else if (typeof paymentData.paymentDate === "string") {
                 const d = new Date(paymentData.paymentDate);
-                if (!isNaN(d.getTime())) {
-                  formattedDate = formatDate(d);
-                } else {
-                  formattedDate = paymentData.paymentDate;
-                }
+                formattedDate = !isNaN(d.getTime())
+                  ? formatDate(d)
+                  : paymentData.paymentDate;
               }
             }
           });
@@ -255,12 +269,13 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>((set) => ({
             creditUsed: parseFloat(totalCreditUsed.toFixed(2)),
             paid: chargeData.paid === true,
             financialAccountId: accountId || "N/A",
-            paymentDate: formattedDate, // Se asigna la fecha formateada
+            paymentDate: formattedDate,
           };
           paymentRecords.push(record);
         }
       }
 
+      // Calcular totales, agrupaciones, etc.
       const chartData: Record<string, { paid: number; pending: number; saldo: number }> = {};
       for (let i = 1; i <= 12; i++) {
         const m = i.toString().padStart(2, "0");
@@ -274,8 +289,7 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>((set) => ({
           chartData[pr.month].pending += pr.amountPending;
           totalPending += pr.amountPending;
         }
-        // Calcular saldo a favor: creditBalance - creditUsed
-        chartData[pr.month].saldo += (pr.creditBalance - (pr.creditUsed || 0));
+        chartData[pr.month].saldo += pr.creditBalance - (pr.creditUsed || 0);
         totalIncome += pr.amountPaid;
       });
 
@@ -326,6 +340,48 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>((set) => ({
         byFinancialAccount[key].push(pr);
       });
 
+      // NUEVO: obtener nombres de las cuentas
+      const uniqueAccountIds = Array.from(
+        new Set(paymentRecords.map((pr) => pr.financialAccountId))
+      ).filter((id) => id && id !== "N/A");
+
+      let financialAccountsMap: Record<string, { id: string; name: string }> = {};
+      if (uniqueAccountIds.length > 0) {
+        const accountsRef = collection(
+          db,
+          `clients/${clientId}/condominiums/${condominiumId}/financialAccounts`
+        );
+
+        // Si hay <= 10 IDs, se puede usar query con where in
+        // Si hay más, considera dividir la consulta o hacer un getDoc por cada ID
+        if (uniqueAccountIds.length <= 10) {
+          const q = query(accountsRef, where(documentId(), "in", uniqueAccountIds));
+          const accountsSnap = await getDocs(q);
+          accountsSnap.forEach((accDoc) => {
+            if (accDoc.exists()) {
+              const data = accDoc.data();
+              financialAccountsMap[accDoc.id] = {
+                id: accDoc.id,
+                name: data.name || "Sin nombre",
+              };
+            }
+          });
+        } else {
+          // Para evitar problemas con más de 10 IDs en "where in", haz fetch individual
+          for (const accId of uniqueAccountIds) {
+            const accRef = doc(accountsRef, accId);
+            const accSnap = await getDoc(accRef);
+            if (accSnap.exists()) {
+              const data = accSnap.data();
+              financialAccountsMap[accId] = {
+                id: accId,
+                name: data.name || "Sin nombre",
+              };
+            }
+          }
+        }
+      }
+
       set({
         payments: paymentRecords,
         totalIncome,
@@ -342,6 +398,7 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>((set) => ({
         signatureBase64,
         loading: false,
         byFinancialAccount,
+        financialAccountsMap, // Guardamos el mapa de cuentas con su nombre
       });
     } catch (error: any) {
       console.error("Error fetching payment summary:", error);

@@ -88,7 +88,7 @@ const PaymentSummary: React.FC = () => {
             <div className="p-4 shadow-md rounded-md flex flex-col justify-between">
               <div className="flex items-center gap-3 mb-4">
                 <DocumentTextIcon className="text-indigo-600 h-8 w-8" />
-                <h3 className="font-bold text-xl">Reporte de Ingresos</h3>
+                <h3 className="font-bold text-lg">Reporte de Ingresos</h3>
               </div>
               <p className="text-sm text-gray-600 mb-4 dark:text-gray-100">
                 Genera el reporte de ingresos por concepto de cuota de mantenimiento.
@@ -98,8 +98,8 @@ const PaymentSummary: React.FC = () => {
             {/* Tarjeta para Reporte de Mantenimiento */}
             <div className="p-4 shadow-md rounded-md flex flex-col justify-between">
               <div className="flex items-center gap-3 mb-4">
-                <WrenchScrewdriverIcon className="text-green-600 h-8 w-8" />
-                <h3 className="font-bold text-xl">Reporte de Mantenimiento</h3>
+                <WrenchScrewdriverIcon className="text-indigo-600 h-8 w-8" />
+                <h3 className="font-bold text-lg">Reporte de Mantenimiento</h3>
               </div>
               <p className="text-sm text-gray-600 mb-4 dark:text-gray-100">
                 Reporte detallado de los egresos de mantenimiento.
