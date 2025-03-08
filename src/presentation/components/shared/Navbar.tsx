@@ -5,6 +5,7 @@ import ConboBox from './ComboBox'
 import { getCurrentDateWithGreeting } from '../../../utils/getCurrentDate'
 import useUserStore from '../../../store/UserDataStore'
 import { UserData } from '../../../interfaces/UserData'
+import NotificationBell from './notifications/NotificationsBell';
 
 function classNames(...classes: string[]) {
     return classes.filter(Boolean).join(' ')
@@ -48,7 +49,10 @@ const Navbar = () => {
 
                 {/* Profile dropdown */}
                 <Menu as="div" className="relative ml-3">
-                  <div>
+                  <div className="flex items-center ">
+                    <div className="mr-2">
+                      <NotificationBell  />
+                    </div>
                     <Menu.Button className="relative flex rounded-full bg-gray-800 text-sm focus:outline-none">
                       <span className="absolute -inset-1.5" />
                       {
