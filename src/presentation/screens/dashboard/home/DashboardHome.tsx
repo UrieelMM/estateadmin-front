@@ -1,4 +1,3 @@
-import ChartHome from '../../../components/shared/ChartHome'
 import DirectAccess from '../../../components/shared/DirectAccess'
 import StatsHome from '../../../components/shared/StatsHome'
 import UsersListAdmin from '../../../components/shared/UsersListAdmin'
@@ -11,7 +10,7 @@ const DashboardHome = () => {
         <DirectAccess />
         <UsersListAdmin />
       </div>
-      <ChartHome />        
+      {/* <ChartHome />         */}
     </div>
   )
 }

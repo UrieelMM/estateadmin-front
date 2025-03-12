@@ -83,14 +83,14 @@ const ExpenseSummaryCards: React.FC = () => {
       {/* Tarjeta 2: Concepto Estrella */}
       <div className="p-4 shadow-md rounded-md">
         <p className="text-sm text-gray-600">Concepto Estrella</p>
-        <p className="text-base font-semibold text-indigo-500">{bestConcept[0]}</p>
+        <p className="text-base font-semibold text-indigo-500 dark:text-indigo-400">{bestConcept[0]}</p>
         <p className="text-2xl font-semibold">{formatCurrency(bestConcept[1])}</p>
       </div>
 
       {/* Tarjeta 3: Mes con mayor gasto */}
       <div className="p-4 shadow-md rounded-md">
         <p className="text-sm text-gray-600">Mes con mayor gasto</p>
-        <p className="text-base font-semibold text-indigo-500">
+        <p className="text-base font-semibold text-indigo-500 dark:text-indigo-400">
           {MONTH_NAMES[bestMonth[0]] || bestMonth[0]}
         </p>
         <p className="text-2xl font-semibold">{formatCurrency(bestMonth[1])}</p>
@@ -99,7 +99,7 @@ const ExpenseSummaryCards: React.FC = () => {
       {/* Tarjeta 4: Mes con menor gasto */}
       <div className="p-4 shadow-md rounded-md">
         <p className="text-sm text-gray-600">Mes con menor gasto</p>
-        <p className="text-base font-semibold text-indigo-500">
+        <p className="text-base font-semibold text-indigo-500 dark:text-indigo-400">
           {MONTH_NAMES[worstMonth[0]] || worstMonth[0]}
         </p>
         <p className="text-2xl font-semibold">{formatCurrency(worstMonth[1])}</p>

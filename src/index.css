@@ -83,3 +83,7 @@ span.bg-indigo-500.rounded-lg.p-2.text-white.text-xs.ml-2 {
     overflow-y: scroll;
     /* Permite el desplazamiento vertical */
 }
+
+.tooltip-container{
+    min-width: 60px !important;
+}

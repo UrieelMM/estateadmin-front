@@ -118,7 +118,7 @@ const PublicationsForm = ({ isOpen, onClose }: PublicationFormProps) => {
 
   return (
     <div className="fixed inset-0 overlay-forms flex justify-center items-center">
-      <div className="bg-white p-5 h-auto rounded-lg max-w-2xl w-full">
+      <div className="bg-white p-5 h-auto rounded-lg max-w-2xl w-full dark:bg-gray-800">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-lg font-semibold">Realizar publicación</h2>
           <button
@@ -131,30 +131,30 @@ const PublicationsForm = ({ isOpen, onClose }: PublicationFormProps) => {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="flex justify-between items-center gap-2">
           <div className="flex-col w-full">
-            <label className="text-sm font-bold">Título de la publicación</label>
+            <label className="text-sm font-bold dark:text-gray-100">Título de la publicación</label>
             <input
               type="text"
               placeholder="Título"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="block mt-1 w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+              className="px-2 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm  ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
             />
           </div>
           <div className="flex-col w-full">
-            <label className="text-sm font-bold">Autor</label>
+            <label className="text-sm font-bold dark:text-gray-100">Autor</label>
             <input
               type="text"
               placeholder="Autor"
               value={author}
               onChange={(e) => setAuthor(e.target.value)}
-              className="block mt-1 w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+              className="px-2 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm  ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
             />
           </div>
           </div>
           <div className="flex justify-between items-center gap-2">
             <div className="flex-col w-full">
-              <label className="text-sm font-bold">Condominio</label>
-              <select onChange={(e) => setCondominiumSelected(e.target.value)} className="block mt-1 w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6">
+              <label className="text-sm font-bold dark:text-gray-100">Condominio</label>
+              <select onChange={(e) => setCondominiumSelected(e.target.value)} className="px-2 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm  ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500">
                 <option value="">Seleccione un condominio</option>
                 {condominiumsList.map((condominium: Condominium) => (
                   <option key={condominium.uid} value={condominium.uid}>
@@ -164,11 +164,11 @@ const PublicationsForm = ({ isOpen, onClose }: PublicationFormProps) => {
               </select>
             </div>
             <div className="flex-col w-full">
-              <label className="text-sm font-bold">Etiqueta</label>
+              <label className="text-sm font-bold dark:text-gray-100">Etiqueta</label>
               <select
                 value={tags}
                 onChange={(e) => setTags(e.target.value)}
-                className="block mt-1 w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                className="px-2 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm  ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
               >
                 <option value="">Seleccione una etiqueta</option>
                 <option value="notificacion">Notificacion</option>
@@ -178,8 +178,8 @@ const PublicationsForm = ({ isOpen, onClose }: PublicationFormProps) => {
             </div>
           </div>
           <div>
-            <label className="text-sm font-bold">Enviar a</label>
-            <select onChange={(e) => setSendToSelected(e.target.value)} className="block mt-1 w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6">
+            <label className="text-sm font-bold dark:text-gray-100">Enviar a</label>
+            <select onChange={(e) => setSendToSelected(e.target.value)} className="px-2 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm  ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500">
               <option>Selecciona una opción</option>
               <option value="todos">Todos</option>
               <option value="propietario">Propietarios</option>
@@ -190,13 +190,13 @@ const PublicationsForm = ({ isOpen, onClose }: PublicationFormProps) => {
             </select>
           </div>
           <div className="my-8 h-72">
-            <label className="text-sm font-bold">Mensaje</label>
+            <label className="text-sm font-bold dark:text-gray-100">Mensaje</label>
             <ReactQuill className="h-48 md:h-56 mt-1" modules={modules} formats={formats} value={content}  onChange={setContent} />
           </div>
           <label className="text-sm font-bold mt-16 read-only:"></label>
           <div
               {...getRootProps()}
-              className="mt-12 h-auto align-middle items-center flex justify-center rounded-lg border border-dashed border-gray-900/25 px-6 py-4"
+              className="mt-12 h-auto flex items-center justify-center rounded-lg border border-dashed border-gray-900/25 px-6 py-4 dark:border-indigo-900"
             >
               
               <input {...getInputProps()} />

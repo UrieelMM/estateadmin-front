@@ -65,7 +65,7 @@ const Expenses = () => {
                 <div className="-mx-4 sm:-mx-0 py-4">
                     {activeTab === "summary" && (
                         <>
-                            <h2 className="text-2xl font-bold text-indigo-600 mb-4">
+                            <h2 className="text-2xl font-bold text-indigo-600 mb-4 dark:text-indigo-500">
                                 Resumen General de Egresos
                             </h2>
                             <ExpensesSummary />

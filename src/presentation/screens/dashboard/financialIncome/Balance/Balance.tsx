@@ -59,7 +59,7 @@ const Balance = () => {
                 <div className="-mx-4 sm:-mx-0 py-4">
                     {activeTab === "summary" && (
                         <>
-                            <h2 className="text-2xl font-bold text-indigo-600 mb-4 dark:text-indigo-500">
+                            <h2 className="text-2xl font-bold text-indigo-600 mb- dark:text-indigo-500">
                                 Balance General de Ingresos y Egresos
                             </h2>
                             <BalanceSummary />

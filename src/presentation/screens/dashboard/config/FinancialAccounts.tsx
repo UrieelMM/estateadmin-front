@@ -133,7 +133,6 @@ const FinancialAccounts = () => {
                 <option value="">Seleccione</option>
                 <option value="bank">Banco</option>
                 <option value="cash">Efectivo</option>
-                <option value="credit">Crédito</option>
               </select>
             </div>
           </div>

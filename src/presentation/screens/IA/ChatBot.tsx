@@ -209,7 +209,7 @@ ${last5
   };
 
   return (
-    <div className="fixed bottom-4 right-4 z-[999999]">
+    <div className="fixed bottom-4 right-4 z-[9]">
       {isOpen ? (
         <div className="flex flex-col w-80 h-[530px] bg-gray-800 text-gray-100 rounded-lg shadow-xl overflow-hidden border border-gray-600">
           {/* Header del chat */}

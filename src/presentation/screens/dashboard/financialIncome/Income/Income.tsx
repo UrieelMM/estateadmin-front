@@ -5,6 +5,7 @@ import PaymentHistory from "./PaymentHistory";
 import PaymentSummary from "./PaymentSummary";
 import MorosidadView from "../Summary/MorosidadView";
 import PaymentSummaryByAccount from "./PaymentSummaryByAccount";
+import UnidentifiedPaymentsTable from "./UnidentifiedPaymentsTable";
 
 
 const Income = () => {
@@ -79,6 +80,17 @@ const Income = () => {
               >
                 Morosidad
               </button>
+              {/* 4. Tab Pagos no identificados*/}
+              <button
+                className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === "unidentified"
+                    ? "border-indigo-500 text-indigo-600 dark:text-gray-100"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400"
+                }`}
+                onClick={() => setActiveTab("unidentified")}
+              >
+                Pagos no identificados
+              </button>
             </nav>
           </div>
         </div>
@@ -111,6 +123,7 @@ const Income = () => {
             </div>
           )}
           {activeTab === "morosidad" && <MorosidadView />}
+          {activeTab === "unidentified" && <UnidentifiedPaymentsTable />}
         </div>
       </div>
 

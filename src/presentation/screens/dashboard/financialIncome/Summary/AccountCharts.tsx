@@ -1,6 +1,5 @@
 // src/components/paymentSummary/AccountCharts.tsx
 import React, { useMemo } from "react";
-
 import {
   PieChart,
   Pie,
@@ -14,7 +13,7 @@ import {
   YAxis,
   CartesianGrid,
 } from "recharts";
-import { PaymentRecord } from "../../../../../store/paymentSummaryStore";
+import { PaymentRecord, usePaymentSummaryStore } from "../../../../../store/paymentSummaryStore";
 
 // Diccionario para mostrar nombres de mes
 const MONTH_NAMES: Record<string, string> = {
@@ -33,18 +32,26 @@ const MONTH_NAMES: Record<string, string> = {
 };
 
 const AccountCharts: React.FC<{ payments: PaymentRecord[] }> = ({ payments }) => {
+  const { financialAccountsMap } = usePaymentSummaryStore();
+
+  // Obtenemos la información de la cuenta correspondiente.
+  // Se asume que todos los payments pertenecen a la misma cuenta, por lo que se toma el ID del primer registro.
+  const accountId = payments.length > 0 ? payments[0].financialAccountId : "";
+  const accountInfo =
+    accountId && financialAccountsMap[accountId] ? financialAccountsMap[accountId] : null;
+  const initialBalance = accountInfo ? accountInfo.initialBalance : 0;
+  // Se obtiene el mes de creación de la cuenta (en formato "MM")
+  const creationMonth = accountInfo ? accountInfo.creationMonth : "01";
+
   /**
    * Formateador de moneda
    */
-  const formatCurrency = (value: number): string => {
-    return (
-      "$" +
-      value.toLocaleString("en-US", {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      })
-    );
-  };
+  const formatCurrency = (value: number): string =>
+    "$" +
+    value.toLocaleString("en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
 
   /**
    * Formateador para valores grandes (opcional, para eje Y)
@@ -60,7 +67,8 @@ const AccountCharts: React.FC<{ payments: PaymentRecord[] }> = ({ payments }) =>
   };
 
   /**
-   * 1. Agrupar por concepto: sumamos (amountPaid + creditBalance)
+   * 1. Agrupar por concepto: sumamos (amountPaid + creditBalance) de cada pago,
+   * y luego agregamos "Saldo inicial" con el valor obtenido.
    */
   const conceptTotals = useMemo(() => {
     const totals: Record<string, number> = {};
@@ -69,12 +77,14 @@ const AccountCharts: React.FC<{ payments: PaymentRecord[] }> = ({ payments }) =>
       const totalPaid = p.amountPaid + p.creditBalance;
       totals[concept] = (totals[concept] || 0) + totalPaid;
     });
+    // Agregar el Saldo inicial como una categoría aparte
+    totals["Saldo inicial"] = (totals["Saldo inicial"] || 0) + initialBalance;
     return totals;
-  }, [payments]);
+  }, [payments, initialBalance]);
 
   /**
-   * 2. Crear datos para el gráfico de pastel
-   * Se ordena por valor descendente, se toman los 5 primeros, y se suma "Otros".
+   * 2. Datos para el gráfico de pastel.
+   * Se ordena por valor descendente, se toman los 5 primeros y se suma "Otros".
    */
   const pieData = useMemo(() => {
     const sorted = Object.entries(conceptTotals).sort((a, b) => b[1] - a[1]);
@@ -91,21 +101,34 @@ const AccountCharts: React.FC<{ payments: PaymentRecord[] }> = ({ payments }) =>
   }, [conceptTotals]);
 
   /**
-   * 3. Crear datos para la gráfica de áreas apiladas
-   *    - Se toma el top 5 de conceptos
-   *    - El resto de conceptos se suma en "Otros"
-   *    - Se agrupa por meses ("01" a "12") y se calcula la suma (amountPaid + creditBalance)
+   * 3. Datos para la gráfica de áreas apiladas (evolución mensual).
+   * Para la serie "Saldo inicial", se asigna el valor únicamente en el mes
+   * correspondiente al mes de creación de la cuenta (creationMonth).
    */
   const areaStackData = useMemo(() => {
-    // Ordenar según el total
-    const sorted = Object.entries(conceptTotals).sort((a, b) => b[1] - a[1]);
-    const topConcepts = sorted.slice(0, 5).map(([c]) => c);
-    const otherConcepts = sorted.slice(5).map(([c]) => c);
+    // Excluir "Saldo inicial" para ordenar los conceptos según los pagos
+    const sortedEntries = Object.entries(conceptTotals).filter(
+      ([concept]) => concept !== "Saldo inicial"
+    );
+    sortedEntries.sort((a, b) => b[1] - a[1]);
+    const topConcepts = sortedEntries.slice(0, 5).map(([c]) => c);
+    const otherConcepts = sortedEntries.slice(5).map(([c]) => c);
 
-    // Preparamos los meses
-    const months = ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"];
+    const months = [
+      "01",
+      "02",
+      "03",
+      "04",
+      "05",
+      "06",
+      "07",
+      "08",
+      "09",
+      "10",
+      "11",
+      "12",
+    ];
 
-    // Contruimos la data para cada mes
     const data = months.map((m) => {
       const row: Record<string, number | string> = { month: m };
 
@@ -129,23 +152,32 @@ const AccountCharts: React.FC<{ payments: PaymentRecord[] }> = ({ payments }) =>
         row["Otros"] = sumOthers;
       }
 
+      // Agregar "Saldo inicial": solo en el mes correspondiente al creationMonth se asigna el valor, en los demás es 0.
+      row["Saldo inicial"] = m === creationMonth ? initialBalance : 0;
       return row;
     });
 
-    // Claves para las áreas (los conceptos top y "Otros")
+    // Claves para las áreas (los conceptos top, "Otros" y "Saldo inicial")
     const areaKeys = [...topConcepts];
     if (otherConcepts.length > 0) {
       areaKeys.push("Otros");
     }
+    areaKeys.push("Saldo inicial");
 
     return { data, areaKeys };
-  }, [conceptTotals, payments]);
+  }, [conceptTotals, payments, initialBalance, creationMonth]);
 
   /**
-   * Paleta de colores para las áreas/pastel
-   * (puedes personalizar o usar un hook para modo oscuro, etc.)
+   * Paleta de colores para las áreas/pastel.
    */
-  const chartColors = ["#8093E8", "#74B9E7", "#A7CFE6", "#B79FE6", "#C2ABE6", "#98D7A5"];
+  const chartColors = [
+    "#8093E8",
+    "#74B9E7",
+    "#A7CFE6",
+    "#B79FE6",
+    "#C2ABE6",
+    "#98D7A5",
+  ];
 
   /**
    * Formateador para el eje X (mes)
@@ -169,7 +201,9 @@ const AccountCharts: React.FC<{ payments: PaymentRecord[] }> = ({ payments }) =>
                 cx="50%"
                 cy="50%"
                 outerRadius={100}
-                label={({ name, value }) => `${name}: ${formatCurrency(value)}`}
+                label={({ name, value }) =>
+                  `${name}: ${formatCurrency(value)}`
+                }
               >
                 {pieData.map((_entry, index) => (
                   <Cell
@@ -191,7 +225,7 @@ const AccountCharts: React.FC<{ payments: PaymentRecord[] }> = ({ payments }) =>
           Evolución Mensual
         </h3>
         <p className="text-xs text-gray-500 dark:text-gray-300 mb-2">
-          (Incluye los 5 principales conceptos + Otros)
+          (Incluye los 5 principales conceptos, Otros y Saldo inicial)
         </p>
         <div style={{ width: "100%", height: 350 }}>
           <ResponsiveContainer>
@@ -200,14 +234,19 @@ const AccountCharts: React.FC<{ payments: PaymentRecord[] }> = ({ payments }) =>
               margin={{ top: 20, right: 20, left: 0, bottom: 0 }}
             >
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="month" tickFormatter={(val: string) => formatMonthLabel(val)} />
+              <XAxis
+                dataKey="month"
+                tickFormatter={(val: string) => formatMonthLabel(val)}
+              />
               <YAxis
                 tickFormatter={(val: number) => formatLargeValues(val)}
                 width={80}
               />
               <Tooltip
                 formatter={(val: number) => formatCurrency(val)}
-                labelFormatter={(label) => `Mes: ${formatMonthLabel(label as string)}`}
+                labelFormatter={(label) =>
+                  `Mes: ${formatMonthLabel(label as string)}`
+                }
               />
               <Legend />
               {areaStackData.areaKeys.map((concept, idx) => (

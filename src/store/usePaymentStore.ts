@@ -14,7 +14,7 @@ import axios from "axios";
 export type Charge = {
   id: string;
   concept: string;
-  amount: number; // Monto pendiente a pagar (en dólares, como float)
+  amount: number; // Monto pendiente a pagar (en pesos mexicanos, como float)
   month?: string;
   paid: boolean;
   invoiceRequired?: boolean;
@@ -23,7 +23,7 @@ export type Charge = {
 
 /**
  * Representa un pago de mantenimiento.
- * Los montos (amountPaid, amountPending, etc.) se capturan en dólares
+ * Los montos (amountPaid, amountPending, etc.) se capturan en pesos mexicanos
  * pero se enviarán al backend en centavos (int).
  */
 export type MaintenancePayment = {
@@ -44,11 +44,17 @@ export type MaintenancePayment = {
   paymentType?: string;
 
   // fecha de pago y cuenta financiera
-  paymentDate?: string;      // se manda como string (ISO, etc.)
+  paymentDate?: string; // se manda como string (ISO, etc.)
   financialAccountId?: string;
 
-  // Nuevo campo: crédito utilizado (en dólares)
+  // Nuevo campo: crédito utilizado (en pesos mexicanos)
   creditUsed?: number;
+
+  // Nuevo flag para indicar si es un pago no identificado
+  isUnidentifiedPayment?: boolean;
+
+  // Nuevo campo para indicar si el pago no identificado ya fue aplicado a un usuario
+  appliedToUser?: boolean;
 };
 
 type FinancialAccount = {
@@ -69,7 +75,7 @@ type MaintenancePaymentState = {
   addMaintenancePayment: (payment: MaintenancePayment) => Promise<void>;
 };
 
-// Conviertes un monto en dólares (float) a un entero en centavos
+// Conviertes un monto en pesos mexicanos (float) a un entero en centavos
 function toCents(amountInDollars: number): number {
   // Redondeamos al entero más cercano
   return Math.round(amountInDollars * 100);
@@ -233,20 +239,49 @@ export const usePaymentStore = create<MaintenancePaymentState>((set, get) => ({
       formData.append("amountPending", String(amountPendingCents));
 
       // Identificador de grupo
-      const paymentGroupId = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
+      const paymentGroupId = `${Date.now()}-${Math.random()
+        .toString(36)
+        .substring(2, 15)}`;
       formData.append("paymentGroupId", paymentGroupId);
 
-      // Saldo a favor
+      // Saldo a favor y tipo de pago
       formData.append("useCreditBalance", payment.useCreditBalance ? "true" : "false");
-      // Tipo de pago
       formData.append("paymentType", payment.paymentType || "");
-
-      // <-- Nueva línea: enviar el crédito utilizado en centavos
+      // Enviar el crédito utilizado en centavos
       formData.append("creditUsed", payment.creditUsed ? String(toCents(payment.creditUsed)) : "0");
 
       // Fecha y cuenta financiera
       formData.append("paymentDate", payment.paymentDate || "");
       formData.append("financialAccountId", payment.financialAccountId || "");
+
+      // Nueva rama: si es pago NO identificado
+      if (payment.isUnidentifiedPayment) {
+        formData.append("isUnidentifiedPayment", "true");
+        // Se agrega el flag para indicar que aún no se ha aplicado a un usuario.
+        formData.append(
+          "appliedToUser",
+          payment.appliedToUser ? "true" : "false"
+        );
+        if (payment.month) {
+          formData.append("month", payment.month);
+        }
+        if (payment.file) {
+          if (Array.isArray(payment.file)) {
+            formData.append("attachments", payment.file[0]);
+          } else {
+            formData.append("attachments", payment.file);
+          }
+        }
+        // Se envía al endpoint de pagos no identificados
+        await axios.post(
+          `${import.meta.env.VITE_URL_SERVER}/maintenance-fees/create-unidentified`,
+          formData,
+          { headers: { "Content-Type": "multipart/form-data" } }
+        );
+        // No es necesario recargar cargos ya que el pago no está asociado a un cargo de usuario.
+        set({ loading: false, error: null });
+        return;
+      }
 
       // Tomamos la lista de cargos locales
       const { charges } = get();
@@ -275,8 +310,6 @@ export const usePaymentStore = create<MaintenancePaymentState>((set, get) => ({
           .map((sc) => {
             const foundCharge = charges.find((c) => c.id === sc.chargeId);
             const dueDateNum = foundCharge?.dueDate ? foundCharge.dueDate.getTime() : 0;
-
-            // amount -> centavos
             return {
               ...sc,
               amount: toCents(sc.amount),
@@ -297,7 +330,7 @@ export const usePaymentStore = create<MaintenancePaymentState>((set, get) => ({
           const chargeCents = toCents(foundCharge.amount);
           if (!payment.useCreditBalance && amountPaidCents > chargeCents) {
             const creditBalanceCents = amountPaidCents - chargeCents;
-            payment.creditBalance = creditBalanceCents / 100; // si lo quisieras en dólares
+            payment.creditBalance = creditBalanceCents / 100; // en pesos mexicanos
             formData.append("creditBalance", String(creditBalanceCents));
           }
         }
@@ -312,7 +345,7 @@ export const usePaymentStore = create<MaintenancePaymentState>((set, get) => ({
 
       // Adjuntos
       if (payment.file) {
-        // Modificación: se envía solo el primer archivo, ya que el backend ahora espera una única URL
+        // Se envía solo el primer archivo, ya que el backend ahora espera una única URL
         if (Array.isArray(payment.file)) {
           formData.append("attachments", payment.file[0]);
         } else {
@@ -320,14 +353,14 @@ export const usePaymentStore = create<MaintenancePaymentState>((set, get) => ({
         }
       }
 
-      // Enviamos al backend
+      // Enviamos al backend (endpoint para pagos identificados)
       await axios.post(
         `${import.meta.env.VITE_URL_SERVER}/maintenance-fees/create`,
         formData,
         { headers: { "Content-Type": "multipart/form-data" } }
       );
 
-      // Recargar cargos
+      // Recargar cargos asociados al usuario
       await get().fetchUserCharges(payment.numberCondominium);
 
       set({ loading: false, error: null });

@@ -68,12 +68,14 @@ export type MonthlyStat = {
   delinquencyRate: number;
 };
 
-type FinancialAccountInfo = {
+export type FinancialAccountInfo = {
   id: string;
   name: string;
+  initialBalance: number;
+  creationMonth: string; // Nuevo: mes de creación ("MM")
 };
 
-type PaymentSummaryState = {
+export type PaymentSummaryState = {
   payments: PaymentRecord[];
   totalIncome: number;
   totalPending: number;
@@ -91,7 +93,7 @@ type PaymentSummaryState = {
   error: string | null;
   selectedYear: string;
   byFinancialAccount: Record<string, PaymentRecord[]>;
-  // NUEVO: Mapa con info de cada cuenta financiera
+  // NUEVO: Mapa con info de cada cuenta financiera (incluye initialBalance y creationMonth)
   financialAccountsMap: Record<string, FinancialAccountInfo>;
 
   fetchSummary: (year?: string) => Promise<void>;
@@ -116,7 +118,7 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>((set) => ({
   error: null,
   selectedYear: new Date().getFullYear().toString(),
   byFinancialAccount: {},
-  financialAccountsMap: {}, // ← NUEVO
+  financialAccountsMap: {},
 
   fetchSummary: async (year?: string) => {
     set({ loading: true, error: null });
@@ -203,7 +205,6 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>((set) => ({
 
           // Extraer el mes (formato "YYYY-MM-DD")
           const monthCode = chargeData.startAt.substring(5, 7);
-
           chargeCount[monthCode] = (chargeCount[monthCode] || 0) + 1;
           if (chargeData.paid === true) {
             paidChargeCount[monthCode] = (paidChargeCount[monthCode] || 0) + 1;
@@ -275,6 +276,55 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>((set) => ({
         }
       }
 
+      // NUEVO: Incluir pagos NO identificados
+      const unidentifiedPaymentsRef = collection(
+        db,
+        `clients/${clientId}/condominiums/${condominiumId}/unidentifiedPayments`
+      );
+      const unidentifiedPaymentsSnapshot = await getDocs(unidentifiedPaymentsRef);
+      unidentifiedPaymentsSnapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        // Validar que paymentDate exista y pertenezca al año seleccionado
+        let include = false;
+        let paymentDateObj: Date | null = null;
+        let formattedDate = "";
+        if (data.paymentDate) {
+          if (data.paymentDate.toDate) {
+            paymentDateObj = data.paymentDate.toDate();
+          } else {
+            paymentDateObj = new Date(data.paymentDate);
+          }
+          if (paymentDateObj && paymentDateObj.getFullYear().toString() === selectedYearStr) {
+            include = true;
+            if (paymentDateObj) {
+              formattedDate = formatDate(paymentDateObj);
+            }
+          }
+        }
+        if (!include) return;
+        
+        let monthVal = data.month;
+        if (!monthVal && paymentDateObj) {
+          monthVal = (paymentDateObj.getMonth() + 1).toString().padStart(2, "0");
+        }
+
+        const record: PaymentRecord = {
+          id: docSnap.id,
+          clientId,
+          numberCondominium: data.numberCondominium || "N/A",
+          month: monthVal || "",
+          amountPaid: parseFloat(centsToPesos(data.amountPaid).toFixed(2)),
+          amountPending: parseFloat(centsToPesos(data.amountPending).toFixed(2)),
+          concept: "Pago no identificado",
+          creditBalance: data.creditBalance ? parseFloat(centsToPesos(data.creditBalance).toFixed(2)) : 0,
+          creditUsed: data.creditUsed ? parseFloat(centsToPesos(data.creditUsed).toFixed(2)) : 0,
+          paid: false,
+          financialAccountId: data.financialAccountId || "N/A",
+          paymentDate: formattedDate,
+        };
+        paymentRecords.push(record);
+      });
+
       // Calcular totales, agrupaciones, etc.
       const chartData: Record<string, { paid: number; pending: number; saldo: number }> = {};
       for (let i = 1; i <= 12; i++) {
@@ -333,27 +383,39 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>((set) => ({
 
       const byFinancialAccount: Record<string, PaymentRecord[]> = {};
       paymentRecords.forEach((pr) => {
-        const key = pr.financialAccountId;
-        if (!byFinancialAccount[key]) {
-          byFinancialAccount[key] = [];
+        if (pr.financialAccountId === "N/A") return; // Ignorar registros sin cuenta válida
+        if (!byFinancialAccount[pr.financialAccountId]) {
+          byFinancialAccount[pr.financialAccountId] = [];
         }
-        byFinancialAccount[key].push(pr);
+        byFinancialAccount[pr.financialAccountId].push(pr);
       });
 
-      // NUEVO: obtener nombres de las cuentas
+      // NUEVO: obtener nombres, initialBalance y creationMonth de las cuentas
       const uniqueAccountIds = Array.from(
         new Set(paymentRecords.map((pr) => pr.financialAccountId))
       ).filter((id) => id && id !== "N/A");
 
-      let financialAccountsMap: Record<string, { id: string; name: string }> = {};
+      let financialAccountsMap: Record<string, FinancialAccountInfo> = {};
       if (uniqueAccountIds.length > 0) {
         const accountsRef = collection(
           db,
           `clients/${clientId}/condominiums/${condominiumId}/financialAccounts`
         );
 
+        // Función para extraer el mes de creación ("MM") a partir de createdAt
+        const getCreationMonth = (createdAt: any): string => {
+          let date: Date;
+          if (createdAt && createdAt.toDate) {
+            date = createdAt.toDate();
+          } else if (createdAt) {
+            date = new Date(createdAt);
+          } else {
+            return "01"; // valor por defecto si no existe
+          }
+          return (date.getMonth() + 1).toString().padStart(2, "0");
+        };
+
         // Si hay <= 10 IDs, se puede usar query con where in
-        // Si hay más, considera dividir la consulta o hacer un getDoc por cada ID
         if (uniqueAccountIds.length <= 10) {
           const q = query(accountsRef, where(documentId(), "in", uniqueAccountIds));
           const accountsSnap = await getDocs(q);
@@ -363,6 +425,10 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>((set) => ({
               financialAccountsMap[accDoc.id] = {
                 id: accDoc.id,
                 name: data.name || "Sin nombre",
+                // Convertir initialBalance (guardado en centavos) a pesos mexicanos
+                initialBalance:
+                  data.initialBalance != null ? Number(data.initialBalance) / 100 : 0,
+                creationMonth: getCreationMonth(data.createdAt),
               };
             }
           });
@@ -376,11 +442,21 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>((set) => ({
               financialAccountsMap[accId] = {
                 id: accId,
                 name: data.name || "Sin nombre",
+                initialBalance:
+                  data.initialBalance != null ? Number(data.initialBalance) / 100 : 0,
+                creationMonth: getCreationMonth(data.createdAt),
               };
             }
           }
         }
       }
+
+      // Incluir el initialBalance de cada cuenta en el total de ingresos
+      let totalInitialBalance = 0;
+      for (const accId in financialAccountsMap) {
+        totalInitialBalance += financialAccountsMap[accId].initialBalance;
+      }
+      totalIncome += totalInitialBalance;
 
       set({
         payments: paymentRecords,
@@ -398,7 +474,7 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>((set) => ({
         signatureBase64,
         loading: false,
         byFinancialAccount,
-        financialAccountsMap, // Guardamos el mapa de cuentas con su nombre
+        financialAccountsMap,
       });
     } catch (error: any) {
       console.error("Error fetching payment summary:", error);

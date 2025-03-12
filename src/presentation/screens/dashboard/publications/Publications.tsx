@@ -27,7 +27,7 @@ const Publications = () => {
 
   return (
     <>
-      <header className="bg-gray-50 shadow-md flex w-full h-16 justify-between px-2 rounded-md items-center mb-4">
+      <header className="bg-gray-50 font-medium shadow-lg flex w-full h-16 justify-between px-2 rounded-md items-center mb-6 dark:shadow-2xl dark:bg-gray-800 dark:text-gray-100">
         <p className="tex-md font-medium">Publicaciones</p>
         <button className="btn-primary h-10 mb-3" onClick={onClose}>
           Nueva publicación
@@ -59,16 +59,16 @@ const Publications = () => {
                   </a>
                   <h4 className="flex flex-col items-start text-lg font-medium leading-8 text-slate-700 md:flex-row lg:items-center">
                     <span className="flex flex-col justify-center items-end">
-                      <span className="bg-indigo-500 rounded-lg p-2 text-white text-xs ml-2">
+                      <span className="bg-indigo-500 rounded-lg p-2 text-white text-xs ml-2 dark:text-gray-100">
                         {publication.tags}
                       </span>
-                      <span >
+                      <span className="dark:text-gray-100" >
                         {publication.title} - {publication.author}
                       </span>
                     </span>
                     <span className="text-sm font-normal text-slate-400">
                       {publication.createdAt && (
-                        <p>
+                        <p className="dark:text-gray-400 ml-2">
                           Fecha:{" "}
                           {publication.createdAt.toLocaleDateString("es-ES")}
                         </p>

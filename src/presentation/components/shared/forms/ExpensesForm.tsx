@@ -122,8 +122,8 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ open, setOpen }) => {
                             >
                                 <Dialog.Panel className="pointer-events-auto w-screen max-w-3xl">
                                     <form onSubmit={handleSubmit} className="flex h-full flex-col divide-y divide-gray-200 bg-white shadow-xl">
-                                        <div className="h-0 flex-1 overflow-y-auto">
-                                            <div className="bg-indigo-700 px-4 py-6 sm:px-6">
+                                        <div className="h-0 flex-1 overflow-y-auto dark:bg-gray-900">
+                                            <div className="bg-indigo-700 px-4 py-6 sm:px-6 dark:bg-gray-800">
                                                 <div className="flex items-center justify-between">
                                                     <Dialog.Title className="text-base font-semibold leading-6 text-white">
                                                         Registrar Egreso
@@ -150,7 +150,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ open, setOpen }) => {
                                                     <div className="space-y-6 pb-5 pt-6">
                                                         {/* Monto del egreso */}
                                                         <div>
-                                                            <label htmlFor="amount" className="block text-sm font-medium leading-6 text-gray-900">
+                                                            <label htmlFor="amount" className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100">
                                                                 Monto del Egreso
                                                             </label>
                                                             <div className="mt-2 relative">
@@ -161,8 +161,8 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ open, setOpen }) => {
                                                                     id="amount"
                                                                     name="amount"
                                                                     type="number"
-                                                                    className="block w-full rounded-md border-0 pl-10 pr-3 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 placeholder:animate-pulse"
-                                                                    placeholder="0.00"
+                                                                    className="block w-full rounded-md border-0 pl-10 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
+                                                                    placeholder="0"
                                                                     value={amount}
                                                                     onChange={(e) => setAmount(e.target.value)}
                                                                     step="any"
@@ -172,7 +172,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ open, setOpen }) => {
 
                                                         {/* Concepto */}
                                                         <div>
-                                                            <label htmlFor="concept" className="block text-sm font-medium leading-6 text-gray-900">
+                                                            <label htmlFor="concept" className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100">
                                                                 Concepto de Egreso
                                                             </label>
                                                             <div className="mt-2 relative">
@@ -182,7 +182,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ open, setOpen }) => {
                                                                 <select
                                                                     id="concept"
                                                                     name="concept"
-                                                                    className="block w-full rounded-md border-0 pl-10 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                                                                    className="block w-full rounded-md border-0 pl-10 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
                                                                     value={concept}
                                                                     onChange={(e) => setConcept(e.target.value)}
                                                                 >
@@ -198,7 +198,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ open, setOpen }) => {
 
                                                         {/* Tipo de pago */}
                                                         <div>
-                                                            <label htmlFor="paymentType" className="block text-sm font-medium leading-6 text-gray-900">
+                                                            <label htmlFor="paymentType" className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100">
                                                                 Tipo de pago
                                                             </label>
                                                             <div className="mt-2 relative">
@@ -208,7 +208,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ open, setOpen }) => {
                                                                 <select
                                                                     id="paymentType"
                                                                     name="paymentType"
-                                                                    className="block w-full rounded-md border-0 pl-10 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                                                                    className="block w-full rounded-md border-0 pl-10 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
                                                                     value={paymentType}
                                                                     onChange={(e) => setPaymentType(e.target.value)}
                                                                 >
@@ -224,7 +224,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ open, setOpen }) => {
 
                                                         {/* Fecha de egreso */}
                                                         <div>
-                                                            <label htmlFor="expenseDate" className="block text-sm font-medium leading-6 text-gray-900">
+                                                            <label htmlFor="expenseDate" className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100">
                                                                 Fecha del egreso
                                                             </label>
                                                             <div className="mt-2 relative">
@@ -235,7 +235,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ open, setOpen }) => {
                                                                     id="expenseDate"
                                                                     name="expenseDate"
                                                                     type="datetime-local"
-                                                                    className="block w-full rounded-md border-0 pl-10 py-1.5 px-2 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                                                                    className="block w-full rounded-md border-0 pl-10 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
                                                                     value={expenseDate}
                                                                     onChange={(e) => setExpenseDate(e.target.value)}
                                                                 />
@@ -244,7 +244,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ open, setOpen }) => {
 
                                                         {/* Descripción */}
                                                         <div>
-                                                            <label htmlFor="description" className="block text-sm font-medium leading-6 text-gray-900">
+                                                            <label htmlFor="description" className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100">
                                                                 Descripción (opcional)
                                                             </label>
                                                             <div className="mt-2 relative">
@@ -255,7 +255,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ open, setOpen }) => {
                                                                     id="description"
                                                                     name="description"
                                                                     rows={3}
-                                                                    className="block w-full rounded-md border-0 pl-10 py-1.5 px-2 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 placeholder:animate-pulse"
+                                                                    className="block w-full rounded-md border-0 pl-10 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
                                                                     placeholder="Detalles adicionales del egreso"
                                                                     value={description}
                                                                     onChange={(e) => setDescription(e.target.value)}
@@ -265,12 +265,12 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ open, setOpen }) => {
 
                                                         {/* Dropzone para factura/recibo */}
                                                         <div>
-                                                            <label className="block text-sm font-medium leading-6 text-gray-900">
+                                                            <label className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100">
                                                                 Factura o Comprobante (opcional)
                                                             </label>
                                                             <div
                                                                 {...getRootProps()}
-                                                                className="mt-2 h-auto flex items-center justify-center rounded-lg border border-dashed border-gray-900/25 px-6 py-4 cursor-pointer"
+                                                                className="mt-2 h-auto flex items-center justify-center rounded-lg border border-dashed border-gray-900/25 px-6 py-4 dark:border-indigo-900"
                                                             >
                                                                 <input {...getInputProps()} />
                                                                 <div className="text-center">
@@ -294,7 +294,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ open, setOpen }) => {
                                         </div>
 
                                         {/* Botones al final */}
-                                        <div className="flex flex-shrink-0 justify-end px-4 py-4">
+                                        <div className="flex flex-shrink-0 justify-end px-4 py-4 dark:bg-gray-900">
                                             <button
                                                 type="button"
                                                 className="rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
