@@ -15,12 +15,6 @@ import {
   CartesianGrid,
 } from "recharts";
 
-/**
- * Mapeo numérico de mes a nombre (en español).
- * "01" -> "Enero",
- * "02" -> "Febrero",
- * etc.
- */
 const MONTH_NAMES: Record<string, string> = {
   "01": "Enero",
   "02": "Febrero",
@@ -41,9 +35,6 @@ const AnnualGeneralStats: React.FC = () => {
 
   if (!conceptRecords || Object.keys(conceptRecords).length < 1) return null;
 
-  /**
-   * Formato de moneda (por ejemplo: $2,500.00)
-   */
   const formatCurrency = (value: number): string => {
     return "$" + value.toLocaleString("en-US", {
       minimumFractionDigits: 2,
@@ -51,9 +42,6 @@ const AnnualGeneralStats: React.FC = () => {
     });
   };
 
-  /**
-   * Pequeño formateador opcional para grandes montos en el eje Y (k, M, etc.)
-   */
   const formatLargeValues = (value: number): string => {
     if (value >= 1_000_000) {
       return `$${(value / 1_000_000).toFixed(1)}M`;
@@ -64,10 +52,6 @@ const AnnualGeneralStats: React.FC = () => {
     }
   };
 
-  /**
-   * Cálculos principales (anuales) basados en conceptRecords.
-   * Se actualizó para que en los totales se considere amountPaid + creditBalance
-   */
   const {
     conceptTotals,
     bestConcept,
@@ -86,27 +70,36 @@ const AnnualGeneralStats: React.FC = () => {
     Object.entries(conceptRecords).forEach(([concept, records]) => {
       let sumConcept = 0;
       records.forEach((rec) => {
-        // Ajuste: sumar amountPaid + creditBalance para reflejar el total pagado
         sumConcept += rec.amountPaid + rec.creditBalance;
         if (monthlyTotals[rec.month] !== undefined) {
           monthlyTotals[rec.month] += rec.amountPaid + rec.creditBalance;
         }
-        // Sumar la diferencia entre creditBalance y creditUsed (saldo a favor)
         globalSaldo += rec.creditBalance - (rec.creditUsed || 0);
       });
       conceptTotals[concept] = sumConcept;
     });
 
+    // Lista completa de conceptos (incluye Pago no identificado)
     const conceptList = Object.entries(conceptTotals).sort((a, b) => b[1] - a[1]);
-    const bestConcept = conceptList[0] || ["N/A", 0];
 
-    const worstConceptIdx = conceptList.slice().reverse().findIndex(([_, total]) => total > 0);
+    // --- FILTRO SOLO PARA LAS CARDS DE MEJOR/PEOR CONCEPTO ---
+    const conceptListForCards = conceptList.filter(([c]) => c !== "Pago no identificado");
+
+    // Mejor concepto
+    const bestConcept = conceptListForCards[0] || ["N/A", 0];
+
+    // Peor concepto
+    const worstConceptIdx = conceptListForCards
+      .slice()
+      .reverse()
+      .findIndex(([_, total]) => total > 0);
     let worstConcept: [string, number] = ["N/A", 0];
     if (worstConceptIdx !== -1) {
-      const realIdx = conceptList.length - 1 - worstConceptIdx;
-      worstConcept = conceptList[realIdx];
+      const realIdx = conceptListForCards.length - 1 - worstConceptIdx;
+      worstConcept = conceptListForCards[realIdx];
     }
 
+    // Mejor/peor mes (estos sí consideran todos los conceptos)
     const monthList = Object.entries(monthlyTotals).sort((a, b) => b[1] - a[1]);
     const bestMonth = monthList[0] || ["N/A", 0];
 
@@ -131,9 +124,7 @@ const AnnualGeneralStats: React.FC = () => {
     };
   }, [conceptRecords]);
 
-  /**
-   * Datos para la gráfica de pastel: Top 5 + "Otros"
-   */
+  // Gráfica pastel
   const pieData = useMemo(() => {
     const sorted = Object.entries(conceptTotals).sort((a, b) => b[1] - a[1]);
     const topFive = sorted.slice(0, 5);
@@ -148,10 +139,7 @@ const AnnualGeneralStats: React.FC = () => {
     return pieArr;
   }, [conceptTotals]);
 
-  /**
-   * Datos para la gráfica de áreas apiladas (Top 5 + "Otros")
-   * Se actualizó la suma mensual para incluir rec.amountPaid + rec.creditBalance.
-   */
+  // Gráfica de áreas apiladas
   const areaStackData = useMemo(() => {
     const sorted = Object.entries(conceptTotals).sort((a, b) => b[1] - a[1]);
     const topConcepts = sorted.slice(0, 5).map(([c]) => c);
@@ -186,13 +174,15 @@ const AnnualGeneralStats: React.FC = () => {
     return { data, areaKeys };
   }, [conceptTotals, conceptRecords]);
 
-  const chartColors = ["#8093E8", "#74B9E7", "#A7CFE6", "#B79FE6", "#C2ABE6"];
+  // Forzar 'val' a string
   const formatMonthLabel = (m: string) => MONTH_NAMES[m] || m;
   const getMonthName = (m: string) => MONTH_NAMES[m] || "N/A";
 
+  const chartColors = ["#8093E8", "#74B9E7", "#A7CFE6", "#B79FE6", "#C2ABE6"];
+
   return (
     <div className="mb-8 w-full">
-      {/* Las cards se mantienen iguales */}
+      {/* Tarjetas */}
       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
         <div className="p-4 shadow-md rounded-md">
           <p className="text-sm text-gray-600 dark:text-gray-100">Concepto estrella (Año)</p>
@@ -270,11 +260,19 @@ const AnnualGeneralStats: React.FC = () => {
             margin={{ top: 20, right: 20, left: 0, bottom: 0 }}
           >
             <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="month" tickFormatter={(val: string) => formatMonthLabel(val)} />
-            <YAxis tickFormatter={(val: number) => formatLargeValues(val)} width={80} />
+            {/* >> Fix: Forzar val a string con String(val) << */}
+            <XAxis
+              dataKey="month"
+              tickFormatter={(val) => formatMonthLabel(String(val))}
+            />
+            {/* >> Fix: Forzar val a number con 'as number' en Y-axis */}
+            <YAxis
+              tickFormatter={(val) => formatLargeValues(val as number)}
+              width={80}
+            />
             <Tooltip
               formatter={(val: number) => formatCurrency(val)}
-              labelFormatter={(label) => `Mes: ${formatMonthLabel(label as string)}`}
+              labelFormatter={(label) => `Mes: ${formatMonthLabel(String(label))}`}
             />
             <Legend />
             {areaStackData.areaKeys.map((concept, idx) => (

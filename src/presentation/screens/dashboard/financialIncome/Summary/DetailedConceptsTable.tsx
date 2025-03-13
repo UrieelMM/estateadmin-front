@@ -1,5 +1,5 @@
 // src/components/Summary/DetailedConceptsTable.tsx
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { usePaymentSummaryStore, PaymentRecord, MonthlyStat } from "../../../../../store/paymentSummaryStore";
 import PDFReportGenerator from "../Income/PDFReportGenerator";
 import useUserStore from "../../../../../store/UserDataStore";
@@ -63,11 +63,24 @@ const DetailedConceptsTable: React.FC<DetailedConceptsTableProps> = React.memo(
       return [...monthlyStats].sort((a, b) => parseInt(a.month, 10) - parseInt(b.month, 10));
     }, [monthlyStats]);
 
+    // Nuevo: Definir estado para mostrar/ocultar conceptos
+    const [showAll, setShowAll] = useState(false);
+
+    // Nuevo: Filtrar para no mostrar "Pago no identificado"
+    const filteredConceptEntries = Object.entries(conceptRecords).filter(
+      ([concept]) => concept !== "Pago no identificado"
+    );
+
+    // Nuevo: Determinar cuántos conceptos se muestran según el estado 'showAll'
+    const displayedConceptEntries = showAll
+      ? filteredConceptEntries
+      : filteredConceptEntries.slice(0, 3);
+
     return (
       <div className="mb-8 flex flex-col lg:flex-row gap-4">
         <div className="mb-8 w-full">
           <h3 className="text-xl font-bold mb-2">Ingresos por concepto</h3>
-          {Object.entries(conceptRecords).map(([concept, records]) => (
+          {displayedConceptEntries.map(([concept, records]) => (
             <details key={concept} className="mb-6 border rounded">
               <summary className="cursor-pointer bg-gray-100 px-4 py-2 text-black font-bold dark:bg-gray-800 dark:border-gray-200 dark:text-gray-100 dark:ring-0">
                 {concept}
@@ -85,7 +98,6 @@ const DetailedConceptsTable: React.FC<DetailedConceptsTableProps> = React.memo(
                     const recs = records.filter((r) => r.month === m);
                     const paid = recs.reduce((sum, r) => sum + r.amountPaid + r.creditBalance, 0);
                     const pending = recs.reduce((sum, r) => sum + r.amountPending, 0);
-                    // Nuevo: calcular saldo a favor como creditBalance - creditUsed
                     const credit = recs.reduce((sum, r) => sum + (r.creditBalance - (r.creditUsed || 0)), 0);
 
                     totalPaid += paid;
@@ -102,15 +114,24 @@ const DetailedConceptsTable: React.FC<DetailedConceptsTableProps> = React.memo(
                         <td className="border p-2">{monthNames[m] || m}</td>
                         <td className="border p-2">
                           {"$" +
-                            paid.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            paid.toLocaleString("en-US", {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })}
                         </td>
                         <td className="border p-2">
                           {"$" +
-                            pending.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            pending.toLocaleString("en-US", {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })}
                         </td>
                         <td className="border p-2">
                           {"$" +
-                            credit.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            credit.toLocaleString("en-US", {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })}
                         </td>
                         <td className="border p-2">{compliance.toFixed(2)}%</td>
                         <td className="border p-2">{delinquency.toFixed(2)}%</td>
@@ -141,15 +162,24 @@ const DetailedConceptsTable: React.FC<DetailedConceptsTableProps> = React.memo(
                               <td className="border p-2 font-bold">Total</td>
                               <td className="border p-2 font-bold">
                                 {"$" +
-                                  totalPaid.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                  totalPaid.toLocaleString("en-US", {
+                                    minimumFractionDigits: 2,
+                                    maximumFractionDigits: 2,
+                                  })}
                               </td>
                               <td className="border p-2 font-bold">
                                 {"$" +
-                                  totalPend.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                  totalPend.toLocaleString("en-US", {
+                                    minimumFractionDigits: 2,
+                                    maximumFractionDigits: 2,
+                                  })}
                               </td>
                               <td className="border p-2 font-bold">
                                 {"$" +
-                                  totalCredit.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                  totalCredit.toLocaleString("en-US", {
+                                    minimumFractionDigits: 2,
+                                    maximumFractionDigits: 2,
+                                  })}
                               </td>
                               <td className="border p-2 font-bold">{totalCompliance.toFixed(2)}%</td>
                               <td className="border p-2 font-bold">{totalDelinquency.toFixed(2)}%</td>
@@ -184,6 +214,18 @@ const DetailedConceptsTable: React.FC<DetailedConceptsTableProps> = React.memo(
               </div>
             </details>
           ))}
+
+          {/* Nuevo: Botón para mostrar más/menos si hay más de 3 conceptos */}
+          {filteredConceptEntries.length > 3 && (
+           <div className="mt-4 flex justify-center">
+            <button
+              className="px-4 py-2 border-b border-indigo-500 text-indigo-500 bg-transparent hover:border-indigo-700 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-500"
+              onClick={() => setShowAll(!showAll)}
+            >
+              {showAll ? "Mostrar menos" : "Mostrar más"}
+            </button>
+           </div>
+          )}
         </div>
       </div>
     );

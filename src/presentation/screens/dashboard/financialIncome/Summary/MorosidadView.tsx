@@ -129,14 +129,19 @@ const MorosidadView: React.FC = () => {
             </tr>
           </thead>
           <tbody>
-            {topDebtors.map((item) => (
-              <tr key={item.user} className="hover:bg-gray-50 transition-colors dark:hover:bg-gray-700 cursor-pointer">
-                <td className="py-2 px-4 border-b">{item.user}</td>
-                <td className="py-2 px-4 border-b">
-                  {formatCurrency(item.amount)}
-                </td>
-              </tr>
-            ))}
+            {topDebtors
+              .filter((item) => item.user !== "N/A")
+              .map((item) => (
+                <tr
+                  key={item.user}
+                  className="hover:bg-gray-50 transition-colors dark:hover:bg-gray-700 cursor-pointer"
+                >
+                  <td className="py-2 px-4 border-b">{item.user}</td>
+                  <td className="py-2 px-4 border-b">
+                    {formatCurrency(item.amount)}
+                  </td>
+                </tr>
+              ))}
           </tbody>
         </table>
       </div>

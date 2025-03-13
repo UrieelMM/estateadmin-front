@@ -31,9 +31,8 @@ export type MaintenancePayment = {
   numberCondominium: string;
   comments?: string;
 
-  // Estos vienen en dólares, float
-  amountPaid: number;
-  amountPending: number;
+  amountPaid: number;      // en pesos
+  amountPending: number;   // en pesos
 
   file: File | File[] | null;
   chargeId?: string;
@@ -44,10 +43,10 @@ export type MaintenancePayment = {
   paymentType?: string;
 
   // fecha de pago y cuenta financiera
-  paymentDate?: string; // se manda como string (ISO, etc.)
+  paymentDate?: string;
   financialAccountId?: string;
 
-  // Nuevo campo: crédito utilizado (en pesos mexicanos)
+  // crédito utilizado (en pesos)
   creditUsed?: number;
 
   // Nuevo flag para indicar si es un pago no identificado
@@ -55,6 +54,14 @@ export type MaintenancePayment = {
 
   // Nuevo campo para indicar si el pago no identificado ya fue aplicado a un usuario
   appliedToUser?: boolean;
+
+  // NUEVO: URL o valor del comprobante si ya existe
+  attachmentPayment?: string;
+
+  // ID del pago no identificado cuando se está aplicando
+  id?: string;
+
+  paymentGroupId?: string;
 };
 
 type FinancialAccount = {
@@ -67,17 +74,19 @@ type MaintenancePaymentState = {
   loading: boolean;
   error: string | null;
 
-  // arreglo de cuentas y su cargador
   financialAccounts: FinancialAccount[];
   fetchFinancialAccounts: () => Promise<void>;
 
   fetchUserCharges: (numberCondominium: string) => Promise<void>;
   addMaintenancePayment: (payment: MaintenancePayment) => Promise<void>;
+  updateUnidentifiedPayment: (payment: MaintenancePayment, paymentId: string) => Promise<void>;
+
+  // NUEVO: Método separado para editar el pago no identificado
+  editUnidentifiedPayment: (paymentId: string) => Promise<void>;
 };
 
 // Conviertes un monto en pesos mexicanos (float) a un entero en centavos
 function toCents(amountInDollars: number): number {
-  // Redondeamos al entero más cercano
   return Math.round(amountInDollars * 100);
 }
 
@@ -147,7 +156,6 @@ export const usePaymentStore = create<MaintenancePaymentState>((set, get) => ({
       if (!condominiumId) throw new Error("Condominio no seleccionado");
 
       const db = getFirestore();
-      // Buscar el usuario por número
       const usersRef = collection(
         db,
         `clients/${clientId}/condominiums/${condominiumId}/users`
@@ -155,7 +163,9 @@ export const usePaymentStore = create<MaintenancePaymentState>((set, get) => ({
       const userQuery = query(usersRef, where("number", "==", numberCondominium));
       const userSnap = await getDocs(userQuery);
       if (userSnap.empty) {
-        throw new Error(`No se encontró un usuario con el número ${numberCondominium}`);
+        throw new Error(
+          `No se encontró un usuario con el número ${numberCondominium}`
+        );
       }
       const userDoc = userSnap.docs[0];
 
@@ -170,7 +180,7 @@ export const usePaymentStore = create<MaintenancePaymentState>((set, get) => ({
       const newCharges: Charge[] = chargesSnap.docs.map((docSnap) => {
         const data = docSnap.data();
         let monthLabel = "";
-        let dueDate: Date | undefined = undefined;
+        let dueDate: Date | undefined;
 
         // Procesar startAt
         if (data.startAt) {
@@ -211,6 +221,44 @@ export const usePaymentStore = create<MaintenancePaymentState>((set, get) => ({
     }
   },
 
+  updateUnidentifiedPayment: async (payment, paymentId) => {
+    try {
+      const auth = getAuth();
+      const user = auth.currentUser;
+      if (!user) throw new Error("Usuario no autenticado");
+      const tokenResult = await getIdTokenResult(user);
+      const clientId = tokenResult.claims["clientId"] as string;
+      const condominiumId = localStorage.getItem("condominiumId");
+      if (!condominiumId) throw new Error("Condominio no seleccionado");
+
+      const formData = new FormData();
+      formData.append("paymentId", paymentId);
+      formData.append("clientId", clientId);
+      formData.append("numberCondominium", payment.numberCondominium || "");
+      formData.append("condominiumId", condominiumId);
+      formData.append("isUnidentifiedPayment", JSON.stringify(true));
+      formData.append("appliedToUser", JSON.stringify(true));
+      formData.append("amountPaid", "0");
+      formData.append("amountPending", String(toCents(payment.amountPending)));
+      formData.append("paymentGroupId", payment.paymentGroupId || "");
+      formData.append("paymentType", payment.paymentType || "");
+      formData.append("creditUsed", "0");
+      formData.append("paymentDate", payment.paymentDate || "");
+      formData.append("financialAccountId", payment.financialAccountId || "");
+      formData.append("attachmentPayment", payment.attachmentPayment || "");
+
+      // POST al endpoint de pagos no identificados para actualizar
+      await axios.post(
+        `${import.meta.env.VITE_URL_SERVER}/maintenance-fees/create-unidentified`,
+        formData,
+        { headers: { "Content-Type": "multipart/form-data" } }
+      );
+    } catch (error: any) {
+      console.error("Error updating unidentified payment:", error);
+      throw error;
+    }
+  },
+
   addMaintenancePayment: async (payment) => {
     set({ loading: true, error: null });
     try {
@@ -224,47 +272,63 @@ export const usePaymentStore = create<MaintenancePaymentState>((set, get) => ({
       const clientId = tokenResult.claims["clientId"] as string;
       const condominiumId = localStorage.getItem("condominiumId");
       if (!condominiumId) throw new Error("Condominio no seleccionado");
-
+  
+      // Armamos el formData inicial
       const formData = new FormData();
       formData.append("clientId", clientId);
       formData.append("email", payment.email || "");
       formData.append("numberCondominium", payment.numberCondominium || "");
       formData.append("condominiumId", condominiumId);
       formData.append("comments", payment.comments || "");
-
-      // Convertimos amountPaid, amountPending a centavos
+  
+      // Convertir a centavos
       const amountPaidCents = toCents(payment.amountPaid);
       const amountPendingCents = toCents(payment.amountPending);
       formData.append("amountPaid", String(amountPaidCents));
       formData.append("amountPending", String(amountPendingCents));
-
-      // Identificador de grupo
+  
       const paymentGroupId = `${Date.now()}-${Math.random()
         .toString(36)
         .substring(2, 15)}`;
       formData.append("paymentGroupId", paymentGroupId);
-
-      // Saldo a favor y tipo de pago
+  
       formData.append("useCreditBalance", payment.useCreditBalance ? "true" : "false");
       formData.append("paymentType", payment.paymentType || "");
-      // Enviar el crédito utilizado en centavos
-      formData.append("creditUsed", payment.creditUsed ? String(toCents(payment.creditUsed)) : "0");
-
-      // Fecha y cuenta financiera
+      formData.append(
+        "creditUsed",
+        payment.creditUsed ? String(toCents(payment.creditUsed)) : "0"
+      );
+  
       formData.append("paymentDate", payment.paymentDate || "");
       formData.append("financialAccountId", payment.financialAccountId || "");
-
-      // Nueva rama: si es pago NO identificado
+  
+      // --- OJO: Aquí quitamos la línea que siempre ponía la URL de attachmentPayment ---
+      //    formData.append("attachmentPayment", payment.attachmentPayment || "");
+  
+      // -----------------------------------------
+      // CASO: PAGO NO IDENTIFICADO
+      // -----------------------------------------
       if (payment.isUnidentifiedPayment) {
-        formData.append("isUnidentifiedPayment", "true");
-        // Se agrega el flag para indicar que aún no se ha aplicado a un usuario.
-        formData.append(
-          "appliedToUser",
-          payment.appliedToUser ? "true" : "false"
-        );
+        formData.append("isUnidentifiedPayment", JSON.stringify(true));
+  
+        // Si existe un attachmentPayment (URL) y NO hay archivo, lo enviamos
+        if (payment.attachmentPayment && !payment.file) {
+          formData.append("attachmentPayment", payment.attachmentPayment);
+        }
+  
+        // Determinar si es CREAR vs ACTUALIZAR
+        if (payment.appliedToUser === true) {
+          formData.set("amountPaid", "0");
+          formData.set("appliedToUser", "true");
+        } else {
+          formData.append("appliedToUser", JSON.stringify(payment.appliedToUser));
+        }
+  
         if (payment.month) {
           formData.append("month", payment.month);
         }
+  
+        // Si subieron un archivo a "file", se adjunta como attachments
         if (payment.file) {
           if (Array.isArray(payment.file)) {
             formData.append("attachments", payment.file[0]);
@@ -272,44 +336,45 @@ export const usePaymentStore = create<MaintenancePaymentState>((set, get) => ({
             formData.append("attachments", payment.file);
           }
         }
-        // Se envía al endpoint de pagos no identificados
+  
+        // POST al endpoint de pagos NO identificados
         await axios.post(
           `${import.meta.env.VITE_URL_SERVER}/maintenance-fees/create-unidentified`,
           formData,
           { headers: { "Content-Type": "multipart/form-data" } }
         );
-        // No es necesario recargar cargos ya que el pago no está asociado a un cargo de usuario.
+  
         set({ loading: false, error: null });
         return;
       }
-
-      // Tomamos la lista de cargos locales
+  
+      // -----------------------------------------
+      // CASO: PAGO IDENTIFICADO (LÓGICA ORIGINAL)
+      // -----------------------------------------
       const { charges } = get();
-
-      // Lógica multi-cargo
+  
+      // Multipago
       if (payment.selectedCharges && payment.selectedCharges.length > 0) {
-        // Calculamos la suma en centavos
         const totalSelectedCents = payment.selectedCharges.reduce(
           (sum, sc) => sum + toCents(sc.amount),
           0
         );
-
+  
         if (!payment.useCreditBalance) {
-          // Comparar con amountPaidCents
           if (totalSelectedCents !== amountPaidCents) {
             throw new Error(
-              "El monto abonado (en centavos) debe coincidir exactamente con la suma de los cargos asignados."
+              "El monto abonado debe coincidir con la suma de los cargos asignados."
             );
           }
         }
-        // Forzamos creditBalance a 0 en multi-cargo (el backend lo re-calculará si hay sobrante)
         formData.append("creditBalance", "0");
-
-        // Enriquecemos las asignaciones en centavos
+  
         const enrichedSelected = payment.selectedCharges
           .map((sc) => {
             const foundCharge = charges.find((c) => c.id === sc.chargeId);
-            const dueDateNum = foundCharge?.dueDate ? foundCharge.dueDate.getTime() : 0;
+            const dueDateNum = foundCharge?.dueDate
+              ? foundCharge.dueDate.getTime()
+              : 0;
             return {
               ...sc,
               amount: toCents(sc.amount),
@@ -317,58 +382,102 @@ export const usePaymentStore = create<MaintenancePaymentState>((set, get) => ({
             };
           })
           .sort((a, b) => a.dueDate - b.dueDate);
-
+  
         formData.append("chargeAssignments", JSON.stringify(enrichedSelected));
       }
-      // Lógica cargo único
+      // Cargo único
       else if (payment.chargeId) {
         formData.append("chargeId", payment.chargeId);
         const foundCharge = charges.find((c) => c.id === payment.chargeId);
         if (foundCharge) {
-          // Si NO se usa crédito y se paga más de lo que vale el cargo
-          // generamos un creditBalance en centavos
           const chargeCents = toCents(foundCharge.amount);
           if (!payment.useCreditBalance && amountPaidCents > chargeCents) {
             const creditBalanceCents = amountPaidCents - chargeCents;
-            payment.creditBalance = creditBalanceCents / 100; // en pesos mexicanos
+            payment.creditBalance = creditBalanceCents / 100;
             formData.append("creditBalance", String(creditBalanceCents));
           }
         }
-      } else {
-        // Sin selectedCharges ni chargeId => nada
       }
-
-      // Mes opcional
+  
       if (payment.month) {
         formData.append("month", payment.month);
       }
-
-      // Adjuntos
+  
+      // Si existe un attachmentPayment y NO hay archivo, lo enviamos
+      if (payment.attachmentPayment && !payment.file) {
+        formData.append("attachmentPayment", payment.attachmentPayment);
+      }
+  
+      // Si subieron un archivo a "file", se adjunta como attachments
       if (payment.file) {
-        // Se envía solo el primer archivo, ya que el backend ahora espera una única URL
         if (Array.isArray(payment.file)) {
           formData.append("attachments", payment.file[0]);
         } else {
           formData.append("attachments", payment.file);
         }
       }
-
-      // Enviamos al backend (endpoint para pagos identificados)
+  
+      // POST al endpoint de pagos identificados
       await axios.post(
         `${import.meta.env.VITE_URL_SERVER}/maintenance-fees/create`,
         formData,
         { headers: { "Content-Type": "multipart/form-data" } }
       );
-
+  
+      // Si es un pago NO identificado que se está aplicando, llamamos updateUnidentifiedPayment
+      if (payment.isUnidentifiedPayment && payment.id) {
+        await get().updateUnidentifiedPayment(payment, payment.id);
+      }
+  
       // Recargar cargos asociados al usuario
       await get().fetchUserCharges(payment.numberCondominium);
-
+  
       set({ loading: false, error: null });
     } catch (error: any) {
       console.error("Error al registrar el pago/cargo:", error);
       set({
         loading: false,
         error: error.message || "Error al registrar el pago/cargo",
+      });
+      throw error;
+    }
+  },
+
+  // NUEVA FUNCIÓN para editar el pago no identificado con el NUEVO endpoint
+  editUnidentifiedPayment: async (paymentId: string) => {
+    set({ loading: true, error: null });
+    try {
+      const auth = getAuth();
+      const user = auth.currentUser;
+      if (!user) throw new Error("Usuario no autenticado");
+
+      const tokenResult = await getIdTokenResult(user);
+      const clientId = tokenResult.claims["clientId"] as string;
+      const condominiumId = localStorage.getItem("condominiumId");
+      if (!condominiumId) throw new Error("Condominio no seleccionado");
+
+      // Construimos los datos requeridos por el nuevo endpoint
+      const data = {
+        paymentId,
+        clientId,
+        condominiumId,
+      };
+
+      console.log("data", data)
+
+      // PATCH al nuevo endpoint que sólo edita pagos no identificados
+      await axios.patch(
+        `${import.meta.env.VITE_URL_SERVER}/maintenance-fees/edit-unidentified`,
+        data
+      );
+
+      // Listo. Si deseas, podrías refrescar algo aquí, pero no es obligatorio
+      set({ loading: false, error: null });
+    } catch (error: any) {
+      console.error("Error al editar pago no identificado:", error);
+      set({
+        loading: false,
+        error: error.message || "Error al editar el pago no identificado",
       });
       throw error;
     }

@@ -15,6 +15,8 @@ import { usePaymentStore } from "../../../../store/usePaymentStore";
 import { useDropzone } from "react-dropzone";
 import toast from "react-hot-toast";
 import { usePaymentSummaryStore } from "../../../../store/paymentSummaryStore";
+import { useUnidentifiedPaymentsStore } from "../../../../store/useUnidentifiedPaymentsStore";
+
 
 interface FormParcelReceptionProps {
   open: boolean;
@@ -82,6 +84,9 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
 
   // Estado para cargos seleccionados (multi-cargo)
   const [selectedCharges, setSelectedCharges] = useState<SelectedCharge[]>([]);
+
+  // Agregamos fetchPayments del store de pagos no identificados
+  const { fetchPayments } = useUnidentifiedPaymentsStore();
 
   useEffect(() => {
     fetchCondominiumsUsers();
@@ -253,6 +258,12 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
       setOpen(false);
       setLoading(false);
       toast.success("Pago registrado correctamente");
+      
+      // Si es un pago no identificado, actualizamos la lista
+      if (isUnidentifiedPayment) {
+        await fetchPayments();
+      }
+      
       fetchSummary(selectedYear);
     } catch (error) {
       setLoading(false);

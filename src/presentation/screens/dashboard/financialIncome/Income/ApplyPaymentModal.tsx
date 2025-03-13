@@ -15,11 +15,17 @@ import useUserStore from "../../../../../store/UserDataStore";
 import { UserData } from "../../../../../interfaces/UserData";
 import { usePaymentStore } from "../../../../../store/usePaymentStore";
 import { usePaymentSummaryStore } from "../../../../../store/paymentSummaryStore";
+import { useUnidentifiedPaymentsStore } from "../../../../../store/useUnidentifiedPaymentsStore";
 
 interface ApplyPaymentModalProps {
   open: boolean;
   setOpen: (open: boolean) => void;
   amount: number; // Monto a aplicar (en pesos) – valor inmutable
+  paymentDate: any;
+  paymentType: string;
+  attachmentPayment?: string; // URL que llega desde el pago no identificado
+  financialAccountId: string; // Valor recibido desde los props
+  paymentId?: string; // ID del pago no identificado
 }
 
 interface SelectedCharge {
@@ -27,61 +33,102 @@ interface SelectedCharge {
   amount: number;
 }
 
-const ApplyPaymentModal = ({ open, setOpen, amount }: ApplyPaymentModalProps) => {
-  // Estados locales
+const ApplyPaymentModal = ({
+  open,
+  setOpen,
+  amount,
+  paymentDate: propPaymentDate,
+  paymentType: propPaymentType,
+  attachmentPayment: propAttachmentPayment, // Comprobante que llega del registro
+  financialAccountId: propFinancialAccountId, // Cuenta donde se registra el pago
+  paymentId: propPaymentId, // ID del pago no identificado
+}: ApplyPaymentModalProps) => {
+  console.log("paymentId", propPaymentId)
+  // ---------------------------
+  //  Estados locales
+  // ---------------------------
   const [users, setUsers] = useState<UserData[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
 
-  // Campos del formulario (similares a PaymentForm)
-  // Se inicializa "amountPaid" con la prop "amount" y es de solo lectura
+  // Campos del formulario
   const [email, setEmail] = useState<string>("");
   const [numberCondominium, setNumberCondominium] = useState<string>("");
   const [amountPaid, setAmountPaid] = useState<string>(amount.toString());
   const [amountPending, setAmountPending] = useState<string>("");
   const [comments, setComments] = useState<string>("");
-  const [paymentType, setPaymentType] = useState<string>("");
 
-  // Fecha y hora de pago
+  // paymentType y paymentDate (solo lectura)
+  const [paymentType, setPaymentType] = useState<string>("");
   const [paymentDate, setPaymentDate] = useState<Date | null>(null);
 
-  // ID de la cuenta financiera
-  const [financialAccountId, setFinancialAccountId] = useState<string>("");
+  // La cuenta financiera es de solo lectura
+  const [_financialAccountId, setFinancialAccountId] = useState<string>("");
 
-  // En este modal se aplica el pago, por lo que se fija isUnidentifiedPayment a false
+  // Indica que NO es pago no identificado
   const isUnidentifiedPayment = false;
 
-  // Archivo adjunto
+  // Archivo adjunto (drag & drop)
   const [file, setFile] = useState<File | File[] | null>(null);
   const [fileName, setFileName] = useState("");
 
-  // Estado para el usuario seleccionado y uso de saldo a favor
+  // Usuario seleccionado y cargos
   const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
   const [useCreditBalance, setUseCreditBalance] = useState<boolean>(false);
-
-  // Estado para cargos seleccionados (pago único o multipago)
   const [selectedCharges, setSelectedCharges] = useState<SelectedCharge[]>([]);
 
-  // Stores
+  // ---------------------------
+  //  Stores
+  // ---------------------------
   const fetchCondominiumsUsers = useUserStore((state) => state.fetchCondominiumsUsers);
   const condominiumsUsers = useUserStore((state) => state.condominiumsUsers);
+
   const {
     charges,
     addMaintenancePayment,
     fetchUserCharges,
-    financialAccounts,
     fetchFinancialAccounts,
+    editUnidentifiedPayment, // <--- Importamos la nueva función
   } = usePaymentStore((state) => ({
     charges: state.charges,
     addMaintenancePayment: state.addMaintenancePayment,
     fetchUserCharges: state.fetchUserCharges,
     financialAccounts: state.financialAccounts,
     fetchFinancialAccounts: state.fetchFinancialAccounts,
+    editUnidentifiedPayment: state.editUnidentifiedPayment, // <--- Aquí
   }));
+
   const { fetchSummary, selectedYear } = usePaymentSummaryStore((state) => ({
     fetchSummary: state.fetchSummary,
     selectedYear: state.selectedYear,
   }));
 
+  // Agregamos fetchPayments del store de pagos no identificados
+  const { fetchPayments } = useUnidentifiedPaymentsStore();
+
+  // ---------------------------
+  //  useEffect y configuración inicial
+  // ---------------------------
+  useEffect(() => {
+    if (propPaymentDate) {
+      if (propPaymentDate.toDate) {
+        setPaymentDate(propPaymentDate.toDate());
+      } else {
+        setPaymentDate(new Date(propPaymentDate));
+      }
+    }
+    if (propPaymentType) {
+      setPaymentType(propPaymentType);
+    }
+  }, [propPaymentDate, propPaymentType]);
+
+  // La cuenta financiera recibida por props
+  useEffect(() => {
+    if (propFinancialAccountId) {
+      setFinancialAccountId(propFinancialAccountId);
+    }
+  }, [propFinancialAccountId]);
+
+  // Cargar usuarios y cuentas
   useEffect(() => {
     fetchCondominiumsUsers();
     if (condominiumsUsers) {
@@ -90,12 +137,16 @@ const ApplyPaymentModal = ({ open, setOpen, amount }: ApplyPaymentModalProps) =>
     fetchFinancialAccounts();
   }, [fetchCondominiumsUsers, fetchFinancialAccounts, condominiumsUsers]);
 
+  // Formatear moneda
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat("es-MX", {
       style: "currency",
       currency: "MXN",
     }).format(value);
 
+  // ---------------------------
+  //  Manejo de selects y cargos
+  // ---------------------------
   const handleRecipientChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const uid = e.target.value;
     const user = users.find((u) => u.uid === uid);
@@ -128,6 +179,9 @@ const ApplyPaymentModal = ({ open, setOpen, amount }: ApplyPaymentModalProps) =>
     );
   };
 
+  // ---------------------------
+  //  Cálculos de saldos
+  // ---------------------------
   const totalAssigned = selectedCharges.reduce((sum, sc) => sum + sc.amount, 0);
   const userCreditInPesos =
     selectedUser && selectedUser.totalCreditBalance
@@ -140,6 +194,9 @@ const ApplyPaymentModal = ({ open, setOpen, amount }: ApplyPaymentModalProps) =>
   const creditUsed = useCreditBalance ? userCreditInPesos : 0;
   const remainingEffective = effectiveTotal - totalAssigned;
 
+  // ---------------------------
+  //  Drag & drop
+  // ---------------------------
   const dropzoneOptions = {
     accept: [".xls", ".xlsx"] as any,
     onDrop: (acceptedFiles: File[]) => {
@@ -149,16 +206,16 @@ const ApplyPaymentModal = ({ open, setOpen, amount }: ApplyPaymentModalProps) =>
   };
   const { getRootProps, getInputProps, isDragActive } = useDropzone(dropzoneOptions);
 
+  // ---------------------------
+  //  Submit
+  // ---------------------------
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setLoading(true);
+
+    // Validaciones
     if (!paymentDate) {
       toast.error("La fecha de pago es obligatoria.");
-      setLoading(false);
-      return;
-    }
-    if (!financialAccountId) {
-      toast.error("La cuenta es obligatoria.");
       setLoading(false);
       return;
     }
@@ -184,13 +241,17 @@ const ApplyPaymentModal = ({ open, setOpen, amount }: ApplyPaymentModalProps) =>
     }
     if (useCreditBalance) {
       if (Number(effectiveTotal).toFixed(2) !== Number(totalAssigned).toFixed(2)) {
-        toast.error("En pago con saldo a favor, la suma de montos asignados debe ser igual a (monto abonado + crédito disponible).");
+        toast.error(
+          "En pago con saldo a favor, la suma de montos asignados debe ser igual a (monto abonado + crédito disponible)."
+        );
         setLoading(false);
         return;
       }
     } else {
       if (Number(amountPaid).toFixed(2) !== Number(totalAssigned).toFixed(2)) {
-        toast.error("El monto abonado debe coincidir exactamente con la suma de los cargos asignados.");
+        toast.error(
+          "El monto abonado debe coincidir exactamente con la suma de los cargos asignados."
+        );
         setLoading(false);
         return;
       }
@@ -203,7 +264,16 @@ const ApplyPaymentModal = ({ open, setOpen, amount }: ApplyPaymentModalProps) =>
       setLoading(false);
       return;
     }
+
     try {
+      // Determina cuál es la URL final de attachmentPayment:
+      const finalAttachment = propAttachmentPayment
+        ? propAttachmentPayment
+        : file
+        ? file
+        : "";
+
+      // Construimos el payload para aplicar el pago al usuario
       const paymentObj: any = {
         email,
         numberCondominium,
@@ -215,11 +285,22 @@ const ApplyPaymentModal = ({ open, setOpen, amount }: ApplyPaymentModalProps) =>
         useCreditBalance,
         paymentType,
         paymentDate: paymentDate.toISOString(),
-        financialAccountId,
+        financialAccountId: propFinancialAccountId,
         creditUsed,
-        isUnidentifiedPayment,
+        // Ya NO marcamos isUnidentifiedPayment ni pasamos id
+        // para evitar que el store llame a la antigua "updateUnidentifiedPayment"
+        attachmentPayment: finalAttachment,
+        appliedToUser: "true",
       };
+
+      // (1) Creamos el pago identificado para el usuario
       await addMaintenancePayment(paymentObj);
+
+      // (2) Si tenemos un paymentId (pago no identificado existente), lo editamos con el NUEVO endpoint
+      if (propPaymentId) {
+        await editUnidentifiedPayment(propPaymentId);
+      }
+
       // Resetear formulario
       setEmail("");
       setNumberCondominium("");
@@ -233,10 +314,15 @@ const ApplyPaymentModal = ({ open, setOpen, amount }: ApplyPaymentModalProps) =>
       setSelectedUser(null);
       setUseCreditBalance(false);
       setPaymentDate(null);
-      setFinancialAccountId("");
+
       setOpen(false);
       setLoading(false);
       toast.success("Pago aplicado correctamente");
+      
+      // Actualizamos la lista de pagos no identificados
+      await fetchPayments();
+      
+      // También actualizamos el resumen si es necesario
       fetchSummary(selectedYear);
     } catch (error) {
       setLoading(false);
@@ -245,6 +331,9 @@ const ApplyPaymentModal = ({ open, setOpen, amount }: ApplyPaymentModalProps) =>
     }
   };
 
+  // ---------------------------
+  //  Render
+  // ---------------------------
   return (
     <Transition.Root show={open} as={Fragment}>
       <Dialog as="div" className="relative z-10" onClose={setOpen}>
@@ -262,8 +351,11 @@ const ApplyPaymentModal = ({ open, setOpen, amount }: ApplyPaymentModalProps) =>
                 leaveTo="translate-x-full"
               >
                 <Dialog.Panel className="pointer-events-auto w-screen max-w-3xl">
-                  <form onSubmit={handleSubmit} className="flex h-full flex-col divide-y divide-gray-200 bg-white shadow-xl">
-                    <div className="h-0 flex-1 overflow-y-auto dark:bg-gray-900">
+                  <form
+                    onSubmit={handleSubmit}
+                    className="flex h-full flex-col divide-y divide-gray-200 bg-white shadow-xl dark:bg-gray-900"
+                  >
+                    <div className="h-0 flex-1 overflow-y-auto">
                       <div className="bg-indigo-700 px-4 py-6 sm:px-6 dark:bg-gray-800">
                         <div className="flex items-center justify-between">
                           <Dialog.Title className="text-base font-semibold leading-6 text-white">
@@ -306,9 +398,14 @@ const ApplyPaymentModal = ({ open, setOpen, amount }: ApplyPaymentModalProps) =>
                                   name="nameRecipient"
                                   id="nameRecipient"
                                   className="block w-full rounded-md border-0 pl-10 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:focus:ring-2 dark:ring-indigo-500"
-                                  value={users.find((u) => u.number === numberCondominium)?.uid || ""}
+                                  value={
+                                    users.find((u) => u.number === numberCondominium)?.uid ||
+                                    ""
+                                  }
                                 >
-                                  <option value="">Selecciona un condómino</option>
+                                  <option value="">
+                                    Selecciona un condómino
+                                  </option>
                                   {users
                                     .filter(
                                       (user) =>
@@ -324,7 +421,8 @@ const ApplyPaymentModal = ({ open, setOpen, amount }: ApplyPaymentModalProps) =>
                                 </select>
                               </div>
                             </div>
-                            {/* Fecha y hora de pago */}
+
+                            {/* Fecha y hora de pago (solo lectura) */}
                             <div>
                               <label
                                 htmlFor="paymentDate"
@@ -337,16 +435,21 @@ const ApplyPaymentModal = ({ open, setOpen, amount }: ApplyPaymentModalProps) =>
                                   <CalendarIcon className="h-5 w-5 text-gray-400" />
                                 </div>
                                 <input
-                                  onChange={(e) => setPaymentDate(new Date(e.target.value))}
+                                  disabled
                                   type="datetime-local"
                                   name="paymentDate"
                                   id="paymentDate"
-                                  className="block w-full rounded-md border-0 py-1.5 pl-10 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:focus:ring-2 dark:ring-indigo-500"
-                                  value={paymentDate ? paymentDate.toISOString().slice(0, 16) : ""}
+                                  className="block w-full rounded-md border-0 py-1.5 pl-10 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 opacity-80 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:focus:ring-2 dark:ring-indigo-500"
+                                  value={
+                                    paymentDate
+                                      ? paymentDate.toISOString().slice(0, 16)
+                                      : ""
+                                  }
                                 />
                               </div>
                             </div>
-                            {/* Monto abonado (read-only) */}
+
+                            {/* Monto abonado (solo lectura) */}
                             <div>
                               <label
                                 htmlFor="amountPaid"
@@ -363,12 +466,13 @@ const ApplyPaymentModal = ({ open, setOpen, amount }: ApplyPaymentModalProps) =>
                                   readOnly
                                   name="amountPaid"
                                   id="amountPaid"
-                                  className="block w-full rounded-md border-0 pl-10 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 bg-gray-100 dark:bg-gray-700 dark:text-gray-100"
+                                  className="px-8 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm  ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
                                   value={amountPaid}
                                 />
                               </div>
                             </div>
-                            {/* Tipo de pago */}
+
+                            {/* Tipo de pago (solo lectura) */}
                             <div>
                               <label
                                 htmlFor="paymentType"
@@ -381,10 +485,10 @@ const ApplyPaymentModal = ({ open, setOpen, amount }: ApplyPaymentModalProps) =>
                                   <CreditCardIcon className="h-5 w-5 text-gray-400" />
                                 </div>
                                 <select
-                                  onChange={(e) => setPaymentType(e.target.value)}
+                                  disabled
                                   name="paymentType"
                                   id="paymentType"
-                                  className="block w-full rounded-md border-0 pl-10 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:focus:ring-2 dark:ring-indigo-500"
+                                  className="block w-full rounded-md border-0 pl-10 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 opacity-80 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:focus:ring-2 dark:ring-indigo-500"
                                   value={paymentType}
                                 >
                                   <option value="">Selecciona un tipo de pago</option>
@@ -395,31 +499,7 @@ const ApplyPaymentModal = ({ open, setOpen, amount }: ApplyPaymentModalProps) =>
                                 </select>
                               </div>
                             </div>
-                            {/* Selección de la cuenta */}
-                            <div>
-                              <label
-                                htmlFor="financialAccountId"
-                                className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100"
-                              >
-                                Cuenta
-                              </label>
-                              <div className="mt-2 relative">
-                                <select
-                                  onChange={(e) => setFinancialAccountId(e.target.value)}
-                                  name="financialAccountId"
-                                  id="financialAccountId"
-                                  className="block w-full rounded-md border-0 pl-3 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:focus:ring-2 dark:ring-indigo-500"
-                                  value={financialAccountId}
-                                >
-                                  <option value="">Selecciona una cuenta</option>
-                                  {financialAccounts.map((acc) => (
-                                    <option key={acc.id} value={acc.id}>
-                                      {acc.name}
-                                    </option>
-                                  ))}
-                                </select>
-                              </div>
-                            </div>
+
                             {/* Monto pendiente */}
                             <div>
                               <label
@@ -444,11 +524,13 @@ const ApplyPaymentModal = ({ open, setOpen, amount }: ApplyPaymentModalProps) =>
                                 />
                               </div>
                             </div>
+
                             {/* Saldo a favor */}
                             {selectedUser && !isUnidentifiedPayment && Number(selectedUser.totalCreditBalance) > 0 && (
                               <div>
                                 <label className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100">
-                                  Saldo a favor disponible: {formatCurrency(Number(selectedUser.totalCreditBalance) / 100)}
+                                  Saldo a favor disponible:{" "}
+                                  {formatCurrency(Number(selectedUser.totalCreditBalance) / 100)}
                                 </label>
                                 <div className="mt-2 flex items-center space-x-4">
                                   <label className="flex items-center dark:text-gray-100">
@@ -476,6 +558,7 @@ const ApplyPaymentModal = ({ open, setOpen, amount }: ApplyPaymentModalProps) =>
                                 </div>
                               </div>
                             )}
+
                             {/* Lista de cargos pendientes */}
                             {numberCondominium && charges.length > 0 && !isUnidentifiedPayment && (
                               <div>
@@ -495,7 +578,9 @@ const ApplyPaymentModal = ({ open, setOpen, amount }: ApplyPaymentModalProps) =>
                                           className="accent-indigo-600 dark:accent-indigo-400"
                                         />
                                         <span className="flex-1 dark:text-gray-100">
-                                          {`${charge.concept} | Mes: ${charge.month || "Sin mes"} | Monto: ${formatCurrency(charge.amount / 100)}`}
+                                          {`${charge.concept} | Mes: ${
+                                            charge.month || "Sin mes"
+                                          } | Monto: ${formatCurrency(charge.amount / 100)}`}
                                         </span>
                                         {isChecked && (
                                           <div className="relative">
@@ -516,26 +601,41 @@ const ApplyPaymentModal = ({ open, setOpen, amount }: ApplyPaymentModalProps) =>
                                 </div>
                                 <div className="mt-2">
                                   <span className="text-sm font-bold dark:text-gray-100">
-                                    Saldo restante a aplicar: {formatCurrency(remainingEffective)}
+                                    Saldo restante a aplicar:{" "}
+                                    {formatCurrency(remainingEffective)}
                                   </span>
                                 </div>
                               </div>
                             )}
+
                             {/* Dropzone para adjuntar comprobante */}
-                            <div {...getRootProps()} className="mt-12 h-auto flex items-center justify-center rounded-lg border border-dashed border-gray-900/25 px-6 py-4 dark:border-indigo-900">
+                            <div
+                              {...getRootProps()}
+                              className="mt-12 h-auto flex items-center justify-center rounded-lg border border-dashed border-gray-900/25 px-6 py-4 dark:border-indigo-900"
+                            >
                               <input {...getInputProps()} />
                               <div className="text-center">
-                                <PhotoIcon className="mx-auto h-12 w-12 text-gray-300" aria-hidden="true" />
+                                <PhotoIcon
+                                  className="mx-auto h-12 w-12 text-gray-300"
+                                  aria-hidden="true"
+                                />
                                 {fileName ? (
-                                  <p className="mt-4 text-sm leading-6 text-gray-600">{fileName}</p>
+                                  <p className="mt-4 text-sm leading-6 text-gray-600">
+                                    {fileName}
+                                  </p>
                                 ) : (
                                   <p className="mt-4 text-sm leading-6 font-medium text-indigo-600">
-                                    {isDragActive ? "Suelta el archivo aquí..." : "Arrastra y suelta el comprobante aquí o haz click para seleccionarlo"}
+                                    {isDragActive
+                                      ? "Suelta el archivo aquí..."
+                                      : "Arrastra y suelta el comprobante aquí o haz click para seleccionarlo"}
                                   </p>
                                 )}
-                                <p className="text-xs leading-5 text-gray-600">Hasta 10MB</p>
+                                <p className="text-xs leading-5 text-gray-600">
+                                  Hasta 10MB
+                                </p>
                               </div>
                             </div>
+
                             {/* Comentarios */}
                             <div>
                               <label
@@ -559,6 +659,7 @@ const ApplyPaymentModal = ({ open, setOpen, amount }: ApplyPaymentModalProps) =>
                         </div>
                       </div>
                     </div>
+
                     {/* Botones de acción */}
                     <div className="flex flex-shrink-0 justify-end px-4 py-4 dark:bg-gray-900">
                       <button
@@ -573,7 +674,10 @@ const ApplyPaymentModal = ({ open, setOpen, amount }: ApplyPaymentModalProps) =>
                         className="ml-4 inline-flex justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
                       >
                         {loading ? (
-                          <svg className="animate-spin h-5 w-5 mr-3 border-t-2 border-b-2 border-indigo-100 rounded-full" viewBox="0 0 24 24"></svg>
+                          <svg
+                            className="animate-spin h-5 w-5 mr-3 border-t-2 border-b-2 border-indigo-100 rounded-full"
+                            viewBox="0 0 24 24"
+                          ></svg>
                         ) : (
                           "Aplicar"
                         )}
