@@ -3,6 +3,7 @@
 import React from "react";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
+import { DocumentChartBarIcon } from "@heroicons/react/20/solid";
 
 // Ajusta esta interfaz a como tengas tu PaymentRecord realmente.
 // Se agregó la propiedad opcional creditUsed.
@@ -367,8 +368,9 @@ const PDFReportGeneratorSingle: React.FC<PDFReportGeneratorSingleProps> = ({
     <div className="mt-8">
       <button
         onClick={generatePDF}
-        className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded"
+        className="bg-indigo-600 flex text-white text-sm py-2 px-1 rounded w-[140px] font-medium hover:bg-indigo-700"
       >
+        <DocumentChartBarIcon className="w-5 h-5 text-white mr-1" />
         Generar Reporte
       </button>
     </div>

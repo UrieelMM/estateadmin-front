@@ -50,11 +50,13 @@ export interface PaymentRecord {
   amountPaid: number;     // en pesos
   amountPending: number;  // en pesos
   concept: string;
+  paymentType?: string;   // Tipo de pago (Transferencia, Efectivo, etc.)
   creditBalance: number;  // en pesos
   creditUsed?: number;    // crédito utilizado (en pesos)
   paid: boolean;
   financialAccountId: string;
   paymentDate?: string;
+  attachmentPayment?: string;  // URL del comprobante de pago
 }
 
 export type MonthlyStat = {
@@ -281,11 +283,13 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>((set, get) => 
                 amountPaid: parseFloat(totalAmountPaid.toFixed(2)),
                 amountPending: parseFloat(pendingAmount.toFixed(2)),
                 concept: chargeData.concept || "Desconocido",
+                paymentType: chargeData.paymentType,
                 creditBalance: parseFloat(totalCreditBalance.toFixed(2)),
                 creditUsed: parseFloat(totalCreditUsed.toFixed(2)),
                 paid: chargeData.paid === true,
                 financialAccountId: accountId || "N/A",
                 paymentDate: formattedDate,
+                attachmentPayment: chargeData.attachmentPayment,
               };
               return record;
             })
@@ -334,11 +338,13 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>((set, get) => 
           amountPaid: parseFloat(centsToPesos(data.amountPaid).toFixed(2)),
           amountPending: parseFloat(centsToPesos(data.amountPending).toFixed(2)),
           concept: "Pago no identificado",
+          paymentType: data.paymentType,
           creditBalance: data.creditBalance ? parseFloat(centsToPesos(data.creditBalance).toFixed(2)) : 0,
           creditUsed: data.creditUsed ? parseFloat(centsToPesos(data.creditUsed).toFixed(2)) : 0,
           paid: false,
           financialAccountId: data.financialAccountId || "N/A",
           paymentDate: formattedDate,
+          attachmentPayment: data.attachmentPayment,
         };
         paymentRecords.push(record);
       });

@@ -178,7 +178,7 @@ const MorosidadView: React.FC = () => {
       </div>
 
       {/* Botón para generar el reporte PDF de morosidad */}
-      <div className="mt-6 text-right">
+      <div className="mt-6 text-left">
         <p className="text-sm text-gray-600 mb-4 dark:text-gray-100">
           Descarga un reporte detallado con la lista de cargos pendientes por condomino.
         </p>

@@ -6,6 +6,7 @@ import PaymentSummary from "./PaymentSummary";
 import MorosidadView from "../Summary/MorosidadView";
 import PaymentSummaryByAccount from "./PaymentSummaryByAccount";
 import UnidentifiedPaymentsTable from "./UnidentifiedPaymentsTable";
+import HistoryPaymentsTable from "./HistoryPaymentsTable";
 
 
 const Income = () => {
@@ -60,11 +61,11 @@ const Income = () => {
               {/* 3. Tab Historial y Recibos */}
               <button
                 className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === "history"
+                  activeTab === "history-and-send-receipts"
                     ? "border-indigo-500 text-indigo-600 dark:text-gray-100"
                     : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400"
                 }`}
-                onClick={() => setActiveTab("history")}
+                onClick={() => setActiveTab("history-and-send-receipts")}
               >
                 Historial y Recibos
               </button>
@@ -91,6 +92,17 @@ const Income = () => {
               >
                 Pagos no identificados
               </button>
+              {/* 5. Tab Historial*/}
+              <button
+                className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === "history"
+                    ? "border-indigo-500 text-indigo-600 dark:text-gray-100"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400"
+                }`}
+                onClick={() => setActiveTab("history")}
+              >
+                Historial
+              </button>
             </nav>
           </div>
         </div>
@@ -112,7 +124,7 @@ const Income = () => {
               <PaymentSummaryByAccount />
             </>
           )}
-          {activeTab === "history" && (
+          {activeTab === "history-and-send-receipts" && (
             <div className="w-full flex justify-start mt-8">
               <div className="w-[70%]">
                 <PaymentHistory />
@@ -124,6 +136,7 @@ const Income = () => {
           )}
           {activeTab === "morosidad" && <MorosidadView />}
           {activeTab === "unidentified" && <UnidentifiedPaymentsTable />}
+          {activeTab === "history" && <HistoryPaymentsTable />}
         </div>
       </div>
 

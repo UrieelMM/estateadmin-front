@@ -210,7 +210,7 @@ const MorosidadPDFReport: React.FC = () => {
     <div>
       <button
         onClick={generatePDF}
-        className="bg-indigo-600 text-white py-2 px-4 rounded flex items-center font-bold hover:bg-indigo-700"
+        className="bg-indigo-600 flex text-white text-sm py-2 px-1 rounded w-[240px] font-medium hover:bg-indigo-700"
       >
         <DocumentChartBarIcon className="w-5 h-5 text-white mr-1" />
         Generar Reporte de Morosidad
