@@ -47,6 +47,7 @@ const MonthComparisonTable: React.FC = React.memo(() => {
               <th className="border p-2 text-white dark:text-gray-100">Monto abonado</th>
               <th className="border p-2 text-white dark:text-gray-100">Monto pendiente</th>
               <th className="border p-2 text-white dark:text-gray-100">Saldo a favor</th>
+              <th className="border p-2 text-white dark:text-gray-100">Pagos no identificados</th>
               <th className="border p-2 text-white dark:text-gray-100">% Cumplimiento</th>
               <th className="border p-2 text-white dark:text-gray-100">% Morosidad</th>
             </tr>
@@ -58,6 +59,7 @@ const MonthComparisonTable: React.FC = React.memo(() => {
                 <td className="border p-2">{formatCurrency(row.paid + row.saldo)}</td>
                 <td className="border p-2">{formatCurrency(row.pending)}</td>
                 <td className="border p-2">{formatCurrency(row.saldo)}</td>
+                <td className="border p-2">{formatCurrency(row.unidentifiedPayments || 0)}</td>
                 <td className="border p-2">{row.complianceRate.toFixed(2)}%</td>
                 <td className="border p-2">{row.delinquencyRate.toFixed(2)}%</td>
               </tr>

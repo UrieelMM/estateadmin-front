@@ -4,9 +4,25 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { useExpenseSummaryStore } from "../../../../../../store/expenseSummaryStore";
 import { usePaymentSummaryStore } from "../../../../../../store/paymentSummaryStore";
+import { DocumentChartBarIcon } from "@heroicons/react/16/solid";
 
 interface PDFBalanceGeneralReportProps {
   year: string;
+}
+
+interface FinancialAccount {
+  id: string;
+  name: string;
+  initialBalance: number;
+  creationMonth: string;
+}
+
+interface TrimestralAnalysis {
+  trimestre: string;
+  meses: string[];
+  ingresos: number;
+  egresos: number;
+  balance: number;
 }
 
 const monthNames: Record<string, string> = {
@@ -34,6 +50,7 @@ const PDFBalanceGeneralReport: React.FC<PDFBalanceGeneralReportProps> = ({ year 
     adminCompany,
     adminPhone,
     adminEmail,
+    financialAccountsMap,
   } = usePaymentSummaryStore((state) => ({
     totalIncome: state.totalIncome,
     monthlyStats: state.monthlyStats,
@@ -42,6 +59,7 @@ const PDFBalanceGeneralReport: React.FC<PDFBalanceGeneralReportProps> = ({ year 
     adminCompany: state.adminCompany,
     adminPhone: state.adminPhone,
     adminEmail: state.adminEmail,
+    financialAccountsMap: state.financialAccountsMap,
   }));
 
   // Datos de egresos
@@ -60,7 +78,117 @@ const PDFBalanceGeneralReport: React.FC<PDFBalanceGeneralReportProps> = ({ year 
   // Utilizar uno de los logos (se prioriza el de ingresos)
   const logoBase64 = logoIncome || logoExpense;
   const signatureBase64 = signatureIncome || signatureExpense;
-  const netBalance = totalIncome - totalSpent;
+
+  // Calcular el saldo a favor total
+  const totalCreditGlobal = React.useMemo(() => 
+    incomesMonthlyStats.reduce((acc, stat) => acc + stat.saldo, 0)
+  , [incomesMonthlyStats]);
+
+  // Calcular el total de ingresos incluyendo el saldo a favor
+  const totalIncomeWithCredit = totalIncome + totalCreditGlobal;
+  const netBalance = totalIncomeWithCredit - totalSpent;
+
+  // Calcular estadísticas adicionales y análisis
+  const analisisAvanzado = React.useMemo(() => {
+    // Encontrar el mes con mayor ingreso
+    const mesMaxIngreso = incomesMonthlyStats.reduce((max, stat) => {
+      const total = stat.paid + stat.saldo;
+      return total > (max?.paid + max?.saldo || 0) ? stat : max;
+    }, incomesMonthlyStats[0]);
+
+    // Encontrar el mes con mayor egreso
+    const mesMaxEgreso = expensesMonthlyStats.reduce((max, stat) => 
+      stat.spent > (max?.spent || 0) ? stat : max
+    , expensesMonthlyStats[0]);
+
+    // Encontrar el mes con mejor balance
+    const balanceMensual = incomesMonthlyStats.map(incomeStat => {
+      const expenseStat = expensesMonthlyStats.find(exp => exp.month === incomeStat.month) || { spent: 0 };
+      return {
+        month: incomeStat.month,
+        balance: (incomeStat.paid + incomeStat.saldo) - expenseStat.spent
+      };
+    });
+
+    const mejorMes = balanceMensual.reduce((max, stat) => 
+      stat.balance > (max?.balance || 0) ? stat : max
+    , balanceMensual[0]);
+
+    // Análisis Trimestral
+    const trimestres = [
+      { nombre: "Q1", meses: ["01", "02", "03"] },
+      { nombre: "Q2", meses: ["04", "05", "06"] },
+      { nombre: "Q3", meses: ["07", "08", "09"] },
+      { nombre: "Q4", meses: ["10", "11", "12"] }
+    ];
+
+    const analisisTrimestral = trimestres.map(trimestre => {
+      const ingresosTrimestre = trimestre.meses.reduce((acc, mes) => {
+        const stat = incomesMonthlyStats.find(s => s.month === mes);
+        return acc + (stat ? stat.paid + stat.saldo : 0);
+      }, 0);
+
+      const egresosTrimestre = trimestre.meses.reduce((acc, mes) => {
+        const stat = expensesMonthlyStats.find(s => s.month === mes);
+        return acc + (stat ? stat.spent : 0);
+      }, 0);
+
+      return {
+        trimestre: trimestre.nombre,
+        meses: trimestre.meses,
+        ingresos: ingresosTrimestre,
+        egresos: egresosTrimestre,
+        balance: ingresosTrimestre - egresosTrimestre
+      } as TrimestralAnalysis;
+    });
+
+    // Promedios Mensuales
+    const promedioIngresos = totalIncomeWithCredit / 12;
+    const promedioEgresos = totalSpent / 12;
+
+    // Análisis de Tendencias
+    const tendenciaMensual = incomesMonthlyStats.map((stat, index) => {
+      const mesActual = (stat.paid + stat.saldo);
+      const mesAnterior = index > 0 ? 
+        (incomesMonthlyStats[index - 1].paid + incomesMonthlyStats[index - 1].saldo) : mesActual;
+      const cambio = ((mesActual - mesAnterior) / mesAnterior) * 100;
+      
+      return {
+        mes: stat.month,
+        cambio: !isFinite(cambio) ? 0 : cambio
+      };
+    });
+
+    // Análisis de Estacionalidad
+    const estacionalidad = incomesMonthlyStats.map(stat => {
+      const ingresoMes = stat.paid + stat.saldo;
+      const proporcionDelTotal = (ingresoMes / totalIncomeWithCredit) * 100;
+      return {
+        mes: stat.month,
+        proporcion: proporcionDelTotal
+      };
+    });
+
+    // Meses consecutivos de crecimiento
+    const mesesCrecimiento = tendenciaMensual.reduce((acc, curr) => {
+      if (curr.cambio > 0) return acc + 1;
+      return 0;
+    }, 0);
+
+    return {
+      mesMaxIngreso,
+      mesMaxEgreso,
+      mejorMes,
+      trimestral: analisisTrimestral,
+      promedios: {
+        ingresos: promedioIngresos,
+        egresos: promedioEgresos
+      },
+      tendencias: tendenciaMensual,
+      estacionalidad,
+      mesesCrecimiento
+    };
+  }, [incomesMonthlyStats, expensesMonthlyStats, totalIncomeWithCredit, totalSpent]);
 
   const generatePDF = () => {
     const doc = new jsPDF();
@@ -71,6 +199,18 @@ const PDFBalanceGeneralReport: React.FC<PDFBalanceGeneralReportProps> = ({ year 
         style: "currency",
         currency: "USD",
       }).format(value);
+
+    // Helper para manejar valores indefinidos
+    const formatValue = (value: number | undefined): string => {
+      if (value === undefined || isNaN(value)) return "-";
+      return formatCurrency(value);
+    };
+
+    // Helper para calcular porcentajes
+    const formatPercentage = (value: number | undefined): string => {
+      if (value === undefined || isNaN(value)) return "-";
+      return `${value > 0 ? '+' : ''}${value.toFixed(1)}%`;
+    };
 
     // --- Encabezado ---
     if (logoBase64) {
@@ -93,7 +233,7 @@ const PDFBalanceGeneralReport: React.FC<PDFBalanceGeneralReportProps> = ({ year 
     doc.setFont("helvetica", "bold");
     doc.text("Total Ingresos:", 14, 50);
     doc.setFont("helvetica", "normal");
-    doc.text(formatCurrency(totalIncome), 14 + doc.getTextWidth("Total Ingresos:") + 5, 50);
+    doc.text(formatCurrency(totalIncomeWithCredit), 14 + doc.getTextWidth("Total Ingresos:") + 5, 50);
     doc.setFont("helvetica", "bold");
     doc.text("Total Egresos:", 14, 60);
     doc.setFont("helvetica", "normal");
@@ -103,33 +243,266 @@ const PDFBalanceGeneralReport: React.FC<PDFBalanceGeneralReportProps> = ({ year 
     doc.setFont("helvetica", "normal");
     doc.text(formatCurrency(netBalance), 14 + doc.getTextWidth("Balance Neto:") + 5, 70);
 
-    // --- Detalle Mensual ---
+    // --- Tabla Mensual Original ---
     doc.setFontSize(14);
-    doc.text("Detalle Mensual", 14, 80);
+    doc.setFont("helvetica", "bold");
+    doc.text("Detalle Mensual", 14, 85);
 
     const tableData = [];
+    let totalIngresos = 0;
+    let totalSaldoAFavor = 0;
+    let totalEgresos = 0;
+    let totalBalance = 0;
+
+    // Distribuir los saldos iniciales en el primer mes del año
+    const initialBalances = Object.values(financialAccountsMap as Record<string, FinancialAccount>).reduce((acc, account) => {
+      if (account.creationMonth === "01") {
+        return acc + account.initialBalance;
+      }
+      return acc;
+    }, 0);
+
     for (let i = 1; i <= 12; i++) {
       const m = i.toString().padStart(2, "0");
       const monthLabel = monthNames[m] || m;
       const incomeStat = incomesMonthlyStats.find((stat) => stat.month === m);
       const expenseStat = expensesMonthlyStats.find((stat) => stat.month === m);
-      const ingresos = incomeStat ? incomeStat.paid : 0;
+      
+      // Añadir saldos iniciales de las cuentas creadas en este mes
+      const monthlyInitialBalance = Object.values(financialAccountsMap as Record<string, FinancialAccount>).reduce((acc, account) => {
+        if (account.creationMonth === m && m !== "01") {
+          return acc + account.initialBalance;
+        }
+        return acc;
+      }, 0);
+      
+      const ingresos = (incomeStat ? (incomeStat.paid + incomeStat.saldo) : 0) + 
+        (m === "01" ? initialBalances : monthlyInitialBalance);
+      const saldoAFavor = incomeStat ? incomeStat.saldo : 0;
       const egresos = expenseStat ? expenseStat.spent : 0;
       const balance = ingresos - egresos;
+      const porcentajeMensual = ingresos > 0 ? ((ingresos - egresos) / ingresos * 100) : 0;
+
+      totalIngresos += ingresos;
+      totalSaldoAFavor += saldoAFavor;
+      totalEgresos += egresos;
+      totalBalance += balance;
+
       tableData.push([
         monthLabel,
-        formatCurrency(ingresos),
-        formatCurrency(egresos),
-        formatCurrency(balance),
+        formatValue(ingresos),
+        formatValue(saldoAFavor),
+        formatValue(egresos),
+        formatValue(balance),
+        formatPercentage(porcentajeMensual)
       ]);
     }
 
+    // Añadir fila de totales
+    const porcentajeTotal = totalIngresos > 0 ? ((totalBalance) / totalIngresos * 100) : 0;
+    tableData.push([
+      'TOTAL',
+      formatValue(totalIngresos),
+      formatValue(totalSaldoAFavor),
+      formatValue(totalEgresos),
+      formatValue(totalBalance),
+      formatPercentage(porcentajeTotal)
+    ]);
+
     autoTable(doc, {
-      startY: 85,
-      head: [["Mes", "Ingresos", "Egresos", "Balance"]],
+      startY: 90,
+      head: [["Mes", "Ingresos", "Saldo a Favor", "Egresos", "Balance", "% Balance"]],
       body: tableData,
-      headStyles: { fillColor: [75, 68, 224], textColor: 255, fontStyle: "bold" },
-      styles: { fontSize: 10 },
+      headStyles: { 
+        fillColor: [75, 68, 224], 
+        textColor: 255, 
+        fontStyle: "bold",
+        halign: 'center'
+      },
+      styles: { 
+        fontSize: 9,
+        valign: 'middle'
+      },
+      margin: { left: 14, right: 14 },
+      columnStyles: {
+        0: { cellWidth: 'auto', halign: 'left' },
+        1: { cellWidth: 'auto', halign: 'center' },
+        2: { cellWidth: 'auto', halign: 'center' },
+        3: { cellWidth: 'auto', halign: 'center' },
+        4: { cellWidth: 'auto', halign: 'center' },
+        5: { cellWidth: 'auto', halign: 'center' }
+      },
+      didParseCell: function(data) {
+        // Dar formato especial a la fila de totales
+        if (data.row.index === tableData.length - 1) {
+          data.cell.styles.fontStyle = 'bold';
+          data.cell.styles.fillColor = [240, 240, 240];
+        }
+      }
+    });
+
+    // --- Estadísticas Destacadas y Análisis Trimestral (Nueva página) ---
+    doc.addPage();
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.text("Estadísticas Destacadas", 14, 20);
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "normal");
+
+    const stats = [
+      `• Mes con mayores ingresos: ${monthNames[analisisAvanzado.mesMaxIngreso?.month || "01"]} (${formatValue(analisisAvanzado.mesMaxIngreso?.paid + analisisAvanzado.mesMaxIngreso?.saldo)})`,
+      `• Mes con mayores egresos: ${monthNames[analisisAvanzado.mesMaxEgreso?.month || "01"]} (${formatValue(analisisAvanzado.mesMaxEgreso?.spent)})`,
+      `• Mes con mejor balance: ${monthNames[analisisAvanzado.mejorMes?.month || "01"]} (${formatValue(analisisAvanzado.mejorMes?.balance)})`,
+      `• Saldo a favor acumulado: ${formatValue(totalCreditGlobal)}`
+    ];
+
+    stats.forEach((stat, index) => {
+      doc.text(stat, 14, 30 + (index * 6));
+    });
+
+    // Análisis Trimestral (misma página)
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.text("Análisis Trimestral", 14, 60);
+    
+    const trimestralData = analisisAvanzado.trimestral.map((t: TrimestralAnalysis) => {
+      // Calcular saldos iniciales para este trimestre
+      const trimesterInitialBalance = Object.values(financialAccountsMap as Record<string, FinancialAccount>).reduce((acc, account) => {
+        if (t.trimestre === "Q1" && account.creationMonth === "01") {
+          return acc + account.initialBalance;
+        }
+        if (t.meses.includes(account.creationMonth) && account.creationMonth !== "01") {
+          return acc + account.initialBalance;
+        }
+        return acc;
+      }, 0);
+
+      const ingresosTotales = t.ingresos + trimesterInitialBalance;
+      const balance = ingresosTotales - t.egresos;
+      
+      return [
+        t.trimestre,
+        formatValue(ingresosTotales),
+        formatValue(t.egresos),
+        formatValue(balance),
+        formatPercentage((balance / ingresosTotales) * 100)
+      ];
+    });
+
+    // Añadir fila de totales para análisis trimestral
+    const totalTrimestral = {
+      ingresos: analisisAvanzado.trimestral.reduce((acc, t) => acc + t.ingresos, 0),
+      egresos: analisisAvanzado.trimestral.reduce((acc, t) => acc + t.egresos, 0),
+      balance: analisisAvanzado.trimestral.reduce((acc, t) => acc + t.balance, 0)
+    };
+
+    const porcentajeTotalTrimestral = totalTrimestral.ingresos > 0 ? 
+      (totalTrimestral.balance / totalTrimestral.ingresos * 100) : 0;
+
+    trimestralData.push([
+      'TOTAL',
+      formatValue(totalTrimestral.ingresos),
+      formatValue(totalTrimestral.egresos),
+      formatValue(totalTrimestral.balance),
+      formatPercentage(porcentajeTotalTrimestral)
+    ]);
+
+    autoTable(doc, {
+      startY: 65,
+      head: [["Trimestre", "Ingresos", "Egresos", "Balance", "% Rendimiento"]],
+      body: trimestralData,
+      headStyles: { 
+        fillColor: [75, 68, 224], 
+        textColor: 255, 
+        fontStyle: "bold",
+        halign: 'center'
+      },
+      styles: { 
+        fontSize: 10,
+        valign: 'middle'
+      },
+      margin: { left: 14, right: 14 },
+      columnStyles: {
+        0: { cellWidth: 'auto', halign: 'left' },
+        1: { cellWidth: 'auto', halign: 'center' },
+        2: { cellWidth: 'auto', halign: 'center' },
+        3: { cellWidth: 'auto', halign: 'center' },
+        4: { cellWidth: 'auto', halign: 'center' }
+      },
+      didParseCell: function(data) {
+        // Dar formato especial a la fila de totales
+        if (data.row.index === trimestralData.length - 1) {
+          data.cell.styles.fontStyle = 'bold';
+          data.cell.styles.fillColor = [240, 240, 240];
+        }
+      }
+    });
+
+    // --- Análisis de Estacionalidad y Comparación Mensual (Nueva página) ---
+    doc.addPage();
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.text("Análisis de Estacionalidad", 14, 20);
+
+    const estacionalidadData = analisisAvanzado.estacionalidad.map(e => [
+      monthNames[e.mes],
+      formatPercentage(e.proporcion),
+      e.proporcion > 8.33 ? "Por encima del promedio" : "Por debajo del promedio"
+    ]);
+
+    autoTable(doc, {
+      startY: 25,
+      head: [["Mes", "% del Total Anual", "Comportamiento"]],
+      body: estacionalidadData,
+      headStyles: { 
+        fillColor: [75, 68, 224], 
+        textColor: 255, 
+        fontStyle: "bold",
+        halign: 'center'
+      },
+      styles: { 
+        fontSize: 9,
+        valign: 'middle'
+      },
+      margin: { left: 14, right: 14 },
+      columnStyles: {
+        0: { cellWidth: 'auto', halign: 'left' },
+        1: { cellWidth: 'auto', halign: 'center' },
+        2: { cellWidth: 'auto', halign: 'center' }
+      }
+    });
+
+    // Comparación Mensual (misma página)
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.text("Comparación Mensual", 14, 128);
+
+    const comparacionData = analisisAvanzado.tendencias.map(t => [
+      monthNames[t.mes],
+      formatPercentage(t.cambio),
+      t.cambio > 0 ? "Crecimiento" : "Decrecimiento"
+    ]);
+
+    autoTable(doc, {
+      startY: 133,
+      head: [["Mes", "% Cambio", "Tendencia"]],
+      body: comparacionData,
+      headStyles: { 
+        fillColor: [75, 68, 224], 
+        textColor: 255, 
+        fontStyle: "bold",
+        halign: 'center'
+      },
+      styles: { 
+        fontSize: 9,
+        valign: 'middle'
+      },
+      margin: { left: 14, right: 14 },
+      columnStyles: {
+        0: { cellWidth: 'auto', halign: 'left' },
+        1: { cellWidth: 'auto', halign: 'center' },
+        2: { cellWidth: 'auto', halign: 'center' }
+      }
     });
 
     // --- Nueva página para firma y datos de la administradora ---
@@ -168,8 +541,9 @@ const PDFBalanceGeneralReport: React.FC<PDFBalanceGeneralReportProps> = ({ year 
     <div className="w-full flex justify-end mb-4">
       <button
         onClick={generatePDF}
-        className="bg-indigo-600 text-white text-sm py-2 px-1 rounded w-[220px] font-medium hover:bg-indigo-700"
+        className="bg-indigo-600 text-white text-sm py-2 px-1 rounded flex items-center w-[250px] font-medium hover:bg-indigo-700"
       >
+        <DocumentChartBarIcon className="w-5 h-5 text-white mr-1" />
         Generar Reporte Balance General
       </button>
     </div>

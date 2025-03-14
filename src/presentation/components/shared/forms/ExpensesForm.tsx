@@ -3,23 +3,20 @@ import { Transition, Dialog } from "@headlessui/react";
 import { PhotoIcon, XMarkIcon, CurrencyDollarIcon, ClipboardIcon, CreditCardIcon, CalendarIcon, PencilIcon } from "@heroicons/react/24/solid";
 import { useDropzone } from "react-dropzone";
 import toast from "react-hot-toast";
-import { useExpenseStore } from "../../../../store/expenseStore";
-import { ExpenseCreateInput } from "../../../../store/expenseStore";
+import { useExpenseStore, ExpenseCreateInput } from "../../../../store/expenseStore";
+import { EXPENSE_CONCEPTS } from "../../../../utils/expensesList";
+import { getFirestore, collection, getDocs } from "firebase/firestore";
+import { getAuth, getIdTokenResult } from "firebase/auth";
 
 interface ExpenseFormProps {
     open: boolean;
     setOpen: (open: boolean) => void;
 }
 
-const EXPENSE_CONCEPTS = [
-    "Caja Chica", "Agua", "Luz", "Internet", "Teléfono", "Jardinería", "Limpieza",
-    "Mantenimiento de Elevadores", "Seguridad Privada", "Pintura General", "Reparaciones Varias",
-    "Papelería y Suministros", "Honorarios de Contador", "Honorarios de Abogado", "Publicidad",
-    "Gas", "Servicios de Plomería", "Servicios de Electricidad", "Sistema de Alarma", "Póliza de Seguro",
-    "Mobiliario", "Equipo de Cómputo", "Alquiler de Salón", "Servicio de Basura", "Honorarios de Administración",
-    "Pago de Impuestos", "Material de Construcción", "Servicio de Cerrajería", "Reparación de Bombas de Agua",
-    "Artículos de Limpieza"
-];
+interface FinancialAccount {
+    id: string;
+    name: string;
+}
 
 const PAYMENT_TYPES = ["Efectivo", "Transferencia", "Tarjeta", "Cheque", "Depósito"];
 
@@ -32,6 +29,8 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ open, setOpen }) => {
     const [file, setFile] = useState<File | null>(null);
     const [fileName, setFileName] = useState<string>("");
     const [loading, setLoading] = useState(false);
+    const [financialAccountId, setFinancialAccountId] = useState<string>("");
+    const [financialAccounts, setFinancialAccounts] = useState<FinancialAccount[]>([]);
 
     const { addExpense } = useExpenseStore();
 
@@ -45,8 +44,38 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ open, setOpen }) => {
     };
     const { getRootProps, getInputProps, isDragActive } = useDropzone(dropzoneOptions);
 
+    // Función para cargar las cuentas financieras
+    const fetchFinancialAccounts = async () => {
+        try {
+            const auth = getAuth();
+            const user = auth.currentUser;
+            if (!user) throw new Error("Usuario no autenticado");
+
+            const tokenResult = await getIdTokenResult(user);
+            const clientId = tokenResult.claims["clientId"] as string;
+            const condominiumId = localStorage.getItem("condominiumId");
+            if (!condominiumId) throw new Error("Condominio no seleccionado");
+
+            const db = getFirestore();
+            const accountsRef = collection(
+                db,
+                `clients/${clientId}/condominiums/${condominiumId}/financialAccounts`
+            );
+            const snapshot = await getDocs(accountsRef);
+            const accounts: FinancialAccount[] = snapshot.docs.map(doc => ({
+                id: doc.id,
+                name: doc.data().name || "Sin nombre"
+            }));
+            setFinancialAccounts(accounts);
+        } catch (error) {
+            console.error("Error al cargar cuentas:", error);
+            toast.error("Error al cargar las cuentas financieras");
+        }
+    };
+
     useEffect(() => {
         if (open) {
+            fetchFinancialAccounts();
             setAmount("");
             setConcept("");
             setPaymentType("");
@@ -55,6 +84,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ open, setOpen }) => {
             setFile(null);
             setFileName("");
             setLoading(false);
+            setFinancialAccountId("");
         }
     }, [open]);
 
@@ -84,17 +114,21 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ open, setOpen }) => {
         }
 
         try {
+            // El monto ya viene en pesos del input, lo enviamos así al store
+            const amountInPesos = Number(amount);
+            
             const dataToCreate: ExpenseCreateInput = {
-                amount: Number(amount),
+                amount: amountInPesos,
                 concept,
                 paymentType,
                 expenseDate,
                 description,
                 file: file || undefined,
+                financialAccountId,
             };
             await addExpense(dataToCreate);
 
-            toast.success("Egreso registrado correctamente");
+            // Cerrar el formulario después de agregar el egreso
             setOpen(false);
         } catch (error) {
             console.error("Error al crear egreso:", error);
@@ -161,11 +195,12 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ open, setOpen }) => {
                                                                     id="amount"
                                                                     name="amount"
                                                                     type="number"
-                                                                    className="block w-full rounded-md border-0 pl-10 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
-                                                                    placeholder="0"
+                                                                    step="0.01"
+                                                                    min="0"
+                                                                    className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none block w-full rounded-md border-0 pl-10 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
+                                                                    placeholder="0.00"
                                                                     value={amount}
                                                                     onChange={(e) => setAmount(e.target.value)}
-                                                                    step="any"
                                                                 />
                                                             </div>
                                                         </div>
@@ -216,6 +251,36 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ open, setOpen }) => {
                                                                     {PAYMENT_TYPES.map((pt) => (
                                                                         <option key={pt} value={pt}>
                                                                             {pt}
+                                                                        </option>
+                                                                    ))}
+                                                                </select>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Selección de la cuenta financiera */}
+                                                        <div>
+                                                            <label
+                                                                htmlFor="financialAccountId"
+                                                                className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100"
+                                                            >
+                                                                Cuenta Financiera
+                                                            </label>
+                                                            <div className="mt-2 relative">
+                                                                <div className="absolute left-2 top-1/2 flex items-center transform -translate-y-1/2">
+                                                                    <CreditCardIcon className="h-5 w-5 text-gray-400" />
+                                                                </div>
+                                                                <select
+                                                                    id="financialAccountId"
+                                                                    name="financialAccountId"
+                                                                    value={financialAccountId}
+                                                                    onChange={(e) => setFinancialAccountId(e.target.value)}
+                                                                    className="block w-full rounded-md border-0 pl-10 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
+                                                                    required
+                                                                >
+                                                                    <option value="">-- Selecciona una cuenta --</option>
+                                                                    {financialAccounts.map((account) => (
+                                                                        <option key={account.id} value={account.id}>
+                                                                            {account.name}
                                                                         </option>
                                                                     ))}
                                                                 </select>

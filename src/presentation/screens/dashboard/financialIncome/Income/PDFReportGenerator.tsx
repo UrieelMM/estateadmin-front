@@ -307,19 +307,22 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({ year, concept }
       // --- Reporte General ---
       const compRows = monthlyStats.map((stat) => [
         monthNames[stat.month] || stat.month,
-        formatCurrency(stat.paid),
+        formatCurrency(stat.paid + stat.saldo),
         formatCurrency(stat.pending),
         formatCurrency(stat.saldo),
+        formatCurrency(stat.unidentifiedPayments),
         stat.complianceRate.toFixed(2) + "%",
         stat.delinquencyRate.toFixed(2) + "%",
       ]);
       let totalPaidGlobal = 0,
         totalPendingGlobal = 0,
-        totalSaldoGlobal = 0;
+        totalSaldoGlobal = 0,
+        totalUnidentifiedGlobal = 0;
       monthlyStats.forEach((stat) => {
-        totalPaidGlobal += stat.paid;
+        totalPaidGlobal += stat.paid + stat.saldo;
         totalPendingGlobal += stat.pending;
         totalSaldoGlobal += stat.saldo;
+        totalUnidentifiedGlobal += stat.unidentifiedPayments;
       });
       const avgCompliance =
         monthlyStats.length > 0
@@ -334,6 +337,7 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({ year, concept }
         formatCurrency(totalPaidGlobal),
         formatCurrency(totalPendingGlobal),
         formatCurrency(totalSaldoGlobal),
+        formatCurrency(totalUnidentifiedGlobal),
         avgCompliance.toFixed(2) + "%",
         avgDelinquency.toFixed(2) + "%",
       ]);
@@ -350,6 +354,7 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({ year, concept }
             "Monto Abonado",
             "Monto Pendiente",
             "Saldo a favor",
+            "Pagos no identificados",
             "% Cumplimiento",
             "% Morosidad",
           ],

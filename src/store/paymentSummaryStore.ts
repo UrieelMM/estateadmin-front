@@ -64,6 +64,7 @@ export type MonthlyStat = {
   paid: number;
   pending: number;
   saldo: number;
+  unidentifiedPayments: number;
   complianceRate: number;
   delinquencyRate: number;
 };
@@ -326,20 +327,39 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>((set) => ({
       });
 
       // Calcular totales, agrupaciones, etc.
-      const chartData: Record<string, { paid: number; pending: number; saldo: number }> = {};
+      const chartData: Record<string, { 
+        paid: number; 
+        pending: number; 
+        saldo: number;
+        unidentifiedPayments: number;
+      }> = {};
+      
       for (let i = 1; i <= 12; i++) {
         const m = i.toString().padStart(2, "0");
-        chartData[m] = { paid: 0, pending: 0, saldo: 0 };
+        chartData[m] = { 
+          paid: 0, 
+          pending: 0, 
+          saldo: 0,
+          unidentifiedPayments: 0
+        };
       }
+
       let totalIncome = 0;
       let totalPending = 0;
       paymentRecords.forEach((pr) => {
+        if (!pr.month) return;
+
         chartData[pr.month].paid += pr.amountPaid;
         if (!pr.paid) {
           chartData[pr.month].pending += pr.amountPending;
           totalPending += pr.amountPending;
         }
         chartData[pr.month].saldo += pr.creditBalance - (pr.creditUsed || 0);
+
+        if (pr.concept === "Pago no identificado" && !pr.paid) {
+          chartData[pr.month].unidentifiedPayments += pr.amountPaid;
+        }
+
         totalIncome += pr.amountPaid;
       });
 
@@ -349,15 +369,18 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>((set) => ({
         const paid = chartData[m].paid;
         const pending = chartData[m].pending;
         const saldo = chartData[m].saldo;
+        const unidentifiedPayments = chartData[m].unidentifiedPayments;
         const totalCharges = chargeCount[m];
         const paidCharges = paidChargeCount[m];
         const compliance = totalCharges > 0 ? (paidCharges / totalCharges) * 100 : 0;
         const delinquency = 100 - compliance;
+        
         monthlyStats.push({
           month: m,
           paid: parseFloat(paid.toFixed(2)),
           pending: parseFloat(pending.toFixed(2)),
           saldo: parseFloat(saldo.toFixed(2)),
+          unidentifiedPayments: parseFloat(unidentifiedPayments.toFixed(2)),
           complianceRate: parseFloat(compliance.toFixed(2)),
           delinquencyRate: parseFloat(delinquency.toFixed(2)),
         });

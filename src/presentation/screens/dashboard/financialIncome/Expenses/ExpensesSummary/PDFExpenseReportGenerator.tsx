@@ -2,9 +2,8 @@
 import React from "react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { ExpenseRecord } from "../../../../../../store/expenseStore";
-import { useExpenseSummaryStore } from "../../../../../../store/expenseSummaryStore";
-
+import { useExpenseSummaryStore, ExpenseRecord } from "../../../../../../store/expenseSummaryStore";
+import { DocumentChartBarIcon } from '@heroicons/react/20/solid'
 export interface PDFExpenseReportGeneratorProps {
   year: string;
 }
@@ -260,11 +259,12 @@ const PDFExpenseReportGenerator: React.FC<PDFExpenseReportGeneratorProps> = ({
   };
 
   return (
-    <div className="w-full flex justify-end">
+    <div className="w-full flex justify-end items-center">
       <button
         onClick={generatePDF}
-        className="bg-indigo-600 text-white py-2 px-4 rounded w-full lg:w-[300px] font-bold hover:bg-indigo-500"
+        className="bg-indigo-600 text-white text-sm py-2 px-1 flex items-center rounded w-[220px] font-medium hover:bg-indigo-700"
       >
+        <DocumentChartBarIcon className="w-5 h-5 text-white mr-1" />
         Generar Reporte de Egresos
       </button>
     </div>

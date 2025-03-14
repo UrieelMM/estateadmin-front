@@ -3,6 +3,7 @@ import React from "react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { usePaymentSummaryStore } from "../../../../../store/paymentSummaryStore";
+import { DocumentChartBarIcon } from "@heroicons/react/16/solid";
 
 /**
  * Pequeño mapeo de "01" -> "Enero", etc.
@@ -209,8 +210,9 @@ const MorosidadPDFReport: React.FC = () => {
     <div>
       <button
         onClick={generatePDF}
-        className="bg-indigo-600 text-white py-2 px-4 rounded font-bold hover:bg-indigo-700"
+        className="bg-indigo-600 text-white py-2 px-4 rounded flex items-center font-bold hover:bg-indigo-700"
       >
+        <DocumentChartBarIcon className="w-5 h-5 text-white mr-1" />
         Generar Reporte de Morosidad
       </button>
     </div>

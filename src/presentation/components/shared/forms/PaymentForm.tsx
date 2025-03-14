@@ -281,6 +281,21 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
   };
   const { getRootProps, getInputProps, isDragActive } = useDropzone(dropzoneOptions);
 
+  // Modificar la función que maneja el cambio de tipo de pago
+  const handlePaymentTypeChange = (isUnidentified: boolean) => {
+    setIsUnidentifiedPayment(isUnidentified);
+    
+    if (isUnidentified) {
+      // Resetear campos cuando se cambia a pago no identificado
+      setEmail("");
+      setNumberCondominium("");
+      setSelectedUser(null);
+      setSelectedCharges([]);
+      setAmountPending("");
+      setUseCreditBalance(false);
+    }
+  };
+
   return (
     <Transition.Root show={open} as={Fragment}>
       <Dialog as="div" className="relative z-10" onClose={setOpen}>
@@ -336,7 +351,7 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                                 name="paymentIdentification"
                                 value="identified"
                                 checked={!isUnidentifiedPayment}
-                                onChange={() => setIsUnidentifiedPayment(false)}
+                                onChange={() => handlePaymentTypeChange(false)}
                                 className="mr-2"
                               />
                               Pago identificado
@@ -347,7 +362,7 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                                 name="paymentIdentification"
                                 value="unidentified"
                                 checked={isUnidentifiedPayment}
-                                onChange={() => setIsUnidentifiedPayment(true)}
+                                onChange={() => handlePaymentTypeChange(true)}
                                 className="mr-2"
                               />
                               Pago no identificado
@@ -431,6 +446,7 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                                 <input
                                   onChange={(e) => setAmountPaid(e.target.value)}
                                   type="number"
+                                  step="0.01"
                                   min="0"
                                   name="amountPaid"
                                   id="amountPaid"
@@ -506,6 +522,7 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                                 <input
                                   onChange={(e) => setAmountPending(e.target.value)}
                                   type="number"
+                                  step="0.01"
                                   min="0"
                                   name="amountPending"
                                   id="amountPending"

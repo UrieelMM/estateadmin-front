@@ -7,8 +7,8 @@ import {
   collection,
   query,
   getDocs,
-  doc,
   setDoc,
+  doc as createDoc,
 } from "firebase/firestore";
 import {
   getStorage,
@@ -16,6 +16,7 @@ import {
   uploadBytes,
   getDownloadURL,
 } from "firebase/storage";
+import { toast } from "react-hot-toast";
 
 /**
  * Tipos de datos para un egreso
@@ -23,25 +24,27 @@ import {
 export interface ExpenseRecord {
   id: string;                   // ID del documento en Firestore
   folio: string;                // "EA-xxxxxx" 
-  amount: number;               // Monto del egreso en pesos (float)
+  amount: number;               // Monto del egreso en centavos
   concept: string;              // Concepto (select con ~30 tipos)
   paymentType: string;          // Tipo de pago (efectivo, transferencia, etc.)
   expenseDate: string;          // Fecha del egreso (ej: "2025-06-30 14:00")
   registerDate: string;         // Fecha/hora en que se registra (ej: "2025-06-30 14:55")
   invoiceUrl?: string;          // URL o referencia al archivo de factura/recibo
   description?: string;         // Descripción opcional
+  financialAccountId: string;   // ID de la cuenta financiera
 }
 
 /**
  * Datos para crear un egreso.
  */
 export interface ExpenseCreateInput {
-  amount: number;               // en pesos (ej: 255.20)
+  amount: number;               // en centavos
   concept: string;
   paymentType: string;
   expenseDate: string;          // "YYYY-MM-DD HH:mm"
   description?: string;
   file?: File;                  // Comprobante, factura, etc.
+  financialAccountId: string;   // Nuevo campo requerido
 }
 
 interface ExpenseState {
@@ -56,6 +59,10 @@ interface ExpenseState {
    * addExpense: Crea un nuevo egreso con subida de archivo opcional a Storage.
    */
   addExpense: (data: ExpenseCreateInput) => Promise<void>;
+  /**
+   * refreshExpenses: Actualiza la lista de egresos.
+   */
+  refreshExpenses: () => Promise<void>;
 }
 
 // NUEVO: Función para convertir centavos (enteros) a pesos (float)
@@ -65,10 +72,32 @@ function centsToPesos(value: any): number {
   return intVal / 100;
 }
 
-export const useExpenseStore = create<ExpenseState>((set, _get) => ({
+// Función para generar un folio único
+async function generateUniqueFolio(
+  db: any,
+  clientId: string,
+  condominiumId: string
+): Promise<string> {
+  const expensesRef = collection(
+    db,
+    `clients/${clientId}/condominiums/${condominiumId}/expenses`
+  );
+  const snapshot = await getDocs(expensesRef);
+  const count = snapshot.size + 1;
+  return `EA-${count.toString().padStart(6, "0")}`;
+}
+
+export const useExpenseStore = create<ExpenseState>((set, get) => ({
   expenses: [],
   loading: false,
   error: null,
+
+  refreshExpenses: async () => {
+    const condominiumId = localStorage.getItem("condominiumId");
+    if (condominiumId) {
+      await get().fetchExpenses(condominiumId);
+    }
+  },
 
   fetchExpenses: async (condominiumId: string, year?: string) => {
     set({ loading: true, error: null });
@@ -100,6 +129,7 @@ export const useExpenseStore = create<ExpenseState>((set, _get) => ({
           registerDate: data.registerDate ?? "",
           invoiceUrl: data.invoiceUrl ?? undefined,
           description: data.description ?? "",
+          financialAccountId: data.financialAccountId ?? "",
         };
       });
 
@@ -123,65 +153,68 @@ export const useExpenseStore = create<ExpenseState>((set, _get) => ({
 
       const tokenResult = await getIdTokenResult(user);
       const clientId = tokenResult.claims["clientId"] as string;
-      if (!clientId) throw new Error("No se encontró clientId en los claims");
-
       const condominiumId = localStorage.getItem("condominiumId");
       if (!condominiumId) throw new Error("Condominio no seleccionado");
 
       const db = getFirestore();
+      const expensesRef = collection(
+        db,
+        `clients/${clientId}/condominiums/${condominiumId}/expenses`
+      );
 
-      // Generar folio secuencial sencillo: "EA-" + Date.now()
-      const folio = `EA-${Date.now()}`;
+      // Generar folio único
+      const folio = await generateUniqueFolio(db, clientId, condominiumId);
 
-      // Fecha de registro
-      const now = new Date();
-      const registerDateStr = now.toISOString().slice(0, 16).replace("T", " ");
+      // Convertir el monto a centavos (el monto viene en pesos, multiplicamos por 100)
+      const amountCents = Math.round(data.amount * 100);
 
-      // Subir archivo a Storage si existe
+      // Crear el documento del egreso
+      const expenseData: ExpenseRecord = {
+        id: "", // Se llenará con el ID de Firestore
+        folio,
+        amount: amountCents,
+        concept: data.concept,
+        paymentType: data.paymentType,
+        expenseDate: data.expenseDate,
+        registerDate: new Date().toISOString(),
+        description: data.description || "",
+        financialAccountId: data.financialAccountId,
+      };
+
+      // Subir archivo si existe
       let invoiceUrl = "";
       if (data.file) {
         const storage = getStorage();
-        const storageRef = ref(
+        const fileRef = ref(
           storage,
-          `clients/${clientId}/condominiums/${condominiumId}/expenses/${folio}-${data.file.name}`
+          `clients/${clientId}/condominiums/${condominiumId}/expenses/${folio}/${data.file.name}`
         );
-        const uploadResult = await uploadBytes(storageRef, data.file);
-        invoiceUrl = await getDownloadURL(uploadResult.ref);
+        await uploadBytes(fileRef, data.file);
+        invoiceUrl = await getDownloadURL(fileRef);
       }
 
-      // Convertir amount de pesos a centavos
-      const amountCents = Math.round(data.amount * 100);
+      // Agregar URL del archivo si existe
+      if (invoiceUrl) {
+        expenseData.invoiceUrl = invoiceUrl;
+      }
 
-      const docData = {
-        folio,
-        amount: amountCents, // Guardado en centavos
-        concept: data.concept,
-        paymentType: data.paymentType,
-        expenseDate: data.expenseDate,  // Se asume que viene en "YYYY-MM-DD HH:mm"
-        registerDate: registerDateStr,  // "YYYY-MM-DD HH:mm"
-        invoiceUrl: invoiceUrl,
-        description: data.description || "",
-      };
+      // Crear documento con ID automático de Firestore
+      const newDocRef = createDoc(expensesRef);
+      expenseData.id = newDocRef.id;
 
-      const expensesRef = collection(db, `clients/${clientId}/condominiums/${condominiumId}/expenses`);
-      const newDocRef = doc(expensesRef);
-      await setDoc(newDocRef, docData);
+      // Guardar en Firestore
+      await setDoc(newDocRef, expenseData);
 
-      const newExpense = {
-        id: newDocRef.id,
-        ...docData,
-        // Convertir de centavos a pesos para que la vista muestre el valor correcto
-        amount: amountCents / 100,
-      };
+      // Actualizar la lista de egresos
+      await get().refreshExpenses();
 
-      set((state) => ({
-        expenses: [...state.expenses, newExpense],
-        loading: false,
-        error: null,
-      }));
-    } catch (error: any) {
-      console.error("Error al agregar egreso:", error);
-      set({ loading: false, error: error.message || "Error al agregar egreso" });
+      toast.success("Egreso registrado correctamente");
+    } catch (error) {
+      console.error("Error al crear egreso:", error);
+      toast.error("Error al registrar el egreso");
+      set({ error: "Error al registrar el egreso" });
+    } finally {
+      set({ loading: false });
     }
   },
 }));

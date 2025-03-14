@@ -58,7 +58,7 @@ const ExpenseConceptGrowthSection: React.FC = () => {
     <div className="mb-8 w-full">
       <h3 className="text-xl font-bold mb-4">
         Crecimiento de gastos por concepto{" "}
-        <span className="text-xs font-medium text-gray-500">(Respecto al mes anterior)</span>
+        <span className="text-xs font-medium text-gray-500 dark:text-gray-300">(Respecto al mes anterior)</span>
       </h3>
       <div className="flex flex-col gap-1 lg:flex-row lg:flex-wrap">
         {visibleConcepts.map((item) => (
@@ -68,7 +68,7 @@ const ExpenseConceptGrowthSection: React.FC = () => {
           >
             <div className="flex-1">
               <p className="text-sm lg:text-base">{item.concept}</p>
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-gray-500 dark:text-gray-100">
                 <span className="text-md lg:text-md font-semibold text-indigo-600">
                   {formatCurrency(item.currentValue)}
                 </span>{" "}

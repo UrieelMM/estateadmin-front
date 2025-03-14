@@ -95,7 +95,7 @@ const ExpenseConceptAnalyticsAdvanced: React.FC = () => {
         {/* Columna 2: Tabla de transacciones */}
         <div>
           <h4 className="text-lg font-semibold mb-2">
-            Transacciones por concepto <span className="text-xs font-medium text-gray-500">(10 principales conceptos)</span>
+            Transacciones por concepto <span className="text-xs font-medium text-gray-500 dark:text-gray-300">(10 principales conceptos)</span>
           </h4>
           <div className="overflow-x-auto">
             <table className="min-w-full text-sm border">

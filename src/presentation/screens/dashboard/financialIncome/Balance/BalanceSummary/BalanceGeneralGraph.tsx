@@ -14,6 +14,7 @@ import {
 interface IncomeMonthlyStat {
   month: string;
   paid: number;
+  saldo: number;
 }
 
 interface ExpenseMonthlyStat {
@@ -53,7 +54,7 @@ const BalanceGeneralGraph: React.FC<BalanceGeneralGraphProps> = ({
       };
     return {
       month: monthNames[incomeStat.month] || incomeStat.month,
-      Ingresos: incomeStat.paid,
+      Ingresos: incomeStat.paid + incomeStat.saldo,
       Egresos: expenseStat.spent,
     };
   });

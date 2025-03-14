@@ -87,3 +87,32 @@ span.bg-indigo-500.rounded-lg.p-2.text-white.text-xs.ml-2 {
 .tooltip-container{
     min-width: 60px !important;
 }
+
+select[size] {
+    height: auto;
+    overflow-y: auto;
+    max-height: 200px;
+}
+
+select[size] option {
+    padding: 8px 12px;
+}
+
+select[size] option:hover {
+    background-color: #f3f4f6;
+}
+
+.dark select[size] option:hover {
+    background-color: #374151;
+}
+
+select[size] optgroup {
+    position: sticky;
+    top: 0;
+    background-color: white;
+    z-index: 10;
+}
+
+.dark select[size] optgroup {
+    background-color: #1f2937;
+}

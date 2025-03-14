@@ -4,6 +4,7 @@ import React from "react";
 interface IncomeMonthlyStat {
   month: string;
   paid: number;
+  saldo: number;  // Saldo a favor
 }
 
 interface ExpenseMonthlyStat {
@@ -41,7 +42,7 @@ const BalanceGeneralDetailTable: React.FC<BalanceGeneralDetailTableProps> = ({
     const monthLabel = monthNames[m] || m;
     const incomeStat = incomesMonthlyStats.find((stat) => stat.month === m);
     const expenseStat = expensesMonthlyStats.find((stat) => stat.month === m);
-    const ingresos = incomeStat ? incomeStat.paid : 0;
+    const ingresos = incomeStat ? (incomeStat.paid + incomeStat.saldo) : 0;
     const egresos = expenseStat ? expenseStat.spent : 0;
     const balance = ingresos - egresos;
     return { month: monthLabel, ingresos, egresos, balance };

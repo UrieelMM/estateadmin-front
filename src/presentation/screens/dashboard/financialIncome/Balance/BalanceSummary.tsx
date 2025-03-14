@@ -1,5 +1,5 @@
 // src/components/BalanceGeneral/BalanceGeneral.tsx
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo } from "react";
 import { shallow } from "zustand/shallow";
 import { useExpenseSummaryStore } from "../../../../../store/expenseSummaryStore";
 import { usePaymentSummaryStore } from "../../../../../store/paymentSummaryStore";
@@ -33,11 +33,20 @@ const BalanceGeneral: React.FC = () => {
     shallow
   );
 
+  // Calcular el saldo a favor global a partir de monthlyStats
+  const totalCreditGlobal = useMemo(() => 
+    monthlyStatsIncomes.reduce((acc, stat) => acc + stat.saldo, 0)
+  , [monthlyStatsIncomes]);
+
+  // Calcular el total de ingresos incluyendo el saldo a favor
+  const totalIncomeWithCredit = useMemo(() => 
+    totalIncome + totalCreditGlobal
+  , [totalIncome, totalCreditGlobal]);
+
   // Datos de egresos
   const {
     loading: loadingExpenses,
     error: errorExpenses,
-    // selectedYear: selectedYearExpenses,
     fetchSummary: fetchExpenses,
     setSelectedYear: setSelectedYearExpenses,
     totalSpent,
@@ -74,8 +83,8 @@ const BalanceGeneral: React.FC = () => {
   const loading = loadingIncomes || loadingExpenses;
   const error = errorIncomes || errorExpenses;
 
-  // Cálculo del balance neto
-  const netBalance = totalIncome - totalSpent;
+  // Cálculo del balance neto (usando el total que incluye saldo a favor)
+  const netBalance = totalIncomeWithCredit - totalSpent;
 
   return (
     <div className="p-4">
@@ -106,7 +115,7 @@ const BalanceGeneral: React.FC = () => {
         <>
           {/* Cards con indicadores clave */}
           <BalanceGeneralCards
-            totalIncome={totalIncome}
+            totalIncome={totalIncomeWithCredit}
             totalSpent={totalSpent}
             netBalance={netBalance}
           />
