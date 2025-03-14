@@ -77,9 +77,10 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
   }));
 
   // Store de PaymentSummary
-  const { fetchSummary, selectedYear } = usePaymentSummaryStore((state) => ({
+  const { fetchSummary, selectedYear, setupRealtimeListeners } = usePaymentSummaryStore((state) => ({
     fetchSummary: state.fetchSummary,
     selectedYear: state.selectedYear,
+    setupRealtimeListeners: state.setupRealtimeListeners
   }));
 
   // Estado para cargos seleccionados (multi-cargo)
@@ -239,7 +240,25 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
       };
       await addMaintenancePayment(paymentObj);
 
-      // Resetear formulario
+      // Si es un pago no identificado, actualizamos la lista
+      if (isUnidentifiedPayment) {
+        await fetchPayments();
+      }
+      
+      try {
+        // Actualizar datos en tiempo real
+        await setupRealtimeListeners(selectedYear);
+        // Forzar actualización inmediata
+        await Promise.all([
+          fetchSummary(selectedYear),
+          fetchUserCharges(numberCondominium)
+        ]);
+      } catch (updateError) {
+        console.error("Error actualizando datos:", updateError);
+        // No mostramos este error al usuario ya que el pago se registró correctamente
+      }
+
+      // Resetear formulario después de todas las operaciones asíncronas
       setEmail("");
       setNumberCondominium("");
       setAmountPaid("");
@@ -255,20 +274,14 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
       setFinancialAccountId("");
       setIsUnidentifiedPayment(false);
 
-      setOpen(false);
-      setLoading(false);
       toast.success("Pago registrado correctamente");
-      
-      // Si es un pago no identificado, actualizamos la lista
-      if (isUnidentifiedPayment) {
-        await fetchPayments();
-      }
-      
-      fetchSummary(selectedYear);
-    } catch (error) {
       setLoading(false);
-      console.error(error);
-      toast.error("Error al registrar el pago");
+      setOpen(false); // Mover el cierre del modal al final de todas las operaciones
+      
+    } catch (error: any) {
+      setLoading(false);
+      console.error("Error al registrar el pago:", error);
+      toast.error(error.message || "Error al registrar el pago");
     }
   };
 

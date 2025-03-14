@@ -439,7 +439,6 @@ export const usePaymentStore = create<MaintenancePaymentState>((set, get) => ({
         loading: false,
         error: error.message || "Error al registrar el pago/cargo",
       });
-      throw error;
     }
   },
 

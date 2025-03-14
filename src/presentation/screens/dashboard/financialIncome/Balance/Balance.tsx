@@ -31,17 +31,6 @@ const Balance = () => {
                                 Resumen General
                             </button>
 
-                            {/* 2. Tab Historial y Recibos */}
-                            <button
-                                className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${activeTab === "history"
-                                    ? "border-b-2 border-indigo-600 text-indigo-600 dark:text-gray-100"
-                                    : "text-gray-500 dark:text-gray-400"
-                                    }`}
-                                onClick={() => setActiveTab("history")}
-                            >
-                                Historial
-                            </button>
-
                             {/* 3. Tab Morosidad */}
                             {/* <button
                                 className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${activeTab === "morosidad"
@@ -65,13 +54,6 @@ const Balance = () => {
                             <BalanceSummary />
 
                         </>
-                    )}
-                    {activeTab === "history" && (
-                        <div className="w-full flex justify-start mt-8">
-                            <div className="w-[100%]">
-
-                            </div>
-                        </div>
                     )}
                     {/* {activeTab === "morosidad" && (
                         <div>

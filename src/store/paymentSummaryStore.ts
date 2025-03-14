@@ -9,6 +9,7 @@ import {
   query,
   where,
   documentId,
+  onSnapshot,
 } from "firebase/firestore";
 import { getAuth, getIdTokenResult } from "firebase/auth";
 
@@ -26,14 +27,14 @@ async function getBase64FromUrl(url: string): Promise<string> {
   });
 }
 
-// NUEVO: Para convertir centavos (enteros) a pesos (float)
+// Función para convertir centavos (enteros) a pesos (float)
 function centsToPesos(val: any): number {
   const intVal = parseInt(val, 10);
   if (isNaN(intVal)) return 0;
   return intVal / 100;
 }
 
-// NUEVA función auxiliar para formatear una fecha a "dd/mm/aaaa"
+// Función auxiliar para formatear una fecha a "dd/mm/aaaa"
 function formatDate(d: Date): string {
   const day = ("0" + d.getDate()).slice(-2);
   const month = ("0" + (d.getMonth() + 1)).slice(-2);
@@ -49,13 +50,10 @@ export interface PaymentRecord {
   amountPaid: number;     // en pesos
   amountPending: number;  // en pesos
   concept: string;
-  // Se mantienen los valores de saldo a favor pero ahora se resta el crédito usado
   creditBalance: number;  // en pesos
   creditUsed?: number;    // crédito utilizado (en pesos)
   paid: boolean;
-  // ID de la cuenta financiera a la que se aplicó el pago
   financialAccountId: string;
-  // Campo de fecha de pago, formateado a "dd/mm/aaaa"
   paymentDate?: string;
 }
 
@@ -73,7 +71,7 @@ export type FinancialAccountInfo = {
   id: string;
   name: string;
   initialBalance: number;
-  creationMonth: string; // Nuevo: mes de creación ("MM")
+  creationMonth: string;
 };
 
 export type PaymentSummaryState = {
@@ -94,14 +92,18 @@ export type PaymentSummaryState = {
   error: string | null;
   selectedYear: string;
   byFinancialAccount: Record<string, PaymentRecord[]>;
-  // NUEVO: Mapa con info de cada cuenta financiera (incluye initialBalance y creationMonth)
   financialAccountsMap: Record<string, FinancialAccountInfo>;
+  lastFetch: Record<string, number>;
+  unsubscribe: Record<string, () => void>;
 
   fetchSummary: (year?: string) => Promise<void>;
   setSelectedYear: (year: string) => void;
+  shouldFetchData: (year: string) => boolean;
+  setupRealtimeListeners: (year: string) => void;
+  cleanupListeners: (year: string) => void;
 };
 
-export const usePaymentSummaryStore = create<PaymentSummaryState>((set) => ({
+export const usePaymentSummaryStore = create<PaymentSummaryState>((set, get) => ({
   payments: [],
   totalIncome: 0,
   totalPending: 0,
@@ -120,10 +122,26 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>((set) => ({
   selectedYear: new Date().getFullYear().toString(),
   byFinancialAccount: {},
   financialAccountsMap: {},
+  lastFetch: {},
+  unsubscribe: {},
+
+  shouldFetchData: (year: string) => {
+    const lastFetchTime = get().lastFetch[year];
+    const now = Date.now();
+    // Recargar si no hay datos previos o si han pasado más de 5 minutos
+    return !lastFetchTime || (now - lastFetchTime) > 300000;
+  },
 
   fetchSummary: async (year?: string) => {
-    set({ loading: true, error: null });
+    const currentYear = year || new Date().getFullYear().toString();
+    const store = get();
+    
+    // Si ya tenemos datos recientes, no recargar
+    if (!store.shouldFetchData(currentYear)) {
+      return;
+    }
 
+    set({ loading: true, error: null });
     try {
       const db = getFirestore();
       const auth = getAuth();
@@ -153,12 +171,12 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>((set) => ({
         adminEmail = clientData.email || "";
         const logoUrl = clientData.logoReports || "";
         const signUrl = clientData.signReports || "";
-        if (logoUrl) {
-          logoBase64 = await getBase64FromUrl(logoUrl);
-        }
-        if (signUrl) {
-          signatureBase64 = await getBase64FromUrl(signUrl);
-        }
+        const [logoRes, signRes] = await Promise.all([
+          logoUrl ? getBase64FromUrl(logoUrl) : Promise.resolve(""),
+          signUrl ? getBase64FromUrl(signUrl) : Promise.resolve(""),
+        ]);
+        logoBase64 = logoRes;
+        signatureBase64 = signRes;
       }
 
       // 1. Obtener todos los usuarios (condóminos)
@@ -188,96 +206,96 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>((set) => ({
         paidChargeCount[m] = 0;
       }
 
-      const selectedYearStr = year || new Date().getFullYear().toString();
+      const selectedYearStr = currentYear;
 
-      // 2. Recorrer usuarios y sus cargos
-      for (const userObj of users) {
-        const numberCondominium = String(userObj.number);
-        const chargesRef = collection(
-          db,
-          `clients/${clientId}/condominiums/${condominiumId}/users/${userObj.id}/charges`
-        );
-        const chargesSnapshot = await getDocs(chargesRef);
-
-        for (const chargeDoc of chargesSnapshot.docs) {
-          const chargeData = chargeDoc.data();
-          if (!chargeData.startAt || typeof chargeData.startAt !== "string") continue;
-          if (!chargeData.startAt.startsWith(selectedYearStr)) continue;
-
-          // Extraer el mes (formato "YYYY-MM-DD")
-          const monthCode = chargeData.startAt.substring(5, 7);
-          chargeCount[monthCode] = (chargeCount[monthCode] || 0) + 1;
-          if (chargeData.paid === true) {
-            paidChargeCount[monthCode] = (paidChargeCount[monthCode] || 0) + 1;
-          }
-
-          // 3. Subcolección de payments
-          const paymentsRef = collection(
+      // 2. Procesar en paralelo los cargos y pagos de cada usuario
+      const userRecordsArrays = await Promise.all(
+        users.map(async (userObj) => {
+          const numberCondominium = String(userObj.number);
+          const chargesRef = collection(
             db,
-            `clients/${clientId}/condominiums/${condominiumId}/users/${userObj.id}/charges/${chargeDoc.id}/payments`
+            `clients/${clientId}/condominiums/${condominiumId}/users/${userObj.id}/charges`
           );
-          const paymentsSnapshot = await getDocs(paymentsRef);
+          const chargesSnapshot = await getDocs(chargesRef);
+          const chargeRecords = await Promise.all(
+            chargesSnapshot.docs.map(async (chargeDoc) => {
+              const chargeData = chargeDoc.data();
+              if (!chargeData.startAt || typeof chargeData.startAt !== "string") return null;
+              if (!chargeData.startAt.startsWith(selectedYearStr)) return null;
 
-          let totalAmountPaid = 0;
-          let totalAmountPendingFromPayments = 0;
-          let totalCreditBalance = 0;
-          let totalCreditUsed = 0;
-          let accountId = "";
-          let formattedDate = "";
-
-          paymentsSnapshot.forEach((paymentDoc) => {
-            const paymentData = paymentDoc.data();
-            totalAmountPaid += centsToPesos(paymentData.amountPaid) || 0;
-            totalAmountPendingFromPayments += centsToPesos(paymentData.amountPending) || 0;
-            totalCreditBalance += centsToPesos(paymentData.creditBalance) || 0;
-            totalCreditUsed += paymentData.creditUsed
-              ? centsToPesos(paymentData.creditUsed)
-              : 0;
-
-            if (!accountId && paymentData.financialAccountId) {
-              accountId = paymentData.financialAccountId;
-            }
-
-            // Procesar paymentDate y formatearlo
-            if (paymentData.paymentDate) {
-              if (paymentData.paymentDate.toDate) {
-                const d = paymentData.paymentDate.toDate();
-                formattedDate = formatDate(d);
-              } else if (typeof paymentData.paymentDate === "string") {
-                const d = new Date(paymentData.paymentDate);
-                formattedDate = !isNaN(d.getTime())
-                  ? formatDate(d)
-                  : paymentData.paymentDate;
+              const monthCode = chargeData.startAt.substring(5, 7);
+              chargeCount[monthCode] = (chargeCount[monthCode] || 0) + 1;
+              if (chargeData.paid === true) {
+                paidChargeCount[monthCode] = (paidChargeCount[monthCode] || 0) + 1;
               }
-            }
-          });
 
-          let pendingAmount = 0;
-          if (chargeData.paid === false) {
-            pendingAmount = centsToPesos(chargeData.amount) || 0;
-          } else {
-            pendingAmount = totalAmountPendingFromPayments;
-          }
+              const paymentsRef = collection(
+                db,
+                `clients/${clientId}/condominiums/${condominiumId}/users/${userObj.id}/charges/${chargeDoc.id}/payments`
+              );
+              const paymentsSnapshot = await getDocs(paymentsRef);
 
-          const record: PaymentRecord = {
-            id: chargeDoc.id,
-            clientId,
-            numberCondominium,
-            month: monthCode,
-            amountPaid: parseFloat(totalAmountPaid.toFixed(2)),
-            amountPending: parseFloat(pendingAmount.toFixed(2)),
-            concept: chargeData.concept || "Desconocido",
-            creditBalance: parseFloat(totalCreditBalance.toFixed(2)),
-            creditUsed: parseFloat(totalCreditUsed.toFixed(2)),
-            paid: chargeData.paid === true,
-            financialAccountId: accountId || "N/A",
-            paymentDate: formattedDate,
-          };
-          paymentRecords.push(record);
-        }
-      }
+              let totalAmountPaid = 0;
+              let totalAmountPendingFromPayments = 0;
+              let totalCreditBalance = 0;
+              let totalCreditUsed = 0;
+              let accountId = "";
+              let formattedDate = "";
 
-      // NUEVO: Incluir pagos NO identificados
+              paymentsSnapshot.forEach((paymentDoc) => {
+                const paymentData = paymentDoc.data();
+                totalAmountPaid += centsToPesos(paymentData.amountPaid) || 0;
+                totalAmountPendingFromPayments += centsToPesos(paymentData.amountPending) || 0;
+                totalCreditBalance += centsToPesos(paymentData.creditBalance) || 0;
+                totalCreditUsed += paymentData.creditUsed ? centsToPesos(paymentData.creditUsed) : 0;
+
+                if (!accountId && paymentData.financialAccountId) {
+                  accountId = paymentData.financialAccountId;
+                }
+
+                if (paymentData.paymentDate) {
+                  if (paymentData.paymentDate.toDate) {
+                    const d = paymentData.paymentDate.toDate();
+                    formattedDate = formatDate(d);
+                  } else if (typeof paymentData.paymentDate === "string") {
+                    const d = new Date(paymentData.paymentDate);
+                    formattedDate = !isNaN(d.getTime())
+                      ? formatDate(d)
+                      : paymentData.paymentDate;
+                  }
+                }
+              });
+
+              let pendingAmount = 0;
+              if (chargeData.paid === false) {
+                pendingAmount = centsToPesos(chargeData.amount) || 0;
+              } else {
+                pendingAmount = totalAmountPendingFromPayments;
+              }
+
+              const record: PaymentRecord = {
+                id: chargeDoc.id,
+                clientId,
+                numberCondominium,
+                month: monthCode,
+                amountPaid: parseFloat(totalAmountPaid.toFixed(2)),
+                amountPending: parseFloat(pendingAmount.toFixed(2)),
+                concept: chargeData.concept || "Desconocido",
+                creditBalance: parseFloat(totalCreditBalance.toFixed(2)),
+                creditUsed: parseFloat(totalCreditUsed.toFixed(2)),
+                paid: chargeData.paid === true,
+                financialAccountId: accountId || "N/A",
+                paymentDate: formattedDate,
+              };
+              return record;
+            })
+          );
+          return chargeRecords.filter((record) => record !== null) as PaymentRecord[];
+        })
+      );
+      paymentRecords.push(...userRecordsArrays.flat());
+
+      // Incluir pagos NO identificados
       const unidentifiedPaymentsRef = collection(
         db,
         `clients/${clientId}/condominiums/${condominiumId}/unidentifiedPayments`
@@ -285,7 +303,6 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>((set) => ({
       const unidentifiedPaymentsSnapshot = await getDocs(unidentifiedPaymentsRef);
       unidentifiedPaymentsSnapshot.forEach((docSnap) => {
         const data = docSnap.data();
-        // Validar que paymentDate exista y pertenezca al año seleccionado
         let include = false;
         let paymentDateObj: Date | null = null;
         let formattedDate = "";
@@ -326,7 +343,7 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>((set) => ({
         paymentRecords.push(record);
       });
 
-      // Calcular totales, agrupaciones, etc.
+      // Calcular totales y agrupaciones
       const chartData: Record<string, { 
         paid: number; 
         pending: number; 
@@ -348,18 +365,15 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>((set) => ({
       let totalPending = 0;
       paymentRecords.forEach((pr) => {
         if (!pr.month) return;
-
         chartData[pr.month].paid += pr.amountPaid;
         if (!pr.paid) {
           chartData[pr.month].pending += pr.amountPending;
           totalPending += pr.amountPending;
         }
         chartData[pr.month].saldo += pr.creditBalance - (pr.creditUsed || 0);
-
         if (pr.concept === "Pago no identificado" && !pr.paid) {
           chartData[pr.month].unidentifiedPayments += pr.amountPaid;
         }
-
         totalIncome += pr.amountPaid;
       });
 
@@ -406,14 +420,13 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>((set) => ({
 
       const byFinancialAccount: Record<string, PaymentRecord[]> = {};
       paymentRecords.forEach((pr) => {
-        if (pr.financialAccountId === "N/A") return; // Ignorar registros sin cuenta válida
+        if (pr.financialAccountId === "N/A") return;
         if (!byFinancialAccount[pr.financialAccountId]) {
           byFinancialAccount[pr.financialAccountId] = [];
         }
         byFinancialAccount[pr.financialAccountId].push(pr);
       });
 
-      // NUEVO: obtener nombres, initialBalance y creationMonth de las cuentas
       const uniqueAccountIds = Array.from(
         new Set(paymentRecords.map((pr) => pr.financialAccountId))
       ).filter((id) => id && id !== "N/A");
@@ -425,7 +438,6 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>((set) => ({
           `clients/${clientId}/condominiums/${condominiumId}/financialAccounts`
         );
 
-        // Función para extraer el mes de creación ("MM") a partir de createdAt
         const getCreationMonth = (createdAt: any): string => {
           let date: Date;
           if (createdAt && createdAt.toDate) {
@@ -433,12 +445,11 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>((set) => ({
           } else if (createdAt) {
             date = new Date(createdAt);
           } else {
-            return "01"; // valor por defecto si no existe
+            return "01";
           }
           return (date.getMonth() + 1).toString().padStart(2, "0");
         };
 
-        // Si hay <= 10 IDs, se puede usar query con where in
         if (uniqueAccountIds.length <= 10) {
           const q = query(accountsRef, where(documentId(), "in", uniqueAccountIds));
           const accountsSnap = await getDocs(q);
@@ -448,7 +459,6 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>((set) => ({
               financialAccountsMap[accDoc.id] = {
                 id: accDoc.id,
                 name: data.name || "Sin nombre",
-                // Convertir initialBalance (guardado en centavos) a pesos mexicanos
                 initialBalance:
                   data.initialBalance != null ? Number(data.initialBalance) / 100 : 0,
                 creationMonth: getCreationMonth(data.createdAt),
@@ -456,7 +466,6 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>((set) => ({
             }
           });
         } else {
-          // Para evitar problemas con más de 10 IDs en "where in", haz fetch individual
           for (const accId of uniqueAccountIds) {
             const accRef = doc(accountsRef, accId);
             const accSnap = await getDoc(accRef);
@@ -474,7 +483,6 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>((set) => ({
         }
       }
 
-      // Incluir el initialBalance de cada cuenta en el total de ingresos
       let totalInitialBalance = 0;
       for (const accId in financialAccountsMap) {
         totalInitialBalance += financialAccountsMap[accId].initialBalance;
@@ -498,6 +506,10 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>((set) => ({
         loading: false,
         byFinancialAccount,
         financialAccountsMap,
+        lastFetch: {
+          ...get().lastFetch,
+          [currentYear]: Date.now()
+        }
       });
     } catch (error: any) {
       console.error("Error fetching payment summary:", error);
@@ -509,4 +521,122 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>((set) => ({
   },
 
   setSelectedYear: (year: string) => set({ selectedYear: year }),
+
+  setupRealtimeListeners: async (year: string) => {
+    const store = get();
+    if (store.unsubscribe[year]) {
+      store.unsubscribe[year]();
+    }
+
+    try {
+      const db = getFirestore();
+      const auth = getAuth();
+      const user = auth.currentUser;
+      if (!user) throw new Error("Usuario no autenticado");
+      
+      const tokenResult = await getIdTokenResult(user);
+      const clientId = tokenResult.claims["clientId"] as string;
+      const condominiumId = localStorage.getItem("condominiumId");
+      if (!condominiumId) throw new Error("Condominio no seleccionado");
+
+      const cleanupFunctions: (() => void)[] = [];
+
+      const usersRef = collection(
+        db,
+        `clients/${clientId}/condominiums/${condominiumId}/users`
+      );
+      const usersSnapshot = await getDocs(usersRef);
+      const users = usersSnapshot.docs.filter(
+        doc => !["admin", "super-admin", "security", "admin-assistant"].includes(doc.data().role)
+      );
+
+      for (const userDoc of users) {
+        const chargesRef = collection(
+          db,
+          `clients/${clientId}/condominiums/${condominiumId}/users/${userDoc.id}/charges`
+        );
+        const unsubscribeCharges = onSnapshot(
+          chargesRef,
+          async () => {
+            set(state => ({
+              lastFetch: {
+                ...state.lastFetch,
+                [year]: 0
+              }
+            }));
+            await get().fetchSummary(year);
+          },
+          (error) => {
+            console.error("Error en listener de cargos:", error);
+          }
+        );
+        cleanupFunctions.push(unsubscribeCharges);
+      }
+
+      const unidentifiedPaymentsRef = collection(
+        db,
+        `clients/${clientId}/condominiums/${condominiumId}/unidentifiedPayments`
+      );
+      const unsubscribeUnidentified = onSnapshot(
+        unidentifiedPaymentsRef,
+        async () => {
+          set(state => ({
+            lastFetch: {
+              ...state.lastFetch,
+              [year]: 0
+            }
+          }));
+          await get().fetchSummary(year);
+        },
+        (error) => {
+          console.error("Error en listener de pagos no identificados:", error);
+        }
+      );
+      cleanupFunctions.push(unsubscribeUnidentified);
+
+      const financialAccountsRef = collection(
+        db,
+        `clients/${clientId}/condominiums/${condominiumId}/financialAccounts`
+      );
+      const unsubscribeAccounts = onSnapshot(
+        financialAccountsRef,
+        async () => {
+          set(state => ({
+            lastFetch: {
+              ...state.lastFetch,
+              [year]: 0
+            }
+          }));
+          await get().fetchSummary(year);
+        },
+        (error) => {
+          console.error("Error en listener de cuentas financieras:", error);
+        }
+      );
+      cleanupFunctions.push(unsubscribeAccounts);
+
+      set(state => ({
+        unsubscribe: {
+          ...state.unsubscribe,
+          [year]: () => {
+            cleanupFunctions.forEach(cleanup => cleanup());
+          }
+        }
+      }));
+
+    } catch (error: any) {
+      console.error("Error setting up listeners:", error);
+      set({ error: error.message, loading: false });
+    }
+  },
+
+  cleanupListeners: (year: string) => {
+    const store = get();
+    if (store.unsubscribe[year]) {
+      store.unsubscribe[year]();
+      set(state => ({
+        unsubscribe: { ...state.unsubscribe, [year]: undefined as unknown as () => void }
+      }));
+    }
+  },
 }));

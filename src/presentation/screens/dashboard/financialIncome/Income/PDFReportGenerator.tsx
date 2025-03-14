@@ -47,7 +47,6 @@ const monthNames: Record<string, string> = {
 const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({ year, concept }) => {
   // Obtener datos del store
   const {
-    totalIncome,
     totalPending,
     monthlyStats,
     detailed,
@@ -68,7 +67,7 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({ year, concept }
     adminPhone: state.adminPhone,
     adminEmail: state.adminEmail,
     conceptRecords: state.conceptRecords,
-  }))
+  }));
 
   // Obtener los condominios desde el store de usuarios
   const condominiumsUsers = useUserStore((state) => state.condominiumsUsers);
@@ -140,11 +139,24 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({ year, concept }
     doc.text(year, 14 + doc.getTextWidth("Año:") + 2, 40);
 
     if (!concept) {
-      // Datos generales solo para el reporte completo
+      // Solo para el reporte completo se recalcula el total de ingresos incluyendo:
+      // - La suma de "paid" y "saldo" de cada mes (saldo: creditBalance - creditUsed)
+      // - El initialBalance de todas las financialAccounts
+      let computedTotalIncome = 0;
+      monthlyStats.forEach((stat) => {
+        computedTotalIncome += stat.paid + stat.saldo;
+      });
+      const financialAccountsMap = usePaymentSummaryStore.getState().financialAccountsMap;
+      let totalInitialBalance = 0;
+      for (const key in financialAccountsMap) {
+        totalInitialBalance += financialAccountsMap[key].initialBalance;
+      }
+      computedTotalIncome += totalInitialBalance;
+
       doc.setFont("helvetica", "bold");
       doc.text("Total Ingresos:", 14, 50);
       doc.setFont("helvetica", "normal");
-      doc.text(formatCurrency(totalIncome), 14 + doc.getTextWidth("Total Ingresos:") + 4, 50);
+      doc.text(formatCurrency(computedTotalIncome), 14 + doc.getTextWidth("Total Ingresos:") + 4, 50);
 
       doc.setFont("helvetica", "bold");
       doc.text("Total Pendiente:", 14, 60);
@@ -324,6 +336,13 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({ year, concept }
         totalSaldoGlobal += stat.saldo;
         totalUnidentifiedGlobal += stat.unidentifiedPayments;
       });
+      const financialAccountsMap = usePaymentSummaryStore.getState().financialAccountsMap;
+      let totalInitialBalance = 0;
+      for (const key in financialAccountsMap) {
+        totalInitialBalance += financialAccountsMap[key].initialBalance;
+      }
+      totalPaidGlobal += totalInitialBalance;
+
       const avgCompliance =
         monthlyStats.length > 0
           ? monthlyStats.reduce((sum, stat) => sum + stat.complianceRate, 0) / monthlyStats.length

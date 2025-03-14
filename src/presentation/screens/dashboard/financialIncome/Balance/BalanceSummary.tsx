@@ -20,6 +20,9 @@ const BalanceGeneral: React.FC = () => {
     setSelectedYear: setSelectedYearIncomes,
     totalIncome,
     monthlyStats: monthlyStatsIncomes,
+    shouldFetchData: shouldFetchDataIncomes,
+    setupRealtimeListeners: setupRealtimeListenersIncomes,
+    cleanupListeners: cleanupListenersIncomes
   } = usePaymentSummaryStore(
     (state) => ({
       loading: state.loading,
@@ -29,6 +32,9 @@ const BalanceGeneral: React.FC = () => {
       setSelectedYear: state.setSelectedYear,
       totalIncome: state.totalIncome,
       monthlyStats: state.monthlyStats,
+      shouldFetchData: state.shouldFetchData,
+      setupRealtimeListeners: state.setupRealtimeListeners,
+      cleanupListeners: state.cleanupListeners
     }),
     shallow
   );
@@ -51,6 +57,9 @@ const BalanceGeneral: React.FC = () => {
     setSelectedYear: setSelectedYearExpenses,
     totalSpent,
     monthlyStats: monthlyStatsExpenses,
+    shouldFetchData: shouldFetchDataExpenses,
+    setupRealtimeListeners: setupRealtimeListenersExpenses,
+    cleanupListeners: cleanupListenersExpenses
   } = useExpenseSummaryStore(
     (state) => ({
       loading: state.loading,
@@ -60,6 +69,9 @@ const BalanceGeneral: React.FC = () => {
       setSelectedYear: state.setSelectedYear,
       totalSpent: state.totalSpent,
       monthlyStats: state.monthlyStats,
+      shouldFetchData: state.shouldFetchData,
+      setupRealtimeListeners: state.setupRealtimeListeners,
+      cleanupListeners: state.cleanupListeners
     }),
     shallow
   );
@@ -68,9 +80,26 @@ const BalanceGeneral: React.FC = () => {
   const selectedYear = selectedYearIncomes;
 
   useEffect(() => {
-    fetchIncomes(selectedYear);
-    fetchExpenses(selectedYear);
-  }, [selectedYear, fetchIncomes, fetchExpenses]);
+    const shouldFetchIncomes = shouldFetchDataIncomes(selectedYear);
+    const shouldFetchExpenses = shouldFetchDataExpenses(selectedYear);
+
+    if (shouldFetchIncomes) {
+      fetchIncomes(selectedYear);
+    }
+    if (shouldFetchExpenses) {
+      fetchExpenses(selectedYear);
+    }
+
+    // Configurar listeners cuando el componente se monta
+    setupRealtimeListenersIncomes(selectedYear);
+    setupRealtimeListenersExpenses(selectedYear);
+
+    // Cleanup cuando el componente se desmonta o cambia el año
+    return () => {
+      cleanupListenersIncomes(selectedYear);
+      cleanupListenersExpenses(selectedYear);
+    };
+  }, [selectedYear]);
 
   // Manejo del cambio de año
   const handleYearChange = (e: React.ChangeEvent<HTMLSelectElement>) => {

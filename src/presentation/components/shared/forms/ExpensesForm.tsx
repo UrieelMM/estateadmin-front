@@ -7,6 +7,7 @@ import { useExpenseStore, ExpenseCreateInput } from "../../../../store/expenseSt
 import { EXPENSE_CONCEPTS } from "../../../../utils/expensesList";
 import { getFirestore, collection, getDocs } from "firebase/firestore";
 import { getAuth, getIdTokenResult } from "firebase/auth";
+import { useExpenseSummaryStore } from "../../../../store/expenseSummaryStore";
 
 interface ExpenseFormProps {
     open: boolean;
@@ -33,6 +34,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ open, setOpen }) => {
     const [financialAccounts, setFinancialAccounts] = useState<FinancialAccount[]>([]);
 
     const { addExpense } = useExpenseStore();
+    const { fetchSummary, selectedYear, setupRealtimeListeners } = useExpenseSummaryStore();
 
     const dropzoneOptions = {
         onDrop: (acceptedFiles: File[]) => {
@@ -128,8 +130,14 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ open, setOpen }) => {
             };
             await addExpense(dataToCreate);
 
+            // Actualizar datos en tiempo real
+            setupRealtimeListeners(selectedYear);
+            // Forzar actualización inmediata
+            await fetchSummary(selectedYear);
+
             // Cerrar el formulario después de agregar el egreso
             setOpen(false);
+            toast.success("Egreso registrado correctamente");
         } catch (error) {
             console.error("Error al crear egreso:", error);
             toast.error("Ocurrió un error al registrar el egreso.");
