@@ -4,8 +4,12 @@ import { Card } from "@heroui/react";
 import { usePaymentSummaryStore } from "../../../../../store/paymentSummaryStore";
 import { shallow } from "zustand/shallow";
 import { motion, AnimatePresence } from "framer-motion";
-import { InformationCircleIcon } from "@heroicons/react/24/solid";
-
+import { 
+  BanknotesIcon,
+  ExclamationCircleIcon,
+  ArrowTrendingUpIcon,
+  InformationCircleIcon
+} from "@heroicons/react/24/outline";
 
 const Tooltip: React.FC<{ text: string }> = ({ text }) => {
   const [show, setShow] = React.useState(false);
@@ -15,7 +19,7 @@ const Tooltip: React.FC<{ text: string }> = ({ text }) => {
       onMouseEnter={() => setShow(true)}
       onMouseLeave={() => setShow(false)}
     >
-      <InformationCircleIcon className="w-5 h-5 text-default-500 cursor-pointer" />
+      <InformationCircleIcon className="w-5 h-5 text-gray-400 dark:text-gray-500 cursor-pointer" />
       <AnimatePresence>
         {show && (
           <motion.div
@@ -61,50 +65,83 @@ const SummaryCards: React.FC = React.memo(() => {
 
   return (
     <>
-      <h2 className="text-xl font-bold mb-4">Estadísticas anuales generales</h2>
+      <h2 className="text-xl font-bold mb-4 dark:text-white">Estadísticas anuales generales</h2>
       <div className="grid w-full grid-cols-1 gap-5 mb-8 sm:grid-cols-3">
-        {/* Total ingresos: se muestra la suma de los pagos + initialBalance (almacenado en totalIncome) más el saldo a favor global */}
-        <Card className="p-4 shadow-md rounded-md relative">
-          <div className="absolute top-2 right-2">
-            <Tooltip text="Suma de pagos, saldo inicial y saldo a favor global." />
+        {/* Total ingresos */}
+        <Card className="group relative flex flex-row items-center p-4 rounded-lg  
+                     transition-all duration-200 ease-in-out
+                     bg-white dark:bg-gray-800
+                     cursor-pointer
+                     shadow-lg hover:shadow-m h-32 hover:bg-gray-50 dark:hover:bg-transparent">
+          <div className="bg-[#8093E8] dark:bg-[#687fe4]
+                         flex h-12 w-12 items-center justify-center rounded-lg 
+                         shadow-lg group-hover:scale-110 transition-transform duration-200 shrink-0">
+            <BanknotesIcon className="h-6 w-6 text-white" aria-hidden="true" />
           </div>
-          <div className="flex flex-col gap-y-2">
-            <span className="text-sm font-medium text-default-500">
-              Total ingresos:
-            </span>
-            <span className="text-2xl font-semibold text-default-700">
+          <div className="flex-1 ml-4">
+            <div className="flex justify-between items-start">
+              <h3 className="text-sm font-medium text-gray-900 dark:text-white ">
+                Total ingresos
+              </h3>
+              <div className="absolute top-4 right-4">
+                <Tooltip text="Suma de pagos, saldo inicial y saldo a favor global." />
+              </div>
+            </div>
+            <p className="mt-1 text-2xl font-semibold text-gray-900 dark:text-white">
               {formatCurrency(totalIncome + totalCreditGlobal)}
-            </span>
+            </p>
           </div>
         </Card>
 
         {/* Total pendiente */}
-        <Card className="p-4 shadow-md rounded-md relative">
-          <div className="absolute top-2 right-2">
-            <Tooltip text="Monto total de pagos pendientes." />
+        <Card className="group relative flex flex-row items-center p-4 rounded-lg
+                     transition-all duration-200 ease-in-out
+                     bg-white dark:bg-gray-800
+                     cursor-pointer
+                     shadow-lg hover:shadow-md hover:bg-gray-50 dark:hover:bg-transparent">
+          <div className="bg-[#8093E8] dark:bg-[#687fe4]
+                         flex h-12 w-12 items-center justify-center rounded-lg 
+                         shadow-lg group-hover:scale-110 transition-transform duration-200 shrink-0">
+            <ExclamationCircleIcon className="h-6 w-6 text-white" aria-hidden="true" />
           </div>
-          <div className="flex flex-col gap-y-2">
-            <span className="text-sm font-medium text-default-500">
-              Total pendiente:
-            </span>
-            <span className="text-2xl font-semibold text-default-700">
+          <div className="flex-1 ml-4">
+            <div className="flex justify-between items-start">
+              <h3 className="text-sm font-medium text-gray-900 dark:text-white">
+                Total pendiente
+              </h3>
+              <div className="absolute top-4 right-4">
+                <Tooltip text="Monto total de pagos pendientes." />
+              </div>
+            </div>
+            <p className="mt-1 text-2xl font-semibold text-gray-900 dark:text-white">
               {formatCurrency(totalPending)}
-            </span>
+            </p>
           </div>
         </Card>
 
         {/* Total saldo a favor */}
-        <Card className="p-4 shadow-md rounded-md relative">
-          <div className="absolute top-2 right-2">
-            <Tooltip text="Saldo a favor global basado en los pagos mensuales." />
+        <Card className="group relative flex flex-row items-center p-4 rounded-lg
+                     transition-all duration-200 ease-in-out
+                     bg-white dark:bg-gray-800
+                     cursor-pointer
+                     shadow-lg hover:shadow-md hover:bg-gray-50 dark:hover:bg-transparent">
+          <div className="bg-[#8093E8] dark:bg-[#687fe4]
+                         flex h-12 w-12 items-center justify-center rounded-lg 
+                         shadow-lg group-hover:scale-110 transition-transform duration-200 shrink-0">
+            <ArrowTrendingUpIcon className="h-6 w-6 text-white" aria-hidden="true" />
           </div>
-          <div className="flex flex-col gap-y-2">
-            <span className="text-sm font-medium text-default-500">
-              Total saldo a favor:
-            </span>
-            <span className="text-2xl font-semibold text-default-700">
+          <div className="flex-1 ml-4">
+            <div className="flex justify-between items-start">
+              <h3 className="text-sm font-medium text-gray-900 dark:text-white">
+                Total saldo a favor
+              </h3>
+              <div className="absolute top-4 right-4">
+                <Tooltip text="Saldo a favor global basado en los pagos mensuales." />
+              </div>
+            </div>
+            <p className="mt-1 text-2xl font-semibold text-gray-900 dark:text-white">
               {formatCurrency(totalCreditGlobal)}
-            </span>
+            </p>
           </div>
         </Card>
       </div>

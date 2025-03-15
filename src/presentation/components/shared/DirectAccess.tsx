@@ -1,95 +1,102 @@
 import {
-  Bars4Icon,
-  CalendarIcon,
-  ClockIcon,
-  PhotoIcon,
-  TableCellsIcon,
-  ViewColumnsIcon,
+  HomeIcon,
+  UserGroupIcon,
+  CurrencyDollarIcon,
+  DocumentTextIcon,
+  ClipboardDocumentListIcon,
+  Cog6ToothIcon,
 } from '@heroicons/react/24/outline'
+import { Link } from 'react-router-dom'
+import { Card } from "@heroui/react";
 
 const items = [
   {
-    title: 'Create a List',
-    description: 'Another to-do system you’ll try but eventually give up on.',
-    icon: Bars4Icon,
-    background: 'bg-pink-500',
+    title: 'Panel Principal',
+    description: 'Visualiza las estadísticas y resumen general del condominio.',
+    icon: HomeIcon,
+    background: 'bg-indigo-600 dark:bg-indigo-500',
+    href: '/'
   },
   {
-    title: 'Create a Calendar',
-    description: 'Stay on top of your deadlines, or don’t — it’s up to you.',
-    icon: CalendarIcon,
-    background: 'bg-yellow-500',
+    title: 'Gestión de Residentes',
+    description: 'Administra los usuarios, permisos y accesos del condominio.',
+    icon: UserGroupIcon,
+    background: 'bg-blue-600 dark:bg-blue-500',
+    href: '/users'
   },
   {
-    title: 'Create a Gallery',
-    description: 'Great for mood boards and inspiration.',
-    icon: PhotoIcon,
-    background: 'bg-green-500',
+    title: 'Control de Pagos',
+    description: 'Registra y supervisa los pagos de mantenimiento y servicios.',
+    icon: CurrencyDollarIcon,
+    background: 'bg-green-600 dark:bg-green-500',
+    href: '/financial-income'
   },
   {
-    title: 'Create a Board',
-    description: 'Track tasks in different stages of your project.',
-    icon: ViewColumnsIcon,
-    background: 'bg-blue-500',
+    title: 'Documentos',
+    description: 'Accede a documentos importantes y reportes del condominio.',
+    icon: DocumentTextIcon,
+    background: 'bg-yellow-600 dark:bg-yellow-500',
+    href: '/documents'
   },
   {
-    title: 'Create a Spreadsheet',
-    description: 'Lots of numbers and things — good for nerds.',
-    icon: TableCellsIcon,
-    background: 'bg-indigo-500',
+    title: 'Tareas y Mantenimiento',
+    description: 'Gestiona las tareas y el mantenimiento del condominio.',
+    icon: ClipboardDocumentListIcon,
+    background: 'bg-red-600 dark:bg-red-500',
+    href: '/tasks'
   },
   {
-    title: 'Create a Timeline',
-    description: 'Get a birds-eye-view of your procrastination.',
-    icon: ClockIcon,
-    background: 'bg-purple-500',
+    title: 'Configuración',
+    description: 'Personaliza la configuración general del condominio.',
+    icon: Cog6ToothIcon,
+    background: 'bg-purple-600 dark:bg-purple-500',
+    href: '/settings'
   },
 ]
 
-function classNames(...classes: string[]) {
-  return classes.filter(Boolean).join(' ')
-}
-
 const DirectAccess = () => {
   return (
-    <div className="w-[100%] mt-4 lg:mt-8 xl:mt-0">
-      <h2 className="text-base font-semibold leading-6 text-gray-900">Accesos directos</h2>
-      <p className="mt-1 text-sm text-gray-500">
-        Comineza a gestionar tu condominio con estas herramientas.
+    <Card className="w-full">
+      <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+        Accesos Directos
+      </h2>
+      <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+        Accede rápidamente a las funciones principales del sistema.
       </p>
-      <ul role="list" className="mt-6 w-[100%] lg:h-[400px] grid grid-cols-1 gap-6 border-b border-t border-gray-200 py-6 sm:grid-cols-2">
+      <div 
+        className="mt-6 w-full grid grid-cols-1 gap-4 
+                   sm:grid-cols-2 lg:grid-cols-3"
+      >
         {items.map((item, itemIdx) => (
-          <li key={itemIdx} className="flow-root">
-            <div className="relative -m-2 flex items-center space-x-4 rounded-xl p-2 focus-within:ring-2 focus-within:ring-indigo-500 hover:bg-gray-50">
-              <div
-                className={classNames(
-                  item.background,
-                  'flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-lg'
-                )}
-              >
-                <item.icon className="h-6 w-6 text-white" aria-hidden="true" />
-              </div>
-              <div>
-                <h3 className="text-sm font-medium text-gray-900">
-                  <a href="#" className="focus:outline-none">
-                    <span className="absolute inset-0" aria-hidden="true" />
-                    <span>{item.title}</span>
-                    <span aria-hidden="true"> &rarr;</span>
-                  </a>
-                </h3>
-                <p className="mt-1 text-sm text-gray-500">{item.description}</p>
-              </div>
+          <Link
+            key={itemIdx}
+            to={item.href}
+            className="group relative flex items-center gap-4 rounded-xl p-4 
+                     transition-all duration-200 ease-in-out
+                     bg-white dark:bg-gray-800
+                     hover:bg-gray-50 dark:hover:bg-gray-700
+                     border border-gray-200 dark:border-gray-700
+                     shadow-sm hover:shadow-md"
+          >
+            <div
+              className={`${item.background} 
+                         flex h-12 w-12 items-center justify-center rounded-lg 
+                         shadow-lg group-hover:scale-110 transition-transform duration-200`}
+            >
+              <item.icon className="h-6 w-6 text-white" aria-hidden="true" />
             </div>
-          </li>
+            <div className="min-w-0 flex-1">
+              <h3 className="text-sm font-medium text-gray-900 dark:text-white truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400">
+                {item.title}
+              </h3>
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400 line-clamp-2">
+                {item.description}
+              </p>
+            </div>
+          </Link>
         ))}
-      </ul>
-      <div className="mt-4 flex">
-        <a href="#" className="text-sm font-medium text-indigo-600 hover:text-indigo-500">
-          Or start from an empty project
-          <span aria-hidden="true"> &rarr;</span>
-        </a>
       </div>
-    </div>
+    </Card>
   )
 }
 
