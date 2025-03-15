@@ -205,26 +205,26 @@ const PaymentHistory = () => {
       {/* Tarjetas con datos interesantes del año */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
         <div className="p-4 shadow-md rounded-md">
-          <p className="text-sm text-gray-600">Total Pagado en el Año</p>
-          <p className="text-2xl font-semibold">
+          <p className="text-sm text-gray-600 dark:text-gray-100">Total Pagado en el Año</p>
+          <p className="text-xl font-semibold">
             {formatCurrency(totalPaidYear)}
           </p>
         </div>
         <div className="p-4 shadow-md rounded-md">
-          <p className="text-sm text-gray-600">Total Pendiente</p>
-          <p className="text-2xl font-semibold">
+          <p className="text-sm text-gray-600 dark:text-gray-100">Total Pendiente</p>
+          <p className="text-xl font-semibold">
             {formatCurrency(pendingAmount)}
           </p>
         </div>
         <div className="p-4 shadow-md rounded-md">
-          <p className="text-sm text-gray-600">Saldo a favor total</p>
-          <p className="text-2xl font-semibold">
+          <p className="text-sm text-gray-600 dark:text-gray-100">Saldo a favor total</p>
+          <p className="text-xl font-semibold">
             {formatCurrency(currentCreditBalance / 100)}
           </p>
         </div>
         <div className="p-4 shadow-md rounded-md">
-          <p className="text-sm text-gray-600">Mes con mayor recaudación</p>
-          <p className="text-2xl font-semibold">{bestMonthName}</p>
+          <p className="text-sm text-gray-600 dark:text-gray-100">Mes con mayor recaudación</p>
+          <p className="text-xl font-semibold">{bestMonthName}</p>
         </div>
       </div>
 

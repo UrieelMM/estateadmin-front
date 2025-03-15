@@ -8,6 +8,7 @@ import {
 import { usePaymentSummaryStore } from '../../../../../store/paymentSummaryStore';
 import { formatCurrency } from '../../../../../utils/curreyncy';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/solid';
+import LoadingApp from '../../../../components/shared/loaders/LoadingApp';
 
 interface FilterState {
     month: string;
@@ -101,7 +102,7 @@ const HistoryPaymentsTable: React.FC = () => {
     if (loading) {
         return (
             <div className="flex justify-center items-center min-h-[400px]">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+                <LoadingApp />
             </div>
         );
     }
