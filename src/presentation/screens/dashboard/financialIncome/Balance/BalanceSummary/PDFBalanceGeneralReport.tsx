@@ -541,7 +541,7 @@ const PDFBalanceGeneralReport: React.FC<PDFBalanceGeneralReportProps> = ({ year 
     <div className="w-full flex justify-end mb-4">
       <button
         onClick={generatePDF}
-        className="bg-indigo-600 text-white text-sm py-2 px-1 rounded flex items-center w-[250px] font-medium hover:bg-indigo-700"
+        className="bg-indigo-600 text-white text-sm py-2 px-1 rounded flex justify-center items-center w-[270px] font-medium hover:bg-indigo-700"
       >
         <DocumentChartBarIcon className="w-5 h-5 text-white mr-1" />
         Generar Reporte Balance General

@@ -368,7 +368,7 @@ const PDFReportGeneratorSingle: React.FC<PDFReportGeneratorSingleProps> = ({
     <div className="mt-8">
       <button
         onClick={generatePDF}
-        className="bg-indigo-600 flex text-white text-sm py-2 px-1 rounded w-[140px] font-medium hover:bg-indigo-700"
+        className="bg-indigo-600 flex justify-center text-white text-sm py-2 px-1 rounded w-[160px] font-medium hover:bg-indigo-700"
       >
         <DocumentChartBarIcon className="w-5 h-5 text-white mr-1" />
         Generar Reporte
