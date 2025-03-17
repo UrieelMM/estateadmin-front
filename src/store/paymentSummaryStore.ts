@@ -57,6 +57,8 @@ export interface PaymentRecord {
   financialAccountId: string;
   paymentDate?: string;
   attachmentPayment?: string;  // URL del comprobante de pago
+  chargeId?: string;  // ID del cargo asociado
+  userId?: string;    // ID del usuario asociado
 }
 
 export type MonthlyStat = {
@@ -97,12 +99,18 @@ export type PaymentSummaryState = {
   financialAccountsMap: Record<string, FinancialAccountInfo>;
   lastFetch: Record<string, number>;
   unsubscribe: Record<string, () => void>;
+  completedPayments: PaymentRecord[];
+  totalCompletedPayments: number;
+  lastPaymentDoc: any | null;
+  loadingPayments: boolean;
 
-  fetchSummary: (year?: string) => Promise<void>;
+  fetchSummary: (year?: string, forceUpdate?: boolean) => Promise<void>;
   setSelectedYear: (year: string) => void;
   shouldFetchData: (year: string) => boolean;
   setupRealtimeListeners: (year: string) => void;
   cleanupListeners: (year: string) => void;
+  fetchCompletedPayments: (pageSize?: number, startAfter?: any) => Promise<void>;
+  resetPaymentsState: () => void;
 };
 
 export const usePaymentSummaryStore = create<PaymentSummaryState>((set, get) => ({
@@ -126,6 +134,10 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>((set, get) => 
   financialAccountsMap: {},
   lastFetch: {},
   unsubscribe: {},
+  completedPayments: [],
+  totalCompletedPayments: 0,
+  lastPaymentDoc: null,
+  loadingPayments: false,
 
   shouldFetchData: (year: string) => {
     const lastFetchTime = get().lastFetch[year];
@@ -134,12 +146,12 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>((set, get) => 
     return !lastFetchTime || (now - lastFetchTime) > 300000;
   },
 
-  fetchSummary: async (year?: string) => {
+  fetchSummary: async (year?: string, forceUpdate: boolean = false) => {
     const currentYear = year || new Date().getFullYear().toString();
     const store = get();
     
-    // Si ya tenemos datos recientes, no recargar
-    if (!store.shouldFetchData(currentYear)) {
+    // Solo verificamos shouldFetchData si no es forceUpdate
+    if (!forceUpdate && !store.shouldFetchData(currentYear)) {
       return;
     }
 
@@ -290,6 +302,8 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>((set, get) => 
                 financialAccountId: accountId || "N/A",
                 paymentDate: formattedDate,
                 attachmentPayment: chargeData.attachmentPayment,
+                chargeId: chargeDoc.id,
+                userId: userObj.id
               };
               return record;
             })
@@ -345,6 +359,8 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>((set, get) => 
           financialAccountId: data.financialAccountId || "N/A",
           paymentDate: formattedDate,
           attachmentPayment: data.attachmentPayment,
+          chargeId: docSnap.id,
+          userId: docSnap.id
         };
         paymentRecords.push(record);
       });
@@ -643,6 +659,167 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>((set, get) => 
       set(state => ({
         unsubscribe: { ...state.unsubscribe, [year]: undefined as unknown as () => void }
       }));
+    }
+  },
+
+  resetPaymentsState: () => {
+    set({
+      completedPayments: [],
+      totalCompletedPayments: 0,
+      lastPaymentDoc: null,
+      loadingPayments: false
+    });
+  },
+
+  fetchCompletedPayments: async (pageSize = 20, startAfter = null) => {
+    set({ loadingPayments: true });
+    try {
+      const db = getFirestore();
+      const auth = getAuth();
+      const user = auth.currentUser;
+      if (!user) {
+        throw new Error("Usuario no autenticado");
+      }
+
+      const tokenResult = await getIdTokenResult(user);
+      const clientId = tokenResult.claims["clientId"] as string;
+      const condominiumId = localStorage.getItem("condominiumId");
+      if (!condominiumId) {
+        throw new Error("Condominio no seleccionado");
+      }
+
+      // 1. Obtener usuarios
+      const usersRef = collection(db, `clients/${clientId}/condominiums/${condominiumId}/users`);
+      const usersSnapshot = await getDocs(usersRef);
+      const users = usersSnapshot.docs.filter(
+        doc => !["admin", "super-admin", "security", "admin-assistant"].includes(doc.data().role)
+      );
+
+      const paymentRecords: PaymentRecord[] = [];
+      let processedPayments = 0;
+
+      // 2. Para cada usuario, obtener sus cargos y pagos
+      for (const userDoc of users) {
+        const userData = userDoc.data();
+        const chargesRef = collection(db, `clients/${clientId}/condominiums/${condominiumId}/users/${userDoc.id}/charges`);
+        const chargesSnapshot = await getDocs(chargesRef);
+
+        for (const chargeDoc of chargesSnapshot.docs) {
+          const chargeData = chargeDoc.data();
+          const paymentsRef = collection(chargeDoc.ref, 'payments');
+          const paymentsSnapshot = await getDocs(paymentsRef);
+
+          for (const paymentDoc of paymentsSnapshot.docs) {
+            if (processedPayments >= pageSize) break;
+            
+            const paymentData = paymentDoc.data();
+            let formattedDate = '';
+            
+            if (paymentData.paymentDate) {
+              if (paymentData.paymentDate.toDate) {
+                formattedDate = formatDate(paymentData.paymentDate.toDate());
+              } else if (typeof paymentData.paymentDate === 'string') {
+                const d = new Date(paymentData.paymentDate);
+                formattedDate = !isNaN(d.getTime()) ? formatDate(d) : paymentData.paymentDate;
+              }
+            }
+
+            const record: PaymentRecord = {
+              id: paymentDoc.id,
+              clientId,
+              numberCondominium: userData.number || 'N/A',
+              month: chargeData.startAt ? chargeData.startAt.substring(5, 7) : '',
+              amountPaid: centsToPesos(paymentData.amountPaid),
+              amountPending: centsToPesos(paymentData.amountPending),
+              concept: chargeData.concept || 'Desconocido',
+              paymentType: paymentData.paymentType,
+              creditBalance: centsToPesos(paymentData.creditBalance),
+              creditUsed: paymentData.creditUsed ? centsToPesos(paymentData.creditUsed) : 0,
+              paid: true,
+              financialAccountId: paymentData.financialAccountId || 'N/A',
+              paymentDate: formattedDate,
+              attachmentPayment: paymentData.attachmentPayment,
+              chargeId: chargeDoc.id,
+              userId: userDoc.id
+            };
+
+            paymentRecords.push(record);
+            processedPayments++;
+          }
+
+          if (processedPayments >= pageSize) break;
+        }
+
+        if (processedPayments >= pageSize) break;
+      }
+
+      // 3. Incluir pagos no identificados si hay espacio
+      if (processedPayments < pageSize) {
+        const unidentifiedRef = collection(db, `clients/${clientId}/condominiums/${condominiumId}/unidentifiedPayments`);
+        const unidentifiedSnapshot = await getDocs(unidentifiedRef);
+
+        for (const docSnap of unidentifiedSnapshot.docs) {
+          if (processedPayments >= pageSize) break;
+
+          const data = docSnap.data();
+          let formattedDate = '';
+          
+          if (data.paymentDate) {
+            if (data.paymentDate.toDate) {
+              formattedDate = formatDate(data.paymentDate.toDate());
+            } else if (typeof data.paymentDate === 'string') {
+              const d = new Date(data.paymentDate);
+              formattedDate = !isNaN(d.getTime()) ? formatDate(d) : data.paymentDate;
+            }
+          }
+
+          const record: PaymentRecord = {
+            id: docSnap.id,
+            clientId,
+            numberCondominium: data.numberCondominium || 'N/A',
+            month: data.month || '',
+            amountPaid: centsToPesos(data.amountPaid),
+            amountPending: centsToPesos(data.amountPending),
+            concept: 'Pago no identificado',
+            paymentType: data.paymentType,
+            creditBalance: data.creditBalance ? centsToPesos(data.creditBalance) : 0,
+            creditUsed: data.creditUsed ? centsToPesos(data.creditUsed) : 0,
+            paid: true,
+            financialAccountId: data.financialAccountId || 'N/A',
+            paymentDate: formattedDate,
+            attachmentPayment: data.attachmentPayment,
+            chargeId: docSnap.id,
+            userId: docSnap.id
+          };
+
+          paymentRecords.push(record);
+          processedPayments++;
+        }
+      }
+
+      // Ordenar por fecha de pago (más reciente primero)
+      paymentRecords.sort((a, b) => {
+        const dateA = a.paymentDate ? new Date(a.paymentDate.split('/').reverse().join('-')) : new Date(0);
+        const dateB = b.paymentDate ? new Date(b.paymentDate.split('/').reverse().join('-')) : new Date(0);
+        return dateB.getTime() - dateA.getTime();
+      });
+
+      // Actualizar el estado
+      set(state => ({
+        completedPayments: startAfter 
+          ? [...state.completedPayments, ...paymentRecords]
+          : paymentRecords,
+        lastPaymentDoc: paymentRecords[paymentRecords.length - 1]?.id || null,
+        loadingPayments: false,
+        totalCompletedPayments: paymentRecords.length // Esto se actualizará con el total real en la siguiente iteración
+      }));
+
+    } catch (error: any) {
+      console.error("Error fetching completed payments:", error);
+      set({
+        error: error.message || "Error fetching payments",
+        loadingPayments: false
+      });
     }
   },
 }));

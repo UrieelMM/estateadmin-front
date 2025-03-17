@@ -41,65 +41,56 @@ const HistoryPaymentsTable: React.FC = () => {
     const [showFilters, setShowFilters] = useState(false);
 
     const { 
-        payments, 
-        fetchSummary, 
-        loading, 
-        setSelectedYear,
-        setupRealtimeListeners,
-        cleanupListeners
+        completedPayments,
+        totalCompletedPayments,
+        lastPaymentDoc,
+        loadingPayments,
+        fetchCompletedPayments,
+        resetPaymentsState
     } = usePaymentSummaryStore((state) => ({
-        payments: state.payments,
-        fetchSummary: state.fetchSummary,
-        loading: state.loading,
-        setSelectedYear: state.setSelectedYear,
-        setupRealtimeListeners: state.setupRealtimeListeners,
-        cleanupListeners: state.cleanupListeners
+        completedPayments: state.completedPayments,
+        totalCompletedPayments: state.totalCompletedPayments,
+        lastPaymentDoc: state.lastPaymentDoc,
+        loadingPayments: state.loadingPayments,
+        fetchCompletedPayments: state.fetchCompletedPayments,
+        resetPaymentsState: state.resetPaymentsState
     }));
 
     useEffect(() => {
-        const loadData = async () => {
-            setSelectedYear(filters.year);
-            await fetchSummary(filters.year);
-            setupRealtimeListeners(filters.year);
-        };
-        loadData();
-
+        fetchCompletedPayments();
         return () => {
-            cleanupListeners(filters.year);
+            resetPaymentsState();
         };
-    }, [fetchSummary, filters.year, setSelectedYear, setupRealtimeListeners, cleanupListeners]);
+    }, [fetchCompletedPayments, resetPaymentsState]);
 
     // Filtrar pagos según los criterios seleccionados
-    const filteredPayments = payments.filter((payment) => {
+    const filteredPayments = completedPayments.filter((payment) => {
         // Filtrar por mes
         if (filters.month && payment.month) {
             if (payment.month !== filters.month) return false;
         }
-        
         return true;
     });
 
     // Calcular la paginación
-    const totalPages = Math.ceil(filteredPayments.length / ITEMS_PER_PAGE);
-    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    const paginatedPayments = filteredPayments.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+    const totalPages = Math.ceil(totalCompletedPayments / ITEMS_PER_PAGE);
 
-    const handlePageChange = (newPage: number) => {
+    const handlePageChange = async (newPage: number) => {
+        if (newPage > currentPage && lastPaymentDoc) {
+            await fetchCompletedPayments(ITEMS_PER_PAGE, lastPaymentDoc);
+        }
         setCurrentPage(newPage);
     };
 
-    const handleFilterChange = async (key: keyof FilterState, value: string) => {
+    const handleFilterChange = (key: keyof FilterState, value: string) => {
         const newFilters = { ...filters, [key]: value };
         setFilters(newFilters);
         setCurrentPage(1);
-        
-        if (key === 'year') {
-            setSelectedYear(value);
-            await fetchSummary(value);
-        }
+        resetPaymentsState();
+        fetchCompletedPayments();
     };
 
-    if (loading) {
+    if (loadingPayments && completedPayments.length === 0) {
         return (
             <div className="flex justify-center items-center min-h-[400px]">
                 <LoadingApp />
@@ -194,7 +185,7 @@ const HistoryPaymentsTable: React.FC = () => {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-900">
-                                    {paginatedPayments.map((payment) => (
+                                    {filteredPayments.map((payment) => (
                                         <tr key={payment.id} className="hover:bg-gray-50 transition-colors dark:hover:bg-gray-700 cursor-pointer">
                                             <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm text-gray-900 dark:text-gray-200 sm:pl-6">
                                                 {payment.paymentDate || 'N/A'}
@@ -253,11 +244,11 @@ const HistoryPaymentsTable: React.FC = () => {
                 <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
                     <div>
                         <p className="text-sm text-gray-700 dark:text-gray-300">
-                            Mostrando <span className="font-medium">{startIndex + 1}</span> a{' '}
+                            Mostrando <span className="font-medium">{(currentPage - 1) * ITEMS_PER_PAGE + 1}</span> a{' '}
                             <span className="font-medium">
-                                {Math.min(startIndex + ITEMS_PER_PAGE, filteredPayments.length)}
+                                {Math.min(currentPage * ITEMS_PER_PAGE, totalCompletedPayments)}
                             </span>{' '}
-                            de <span className="font-medium">{filteredPayments.length}</span> resultados
+                            de <span className="font-medium">{totalCompletedPayments}</span> resultados
                         </p>
                     </div>
                     <div>

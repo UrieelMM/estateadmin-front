@@ -6,8 +6,7 @@ import {
   getFirestore,
   collection,
   addDoc,
-  getDocs,
-  Timestamp
+  getDocs
 } from "firebase/firestore";
 
 /**
@@ -62,19 +61,12 @@ export const useChargeStore = create<ChargeState>((set) => ({
 
       const now = new Date();
 
-      const parseDateString = (dateString: string) => {
-        // Reemplaza el espacio por 'T' y agrega ":00" para segundos
-        const isoString = dateString.replace(" ", "T") + ":00";
-        return new Date(isoString);
-      };
-
       await addDoc(chargesRef, {
         concept: options.concept,
-        // GUARDAMOS EN CENTAVOS
         amount: amountCents,
-        generatedAt: now, // Date real
-        startAt: Timestamp.fromDate(parseDateString(options.startAt)),
-        dueDate: Timestamp.fromDate(parseDateString(options.dueDate)),
+        generatedAt: now,
+        startAt: options.startAt,
+        dueDate: options.dueDate,
         paid: options.paid,
       });
 

@@ -32,16 +32,19 @@ const MONTH_NAMES: Record<string, string> = {
 };
 
 const AccountCharts: React.FC<{ payments: PaymentRecord[] }> = ({ payments }) => {
-  const { financialAccountsMap } = usePaymentSummaryStore();
+  const { financialAccountsMap, monthlyStats } = usePaymentSummaryStore();
 
   // Obtenemos la información de la cuenta correspondiente.
-  // Se asume que todos los payments pertenecen a la misma cuenta, por lo que se toma el ID del primer registro.
   const accountId = payments.length > 0 ? payments[0].financialAccountId : "";
   const accountInfo =
     accountId && financialAccountsMap[accountId] ? financialAccountsMap[accountId] : null;
   const initialBalance = accountInfo ? accountInfo.initialBalance : 0;
-  // Se obtiene el mes de creación de la cuenta (en formato "MM")
   const creationMonth = accountInfo ? accountInfo.creationMonth : "01";
+
+  // Calculamos el saldo a favor de la misma manera que en SummaryCards
+  const accountMonthlyStats = monthlyStats.filter(stat => 
+    payments.some(p => p.month === stat.month)
+  );
 
   /**
    * Formateador de moneda
@@ -67,20 +70,24 @@ const AccountCharts: React.FC<{ payments: PaymentRecord[] }> = ({ payments }) =>
   };
 
   /**
-   * 1. Agrupar por concepto: sumamos (amountPaid + creditBalance) de cada pago,
-   * y luego agregamos "Saldo inicial" con el valor obtenido.
+   * 1. Agrupar por concepto: sumamos amountPaid de cada pago,
+   * y luego agregamos "Saldo inicial" y "Saldo a favor" con sus valores.
    */
   const conceptTotals = useMemo(() => {
     const totals: Record<string, number> = {};
     payments.forEach((p) => {
       const concept = p.concept || "Desconocido";
-      const totalPaid = p.amountPaid + p.creditBalance;
-      totals[concept] = (totals[concept] || 0) + totalPaid;
+      totals[concept] = (totals[concept] || 0) + p.amountPaid;
     });
     // Agregar el Saldo inicial como una categoría aparte
-    totals["Saldo inicial"] = (totals["Saldo inicial"] || 0) + initialBalance;
+    totals["Saldo inicial"] = initialBalance;
+    // Agregar Saldo a favor como categoría
+    const totalSaldo = accountMonthlyStats.reduce((acc, stat) => acc + stat.saldo, 0);
+    if (totalSaldo > 0) {
+      totals["Saldo a favor"] = totalSaldo;
+    }
     return totals;
-  }, [payments, initialBalance]);
+  }, [payments, initialBalance, accountMonthlyStats]);
 
   /**
    * 2. Datos para el gráfico de pastel.
@@ -136,7 +143,7 @@ const AccountCharts: React.FC<{ payments: PaymentRecord[] }> = ({ payments }) =>
       topConcepts.forEach((concept) => {
         const sumThisMonth = payments
           .filter((p) => p.concept === concept && p.month === m)
-          .reduce((acc, p) => acc + p.amountPaid + p.creditBalance, 0);
+          .reduce((acc, p) => acc + p.amountPaid, 0);
         row[concept] = sumThisMonth;
       });
 
@@ -146,7 +153,7 @@ const AccountCharts: React.FC<{ payments: PaymentRecord[] }> = ({ payments }) =>
         otherConcepts.forEach((concept) => {
           const sumThisMonth = payments
             .filter((p) => p.concept === concept && p.month === m)
-            .reduce((acc, p) => acc + p.amountPaid + p.creditBalance, 0);
+            .reduce((acc, p) => acc + p.amountPaid, 0);
           sumOthers += sumThisMonth;
         });
         row["Otros"] = sumOthers;

@@ -13,39 +13,40 @@ const PaymentSummaryByAccount: React.FC = () => {
     })
   );
 
-  if (!byFinancialAccount || Object.keys(byFinancialAccount).length === 0) {
+  // Mostrar mensaje solo si no hay cuentas financieras configuradas
+  if (!financialAccountsMap || Object.keys(financialAccountsMap).length === 0) {
     return (
       <div className="text-center text-gray-600 dark:text-gray-100">
-        No hay datos disponibles para resumen por cuenta.
+        No hay cuentas financieras configuradas.
       </div>
     );
   }
 
+  // Asegurarnos de que se muestren todas las cuentas disponibles en financialAccountsMap
+  const accountsToShow = Object.keys(financialAccountsMap).map(accountId => ({
+    accountId,
+    payments: byFinancialAccount[accountId] || [],
+    name: financialAccountsMap[accountId]?.name || "Cuenta sin nombre"
+  }));
+
   return (
     <div className="space-y-8">
-      {Object.entries(byFinancialAccount).map(([accountId, payments]) => {
-        // Busca el nombre en financialAccountsMap
-        const accountName =
-          financialAccountsMap[accountId]?.name || "Cuenta sin nombre";
+      {accountsToShow.map(({ accountId, payments, name }) => (
+        <div
+          key={accountId}
+          className="bg-gray-50 dark:bg-gray-800 shadow-lg rounded-md p-4"
+        >
+          <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-4">
+            Cuenta Financiera: {name}
+          </h2>
 
-        return (
-          <div
-            key={accountId}
-            className="bg-gray-50 dark:bg-gray-800 shadow-lg rounded-md p-4"
-          >
-            <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-4">
-              {/* Muestra el nombre en lugar del ID */}
-              Cuenta Financiera: {accountName}
-            </h2>
+          {/* Cards de resumen para esta cuenta */}
+          <AccountSummaryCards payments={payments} accountId={accountId} />
 
-            {/* Cards de resumen para esta cuenta */}
-            <AccountSummaryCards payments={payments} />
-
-            {/* Gráficas para esta cuenta */}
-            <AccountCharts payments={payments} />
-          </div>
-        );
-      })}
+          {/* Gráficas para esta cuenta */}
+          <AccountCharts payments={payments} />
+        </div>
+      ))}
     </div>
   );
 };

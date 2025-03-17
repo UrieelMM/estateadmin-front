@@ -104,7 +104,7 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
       currency: "MXN",
     }).format(value);
 
-  const handleRecipientChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleRecipientChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const uid = e.target.value;
     const user = users.find((u) => u.uid === uid);
     if (user) {
@@ -112,9 +112,22 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
       setNumberCondominium(user.number || "");
       setSelectedUser(user);
       if (user.number) {
-        fetchUserCharges(user.number).catch((err) => {
-          console.error("Error fetching user charges:", err);
-        });
+        try {
+          // Actualizar cargos y datos del usuario en paralelo
+          await Promise.all([
+            fetchUserCharges(user.number),
+            fetchCondominiumsUsers()
+          ]);
+          
+          // Obtener el usuario actualizado del store
+          const updatedUser = condominiumsUsers.find(u => u.uid === uid);
+          if (updatedUser) {
+            setSelectedUser(updatedUser);
+          }
+        } catch (err) {
+          console.error("Error actualizando datos del usuario:", err);
+          toast.error("Error al cargar los datos del usuario");
+        }
       }
       setSelectedCharges([]);
     }
@@ -160,69 +173,44 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
     event.preventDefault();
     setLoading(true);
 
-    if (!paymentDate) {
-      toast.error("La fecha de pago es obligatoria.");
-      setLoading(false);
-      return;
-    }
-    if (!financialAccountId) {
-      toast.error("La cuenta es obligatoria.");
-      setLoading(false);
-      return;
-    }
-    if (!amountPaid && !useCreditBalance) {
-      toast.error("El campo 'monto abonado' es obligatorio.");
-      setLoading(false);
-      return;
-    }
-    // Validar que el tipo de pago siempre se ingrese (aplica para ambos casos)
-    if (!paymentType) {
-      toast.error("El campo 'tipo de pago' es obligatorio.");
-      setLoading(false);
-      return;
-    }
-    // Validaciones solo para pago identificado
-    if (!isUnidentifiedPayment) {
-      if (!amountPending) {
-        toast.error("El campo 'monto pendiente' es obligatorio.");
-        setLoading(false);
-        return;
-      }
-      if (selectedCharges.length === 0) {
-        toast.error("Debes seleccionar al menos un cargo para aplicar el pago.");
-        setLoading(false);
-        return;
-      }
-      if (useCreditBalance) {
-        if (Number(effectiveTotal).toFixed(2) !== Number(totalAssigned).toFixed(2)) {
-          toast.error(
-            "En pago con saldo a favor, la suma de montos asignados debe ser igual a (monto abonado + crédito disponible)."
-          );
-          setLoading(false);
-          return;
-        }
-      } else {
-        if (Number(amountPaid).toFixed(2) !== Number(totalAssigned).toFixed(2)) {
-          toast.error(
-            "El monto abonado debe coincidir exactamente con la suma de los cargos asignados."
-          );
-          setLoading(false);
-          return;
-        }
-      }
-      if (
-        useCreditBalance &&
-        (!selectedUser?.totalCreditBalance || Number(selectedUser.totalCreditBalance) / 100 <= 0)
-      ) {
-        toast.error("No tienes saldo a favor disponible.");
-        setLoading(false);
-        return;
-      }
-    }
-
     try {
-      // Para pagos NO identificados se añade el flag appliedToUser: false
-      const paymentObj: any = {
+      // Validaciones iniciales
+      if (!paymentDate) {
+        throw new Error("La fecha de pago es obligatoria.");
+      }
+      if (!financialAccountId) {
+        throw new Error("La cuenta es obligatoria.");
+      }
+      if (!amountPaid && !useCreditBalance) {
+        throw new Error("El campo 'monto abonado' es obligatorio.");
+      }
+      if (!paymentType) {
+        throw new Error("El campo 'tipo de pago' es obligatorio.");
+      }
+
+      // Validaciones para pago identificado
+      if (!isUnidentifiedPayment) {
+        if (!amountPending) {
+          throw new Error("El campo 'monto pendiente' es obligatorio.");
+        }
+        if (selectedCharges.length === 0) {
+          throw new Error("Debes seleccionar al menos un cargo para aplicar el pago.");
+        }
+        if (useCreditBalance) {
+          if (Number(effectiveTotal).toFixed(2) !== Number(totalAssigned).toFixed(2)) {
+            throw new Error("En pago con saldo a favor, la suma de montos asignados debe ser igual a (monto abonado + crédito disponible).");
+          }
+        } else {
+          if (Number(amountPaid).toFixed(2) !== Number(totalAssigned).toFixed(2)) {
+            throw new Error("El monto abonado debe coincidir exactamente con la suma de los cargos asignados.");
+          }
+        }
+        if (useCreditBalance && (!selectedUser?.totalCreditBalance || Number(selectedUser.totalCreditBalance) / 100 <= 0)) {
+          throw new Error("No tienes saldo a favor disponible.");
+        }
+      }
+
+      const paymentObj = {
         email,
         numberCondominium,
         amountPaid: Number(amountPaid),
@@ -234,55 +222,52 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
         paymentType,
         paymentDate: paymentDate.toISOString(),
         financialAccountId,
-        creditUsed, // Se envía el crédito utilizado
-        isUnidentifiedPayment, // Flag para identificar pagos no reconocidos
+        creditUsed,
+        isUnidentifiedPayment,
         ...(isUnidentifiedPayment && { appliedToUser: false }),
       };
+
+      // Intentar registrar el pago
       await addMaintenancePayment(paymentObj);
 
-      // Si es un pago no identificado, actualizamos la lista
-      if (isUnidentifiedPayment) {
-        await fetchPayments();
-      }
-      
-      try {
-        // Actualizar datos en tiempo real
-        await setupRealtimeListeners(selectedYear);
-        // Forzar actualización inmediata
-        await Promise.all([
-          fetchSummary(selectedYear),
-          fetchUserCharges(numberCondominium)
-        ]);
-      } catch (updateError) {
-        console.error("Error actualizando datos:", updateError);
-        // No mostramos este error al usuario ya que el pago se registró correctamente
-      }
+      // Si el pago fue exitoso, actualizar datos
+      await Promise.all([
+        setupRealtimeListeners(selectedYear),
+        fetchSummary(selectedYear),
+        fetchUserCharges(numberCondominium),
+        fetchCondominiumsUsers(),
+        isUnidentifiedPayment && fetchPayments(),
+      ].filter(Boolean));
 
-      // Resetear formulario después de todas las operaciones asíncronas
-      setEmail("");
-      setNumberCondominium("");
-      setAmountPaid("");
-      setAmountPending("");
-      setComments("");
-      setPaymentType("");
-      setFile(null);
-      setFileName("");
-      setSelectedCharges([]);
-      setSelectedUser(null);
-      setUseCreditBalance(false);
-      setPaymentDate(null);
-      setFinancialAccountId("");
-      setIsUnidentifiedPayment(false);
-
+      // Solo si todo fue exitoso, resetear y mostrar mensaje
+      resetForm();
       toast.success("Pago registrado correctamente");
-      setLoading(false);
-      setOpen(false); // Mover el cierre del modal al final de todas las operaciones
-      
+      setOpen(false);
+
     } catch (error: any) {
+      console.error("Error en el proceso de pago:", error);
+      toast.error(error.message || "Error al procesar el pago. Por favor, intenta nuevamente.");
+    } finally {
       setLoading(false);
-      console.error("Error al registrar el pago:", error);
-      toast.error(error.message || "Error al registrar el pago");
     }
+  };
+
+  // Función auxiliar para resetear el formulario
+  const resetForm = () => {
+    setEmail("");
+    setNumberCondominium("");
+    setAmountPaid("");
+    setAmountPending("");
+    setComments("");
+    setPaymentType("");
+    setFile(null);
+    setFileName("");
+    setSelectedCharges([]);
+    setSelectedUser(null);
+    setUseCreditBalance(false);
+    setPaymentDate(null);
+    setFinancialAccountId("");
+    setIsUnidentifiedPayment(false);
   };
 
   const dropzoneOptions = {
@@ -307,6 +292,18 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
       setAmountPending("");
       setUseCreditBalance(false);
     }
+  };
+
+  // Función auxiliar para ajustar la zona horaria
+  const adjustTimezone = (date: Date): Date => {
+    return new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+  };
+
+  // Función auxiliar para formatear la fecha para el input
+  const formatDateForInput = (date: Date | null): string => {
+    if (!date) return '';
+    const adjustedDate = adjustTimezone(date);
+    return adjustedDate.toISOString().slice(0, 16);
   };
 
   return (
@@ -435,12 +432,15 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                                   <CalendarIcon className="h-5 w-5 text-gray-400" />
                                 </div>
                                 <input
-                                  onChange={(e) => setPaymentDate(new Date(e.target.value))}
+                                  onChange={(e) => {
+                                    const selectedDate = new Date(e.target.value);
+                                    setPaymentDate(selectedDate);
+                                  }}
                                   type="datetime-local"
                                   name="paymentDate"
                                   id="paymentDate"
                                   className="block w-full rounded-md border-0 py-1.5 pl-10 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
-                                  value={paymentDate ? paymentDate.toISOString().slice(0, 16) : ""}
+                                  value={formatDateForInput(paymentDate)}
                                 />
                               </div>
                             </div>
@@ -463,7 +463,7 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                                   min="0"
                                   name="amountPaid"
                                   id="amountPaid"
-                                  className="block w-full rounded-md border-0 pl-10 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
+                                  className="block w-full rounded-md border-0 pl-10 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                   value={amountPaid}
                                 />
                               </div>
@@ -540,7 +540,7 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                                   name="amountPending"
                                   id="amountPending"
                                   disabled={isUnidentifiedPayment}
-                                  className="block w-full rounded-md border-0 pl-10 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
+                                  className="block w-full rounded-md border-0 pl-10 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                   value={amountPending}
                                 />
                               </div>
@@ -605,8 +605,8 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                                             <input
                                               type="number"
                                               min="0"
-                                              step="any"
-                                              className="w-18 rounded-md border-gray-300 pl-5 h-8 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
+                                              step="0.01"
+                                              className="w-18 rounded-md border-gray-300 pl-5 h-8 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                               placeholder="Monto a aplicar"
                                               value={selectedCharges.find((sc) => sc.chargeId === charge.id)?.amount || ""}
                                               onChange={(e) => handleAmountChange(charge.id, Number(e.target.value))}

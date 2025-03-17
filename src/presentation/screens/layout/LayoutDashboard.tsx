@@ -184,10 +184,7 @@ const LayoutDashboard = ({ children }: Props) => {
               </ul>
               <ul className="py-6">
                 <li className="w-40 h-36 mb-8 bg-gradient-to-tr from-[#9f86f81c] to-[#746dfc17] shadow-lg flex justify-center items-center rounded-lg mx-auto">
-                  <a
-                    href="#"
-                    className="group flex-col justify-center items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md"
-                  >
+                  <div className="group flex-col justify-center items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md">
                     <div className="flex justify-center items-center">
                       <ShieldExclamationIcon
                         className="h-6 w-6 text-indigo-400"
@@ -198,7 +195,7 @@ const LayoutDashboard = ({ children }: Props) => {
                     <button className="bg-indigo-400 text-xs text-center m-0 text-white rounded-md p-1">
                       <span className="block mb-0.5">Contacta a soporte</span>
                     </button>
-                  </a>
+                  </div>
                 </li>
                 <li>
                   <Link
@@ -297,18 +294,13 @@ const LayoutDashboard = ({ children }: Props) => {
                             </Disclosure.Button>
                             <Disclosure.Panel className="space-y-1">
                               {item.children.map((subItem) => (
-                                <Link
-                                  to={subItem.href}
+                                <Link 
+                                  to={subItem.href} 
                                   key={subItem.name}
                                   onClick={() => setIsMobileMenuOpen(false)}
+                                  className="group w-full flex items-center pl-11 pr-2 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md hover:bg-indigo-100 dark:hover:bg-gray-700"
                                 >
-                                  <Disclosure.Button
-                                    as="a"
-                                    href={subItem.href}
-                                    className="group w-full flex items-center pl-11 pr-2 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md hover:bg-indigo-100 dark:hover:bg-gray-700"
-                                  >
-                                    {subItem.name}
-                                  </Disclosure.Button>
+                                  {subItem.name}
                                 </Link>
                               ))}
                             </Disclosure.Panel>
@@ -321,22 +313,18 @@ const LayoutDashboard = ({ children }: Props) => {
               </ul>
               <ul className="py-6">
                 <li className="w-40 h-36 mb-8 bg-gradient-to-tr from-[#9f86f81c] to-[#746dfc17] shadow-lg flex justify-center items-center rounded-lg mx-auto">
-                  <a
-                    href="#"
-                    className="group flex-col justify-center items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md"
-                  >
+                  <div className="group flex-col justify-center items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md">
                     <div className="flex justify-center items-center">
                       <ShieldExclamationIcon
                         className="h-6 w-6 text-indigo-400"
                         aria-hidden="true"
                       />
                     </div>
-                    <p className="text-xs mt-2 mb-2 text-center">¿Necesitas ayudaa?</p>
+                    <p className="text-xs mt-2 mb-2 text-center">¿Necesitas ayuda?</p>
                     <button className="bg-indigo-400 text-xs text-center m-0 text-white rounded-md p-1">
                       <span className="block mb-0.5">Contacta a soporte</span>
                     </button>
-                    
-                  </a>
+                  </div>
                 </li>
                 <li>
                   <Link
@@ -377,7 +365,7 @@ const LayoutDashboard = ({ children }: Props) => {
       */}
       <div className="lg:ml-52 md:ml-56">
         <Navbar />
-        <main className="p-4 bg-white dark:bg-gray-800">
+        <main className="p-4 bg-white dark:bg-gray-800 min-h-screen">
           {children}
         </main>
       </div>

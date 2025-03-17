@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import PaymentForm from "../../../../components/shared/forms/PaymentForm";
 import DownloadReceipts from "./DownloadReceipts";
 import PaymentHistory from "./PaymentHistory";
@@ -7,12 +7,47 @@ import MorosidadView from "../Summary/MorosidadView";
 import PaymentSummaryByAccount from "./PaymentSummaryByAccount";
 import UnidentifiedPaymentsTable from "./UnidentifiedPaymentsTable";
 import HistoryPaymentsTable from "./HistoryPaymentsTable";
+import { usePaymentSummaryStore } from "../../../../../store/paymentSummaryStore";
 
 
 const Income = () => {
   const [open, setOpen] = useState(false);
   // Ahora el estado puede ser: "summary", "accountSummary", "history" o "morosidad"
   const [activeTab, setActiveTab] = useState("summary");
+  const { fetchSummary, cleanupListeners } = usePaymentSummaryStore((state) => ({
+    fetchSummary: state.fetchSummary,
+    cleanupListeners: state.cleanupListeners
+  }));
+
+  useEffect(() => {
+    const currentYear = new Date().getFullYear().toString();
+    
+    // Configurar
+    const loadData = async () => {
+      try {
+        await fetchSummary(currentYear, true);
+      } catch (error) {
+        console.error("Error loading summary:", error);
+      }
+    };
+    
+    loadData();
+
+    // Limpiar al desmontar
+    return () => {
+      cleanupListeners(currentYear);
+    };
+  }, []); 
+
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    if (["summary", "accountSummary"].includes(tab)) {
+      const currentYear = new Date().getFullYear().toString();
+      fetchSummary(currentYear).catch(error => {
+        console.error("Error refreshing summary:", error);
+      });
+    }
+  };
 
   return (
     <>
@@ -41,7 +76,7 @@ const Income = () => {
                     ? "border-indigo-500 text-indigo-600 dark:text-gray-100"
                     : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400"
                 }`}
-                onClick={() => setActiveTab("summary")}
+                onClick={() => handleTabChange("summary")}
               >
                 Resumen General
               </button>
@@ -53,7 +88,7 @@ const Income = () => {
                     ? "border-indigo-500 text-indigo-600 dark:text-gray-100"
                     : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400"
                 }`}
-                onClick={() => setActiveTab("accountSummary")}
+                onClick={() => handleTabChange("accountSummary")}
               >
                 Resumen por Cuenta
               </button>
@@ -65,7 +100,7 @@ const Income = () => {
                     ? "border-indigo-500 text-indigo-600 dark:text-gray-100"
                     : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400"
                 }`}
-                onClick={() => setActiveTab("history-and-send-receipts")}
+                onClick={() => handleTabChange("history-and-send-receipts")}
               >
                 Historial y Recibos
               </button>
@@ -77,7 +112,7 @@ const Income = () => {
                     ? "border-indigo-500 text-indigo-600 dark:text-gray-100"
                     : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400"
                 }`}
-                onClick={() => setActiveTab("morosidad")}
+                onClick={() => handleTabChange("morosidad")}
               >
                 Morosidad
               </button>
@@ -88,7 +123,7 @@ const Income = () => {
                     ? "border-indigo-500 text-indigo-600 dark:text-gray-100"
                     : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400"
                 }`}
-                onClick={() => setActiveTab("unidentified")}
+                onClick={() => handleTabChange("unidentified")}
               >
                 Pagos no identificados
               </button>
@@ -99,7 +134,7 @@ const Income = () => {
                     ? "border-indigo-500 text-indigo-600 dark:text-gray-100"
                     : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400"
                 }`}
-                onClick={() => setActiveTab("history")}
+                onClick={() => handleTabChange("history")}
               >
                 Historial
               </button>

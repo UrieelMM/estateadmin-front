@@ -265,6 +265,16 @@ export const usePaymentStore = create<MaintenancePaymentState>((set, get) => ({
       if (!payment.paymentType) {
         throw new Error("El campo tipo de pago es obligatorio.");
       }
+
+      // Formatear la fecha de pago al formato correcto
+      let formattedPaymentDate = payment.paymentDate;
+      if (payment.paymentDate) {
+        const date = new Date(payment.paymentDate);
+        if (!isNaN(date.getTime())) {
+          formattedPaymentDate = date.toISOString().slice(0, 16).replace('T', ' ');
+        }
+      }
+
       const auth = getAuth();
       const user = auth.currentUser;
       if (!user) throw new Error("Usuario no autenticado");
@@ -299,7 +309,7 @@ export const usePaymentStore = create<MaintenancePaymentState>((set, get) => ({
         payment.creditUsed ? String(toCents(payment.creditUsed)) : "0"
       );
   
-      formData.append("paymentDate", payment.paymentDate || "");
+      formData.append("paymentDate", formattedPaymentDate || "");
       formData.append("financialAccountId", payment.financialAccountId || "");
   
       // --- OJO: Aquí quitamos la línea que siempre ponía la URL de attachmentPayment ---

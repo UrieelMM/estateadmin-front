@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { UserIcon, CurrencyDollarIcon, CalendarIcon, CheckCircleIcon, ClipboardIcon } from "@heroicons/react/16/solid";
 import { useChargeStore } from "../../../../../store/useChargeStore";
 import useUserStore from "../../../../../store/UserDataStore";
+import { usePaymentSummaryStore } from "../../../../../store/paymentSummaryStore";
 
 const commonConcepts = [
   "Cuota de mantenimiento",
@@ -29,6 +30,7 @@ const commonConcepts = [
 const ChargeForm = () => {
   const { createChargeForOne, createChargeForAll, loading, error } = useChargeStore();
   const fetchCondominiumsUsers = useUserStore((state) => state.fetchCondominiumsUsers);
+  const fetchSummary = usePaymentSummaryStore((state) => state.fetchSummary);
   const condominiumsUsers = useUserStore((state) => state.condominiumsUsers);
 
   const [chargeType, setChargeType] = useState<"individual" | "all">("individual");
@@ -53,8 +55,12 @@ const ChargeForm = () => {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    const formattedStartAt = startAt.replace("T", " ");
-    const formattedDueDate = dueDate.replace("T", " ");
+    const formatDateTime = (dateTimeString: string): string => {
+      return dateTimeString.replace('T', ' ');
+    };
+
+    const formattedStartAt = formatDateTime(startAt);
+    const formattedDueDate = formatDateTime(dueDate);
 
     const options = {
       concept,
@@ -76,6 +82,9 @@ const ChargeForm = () => {
         await createChargeForAll(options);
         alert("Cargo creado para todos los usuarios.");
       }
+
+      await fetchSummary();
+      
       setConcept("Cuota de mantenimiento");
       setAmount(0);
       setStartAt("2025-02-01T00:00");
