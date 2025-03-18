@@ -178,19 +178,17 @@ const PDFReportGeneratorSingle: React.FC<PDFReportGeneratorSingleProps> = ({
       const records = detailed[key] || [];
       const totalPaid = records.reduce((acc, rec) => acc + rec.amountPaid, 0);
       const totalPending = records.reduce((acc, rec) => acc + rec.amountPending, 0);
-      // Se resta creditUsed al creditBalance para reflejar movimientos negativos si se usó crédito
-      const totalCredit = records.reduce(
-        (acc, rec) => acc + (rec.creditBalance - (rec.creditUsed || 0)),
-        0
-      );
+      const totalCreditUsed = records.reduce((acc, rec) => acc + (rec.creditUsed || 0), 0);
+      const totalCreditBalance = records.reduce((acc, rec) => acc + rec.creditBalance, 0);
+      const totalCredit = totalCreditBalance - totalCreditUsed;
 
-      totalPaidGeneral += totalPaid;
+      totalPaidGeneral += totalPaid + totalCreditUsed + totalCredit;
       totalPendingGeneral += totalPending;
       totalCreditGeneral += totalCredit;
 
       generalData.push([
         monthNames[monthNum],
-        formatCurrency(totalPaid),
+        formatCurrency(totalPaid + totalCreditUsed + totalCredit),
         formatCurrency(totalPending),
         formatCurrency(totalCredit),
       ]);
@@ -259,12 +257,11 @@ const PDFReportGeneratorSingle: React.FC<PDFReportGeneratorSingleProps> = ({
         const records = detailedByConcept[concept][key] || [];
         const totalPaid = records.reduce((acc, rec) => acc + rec.amountPaid, 0);
         const totalPending = records.reduce((acc, rec) => acc + rec.amountPending, 0);
-        const totalCredit = records.reduce(
-          (acc, rec) => acc + (rec.creditBalance - (rec.creditUsed || 0)),
-          0
-        );
+        const totalCreditUsed = records.reduce((acc, rec) => acc + (rec.creditUsed || 0), 0);
+        const totalCreditBalance = records.reduce((acc, rec) => acc + rec.creditBalance, 0);
+        const totalCredit = totalCreditBalance - totalCreditUsed;
 
-        totalPaidConcept += totalPaid;
+        totalPaidConcept += totalPaid + totalCreditUsed + totalCredit;
         totalPendingConcept += totalPending;
         totalCreditConcept += totalCredit;
 
@@ -273,7 +270,7 @@ const PDFReportGeneratorSingle: React.FC<PDFReportGeneratorSingleProps> = ({
 
         conceptData.push([
           monthNames[monthNum],
-          formatCurrency(totalPaid),
+          formatCurrency(totalPaid + totalCreditUsed + totalCredit),
           formatCurrency(totalPending),
           formatCurrency(totalCredit),
           allDates, // la nueva columna

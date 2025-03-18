@@ -2,6 +2,9 @@ import { useState } from 'react'
 import { Dialog } from '@headlessui/react'
 import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline'
 import logo from "../../../assets/logo.png"
+import VideoPresentation from './VideoPresentation'
+import Footer from './Footer'
+import Contact from './Contact'
 
 const navigation = [
   { name: 'Soluciones', href: '#' },
@@ -107,7 +110,7 @@ const Hero = () => {
             }}
           />
         </div>
-        <div className="mx-auto max-w-2xl py-32 sm:py-48 lg:py-56">
+        <div className="mx-auto max-w-[1920px] py-24 sm:py-32 lg:pt-56 lg:pb-4">
           <div className="hidden sm:mb-8 sm:flex sm:justify-center">
             <div className="relative rounded-full px-3 py-1 text-sm leading-6 text-gray-600 ring-1 ring-gray-900/10 hover:ring-gray-900/20">
               Presentamos nuestra nueva plataforma
@@ -120,10 +123,10 @@ const Hero = () => {
           <div className="text-center">
             <h1 className="text-4xl font-bold tracking-tight text-indigo-600 sm:text-6xl">EstateAdmin</h1>
             <h2 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-6xl">
-                Modernidad y Eficacia en la Gestión de Condominios.
+                Modernidad y Eficacia <br /> en la Gestión de Condominios.
             </h2>
             <p className="mt-6 text-lg leading-8 text-gray-600">
-                Optimiza la administración, mejora la comunicación y disfruta de una gestión de condominios eficiente y moderna con nuestra innovadora plataforma integrada.
+                Optimiza la administración, mejora la comunicación y disfruta de una gestión de condominios eficiente y moderna <br /> con nuestra innovadora plataforma integrada.
             </p>
             <div className="mt-10 flex items-center justify-center gap-x-6">
               <a
@@ -132,10 +135,12 @@ const Hero = () => {
               >
                 Comenzar
               </a>
-              <a href="#" className="text-sm font-semibold leading-6 text-gray-900">
+              <a href="#video-presentation" className="text-sm font-semibold leading-6 text-gray-900 cursor-pointer">
                 Saber más <span aria-hidden="true">→</span>
               </a>
             </div>
+            <VideoPresentation />
+            <Contact />
           </div>
         </div>
         <div
@@ -149,8 +154,10 @@ const Hero = () => {
                 'polygon(74.1% 44.1%, 100% 61.6%, 97.5% 26.9%, 85.5% 0.1%, 80.7% 2%, 72.5% 32.5%, 60.2% 62.4%, 52.4% 68.1%, 47.5% 58.3%, 45.2% 34.5%, 27.5% 76.7%, 0.1% 64.9%, 17.9% 100%, 27.6% 76.8%, 76.1% 97.7%, 74.1% 44.1%)',
             }}
           />
+           
         </div>
       </div>
+      <Footer />
     </div>
   )
 }

@@ -144,7 +144,7 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({ year, concept }
       // - El initialBalance de todas las financialAccounts
       let computedTotalIncome = 0;
       monthlyStats.forEach((stat) => {
-        computedTotalIncome += stat.paid + stat.saldo;
+        computedTotalIncome += stat.paid + stat.creditUsed + stat.saldo;
       });
       const financialAccountsMap = usePaymentSummaryStore.getState().financialAccountsMap;
       let totalInitialBalance = 0;
@@ -190,14 +190,18 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({ year, concept }
           }
           return recMonth === m;
         });
-        // Sumar amountPaid + creditBalance para reflejar el total pagado
-        const paid = recsForMonth.reduce((sum, rec) => sum + rec.amountPaid + rec.creditBalance, 0);
+        
+        // Calcular los totales para este mes
+        const monthPaid = recsForMonth.reduce((sum, rec) => sum + rec.amountPaid, 0);
+        const monthCreditUsed = recsForMonth.reduce((sum, rec) => sum + (rec.creditUsed || 0), 0);
+        const monthCreditBalance = recsForMonth.reduce((sum, rec) => sum + rec.creditBalance, 0);
+        
+        // Monto abonado es la suma de pagos regulares + crédito usado + saldo disponible
+        const paid = monthPaid + monthCreditUsed + (monthCreditBalance - monthCreditUsed);
         const pending = recsForMonth.reduce((sum, rec) => sum + rec.amountPending, 0);
-        // Saldo a favor: creditBalance - creditUsed
-        const credit = recsForMonth.reduce(
-          (sum, rec) => sum + (rec.creditBalance - (rec.creditUsed || 0)),
-          0
-        );
+        // Saldo a favor es el saldo disponible menos el usado
+        const credit = monthCreditBalance - monthCreditUsed;
+        
         totalPaid += paid;
         totalPendingConcept += pending;
         totalCredit += credit;
@@ -271,10 +275,17 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({ year, concept }
             }
             return recMonth === m;
           });
-          // Sumar amountPaid + creditBalance para el total pagado
-          const amountPaid = recordsForMonth.reduce((sum, r) => sum + r.amountPaid + r.creditBalance, 0);
+          // Calcular los totales para este mes
+          const monthPaid = recordsForMonth.reduce((sum, r) => sum + r.amountPaid, 0);
+          const monthCreditUsed = recordsForMonth.reduce((sum, r) => sum + (r.creditUsed || 0), 0);
+          const monthCreditBalance = recordsForMonth.reduce((sum, r) => sum + r.creditBalance, 0);
+          
+          // Monto abonado es la suma de pagos regulares + crédito usado + saldo disponible
+          const amountPaid = monthPaid + monthCreditUsed + (monthCreditBalance - monthCreditUsed);
           const amountPending = recordsForMonth.reduce((sum, r) => sum + r.amountPending, 0);
-          const credit = recordsForMonth.reduce((sum, r) => sum + (r.creditBalance - (r.creditUsed || 0)), 0);
+          // Saldo a favor es el saldo disponible menos el usado
+          const credit = monthCreditBalance - monthCreditUsed;
+          
           totalPaidCond += amountPaid;
           totalPendingCond += amountPending;
           totalCreditCond += credit;
@@ -319,7 +330,7 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({ year, concept }
       // --- Reporte General ---
       const compRows = monthlyStats.map((stat) => [
         monthNames[stat.month] || stat.month,
-        formatCurrency(stat.paid + stat.saldo),
+        formatCurrency(stat.paid + stat.creditUsed + stat.saldo),
         formatCurrency(stat.pending),
         formatCurrency(stat.saldo),
         formatCurrency(stat.unidentifiedPayments),
@@ -331,7 +342,7 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({ year, concept }
         totalSaldoGlobal = 0,
         totalUnidentifiedGlobal = 0;
       monthlyStats.forEach((stat) => {
-        totalPaidGlobal += stat.paid + stat.saldo;
+        totalPaidGlobal += stat.paid + stat.creditUsed + stat.saldo;
         totalPendingGlobal += stat.pending;
         totalSaldoGlobal += stat.saldo;
         totalUnidentifiedGlobal += stat.unidentifiedPayments;
@@ -415,14 +426,18 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({ year, concept }
           let globalTotalRecords = 0,
             globalPaidRecords = 0;
           const rows = monthKeys.map((m) => {
-            const recordsForMonth = recs.filter((r) =>
-              r.month.includes("-") ? r.month.split("-")[1] === m : r.month === m
-            );
-            // Sumar amountPaid + creditBalance para el total pagado
-            const paid = recordsForMonth.reduce((sum, r) => sum + r.amountPaid + r.creditBalance, 0);
+            const recordsForMonth = recs.filter((r) => r.month === m);
+            // Calcular los totales para este mes
+            const monthPaid = recordsForMonth.reduce((sum, r) => sum + r.amountPaid, 0);
+            const monthCreditUsed = recordsForMonth.reduce((sum, r) => sum + (r.creditUsed || 0), 0);
+            const monthCreditBalance = recordsForMonth.reduce((sum, r) => sum + r.creditBalance, 0);
+            
+            // Monto abonado es la suma de pagos regulares + crédito usado + saldo disponible
+            const paid = monthPaid + monthCreditUsed + (monthCreditBalance - monthCreditUsed);
             const pending = recordsForMonth.reduce((sum, r) => sum + r.amountPending, 0);
-            // Ajuste: saldo a favor = creditBalance - creditUsed
-            const credit = recordsForMonth.reduce((sum, r) => sum + (r.creditBalance - (r.creditUsed || 0)), 0);
+            // Saldo a favor es el saldo disponible menos el usado
+            const credit = monthCreditBalance - monthCreditUsed;
+            
             totalPaidConcept += paid;
             totalPendingConcept += pending;
             totalCreditConcept += credit;
@@ -492,10 +507,17 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({ year, concept }
             }
             return recMonth === m;
           });
-          // Sumar amountPaid + creditBalance para el total pagado
-          const amountPaid = recordsForMonth.reduce((sum, r) => sum + r.amountPaid + r.creditBalance, 0);
+          // Calcular los totales para este mes
+          const monthPaid = recordsForMonth.reduce((sum, r) => sum + r.amountPaid, 0);
+          const monthCreditUsed = recordsForMonth.reduce((sum, r) => sum + (r.creditUsed || 0), 0);
+          const monthCreditBalance = recordsForMonth.reduce((sum, r) => sum + r.creditBalance, 0);
+          
+          // Monto abonado es la suma de pagos regulares + crédito usado + saldo disponible
+          const amountPaid = monthPaid + monthCreditUsed + (monthCreditBalance - monthCreditUsed);
           const amountPending = recordsForMonth.reduce((sum, r) => sum + r.amountPending, 0);
-          const credit = recordsForMonth.reduce((sum, r) => sum + (r.creditBalance - (r.creditUsed || 0)), 0);
+          // Saldo a favor es el saldo disponible menos el usado
+          const credit = monthCreditBalance - monthCreditUsed;
+          
           totalPaidCond += amountPaid;
           totalPendingCond += amountPending;
           totalCreditCond += credit;

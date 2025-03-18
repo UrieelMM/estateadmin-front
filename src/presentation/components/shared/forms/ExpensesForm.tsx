@@ -23,6 +23,7 @@ const PAYMENT_TYPES = ["Efectivo", "Transferencia", "Tarjeta", "Cheque", "Depós
 
 const ExpenseForm: React.FC<ExpenseFormProps> = ({ open, setOpen }) => {
     const [amount, setAmount] = useState<string>("");
+    const [amountDisplay, setAmountDisplay] = useState<string>("");
     const [concept, setConcept] = useState<string>("");
     const [paymentType, setPaymentType] = useState<string>("");
     const [expenseDate, setExpenseDate] = useState<string>("");
@@ -79,6 +80,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ open, setOpen }) => {
         if (open) {
             fetchFinancialAccounts();
             setAmount("");
+            setAmountDisplay("");
             setConcept("");
             setPaymentType("");
             setExpenseDate("");
@@ -89,6 +91,13 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ open, setOpen }) => {
             setFinancialAccountId("");
         }
     }, [open]);
+
+    // Función para formatear a moneda mexicana (solo visual)
+    const formatCurrency = (value: number) =>
+        new Intl.NumberFormat("es-MX", {
+            style: "currency",
+            currency: "MXN",
+        }).format(value);
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -202,13 +211,24 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ open, setOpen }) => {
                                                                 <input
                                                                     id="amount"
                                                                     name="amount"
-                                                                    type="number"
-                                                                    step="0.01"
-                                                                    min="0"
+                                                                    type="text"
                                                                     className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none block w-full rounded-md border-0 pl-10 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
                                                                     placeholder="0.00"
-                                                                    value={amount}
-                                                                    onChange={(e) => setAmount(e.target.value)}
+                                                                    value={amountDisplay}
+                                                                    onChange={(e) => {
+                                                                        const rawValue = e.target.value;
+                                                                        setAmount(rawValue);
+                                                                        setAmountDisplay(rawValue);
+                                                                    }}
+                                                                    onFocus={() => setAmountDisplay(amount)}
+                                                                    onBlur={() => {
+                                                                        const num = parseFloat(amount);
+                                                                        if (!isNaN(num)) {
+                                                                            setAmountDisplay(formatCurrency(num));
+                                                                        } else {
+                                                                            setAmountDisplay("");
+                                                                        }
+                                                                    }}
                                                                 />
                                                             </div>
                                                         </div>
@@ -301,7 +321,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ open, setOpen }) => {
                                                                 Fecha del egreso
                                                             </label>
                                                             <div className="mt-2 relative">
-                                                                <div className="absolute left-2 top-1/2 flex items-center transform -translate-y-[60%]">
+                                                                <div className="absolute left-2 top-1/2 flex items-center transform -translate-y-1/2">
                                                                     <CalendarIcon className="h-5 w-5 text-gray-400" />
                                                                 </div>
                                                                 <input

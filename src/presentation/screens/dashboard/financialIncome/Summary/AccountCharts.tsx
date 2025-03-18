@@ -75,17 +75,22 @@ const AccountCharts: React.FC<{ payments: PaymentRecord[] }> = ({ payments }) =>
    */
   const conceptTotals = useMemo(() => {
     const totals: Record<string, number> = {};
+    
+    // Sumar pagos regulares y crédito usado
     payments.forEach((p) => {
       const concept = p.concept || "Desconocido";
-      totals[concept] = (totals[concept] || 0) + p.amountPaid;
+      totals[concept] = (totals[concept] || 0) + p.amountPaid + (p.creditUsed || 0);
     });
-    // Agregar el Saldo inicial como una categoría aparte
+    
+    // Agregar Saldo inicial como categoría
     totals["Saldo inicial"] = initialBalance;
-    // Agregar Saldo a favor como categoría
+    
+    // Agregar Saldo a favor disponible como categoría
     const totalSaldo = accountMonthlyStats.reduce((acc, stat) => acc + stat.saldo, 0);
     if (totalSaldo > 0) {
       totals["Saldo a favor"] = totalSaldo;
     }
+    
     return totals;
   }, [payments, initialBalance, accountMonthlyStats]);
 

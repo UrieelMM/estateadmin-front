@@ -39,22 +39,32 @@ const Tooltip: React.FC<{ text: string }> = ({ text }) => {
 };
 
 const SummaryCards: React.FC = React.memo(() => {
-  // totalIncome ya incluye el initialBalance de todas las cuentas,
-  // y monthlyStats se calcula a partir de los payments (saldo a favor sin el initialBalance).
-  const { totalIncome, totalPending, monthlyStats } = usePaymentSummaryStore(
+  const { totalIncome, totalPending, monthlyStats, payments } = usePaymentSummaryStore(
     (state) => ({
       totalIncome: state.totalIncome,
       totalPending: state.totalPending,
       monthlyStats: state.monthlyStats,
+      payments: state.payments
     }),
     shallow
   );
 
-  // Se calcula el saldo a favor global a partir de monthlyStats
+  // Calcular el total de crédito usado
+  const totalCreditUsed = payments.reduce((acc, payment) => 
+    acc + (payment.creditUsed || 0), 0
+  );
+
+  // Calcular el saldo a favor disponible
   const totalCreditGlobal = monthlyStats.reduce(
     (acc, stat) => acc + stat.saldo,
     0
   );
+
+  // El total de ingresos real debe incluir:
+  // - Los pagos regulares (totalIncome)
+  // - El saldo a favor usado (totalCreditUsed)
+  // - El saldo a favor disponible (totalCreditGlobal)
+  const realTotalIncome = totalIncome + totalCreditUsed + totalCreditGlobal;
 
   const formatCurrency = (value: number): string =>
     "$" +
@@ -84,11 +94,11 @@ const SummaryCards: React.FC = React.memo(() => {
                 Total ingresos
               </h3>
               <div className="absolute top-4 right-4">
-                <Tooltip text="Suma de pagos, saldo inicial y saldo a favor global." />
+                <Tooltip text="Suma total de pagos incluyendo saldo a favor aplicado y saldo inicial." />
               </div>
             </div>
             <p className="mt-1 text-2xl font-semibold text-gray-900 dark:text-white">
-              {formatCurrency(totalIncome + totalCreditGlobal)}
+              {formatCurrency(realTotalIncome)}
             </p>
           </div>
         </Card>
@@ -136,7 +146,7 @@ const SummaryCards: React.FC = React.memo(() => {
                 Total saldo a favor
               </h3>
               <div className="absolute top-4 right-4">
-                <Tooltip text="Saldo a favor global basado en los pagos mensuales." />
+                <Tooltip text="Saldo a favor global por aplicar." />
               </div>
             </div>
             <p className="mt-1 text-2xl font-semibold text-gray-900 dark:text-white">

@@ -37,6 +37,8 @@ const ChargeForm = () => {
   const [selectedUser, setSelectedUser] = useState<string>("");
   const [concept, setConcept] = useState<string>("Cuota de mantenimiento");
   const [amount, setAmount] = useState<number>(0);
+  const [amountDisplay, setAmountDisplay] = useState<string>("");
+
   const [_generatedAt] = useState<string>(() => {
     const now = new Date();
     const year = now.getFullYear();
@@ -52,11 +54,18 @@ const ChargeForm = () => {
     fetchCondominiumsUsers();
   }, [fetchCondominiumsUsers]);
 
+  // Función auxiliar para formatear a moneda mexicana (solo visual)
+  const formatCurrency = (value: number) =>
+    new Intl.NumberFormat("es-MX", {
+      style: "currency",
+      currency: "MXN",
+    }).format(value);
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     const formatDateTime = (dateTimeString: string): string => {
-      return dateTimeString.replace('T', ' ');
+      return dateTimeString.replace("T", " ");
     };
 
     const formattedStartAt = formatDateTime(startAt);
@@ -84,9 +93,10 @@ const ChargeForm = () => {
       }
 
       await fetchSummary();
-      
+
       setConcept("Cuota de mantenimiento");
       setAmount(0);
+      setAmountDisplay("");
       setStartAt("2025-02-01T00:00");
       setDueDate("2025-02-28T23:59");
       setPaid(false);
@@ -97,12 +107,10 @@ const ChargeForm = () => {
   };
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    if (value === "") {
-      setAmount(0);
-    } else {
-      setAmount(Number(value));
-    }
+    const rawValue = e.target.value;
+    const num = parseFloat(rawValue.replace(/[^0-9.]/g, "")) || 0;
+    setAmount(num);
+    setAmountDisplay(rawValue);
   };
 
   return (
@@ -145,7 +153,6 @@ const ChargeForm = () => {
                 className="w-full pl-10 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
                 value={selectedUser}
                 onChange={(e) => setSelectedUser(e.target.value)}
-                
               >
                 <option value="">-- Selecciona un usuario --</option>
                 {condominiumsUsers
@@ -192,10 +199,18 @@ const ChargeForm = () => {
               <CurrencyDollarIcon className="h-5 w-5 text-gray-400" />
             </div>
             <input
-              type="number"
+              type="text"
               className="w-full pl-10 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
-              value={amount === 0 ? "" : amount}
+              value={amountDisplay}
               onChange={handleAmountChange}
+              onFocus={() => setAmountDisplay(amount.toString())}
+              onBlur={() => {
+                if (amount > 0) {
+                  setAmountDisplay(formatCurrency(amount));
+                } else {
+                  setAmountDisplay("");
+                }
+              }}
               placeholder="Ejemplo: $1500"
               min="0"
             />

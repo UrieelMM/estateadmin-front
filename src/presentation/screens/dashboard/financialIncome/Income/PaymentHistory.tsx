@@ -104,7 +104,7 @@ const PaymentHistory = () => {
   // Preparar datos para la gráfica: agrupar por mes (YYYY-MM) => { paid, pending, saldo }
   const chartData = payments.reduce(
     (
-      acc: Record<string, { paid: number; pending: number; saldo: number }>,
+      acc: Record<string, { paid: number; pending: number; saldo: number; creditUsed: number; creditBalance: number }>,
       payment: PaymentRecord
     ) => {
       let [_yearPart, monthPart] = ["", ""];
@@ -115,11 +115,13 @@ const PaymentHistory = () => {
       }
 
       if (!acc[monthPart]) {
-        acc[monthPart] = { paid: 0, pending: 0, saldo: 0 };
+        acc[monthPart] = { paid: 0, pending: 0, saldo: 0, creditUsed: 0, creditBalance: 0 };
       }
       acc[monthPart].paid += payment.amountPaid;
       acc[monthPart].pending += payment.amountPending;
-      acc[monthPart].saldo += payment.creditBalance;
+      acc[monthPart].creditUsed += payment.creditUsed || 0;
+      acc[monthPart].creditBalance += payment.creditBalance;
+      acc[monthPart].saldo += payment.creditBalance - (payment.creditUsed || 0);
       return acc;
     },
     {}
@@ -130,7 +132,7 @@ const PaymentHistory = () => {
     .sort((a, b) => parseInt(a[0]) - parseInt(b[0]))
     .map(([month, data]) => ({
       month: monthNames[month] || month,
-      paid: data.paid,
+      paid: data.paid + data.creditUsed + (data.creditBalance - data.creditUsed),
       pending: data.pending,
       saldo: data.saldo,
     }));

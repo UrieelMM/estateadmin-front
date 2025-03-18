@@ -4,6 +4,7 @@ import {
     ChevronLeftIcon,
     ChevronRightIcon,
     FunnelIcon,
+    InformationCircleIcon,
 } from '@heroicons/react/24/outline';
 import { usePaymentSummaryStore } from '../../../../../store/paymentSummaryStore';
 import { formatCurrency } from '../../../../../utils/curreyncy';
@@ -168,19 +169,70 @@ const HistoryPaymentsTable: React.FC = () => {
                                 <thead className="bg-gray-50 dark:bg-gray-800">
                                     <tr>
                                         <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 dark:text-white sm:pl-6">
-                                            Fecha
+                                            <div className="flex items-center gap-1">
+                                                Fecha
+                                                <div className="group relative cursor-pointer">
+                                                    <InformationCircleIcon className="h-4 w-4 text-gray-400" />
+                                                    <div className="absolute top-full left-20 transform -translate-x-1/2 mt-2 hidden group-hover:block w-64 p-2 bg-gray-900 text-white text-xs rounded shadow-lg z-10">
+                                                        Fecha en que se realizó el pago
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </th>
                                         <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white">
-                                            Monto
+                                            <div className="flex items-center gap-1">
+                                                Monto
+                                                <div className="group relative cursor-pointer">
+                                                    <InformationCircleIcon className="h-4 w-4 text-gray-400" />
+                                                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 hidden group-hover:block w-64 p-2 bg-gray-900 text-white text-xs rounded shadow-lg z-10">
+                                                        Monto abonado + Saldo a favor utilizado (en caso de que aplique)
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </th>
                                         <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white">
-                                            Número de Condominio
+                                            <div className="flex items-center gap-1">
+                                                Saldo a favor
+                                                <div className="group relative cursor-pointer">
+                                                    <InformationCircleIcon className="h-4 w-4 text-gray-400" />
+                                                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 hidden group-hover:block w-64 p-2 bg-gray-900 text-white text-xs rounded shadow-lg z-10">
+                                                        <div className="mb-1">Saldo a favor generado o utilizado en este pago.</div>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </th>
                                         <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white">
-                                            Concepto
+                                            <div className="flex items-center gap-1">
+                                                Número de Condominio
+                                                <div className="group relative cursor-pointer">
+                                                    <InformationCircleIcon className="h-4 w-4 text-gray-400" />
+                                                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 hidden group-hover:block w-64 p-2 bg-gray-900 text-white text-xs rounded shadow-lg z-10">
+                                                        Identificador único del condominio
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </th>
                                         <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white">
-                                            Comprobante
+                                            <div className="flex items-center gap-1">
+                                                Concepto
+                                                <div className="group relative cursor-pointer">
+                                                    <InformationCircleIcon className="h-4 w-4 text-gray-400" />
+                                                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 hidden group-hover:block w-64 p-2 bg-gray-900 text-white text-xs rounded shadow-lg z-10">
+                                                        Descripción del pago realizado
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </th>
+                                        <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white">
+                                            <div className="flex items-center gap-1">
+                                                Comprobante
+                                                <div className="group relative cursor-pointer">
+                                                    <InformationCircleIcon className="h-4 w-4 text-gray-400" />
+                                                    <div className="absolute top-full left-[-36px] transform -translate-x-1/2 mt-2 hidden group-hover:block w-64 p-2 bg-gray-900 text-white text-xs rounded shadow-lg z-10">
+                                                        Documento que respalda el pago realizado
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </th>
                                     </tr>
                                 </thead>
@@ -188,16 +240,35 @@ const HistoryPaymentsTable: React.FC = () => {
                                     {filteredPayments.map((payment) => (
                                         <tr key={payment.id} className="hover:bg-gray-50 transition-colors dark:hover:bg-gray-700 cursor-pointer">
                                             <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm text-gray-900 dark:text-gray-200 sm:pl-6">
-                                                {payment.paymentDate || 'N/A'}
+                                                {payment.paymentDate || 'No identificado'}
                                             </td>
                                             <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 dark:text-gray-200">
-                                                {formatCurrency(payment.amountPaid)}
+                                                {formatCurrency(payment.amountPaid + (payment.creditBalance || 0))}
+                                            </td>
+                                            <td className="whitespace-nowrap px-3 py-4 text-sm">
+                                                <div className="flex flex-col gap-1">
+                                                    {payment.creditBalance > 0 && (
+                                                        <span className="text-green-600 dark:text-green-400">
+                                                            +{formatCurrency(payment.creditBalance)}
+                                                        </span>
+                                                    )}
+                                                    {(payment.creditUsed || 0) > 0 && (
+                                                        <span className="text-red-600 dark:text-red-400">
+                                                            -{formatCurrency(payment.creditUsed || 0)}
+                                                        </span>
+                                                    )}
+                                                    {payment.creditBalance === 0 && (payment.creditUsed || 0) === 0 && (
+                                                        <span className="text-gray-500 dark:text-gray-400">
+                                                            {formatCurrency(0)}
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </td>
                                             <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 dark:text-gray-200">
-                                                {payment.numberCondominium}
+                                                {payment.numberCondominium || 'No identificado'}
                                             </td>
                                             <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 dark:text-gray-200">
-                                                {payment.concept}
+                                                {payment.concept || 'No identificado'}
                                             </td>
                                             <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 dark:text-gray-200">
                                                 {payment.attachmentPayment ? (

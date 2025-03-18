@@ -43,7 +43,7 @@ const ApplyPaymentModal = ({
   financialAccountId: propFinancialAccountId, // Cuenta donde se registra el pago
   paymentId: propPaymentId, // ID del pago no identificado
 }: ApplyPaymentModalProps) => {
-  console.log("paymentId", propPaymentId)
+  console.log("paymentId", propPaymentId);
   // ---------------------------
   //  Estados locales
   // ---------------------------
@@ -53,8 +53,11 @@ const ApplyPaymentModal = ({
   // Campos del formulario
   const [email, setEmail] = useState<string>("");
   const [numberCondominium, setNumberCondominium] = useState<string>("");
+  // El monto abonado se inicializa con el valor recibido, pero se mantendrá como string
   const [amountPaid, setAmountPaid] = useState<string>(amount.toString());
+  // Monto pendiente: estado raw y visual
   const [amountPending, setAmountPending] = useState<string>("");
+  const [amountPendingDisplay, setAmountPendingDisplay] = useState<string>("");
   const [comments, setComments] = useState<string>("");
 
   // paymentType y paymentDate (solo lectura)
@@ -75,6 +78,8 @@ const ApplyPaymentModal = ({
   const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
   const [useCreditBalance, setUseCreditBalance] = useState<boolean>(false);
   const [selectedCharges, setSelectedCharges] = useState<SelectedCharge[]>([]);
+  // Estado para valores visuales de cada cargo
+  const [chargeDisplayValues, setChargeDisplayValues] = useState<{ [key: string]: string }>({});
 
   // ---------------------------
   //  Stores
@@ -87,14 +92,14 @@ const ApplyPaymentModal = ({
     addMaintenancePayment,
     fetchUserCharges,
     fetchFinancialAccounts,
-    editUnidentifiedPayment, // <--- Importamos la nueva función
+    editUnidentifiedPayment, // <--- Función para editar pago no identificado
   } = usePaymentStore((state) => ({
     charges: state.charges,
     addMaintenancePayment: state.addMaintenancePayment,
     fetchUserCharges: state.fetchUserCharges,
     financialAccounts: state.financialAccounts,
     fetchFinancialAccounts: state.fetchFinancialAccounts,
-    editUnidentifiedPayment: state.editUnidentifiedPayment, // <--- Aquí
+    editUnidentifiedPayment: state.editUnidentifiedPayment,
   }));
 
   const { fetchSummary, selectedYear } = usePaymentSummaryStore((state) => ({
@@ -137,7 +142,7 @@ const ApplyPaymentModal = ({
     fetchFinancialAccounts();
   }, [fetchCondominiumsUsers, fetchFinancialAccounts, condominiumsUsers]);
 
-  // Formatear moneda
+  // Helper para formatear a moneda mexicana
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat("es-MX", {
       style: "currency",
@@ -266,14 +271,14 @@ const ApplyPaymentModal = ({
     }
 
     try {
-      // Determina cuál es la URL final de attachmentPayment:
+      // Determina la URL final del comprobante
       const finalAttachment = propAttachmentPayment
         ? propAttachmentPayment
         : file
         ? file
         : "";
 
-      // Construimos el payload para aplicar el pago al usuario
+      // Construir payload para aplicar el pago
       const paymentObj: any = {
         email,
         numberCondominium,
@@ -287,16 +292,14 @@ const ApplyPaymentModal = ({
         paymentDate: paymentDate.toISOString(),
         financialAccountId: propFinancialAccountId,
         creditUsed,
-        // Ya NO marcamos isUnidentifiedPayment ni pasamos id
-        // para evitar que el store llame a la antigua "updateUnidentifiedPayment"
         attachmentPayment: finalAttachment,
         appliedToUser: "true",
       };
 
-      // (1) Creamos el pago identificado para el usuario
+      // (1) Crear el pago identificado para el usuario
       await addMaintenancePayment(paymentObj);
 
-      // (2) Si tenemos un paymentId (pago no identificado existente), lo editamos con el NUEVO endpoint
+      // (2) Si existe paymentId (pago no identificado), lo editamos
       if (propPaymentId) {
         await editUnidentifiedPayment(propPaymentId);
       }
@@ -306,6 +309,7 @@ const ApplyPaymentModal = ({
       setNumberCondominium("");
       setAmountPaid(amount.toString());
       setAmountPending("");
+      setAmountPendingDisplay("");
       setComments("");
       setPaymentType("");
       setFile(null);
@@ -318,11 +322,10 @@ const ApplyPaymentModal = ({
       setOpen(false);
       setLoading(false);
       toast.success("Pago aplicado correctamente");
-      
+
       // Actualizamos la lista de pagos no identificados
       await fetchPayments();
-      
-      // También actualizamos el resumen si es necesario
+      // Actualizamos el resumen
       fetchSummary(selectedYear);
     } catch (error) {
       setLoading(false);
@@ -397,15 +400,12 @@ const ApplyPaymentModal = ({
                                   onChange={handleRecipientChange}
                                   name="nameRecipient"
                                   id="nameRecipient"
-                                  className="px-8 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm  ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
+                                  className="px-8 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
                                   value={
-                                    users.find((u) => u.number === numberCondominium)?.uid ||
-                                    ""
+                                    users.find((u) => u.number === numberCondominium)?.uid || ""
                                   }
                                 >
-                                  <option value="">
-                                    Selecciona un condómino
-                                  </option>
+                                  <option value="">Selecciona un condómino</option>
                                   {users
                                     .filter(
                                       (user) =>
@@ -439,11 +439,9 @@ const ApplyPaymentModal = ({
                                   type="datetime-local"
                                   name="paymentDate"
                                   id="paymentDate"
-                                  className="px-8 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm  ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
+                                  className="px-8 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
                                   value={
-                                    paymentDate
-                                      ? paymentDate.toISOString().slice(0, 16)
-                                      : ""
+                                    paymentDate ? paymentDate.toISOString().slice(0, 16) : ""
                                   }
                                 />
                               </div>
@@ -462,12 +460,12 @@ const ApplyPaymentModal = ({
                                   <CurrencyDollarIcon className="h-5 w-5 text-gray-400" />
                                 </div>
                                 <input
-                                  type="number"
+                                  type="text"
                                   readOnly
                                   name="amountPaid"
                                   id="amountPaid"
-                                  className="px-8 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm  ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
-                                  value={amountPaid}
+                                  className="px-8 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
+                                  value={amountPaid ? formatCurrency(Number(amountPaid)) : ""}
                                 />
                               </div>
                             </div>
@@ -513,14 +511,25 @@ const ApplyPaymentModal = ({
                                   <ClipboardIcon className="h-5 w-5 text-gray-400" />
                                 </div>
                                 <input
-                                  onChange={(e) => setAmountPending(e.target.value)}
-                                  type="number"
-                                  min="0"
+                                  type="text"
                                   name="amountPending"
                                   id="amountPending"
                                   disabled={isUnidentifiedPayment}
-                                  className="px-8 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm  ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
-                                  value={amountPending}
+                                  className="px-8 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
+                                  value={amountPendingDisplay}
+                                  onChange={(e) => {
+                                    setAmountPending(e.target.value);
+                                    setAmountPendingDisplay(e.target.value);
+                                  }}
+                                  onFocus={() => setAmountPendingDisplay(amountPending)}
+                                  onBlur={() => {
+                                    const num = parseFloat(amountPending);
+                                    if (!isNaN(num)) {
+                                      setAmountPendingDisplay(formatCurrency(num));
+                                    } else {
+                                      setAmountPendingDisplay("");
+                                    }
+                                  }}
                                 />
                               </div>
                             </div>
@@ -529,8 +538,7 @@ const ApplyPaymentModal = ({
                             {selectedUser && !isUnidentifiedPayment && Number(selectedUser.totalCreditBalance) > 0 && (
                               <div>
                                 <label className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100">
-                                  Saldo a favor disponible:{" "}
-                                  {formatCurrency(Number(selectedUser.totalCreditBalance) / 100)}
+                                  Saldo a favor disponible: {formatCurrency(Number(selectedUser.totalCreditBalance) / 100)}
                                 </label>
                                 <div className="mt-2 flex items-center space-x-4">
                                   <label className="flex items-center dark:text-gray-100">
@@ -578,20 +586,35 @@ const ApplyPaymentModal = ({
                                           className="accent-indigo-600 dark:accent-indigo-400"
                                         />
                                         <span className="flex-1 dark:text-gray-100">
-                                          {`${charge.concept} | Mes: ${
-                                            charge.month || "Sin mes"
-                                          } | Monto: ${formatCurrency(charge.amount / 100)}`}
+                                          {`${charge.concept} | Mes: ${charge.month || "Sin mes"} | Monto: ${formatCurrency(charge.amount / 100)}`}
                                         </span>
                                         {isChecked && (
                                           <div className="relative">
                                             <input
-                                              type="number"
+                                              type="text"
                                               min="0"
                                               step="any"
                                               className="w-18 rounded-md border-gray-300 pl-5 h-8 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
                                               placeholder="Monto a aplicar"
-                                              value={selectedCharges.find((sc) => sc.chargeId === charge.id)?.amount || ""}
-                                              onChange={(e) => handleAmountChange(charge.id, Number(e.target.value))}
+                                              value={chargeDisplayValues[charge.id] || ""}
+                                              onChange={(e) => {
+                                                const rawValue = e.target.value;
+                                                const newNumber = parseFloat(rawValue.replace(/[^0-9.]/g, "")) || 0;
+                                                handleAmountChange(charge.id, newNumber);
+                                                setChargeDisplayValues((prev) => ({ ...prev, [charge.id]: rawValue }));
+                                              }}
+                                              onFocus={() => {
+                                                const selected = selectedCharges.find((sc) => sc.chargeId === charge.id);
+                                                if (selected) {
+                                                  setChargeDisplayValues((prev) => ({ ...prev, [charge.id]: selected.amount.toString() }));
+                                                }
+                                              }}
+                                              onBlur={() => {
+                                                const selected = selectedCharges.find((sc) => sc.chargeId === charge.id);
+                                                if (selected) {
+                                                  setChargeDisplayValues((prev) => ({ ...prev, [charge.id]: formatCurrency(selected.amount) }));
+                                                }
+                                              }}
                                             />
                                           </div>
                                         )}
@@ -601,14 +624,15 @@ const ApplyPaymentModal = ({
                                 </div>
                                 <div className="mt-2">
                                   <span className="text-sm font-bold dark:text-gray-100">
-                                    Saldo restante a aplicar:{" "}
-                                    {formatCurrency(remainingEffective)}
+                                    Saldo restante a aplicar: {formatCurrency(remainingEffective)}
                                   </span>
                                 </div>
                               </div>
                             )}
                             <div>
-                              <p className="text-xs text-indigo-500 font-bold dark:text-gray-100 m-0">*En caso de que no se seleccione un comprobante se usará el previamente cargado en el pago.</p>
+                              <p className="text-xs text-indigo-500 font-bold dark:text-gray-100 m-0">
+                                *En caso de que no se seleccione un comprobante se usará el previamente cargado en el pago.
+                              </p>
                             </div>
 
                             {/* Dropzone para adjuntar comprobante */}
@@ -618,14 +642,9 @@ const ApplyPaymentModal = ({
                             >
                               <input {...getInputProps()} />
                               <div className="text-center">
-                                <PhotoIcon
-                                  className="mx-auto h-12 w-12 text-gray-300"
-                                  aria-hidden="true"
-                                />
+                                <PhotoIcon className="mx-auto h-12 w-12 text-gray-300" aria-hidden="true" />
                                 {fileName ? (
-                                  <p className="mt-4 text-sm leading-6 text-gray-600">
-                                    {fileName}
-                                  </p>
+                                  <p className="mt-4 text-sm leading-6 text-gray-600">{fileName}</p>
                                 ) : (
                                   <p className="mt-4 text-sm leading-6 font-medium text-indigo-600">
                                     {isDragActive
@@ -633,9 +652,7 @@ const ApplyPaymentModal = ({
                                       : "Arrastra y suelta el comprobante aquí o haz click para seleccionarlo"}
                                   </p>
                                 )}
-                                <p className="text-xs leading-5 text-gray-600">
-                                  Hasta 10MB
-                                </p>
+                                <p className="text-xs leading-5 text-gray-600">Hasta 10MB</p>
                               </div>
                             </div>
 
@@ -653,7 +670,7 @@ const ApplyPaymentModal = ({
                                   id="comments"
                                   name="comments"
                                   rows={4}
-                                  className="px-8 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm  ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
+                                  className="px-8 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
                                   value={comments}
                                 />
                               </div>

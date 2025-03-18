@@ -17,7 +17,6 @@ import toast from "react-hot-toast";
 import { usePaymentSummaryStore } from "../../../../store/paymentSummaryStore";
 import { useUnidentifiedPaymentsStore } from "../../../../store/useUnidentifiedPaymentsStore";
 
-
 interface FormParcelReceptionProps {
   open: boolean;
   setOpen: (open: boolean) => void;
@@ -29,14 +28,22 @@ interface SelectedCharge {
 }
 
 const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
+  // Estados generales
   const [users, setUsers] = useState<UserData[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
 
   // Campos del formulario
   const [email, setEmail] = useState<string>("");
   const [numberCondominium, setNumberCondominium] = useState<string>("");
-  const [amountPaid, setAmountPaid] = useState<string>(""); // Monto abonado
+
+  // Monto abonado: valor raw y su versión visual formateada
+  const [amountPaid, setAmountPaid] = useState<string>("");
+  const [amountPaidDisplay, setAmountPaidDisplay] = useState<string>("");
+
+  // Monto pendiente: valor raw y su versión visual formateada
   const [amountPending, setAmountPending] = useState<string>("");
+  const [amountPendingDisplay, setAmountPendingDisplay] = useState<string>("");
+
   const [comments, setComments] = useState<string>("");
   const [paymentType, setPaymentType] = useState<string>("");
 
@@ -46,22 +53,26 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
   // ID de la cuenta financiera
   const [financialAccountId, setFinancialAccountId] = useState<string>("");
 
-  // Nuevo estado: Pago NO identificado
+  // Estado para pago NO identificado
   const [isUnidentifiedPayment, setIsUnidentifiedPayment] = useState<boolean>(false);
 
   // Archivo adjunto
   const [file, setFile] = useState<File | File[] | null>(null);
   const [fileName, setFileName] = useState("");
 
-  // Estado para el usuario seleccionado y uso de saldo a favor
+  // Usuario seleccionado y uso de saldo a favor
   const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
   const [useCreditBalance, setUseCreditBalance] = useState<boolean>(false);
 
-  // Store de usuarios
+  // Estado para cargos seleccionados
+  const [selectedCharges, setSelectedCharges] = useState<SelectedCharge[]>([]);
+  // Estado para almacenar los valores visuales de cada cargo (por su id)
+  const [chargeDisplayValues, setChargeDisplayValues] = useState<{ [key: string]: string }>({});
+
+  // Stores
   const fetchCondominiumsUsers = useUserStore((state) => state.fetchCondominiumsUsers);
   const condominiumsUsers = useUserStore((state) => state.condominiumsUsers);
 
-  // Store de pagos
   const {
     charges,
     addMaintenancePayment,
@@ -76,17 +87,12 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
     fetchFinancialAccounts: state.fetchFinancialAccounts,
   }));
 
-  // Store de PaymentSummary
   const { fetchSummary, selectedYear, setupRealtimeListeners } = usePaymentSummaryStore((state) => ({
     fetchSummary: state.fetchSummary,
     selectedYear: state.selectedYear,
-    setupRealtimeListeners: state.setupRealtimeListeners
+    setupRealtimeListeners: state.setupRealtimeListeners,
   }));
 
-  // Estado para cargos seleccionados (multi-cargo)
-  const [selectedCharges, setSelectedCharges] = useState<SelectedCharge[]>([]);
-
-  // Agregamos fetchPayments del store de pagos no identificados
   const { fetchPayments } = useUnidentifiedPaymentsStore();
 
   useEffect(() => {
@@ -118,7 +124,6 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
             fetchUserCharges(user.number),
             fetchCondominiumsUsers()
           ]);
-          
           // Obtener el usuario actualizado del store
           const updatedUser = condominiumsUsers.find(u => u.uid === uid);
           if (updatedUser) {
@@ -164,7 +169,7 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
       ? Number(amountPaid) + userCreditInPesos
       : Number(amountPaid);
 
-  // Calcular el crédito usado (si se utiliza, se envía el total del saldo disponible)
+  // Calcular el crédito usado
   const creditUsed = useCreditBalance ? userCreditInPesos : 0;
 
   const remainingEffective = effectiveTotal - totalAssigned;
@@ -230,7 +235,7 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
       // Intentar registrar el pago
       await addMaintenancePayment(paymentObj);
 
-      // Si el pago fue exitoso, actualizar datos
+      // Actualizar datos en paralelo
       await Promise.all([
         setupRealtimeListeners(selectedYear),
         fetchSummary(selectedYear),
@@ -239,11 +244,10 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
         isUnidentifiedPayment && fetchPayments(),
       ].filter(Boolean));
 
-      // Solo si todo fue exitoso, resetear y mostrar mensaje
+      // Resetear el formulario y notificar
       resetForm();
       toast.success("Pago registrado correctamente");
       setOpen(false);
-
     } catch (error: any) {
       console.error("Error en el proceso de pago:", error);
       toast.error(error.message || "Error al procesar el pago. Por favor, intenta nuevamente.");
@@ -252,17 +256,20 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
     }
   };
 
-  // Función auxiliar para resetear el formulario
+  // Función para resetear el formulario
   const resetForm = () => {
     setEmail("");
     setNumberCondominium("");
     setAmountPaid("");
+    setAmountPaidDisplay("");
     setAmountPending("");
+    setAmountPendingDisplay("");
     setComments("");
     setPaymentType("");
     setFile(null);
     setFileName("");
     setSelectedCharges([]);
+    setChargeDisplayValues({});
     setSelectedUser(null);
     setUseCreditBalance(false);
     setPaymentDate(null);
@@ -279,10 +286,9 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
   };
   const { getRootProps, getInputProps, isDragActive } = useDropzone(dropzoneOptions);
 
-  // Modificar la función que maneja el cambio de tipo de pago
   const handlePaymentTypeChange = (isUnidentified: boolean) => {
     setIsUnidentifiedPayment(isUnidentified);
-    
+
     if (isUnidentified) {
       // Resetear campos cuando se cambia a pago no identificado
       setEmail("");
@@ -290,6 +296,7 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
       setSelectedUser(null);
       setSelectedCharges([]);
       setAmountPending("");
+      setAmountPendingDisplay("");
       setUseCreditBalance(false);
     }
   };
@@ -299,7 +306,7 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
     return new Date(date.getTime() - date.getTimezoneOffset() * 60000);
   };
 
-  // Función auxiliar para formatear la fecha para el input
+  // Función para formatear la fecha para el input
   const formatDateForInput = (date: Date | null): string => {
     if (!date) return '';
     const adjustedDate = adjustTimezone(date);
@@ -323,10 +330,7 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                 leaveTo="translate-x-full"
               >
                 <Dialog.Panel className="pointer-events-auto w-screen max-w-3xl">
-                  <form
-                    onSubmit={handleSubmit}
-                    className="flex h-full flex-col divide-y divide-gray-200 bg-white shadow-xl"
-                  >
+                  <form onSubmit={handleSubmit} className="flex h-full flex-col divide-y divide-gray-200 bg-white shadow-xl">
                     <div className="h-0 flex-1 overflow-y-auto dark:bg-gray-900">
                       <div className="bg-indigo-700 px-4 py-6 sm:px-6 dark:bg-gray-800">
                         <div className="flex items-center justify-between">
@@ -349,7 +353,6 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                             Registra un nuevo pago para un condómino.
                           </p>
                         </div>
-                        {/* Nuevo: Seleccionar tipo de pago */}
                         <div className="mt-4">
                           <span className="block text-sm font-medium leading-6 text-white">
                             Tipo de registro
@@ -457,14 +460,22 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                                   <CurrencyDollarIcon className="h-5 w-5 text-gray-400" />
                                 </div>
                                 <input
-                                  onChange={(e) => setAmountPaid(e.target.value)}
-                                  type="number"
-                                  step="0.01"
-                                  min="0"
+                                  type="text"
                                   name="amountPaid"
                                   id="amountPaid"
-                                  className="block w-full rounded-md border-0 pl-10 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                                  value={amountPaid}
+                                  className="block w-full rounded-md border-0 pl-10 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
+                                  value={amountPaidDisplay}
+                                  onChange={(e) => {
+                                    setAmountPaid(e.target.value);
+                                    setAmountPaidDisplay(e.target.value);
+                                  }}
+                                  onFocus={() => setAmountPaidDisplay(amountPaid)}
+                                  onBlur={() => {
+                                    const num = parseFloat(amountPaid);
+                                    if (!isNaN(num)) {
+                                      setAmountPaidDisplay(formatCurrency(num));
+                                    }
+                                  }}
                                 />
                               </div>
                             </div>
@@ -533,15 +544,23 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                                   <ClipboardIcon className="h-5 w-5 text-gray-400" />
                                 </div>
                                 <input
-                                  onChange={(e) => setAmountPending(e.target.value)}
-                                  type="number"
-                                  step="0.01"
-                                  min="0"
+                                  type="text"
                                   name="amountPending"
                                   id="amountPending"
                                   disabled={isUnidentifiedPayment}
-                                  className="block w-full rounded-md border-0 pl-10 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                                  value={amountPending}
+                                  className="block w-full rounded-md border-0 pl-10 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
+                                  value={amountPendingDisplay}
+                                  onChange={(e) => {
+                                    setAmountPending(e.target.value);
+                                    setAmountPendingDisplay(e.target.value);
+                                  }}
+                                  onFocus={() => setAmountPendingDisplay(amountPending)}
+                                  onBlur={() => {
+                                    const num = parseFloat(amountPending);
+                                    if (!isNaN(num)) {
+                                      setAmountPendingDisplay(formatCurrency(num));
+                                    }
+                                  }}
                                 />
                               </div>
                             </div>
@@ -599,17 +618,31 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                                         </span>
                                         {isChecked && (
                                           <div className="relative">
-                                            <span className="absolute left-2 top-1/2 flex items-center transform -translate-y-1/2 dark:text-gray-100">
-                                              {formatCurrency(0).charAt(0)}
-                                            </span>
                                             <input
-                                              type="number"
+                                              type="text"
                                               min="0"
                                               step="0.01"
-                                              className="w-18 rounded-md border-gray-300 pl-5 h-8 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                                              placeholder="Monto a aplicar"
-                                              value={selectedCharges.find((sc) => sc.chargeId === charge.id)?.amount || ""}
-                                              onChange={(e) => handleAmountChange(charge.id, Number(e.target.value))}
+                                              className="w-18 rounded-md ring-0 focus:ring-0 outline-none border border-solid  border-indigo-300 pl-5 h-8 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
+                                              placeholder="$ Monto a aplicar"
+                                              value={chargeDisplayValues[charge.id] || ""}
+                                              onChange={(e) => {
+                                                const rawValue = e.target.value;
+                                                const newNumber = parseFloat(rawValue.replace(/[^0-9.]/g, '')) || 0;
+                                                handleAmountChange(charge.id, newNumber);
+                                                setChargeDisplayValues((prev) => ({ ...prev, [charge.id]: rawValue }));
+                                              }}
+                                              onFocus={() => {
+                                                const selected = selectedCharges.find((sc) => sc.chargeId === charge.id);
+                                                if (selected) {
+                                                  setChargeDisplayValues((prev) => ({ ...prev, [charge.id]: selected.amount.toString() }));
+                                                }
+                                              }}
+                                              onBlur={() => {
+                                                const selected = selectedCharges.find((sc) => sc.chargeId === charge.id);
+                                                if (selected) {
+                                                  setChargeDisplayValues((prev) => ({ ...prev, [charge.id]: formatCurrency(selected.amount) }));
+                                                }
+                                              }}
                                             />
                                           </div>
                                         )}

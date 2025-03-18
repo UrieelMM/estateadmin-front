@@ -7,7 +7,7 @@ import {
 } from "react-router-dom";
 import LayoutDashboard from "../presentation/screens/layout/LayoutDashboard";
 import LoginScreen from "../presentation/screens/login/LoginScreen";
-import Hero from "../presentation/screens/hero/Hero";
+import Hero from "../presentation/screens/presentation/Hero";
 import { routesApp } from "./routes";
 import NotFoundPage from "../presentation/screens/NotFoundPage/NotFoundPage";
 

@@ -26,7 +26,6 @@ type DetailedConceptsTableProps = {
 
 const DetailedConceptsTable: React.FC<DetailedConceptsTableProps> = React.memo(
   ({ maxMonth = "", minMonth = "" }) => {
-    // Suscribirse directamente al store para obtener todos los datos necesarios
     const {
       conceptRecords,
       selectedYear: year,
@@ -53,28 +52,22 @@ const DetailedConceptsTable: React.FC<DetailedConceptsTableProps> = React.memo(
       signatureBase64: state.signatureBase64,
     }));
 
-    // Suscribirse al store de usuarios para obtener condominiumsUsers
     const condominiumsUsers = useUserStore((state) => state.condominiumsUsers);
+    const [showAll, setShowAll] = useState(false);
 
-    if (!conceptRecords || Object.keys(conceptRecords).length === 0) return null;
-
-    // Calcular sortedMonthlyStats a partir de monthlyStats
     const sortedMonthlyStats: MonthlyStat[] = useMemo(() => {
       return [...monthlyStats].sort((a, b) => parseInt(a.month, 10) - parseInt(b.month, 10));
     }, [monthlyStats]);
 
-    // Nuevo: Definir estado para mostrar/ocultar conceptos
-    const [showAll, setShowAll] = useState(false);
-
-    // Nuevo: Filtrar para no mostrar "Pago no identificado"
-    const filteredConceptEntries = Object.entries(conceptRecords).filter(
+    const filteredConceptEntries = Object.entries(conceptRecords || {}).filter(
       ([concept]) => concept !== "Pago no identificado"
     );
 
-    // Nuevo: Determinar cuántos conceptos se muestran según el estado 'showAll'
     const displayedConceptEntries = showAll
       ? filteredConceptEntries
       : filteredConceptEntries.slice(0, 3);
+
+    if (!conceptRecords || Object.keys(conceptRecords).length === 0) return null;
 
     return (
       <div className="mb-8 flex flex-col lg:flex-row gap-4">
@@ -96,9 +89,15 @@ const DetailedConceptsTable: React.FC<DetailedConceptsTableProps> = React.memo(
 
                   const rows = monthKeys.map((m) => {
                     const recs = records.filter((r) => r.month === m);
-                    const paid = recs.reduce((sum, r) => sum + r.amountPaid + r.creditBalance, 0);
+                    const monthPaid = recs.reduce((sum, r) => sum + r.amountPaid, 0);
+                    const monthCreditUsed = recs.reduce((sum, r) => sum + (r.creditUsed || 0), 0);
+                    const monthCreditBalance = recs.reduce((sum, r) => sum + r.creditBalance, 0);
+                    
+                    // Monto abonado es la suma de pagos regulares + crédito usado + saldo disponible
+                    const paid = monthPaid + monthCreditUsed + (monthCreditBalance - monthCreditUsed);
                     const pending = recs.reduce((sum, r) => sum + r.amountPending, 0);
-                    const credit = recs.reduce((sum, r) => sum + (r.creditBalance - (r.creditUsed || 0)), 0);
+                    // Saldo a favor es el saldo disponible menos el usado
+                    const credit = monthCreditBalance - monthCreditUsed;
 
                     totalPaid += paid;
                     totalPend += pending;

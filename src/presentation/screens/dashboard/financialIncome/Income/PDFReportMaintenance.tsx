@@ -88,13 +88,13 @@ const PDFReportGeneratorMaintenance: React.FC<PDFReportGeneratorProps> = ({ year
     );
     const row = [];
     // Columna A: Nombre y Número de Condomino
-    row.push(`${cond.number}${cond.name ? " - " + cond.name : ""}`);
+    row.push({ content: `${cond.number}${cond.name ? " - " + cond.name : ""}`, styles: { fontStyle: "bold" } });
     let totalPendingForCondo = 0;
     // Para cada mes, se suma el monto abonado (amountPaid + creditBalance) y se acumula el pendiente
     for (let m = 1; m <= 12; m++) {
       const monthKey = m.toString().padStart(2, "0");
       const monthRecords = filteredRecords.filter((rec) => rec.month === monthKey);
-      const paidSum = monthRecords.reduce((sum, rec) => sum + rec.amountPaid + rec.creditBalance, 0);
+      const paidSum = monthRecords.reduce((sum, rec) => sum + rec.amountPaid + (rec.creditBalance || 0), 0);
       const pendingSum = monthRecords.reduce((sum, rec) => sum + rec.amountPending, 0);
       row.push(formatCurrency(paidSum));
       totals[monthKey] += paidSum;
@@ -105,9 +105,9 @@ const PDFReportGeneratorMaintenance: React.FC<PDFReportGeneratorProps> = ({ year
     tableBody.push(row);
 
     // NUEVA FILA: Agregar fila con las fechas de pago por mes para este condómino.
-    // En la primera celda se muestra "Fecha" en bold.
+    // En la primera celda se muestra "Fecha" en normal.
     const dateRow = [];
-    dateRow.push({ content: "Fecha", styles: { fontStyle: "bold" } });
+    dateRow.push({ content: "Fecha", styles: { fontStyle: "normal" } });
     for (let m = 1; m <= 12; m++) {
       const monthKey = m.toString().padStart(2, "0");
       const monthRecords = filteredRecords.filter((rec) => rec.month === monthKey);
@@ -168,6 +168,11 @@ const PDFReportGeneratorMaintenance: React.FC<PDFReportGeneratorProps> = ({ year
       theme: "grid",
       margin: { left: 14, right: 14 },
       didParseCell: (data) => {
+        // Agregar sombreado alternado en las filas de datos (excluyendo el encabezado)
+        if (data.row.index > 0 && data.row.index % 2 === 0) {
+          data.cell.styles.fillColor = [249, 250, 251]; // gray-50
+        }
+        // Mantener el estilo bold en la última fila (totales)
         if (data.row.index === tableBody.length - 1) {
           data.cell.styles.fontStyle = "bold";
         }

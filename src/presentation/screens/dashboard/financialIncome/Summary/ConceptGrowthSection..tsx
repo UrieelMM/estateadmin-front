@@ -11,7 +11,6 @@ import {
 } from "recharts";
 
 const ConceptGrowthSection: React.FC = React.memo(() => {
-  // Se consume conceptRecords del nuevo store (ahora incluyen creditBalance y creditUsed)
   const conceptRecords = usePaymentSummaryStore(
     (state) => state.conceptRecords
   );
@@ -23,9 +22,6 @@ const ConceptGrowthSection: React.FC = React.memo(() => {
       ? (currentMonthNumber - 1).toString().padStart(2, "0")
       : null;
 
-  if (!conceptRecords || Object.keys(conceptRecords).length < 1) return null;
-
-  // Función para formatear moneda: $2,500.00
   const formatCurrency = (value: number): string => {
     return "$" + value.toLocaleString("en-US", {
       minimumFractionDigits: 2,
@@ -33,11 +29,18 @@ const ConceptGrowthSection: React.FC = React.memo(() => {
     });
   };
 
-  /**
-   * Cálculos por concepto (para el mes actual y anterior) basados en amountPaid.
-   * Nota: La nueva lógica de saldo a favor se aplica en otros componentes; aquí se mantiene el enfoque en recaudación.
-   */
-  const { totalCurrent, dataArr, growthArr } = useMemo(() => {
+  const pastelColors = ["#8093E8", "#74B9E7", "#A7CFE6", "#B79FE6", "#C2ABE6"];
+
+  const { totalCurrent, dataArr, growthArr, hasData } = useMemo(() => {
+    if (!conceptRecords || Object.keys(conceptRecords).length < 1) {
+      return {
+        totalCurrent: 0,
+        dataArr: [],
+        growthArr: [],
+        hasData: false
+      };
+    }
+
     let totalCurrent = 0;
     let totalPrevious = 0;
     const dataArr: { concept: string; currentValue: number }[] = [];
@@ -49,7 +52,6 @@ const ConceptGrowthSection: React.FC = React.memo(() => {
     }[] = [];
 
     Object.entries(conceptRecords).forEach(([concept, records]) => {
-      // Se suman los ingresos (amountPaid + creditBalance) del mes actual y anterior
       const currentValue = records
         .filter((record) => record.month === currentMonthString)
         .reduce((sum, record) => sum + record.amountPaid + record.creditBalance, 0);
@@ -70,11 +72,9 @@ const ConceptGrowthSection: React.FC = React.memo(() => {
       growthArr.push({ concept, growth, currentValue, previousValue });
     });
 
-    return { totalCurrent, totalPrevious, dataArr, growthArr };
+    return { totalCurrent, totalPrevious, dataArr, growthArr, hasData: true };
   }, [conceptRecords, currentMonthString, previousMonthString]);
 
-
-  // Datos para la gráfica de pastel: Top 5 + "Otros" (basado en amountPaid)
   const pieData = useMemo(() => {
     const sorted = [...dataArr].sort((a, b) => b.currentValue - a.currentValue);
     const topFive = sorted.slice(0, 5);
@@ -88,7 +88,6 @@ const ConceptGrowthSection: React.FC = React.memo(() => {
     }));
   }, [dataArr]);
 
-  // Ranking de crecimiento (comparación mes actual vs mes anterior) basado en amountPaid
   const topGrowth = useMemo(() => {
     const sorted = [...growthArr].sort((a, b) => b.growth - a.growth);
     return sorted.slice(0, 5);
@@ -99,7 +98,7 @@ const ConceptGrowthSection: React.FC = React.memo(() => {
     return sorted.slice(0, 5);
   }, [growthArr]);
 
-  const pastelColors = ["#8093E8", "#74B9E7", "#A7CFE6", "#B79FE6", "#C2ABE6"];
+  if (!hasData) return null;
 
   return (
     <div className="mb-8 w-full">

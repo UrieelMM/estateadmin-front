@@ -22,7 +22,7 @@ const MONTH_NAMES: Record<string, string> = {
 /**
  * Tarjetas con datos globales:
  * - Total Egresos
- * - Concepto Estrella
+ * - Concepto con más ingresos
  * - Mes con mayor gasto
  * - Mes con menor gasto
  */
@@ -30,7 +30,7 @@ const ExpenseSummaryCards: React.FC = () => {
   const expenses = useExpenseSummaryStore((state) => state.expenses);
   const totalSpent = useExpenseSummaryStore((state) => state.totalSpent);
 
-  // Calcular "concepto estrella", "mes con mayor gasto" y "mes con menor gasto"
+  // Calcular "Concepto con más ingresos", "mes con mayor gasto" y "mes con menor gasto"
   const { bestConcept, bestMonth, worstMonth } = useMemo(() => {
     // Agrupar por concepto
     const conceptMap: Record<string, number> = {};
@@ -80,9 +80,9 @@ const ExpenseSummaryCards: React.FC = () => {
         <p className="text-xl font-semibold">{formatCurrency(totalSpent)}</p>
       </div>
 
-      {/* Tarjeta 2: Concepto Estrella */}
+      {/* Tarjeta 2: Concepto con más ingresos */}
       <div className="p-4 shadow-md rounded-md">
-        <p className="text-sm text-gray-600 dark:text-gray-100">Concepto Estrella</p>
+        <p className="text-sm text-gray-600 dark:text-gray-100">Concepto con más ingresos</p>
         <p className="text-base font-semibold text-indigo-500 dark:text-indigo-400">{bestConcept[0]}</p>
         <p className="text-xl font-semibold">{formatCurrency(bestConcept[1])}</p>
       </div>

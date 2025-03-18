@@ -33,8 +33,6 @@ const MONTH_NAMES: Record<string, string> = {
 const AnnualGeneralStats: React.FC = () => {
   const conceptRecords = usePaymentSummaryStore((state) => state.conceptRecords);
 
-  if (!conceptRecords || Object.keys(conceptRecords).length < 1) return null;
-
   const formatCurrency = (value: number): string => {
     return "$" + value.toLocaleString("en-US", {
       minimumFractionDigits: 2,
@@ -52,6 +50,12 @@ const AnnualGeneralStats: React.FC = () => {
     }
   };
 
+  // Forzar 'val' a string
+  const formatMonthLabel = (m: string | number): string => MONTH_NAMES[String(m)] || String(m);
+  const getMonthName = (m: string | number): string => MONTH_NAMES[String(m)] || "N/A";
+
+  const chartColors = ["#8093E8", "#74B9E7", "#A7CFE6", "#B79FE6", "#C2ABE6"];
+
   const {
     conceptTotals,
     bestConcept,
@@ -59,22 +63,33 @@ const AnnualGeneralStats: React.FC = () => {
     bestMonth,
     worstMonth,
     monthlyAverage,
+    hasData
   } = useMemo(() => {
+    if (!conceptRecords || Object.keys(conceptRecords).length < 1) {
+      return {
+        conceptTotals: {},
+        bestConcept: ["N/A", 0],
+        worstConcept: ["N/A", 0],
+        bestMonth: ["N/A", 0],
+        worstMonth: ["N/A", 0],
+        monthlyAverage: 0,
+        hasData: false
+      };
+    }
+
     const conceptTotals: Record<string, number> = {};
     const monthlyTotals: Record<string, number> = {
       "01": 0, "02": 0, "03": 0, "04": 0, "05": 0, "06": 0,
       "07": 0, "08": 0, "09": 0, "10": 0, "11": 0, "12": 0,
     };
-    let globalSaldo = 0;
 
     Object.entries(conceptRecords).forEach(([concept, records]) => {
       let sumConcept = 0;
       records.forEach((rec) => {
-        sumConcept += rec.amountPaid + rec.creditBalance;
+        sumConcept += rec.amountPaid + (rec.creditUsed || 0);
         if (monthlyTotals[rec.month] !== undefined) {
-          monthlyTotals[rec.month] += rec.amountPaid + rec.creditBalance;
+          monthlyTotals[rec.month] += rec.amountPaid + (rec.creditUsed || 0);
         }
-        globalSaldo += rec.creditBalance - (rec.creditUsed || 0);
       });
       conceptTotals[concept] = sumConcept;
     });
@@ -120,7 +135,7 @@ const AnnualGeneralStats: React.FC = () => {
       bestMonth,
       worstMonth,
       monthlyAverage,
-      globalSaldo,
+      hasData: true
     };
   }, [conceptRecords]);
 
@@ -174,28 +189,24 @@ const AnnualGeneralStats: React.FC = () => {
     return { data, areaKeys };
   }, [conceptTotals, conceptRecords]);
 
-  // Forzar 'val' a string
-  const formatMonthLabel = (m: string) => MONTH_NAMES[m] || m;
-  const getMonthName = (m: string) => MONTH_NAMES[m] || "N/A";
-
-  const chartColors = ["#8093E8", "#74B9E7", "#A7CFE6", "#B79FE6", "#C2ABE6"];
+  if (!hasData) return null;
 
   return (
     <div className="mb-8 w-full">
       {/* Tarjetas */}
       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
         <div className="p-4 shadow-md rounded-md">
-          <p className="text-sm text-gray-600 dark:text-gray-100">Concepto estrella (Año)</p>
+          <p className="text-sm text-gray-600 dark:text-gray-100">Concepto con más ingresos </p>
           <p className="text-base font-semibold text-indigo-500">{bestConcept[0]}</p>
           <p className="text-xl font-semibold">
-            {formatCurrency(bestConcept[1])}
+            {formatCurrency(Number(bestConcept[1]))}
           </p>
         </div>
         <div className="p-4 shadow-md rounded-md">
-          <p className="text-sm text-gray-600 dark:text-gray-100">Concepto rezagado (Año)</p>
+          <p className="text-sm text-gray-600 dark:text-gray-100">Concepto rezagado </p>
           <p className="text-base font-semibold text-indigo-500">{worstConcept[0]}</p>
           <p className="text-xl font-semibold">
-            {formatCurrency(worstConcept[1])}
+            {formatCurrency(Number(worstConcept[1]))}
           </p>
         </div>
         <div className="p-4 shadow-md rounded-md">
@@ -204,7 +215,7 @@ const AnnualGeneralStats: React.FC = () => {
             {getMonthName(bestMonth[0])}
           </p>
           <p className="text-xl font-semibold">
-            {formatCurrency(bestMonth[1])}
+            {formatCurrency(Number(bestMonth[1]))}
           </p>
         </div>
         <div className="p-4 shadow-md rounded-md">
@@ -213,7 +224,7 @@ const AnnualGeneralStats: React.FC = () => {
             {getMonthName(worstMonth[0])}
           </p>
           <p className="text-xl font-semibold">
-            {formatCurrency(worstMonth[1])}
+            {formatCurrency(Number(worstMonth[1]))}
           </p>
         </div>
         <div className="p-4 shadow-md rounded-md">
@@ -260,12 +271,10 @@ const AnnualGeneralStats: React.FC = () => {
             margin={{ top: 20, right: 20, left: 0, bottom: 0 }}
           >
             <CartesianGrid strokeDasharray="3 3" />
-            {/* >> Fix: Forzar val a string con String(val) << */}
             <XAxis
               dataKey="month"
               tickFormatter={(val) => formatMonthLabel(String(val))}
             />
-            {/* >> Fix: Forzar val a number con 'as number' en Y-axis */}
             <YAxis
               tickFormatter={(val) => formatLargeValues(val as number)}
               width={80}

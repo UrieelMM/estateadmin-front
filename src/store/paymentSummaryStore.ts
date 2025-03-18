@@ -69,6 +69,7 @@ export type MonthlyStat = {
   unidentifiedPayments: number;
   complianceRate: number;
   delinquencyRate: number;
+  creditUsed: number;
 };
 
 export type FinancialAccountInfo = {
@@ -371,6 +372,7 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>((set, get) => 
         pending: number; 
         saldo: number;
         unidentifiedPayments: number;
+        creditUsed: number;
       }> = {};
       
       for (let i = 1; i <= 12; i++) {
@@ -379,7 +381,8 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>((set, get) => 
           paid: 0, 
           pending: 0, 
           saldo: 0,
-          unidentifiedPayments: 0
+          unidentifiedPayments: 0,
+          creditUsed: 0
         };
       }
 
@@ -397,6 +400,7 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>((set, get) => 
           chartData[pr.month].unidentifiedPayments += pr.amountPaid;
         }
         totalIncome += pr.amountPaid;
+        chartData[pr.month].creditUsed += pr.creditUsed || 0;
       });
 
       const monthlyStats: MonthlyStat[] = [];
@@ -411,6 +415,9 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>((set, get) => 
         const compliance = totalCharges > 0 ? (paidCharges / totalCharges) * 100 : 0;
         const delinquency = 100 - compliance;
         
+        // Calcular el crédito utilizado para este mes
+        const totalCreditUsed = chartData[m].creditUsed || 0;
+        
         monthlyStats.push({
           month: m,
           paid: parseFloat(paid.toFixed(2)),
@@ -419,6 +426,7 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>((set, get) => 
           unidentifiedPayments: parseFloat(unidentifiedPayments.toFixed(2)),
           complianceRate: parseFloat(compliance.toFixed(2)),
           delinquencyRate: parseFloat(delinquency.toFixed(2)),
+          creditUsed: parseFloat(totalCreditUsed.toFixed(2)),
         });
       }
 

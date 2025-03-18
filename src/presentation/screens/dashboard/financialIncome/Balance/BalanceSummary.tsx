@@ -44,10 +44,15 @@ const BalanceGeneral: React.FC = () => {
     monthlyStatsIncomes.reduce((acc, stat) => acc + stat.saldo, 0)
   , [monthlyStatsIncomes]);
 
-  // Calcular el total de ingresos incluyendo el saldo a favor
-  const totalIncomeWithCredit = useMemo(() => 
-    totalIncome + totalCreditGlobal
-  , [totalIncome, totalCreditGlobal]);
+  // Calcular el total de ingresos incluyendo el saldo a favor y créditos utilizados
+  const totalIncomeWithCredit = useMemo(() => {
+    const totalFromMonthlyStats = monthlyStatsIncomes.reduce((acc, stat) => {
+      return acc + stat.paid + (stat.creditUsed || 0);
+    }, 0);
+    
+    // Incluir el total de ingresos, más el saldo a favor por aplicar
+    return totalFromMonthlyStats + totalCreditGlobal;
+  }, [totalIncome, monthlyStatsIncomes, totalCreditGlobal]);
 
   // Datos de egresos
   const {
