@@ -125,7 +125,7 @@ const PDFBalanceGeneralReport: React.FC<PDFBalanceGeneralReportProps> = ({ year 
     const analisisTrimestral = trimestres.map(trimestre => {
       const ingresosTrimestre = trimestre.meses.reduce((acc, mes) => {
         const stat = incomesMonthlyStats.find(s => s.month === mes);
-        return acc + (stat ? stat.paid + stat.saldo : 0);
+        return acc + (stat ? stat.paid + stat.saldo + stat.creditUsed : 0);
       }, 0);
 
       const egresosTrimestre = trimestre.meses.reduce((acc, mes) => {
@@ -276,7 +276,7 @@ const PDFBalanceGeneralReport: React.FC<PDFBalanceGeneralReportProps> = ({ year 
         return acc;
       }, 0);
       
-      const ingresos = (incomeStat ? (incomeStat.paid + incomeStat.saldo) : 0) + 
+      const ingresos = (incomeStat ? (incomeStat.paid + incomeStat.creditUsed + incomeStat.saldo) : 0) + 
         (m === "01" ? initialBalances : monthlyInitialBalance);
       const saldoAFavor = incomeStat ? incomeStat.saldo : 0;
       const egresos = expenseStat ? expenseStat.spent : 0;

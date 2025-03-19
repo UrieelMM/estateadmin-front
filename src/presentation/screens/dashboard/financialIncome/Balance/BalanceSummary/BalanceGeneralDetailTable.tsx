@@ -4,7 +4,8 @@ import React from "react";
 interface IncomeMonthlyStat {
   month: string;
   paid: number;
-  saldo: number;  // Saldo a favor
+  saldo: number;  // Saldo a favor (creditBalance)
+  creditUsed: number;  // Nuevo campo para el crédito usado
 }
 
 interface ExpenseMonthlyStat {
@@ -42,7 +43,12 @@ const BalanceGeneralDetailTable: React.FC<BalanceGeneralDetailTableProps> = ({
     const monthLabel = monthNames[m] || m;
     const incomeStat = incomesMonthlyStats.find((stat) => stat.month === m);
     const expenseStat = expensesMonthlyStats.find((stat) => stat.month === m);
-    const ingresos = incomeStat ? (incomeStat.paid + incomeStat.saldo) : 0;
+    
+    // Calculamos los ingresos totales como:
+    // paid (pagos) + saldo (saldo a favor por aplicar) + creditUsed (saldo aplicado)
+    const ingresos = incomeStat 
+      ? incomeStat.paid + incomeStat.saldo + incomeStat.creditUsed
+      : 0;
     const egresos = expenseStat ? expenseStat.spent : 0;
     const balance = ingresos - egresos;
     return { month: monthLabel, ingresos, egresos, balance };

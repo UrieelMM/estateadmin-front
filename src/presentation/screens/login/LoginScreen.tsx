@@ -109,8 +109,9 @@ const LoginScreen = () => {
                   name="email"
                   type="email"
                   autoComplete="email"
+                  placeholder="Correo electrónico"
                   required
-                  className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                  className="block w-full rounded-md py-1.5 text-gray-900 shadow-sm outline-none border border-solid px-4 border-indigo-300   placeholder:text-gray-400   sm:text-sm sm:leading-6"
                 />
               </div>
             </div>
@@ -140,7 +141,8 @@ const LoginScreen = () => {
                   type="password"
                   autoComplete="current-password"
                   required
-                  className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                  placeholder="Contraseña"
+                  className="block w-full rounded-md border outline-none border-solid border-indigo-300  px-4 py-1.5 text-gray-900 shadow-sm   placeholder:text-gray-400  sm:text-sm sm:leading-6"
                 />
               </div>
             </div>
