@@ -190,6 +190,7 @@ const useUserStore = create<UserState>((set, get) => ({
             });
             const usersArrays = await Promise.all(promises);
             const users = usersArrays.flat();
+            console.log("users", users);
             set({ condominiumsUsers: users, condominiumsUsersFetched: true });
           }
         } else {

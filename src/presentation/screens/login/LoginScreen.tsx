@@ -48,7 +48,6 @@ const LoginScreen = () => {
       }
       setLoading(false);
     } catch (error) {
-      console.log("Error al iniciar sesión:", error);
       let errorMessage = "Error al iniciar sesión:";
       switch ((error as { code: string }).code) {
         case "auth/user-not-found":
