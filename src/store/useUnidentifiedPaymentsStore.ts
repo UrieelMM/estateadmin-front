@@ -8,7 +8,7 @@ import {
   where,
   getDocs,
   limit,
-  startAfter,
+  startAfter as firestoreStartAfter,
   Timestamp,
 } from "firebase/firestore";
 import axios from "axios";
@@ -42,7 +42,14 @@ interface UnidentifiedPaymentsState {
   hasMore: boolean;
 
   // Trae los pagos no identificados desde Firestore, con filtros y paginación (20 en 20)
-  fetchPayments: (filterMonth?: number, filterYear?: number, append?: boolean) => Promise<void>;
+  // La función ahora recibe un parámetro opcional startAfter para paginación,
+  // y opcionalmente filterMonth y filterYear.
+  fetchPayments: (
+    pageSize?: number,
+    startAfter?: any,
+    filterMonth?: number,
+    filterYear?: number
+  ) => Promise<number>;
 
   // Aplica el pago no identificado asignándolo a un usuario.
   // Se añade el tercer parámetro attachmentPayment, para recibir la URL actualizada
@@ -56,6 +63,13 @@ interface UnidentifiedPaymentsState {
   closePaymentModal: () => void;
 }
 
+// Variable de caché para resultados de paginación de pagos no identificados.
+// Se usará la llave basada en filtros y cursor.
+const unidentifiedPaymentsCache: Record<
+  string,
+  { payments: UnidentifiedPayment[]; lastVisible: any }
+> = {};
+
 export const useUnidentifiedPaymentsStore = create<UnidentifiedPaymentsState>((set, get) => ({
   payments: [],
   loading: false,
@@ -64,8 +78,13 @@ export const useUnidentifiedPaymentsStore = create<UnidentifiedPaymentsState>((s
   lastVisible: null,
   hasMore: true,
 
-  // Trae los pagos no identificados desde Firestore, con filtros y paginación (20 en 20)
-  fetchPayments: async (filterMonth?: number, filterYear?: number, append: boolean = false) => {
+  // Función actualizada de fetchPayments con paginación y caché.
+  fetchPayments: async (
+    pageSize = 20,
+    startAfter = null,
+    filterMonth?: number,
+    filterYear?: number
+  ): Promise<number> => {
     set({ loading: true, error: null });
     try {
       const auth = getAuth();
@@ -83,7 +102,7 @@ export const useUnidentifiedPaymentsStore = create<UnidentifiedPaymentsState>((s
         `clients/${clientId}/condominiums/${condominiumId}/unidentifiedPayments`
       );
 
-      // Construir condiciones para la query
+      // Construir condiciones para la query basadas en los filtros de mes y año
       const conditions = [];
       if (filterMonth !== undefined && filterYear !== undefined) {
         const startDate = Timestamp.fromDate(new Date(filterYear, filterMonth - 1, 1));
@@ -92,17 +111,34 @@ export const useUnidentifiedPaymentsStore = create<UnidentifiedPaymentsState>((s
         conditions.push(where("paymentDate", "<", endDate));
       }
 
-      const pageSize = 20;
+      // Generar llave de caché basada en filtros y cursor.
+      // Usaremos la caché solo si no se aplican filtros.
+      const cacheKey = JSON.stringify({
+        filterMonth,
+        filterYear,
+        startAfter: startAfter ? startAfter.id : "first",
+      });
+      if (filterMonth === undefined && filterYear === undefined && unidentifiedPaymentsCache[cacheKey]) {
+        const cached = unidentifiedPaymentsCache[cacheKey];
+        set({
+          payments: cached.payments,
+          lastVisible: cached.lastVisible,
+          hasMore: cached.payments.length === pageSize,
+          loading: false,
+        });
+        return cached.payments.length;
+      }
+
+      // Construir la query
       let q;
-      if (append && get().lastVisible) {
-        q = query(unidentifiedRef, ...conditions, startAfter(get().lastVisible), limit(pageSize));
+      if (startAfter) {
+        q = query(unidentifiedRef, ...conditions, firestoreStartAfter(startAfter), limit(pageSize));
       } else {
         q = query(unidentifiedRef, ...conditions, limit(pageSize));
       }
 
       const snapshot = await getDocs(q);
-
-      const newPayments = snapshot.docs.map((docSnap) => {
+      const newPayments: UnidentifiedPayment[] = snapshot.docs.map((docSnap) => {
         const data = docSnap.data();
         return {
           id: docSnap.id,
@@ -125,27 +161,28 @@ export const useUnidentifiedPaymentsStore = create<UnidentifiedPaymentsState>((s
         } as UnidentifiedPayment;
       });
 
-      const lastVisible = snapshot.docs[snapshot.docs.length - 1] || null;
+      const lastVisibleDoc = snapshot.docs[snapshot.docs.length - 1] || null;
       const hasMore = snapshot.docs.length === pageSize;
 
-      if (append) {
-        set((state) => ({
-          payments: [...state.payments, ...newPayments],
-          lastVisible,
-          hasMore,
-          loading: false,
-        }));
-      } else {
-        set({
+      // Guardar en caché el resultado si no se aplican filtros.
+      if (filterMonth === undefined && filterYear === undefined) {
+        unidentifiedPaymentsCache[cacheKey] = {
           payments: newPayments,
-          lastVisible,
-          hasMore,
-          loading: false,
-        });
+          lastVisible: lastVisibleDoc,
+        };
       }
+
+      set({
+        payments: newPayments,
+        lastVisible: lastVisibleDoc,
+        hasMore,
+        loading: false,
+      });
+      return newPayments.length;
     } catch (error: any) {
       console.error("Error fetching unidentified payments:", error);
       set({ error: error.message || "Error al obtener pagos no identificados", loading: false });
+      return 0;
     }
   },
 
@@ -154,13 +191,15 @@ export const useUnidentifiedPaymentsStore = create<UnidentifiedPaymentsState>((s
 
   closePaymentModal: () => set({ selectedPayment: null }),
 
-  // Aplica el pago no identificado asignándolo a un usuario.
-  // TERCER PARÁMETRO: attachmentPayment
-  applyPayment: async (userId: string, selectedCharges: ChargeAssignment[], attachmentPayment?: string) => {
+  // La función applyPayment se mantiene sin cambios
+  applyPayment: async (
+    userId: string,
+    selectedCharges: ChargeAssignment[],
+    attachmentPayment?: string
+  ) => {
     const { selectedPayment } = get();
     if (!selectedPayment) throw new Error("No hay pago seleccionado");
 
-    // Si recibimos un nuevo attachmentPayment, actualizamos el selectedPayment
     if (attachmentPayment) {
       selectedPayment.attachmentPayment = attachmentPayment;
     }
@@ -176,7 +215,6 @@ export const useUnidentifiedPaymentsStore = create<UnidentifiedPaymentsState>((s
 
     const toCents = (amount: number) => Math.round(amount * 100);
 
-    // 1. FormData para aplicar el pago al usuario
     const formData = new FormData();
     formData.append("clientId", clientId);
     formData.append("email", "");
@@ -198,12 +236,10 @@ export const useUnidentifiedPaymentsStore = create<UnidentifiedPaymentsState>((s
     formData.append("paymentDate", selectedPayment.paymentDate.toISOString());
     formData.append("financialAccountId", selectedPayment.financialAccountId || "");
 
-    // Aseguramos enviar la URL o valor de attachmentPayment
     formData.append("attachmentPayment", selectedPayment.attachmentPayment || "");
 
     formData.append("userId", userId);
 
-    // Lógica de cargos
     if (selectedCharges.length === 1) {
       formData.append("chargeId", selectedCharges[0].chargeId);
     } else if (selectedCharges.length > 1) {
@@ -222,14 +258,12 @@ export const useUnidentifiedPaymentsStore = create<UnidentifiedPaymentsState>((s
 
     set({ loading: true, error: null });
     try {
-      // 1. Aplicar el pago al usuario
       await axios.post(
         `${import.meta.env.VITE_URL_SERVER}/maintenance-fees/create`,
         formData,
         { headers: { "Content-Type": "multipart/form-data" } }
       );
 
-      // 2. Actualizar el registro del pago no identificado
       const updateFormData = new FormData();
       updateFormData.append("paymentId", selectedPayment.id);
       updateFormData.append("clientId", clientId);
@@ -246,7 +280,6 @@ export const useUnidentifiedPaymentsStore = create<UnidentifiedPaymentsState>((s
       updateFormData.append("appliedToCondomino", userId);
       updateFormData.append("financialAccountId", selectedPayment.financialAccountId || "");
 
-      // Mismo valor de attachmentPayment
       updateFormData.append("attachmentPayment", selectedPayment.attachmentPayment || "");
 
       await axios.post(
@@ -255,7 +288,6 @@ export const useUnidentifiedPaymentsStore = create<UnidentifiedPaymentsState>((s
         { headers: { "Content-Type": "multipart/form-data" } }
       );
 
-      // Actualiza el state
       set((state) => ({
         payments: state.payments.map((p) =>
           p.id === selectedPayment.id
@@ -266,7 +298,6 @@ export const useUnidentifiedPaymentsStore = create<UnidentifiedPaymentsState>((s
         loading: false,
       }));
 
-      // Recargar la lista
       await get().fetchPayments(undefined, undefined);
     } catch (error: any) {
       console.error("Error applying unidentified payment:", error);

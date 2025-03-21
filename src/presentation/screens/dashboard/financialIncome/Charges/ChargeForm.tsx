@@ -3,6 +3,7 @@ import { UserIcon, CurrencyDollarIcon, CalendarIcon, CheckCircleIcon, ClipboardI
 import { useChargeStore } from "../../../../../store/useChargeStore";
 import useUserStore from "../../../../../store/UserDataStore";
 import { usePaymentSummaryStore } from "../../../../../store/paymentSummaryStore";
+import { toast } from "react-hot-toast";
 
 const commonConcepts = [
   "Cuota de mantenimiento",
@@ -54,15 +55,52 @@ const ChargeForm = () => {
     fetchCondominiumsUsers();
   }, [fetchCondominiumsUsers]);
 
-  // Función auxiliar para formatear a moneda mexicana (solo visual)
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat("es-MX", {
       style: "currency",
       currency: "MXN",
     }).format(value);
 
+  const validateForm = (): boolean => {
+    if (chargeType === "individual" && !selectedUser) {
+      toast.error("Debe seleccionar un usuario");
+      return false;
+    }
+
+    if (!concept) {
+      toast.error("El concepto es obligatorio");
+      return false;
+    }
+
+    if (amount <= 0) {
+      toast.error("El monto debe ser mayor a 0");
+      return false;
+    }
+
+    if (!startAt) {
+      toast.error("La fecha de inicio es obligatoria");
+      return false;
+    }
+
+    if (!dueDate) {
+      toast.error("La fecha límite es obligatoria");
+      return false;
+    }
+
+    if (startAt && dueDate && new Date(startAt) > new Date(dueDate)) {
+      toast.error("La fecha límite debe ser posterior a la fecha de inicio");
+      return false;
+    }
+
+    return true;
+  };
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    if (!validateForm()) {
+      return;
+    }
 
     const formatDateTime = (dateTimeString: string): string => {
       return dateTimeString.replace("T", " ");
@@ -81,19 +119,16 @@ const ChargeForm = () => {
 
     try {
       if (chargeType === "individual") {
-        if (!selectedUser) {
-          alert("Selecciona un usuario para asignar el cargo.");
-          return;
-        }
         await createChargeForOne(selectedUser, options);
-        alert("Cargo creado para el usuario seleccionado.");
+        toast.success("Cargo creado para el usuario seleccionado");
       } else {
         await createChargeForAll(options);
-        alert("Cargo creado para todos los usuarios.");
+        toast.success("Cargo creado para todos los usuarios");
       }
 
       await fetchSummary();
 
+      // Resetear el formulario
       setConcept("Cuota de mantenimiento");
       setAmount(0);
       setAmountDisplay("");
@@ -103,6 +138,7 @@ const ChargeForm = () => {
       setSelectedUser("");
     } catch (err) {
       console.error(err);
+      toast.error("Error al crear el cargo");
     }
   };
 
@@ -116,7 +152,7 @@ const ChargeForm = () => {
   return (
     <div className="bg-white p-4 rounded shadow-md dark:bg-gray-800 dark:text-gray-100">
       <h2 className="text-xl font-bold mb-4">Asignar Cargo</h2>
-      {error && <p className="text-red-500 mb-2">{error}</p>}
+      {error && toast.error(error)}
       <form onSubmit={handleSubmit}>
         <div className="mb-4">
           <label className="font-semibold block mb-1">Tipo de cargo:</label>
@@ -262,7 +298,7 @@ const ChargeForm = () => {
 
         <button
           type="submit"
-          className="bg-indigo-600 text-white py-2 px-4 rounded mt-2"
+          className="bg-indigo-600 text-white py-2 px-4 rounded mt-2 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
           disabled={loading}
         >
           {loading ? "Guardando..." : "Guardar Cargo"}

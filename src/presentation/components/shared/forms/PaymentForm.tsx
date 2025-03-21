@@ -215,6 +215,16 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
         }
       }
 
+      // Extraer los conceptos y el campo startAt de los cargos seleccionados
+      const concepts = selectedCharges.map((sc) => {
+        const foundCharge = charges.find((c) => c.id === sc.chargeId);
+        return foundCharge ? foundCharge.concept : "";
+      });
+      const startAts = selectedCharges.map((sc) => {
+        const foundCharge = charges.find((c) => c.id === sc.chargeId);
+        return foundCharge ? foundCharge.startAt : "";
+      }).filter((startAt): startAt is string => startAt !== undefined);
+
       const paymentObj = {
         email,
         numberCondominium,
@@ -229,6 +239,8 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
         financialAccountId,
         creditUsed,
         isUnidentifiedPayment,
+        concepts,   // Se envía el concepto del cargo
+        startAts,   // Ahora es string[]
         ...(isUnidentifiedPayment && { appliedToUser: false }),
       };
 
@@ -403,7 +415,7 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                                   name="nameRecipient"
                                   id="nameRecipient"
                                   disabled={isUnidentifiedPayment}
-                                  className="block w-full rounded-md border-0 pl-10 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
+                                  className="px-8 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-50"
                                   value={users.find((u) => u.number === numberCondominium)?.uid || ""}
                                 >
                                   <option value="">Selecciona un condómino</option>
@@ -442,7 +454,7 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                                   type="datetime-local"
                                   name="paymentDate"
                                   id="paymentDate"
-                                  className="block w-full rounded-md border-0 py-1.5 pl-10 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
+                                  className="px-8 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-50"
                                   value={formatDateForInput(paymentDate)}
                                 />
                               </div>
@@ -463,7 +475,7 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                                   type="text"
                                   name="amountPaid"
                                   id="amountPaid"
-                                  className="block w-full rounded-md border-0 pl-10 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
+                                  className="px-8 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-50"
                                   value={amountPaidDisplay}
                                   onChange={(e) => {
                                     setAmountPaid(e.target.value);
@@ -495,7 +507,7 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                                   onChange={(e) => setPaymentType(e.target.value)}
                                   name="paymentType"
                                   id="paymentType"
-                                  className="block w-full rounded-md border-0 pl-10 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
+                                  className="px-8 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-50"
                                   value={paymentType}
                                 >
                                   <option value="">Selecciona un tipo de pago</option>
@@ -519,7 +531,7 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                                   onChange={(e) => setFinancialAccountId(e.target.value)}
                                   name="financialAccountId"
                                   id="financialAccountId"
-                                  className="block w-full rounded-md border-0 pl-3 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
+                                  className="px-2 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-50"
                                   value={financialAccountId}
                                 >
                                   <option value="">Selecciona una cuenta</option>
@@ -548,7 +560,7 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                                   name="amountPending"
                                   id="amountPending"
                                   disabled={isUnidentifiedPayment}
-                                  className="block w-full rounded-md border-0 pl-10 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
+                                  className="px-8 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-50"
                                   value={amountPendingDisplay}
                                   onChange={(e) => {
                                     setAmountPending(e.target.value);
@@ -622,7 +634,7 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                                               type="text"
                                               min="0"
                                               step="0.01"
-                                              className="w-18 rounded-md ring-0 focus:ring-0 outline-none border border-solid  border-indigo-300 pl-5 h-8 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
+                                              className="w-18 rounded-md ring-0 focus:ring-0 outline-none border border-solid border-indigo-300 pl-5 h-8 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
                                               placeholder="$ Monto a aplicar"
                                               value={chargeDisplayValues[charge.id] || ""}
                                               onChange={(e) => {
@@ -683,7 +695,7 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                                   id="comments"
                                   name="comments"
                                   rows={4}
-                                  className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
+                                  className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
                                   value={comments}
                                 />
                               </div>

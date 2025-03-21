@@ -19,6 +19,7 @@ export type Charge = {
   paid: boolean;
   invoiceRequired?: boolean;
   dueDate?: Date; // Para ordenar por fecha de vencimiento
+  startAt?: string;
 };
 
 /**
@@ -62,6 +63,9 @@ export type MaintenancePayment = {
   id?: string;
 
   paymentGroupId?: string;
+
+  startAts?: string[];
+  startAt?: string;
 };
 
 type FinancialAccount = {
@@ -181,6 +185,7 @@ export const usePaymentStore = create<MaintenancePaymentState>((set, get) => ({
         const data = docSnap.data();
         let monthLabel = "";
         let dueDate: Date | undefined;
+        let startAtStr = "";
 
         // Procesar startAt
         if (data.startAt) {
@@ -194,6 +199,8 @@ export const usePaymentStore = create<MaintenancePaymentState>((set, get) => ({
           const monthIndex = d.getMonth();
           const monthName = MONTH_NAMES_ES[monthIndex] || "";
           monthLabel = `${monthName} ${year}`;
+          // Formatear startAt a "YYYY-MM-DD HH:mm"
+          startAtStr = d.toISOString().slice(0, 16).replace("T", " ");
         }
 
         // Procesar dueDate
@@ -211,8 +218,10 @@ export const usePaymentStore = create<MaintenancePaymentState>((set, get) => ({
           paid: data.paid ?? false,
           invoiceRequired: data.invoiceRequired ?? false,
           dueDate,
+          startAt: startAtStr,  // Se incluye startAt formateado
         };
       });
+
 
       set({ charges: newCharges, loading: false, error: null });
     } catch (error: any) {
@@ -282,7 +291,7 @@ export const usePaymentStore = create<MaintenancePaymentState>((set, get) => ({
       const clientId = tokenResult.claims["clientId"] as string;
       const condominiumId = localStorage.getItem("condominiumId");
       if (!condominiumId) throw new Error("Condominio no seleccionado");
-  
+
       // Armamos el formData inicial
       const formData = new FormData();
       formData.append("clientId", clientId);
@@ -290,42 +299,42 @@ export const usePaymentStore = create<MaintenancePaymentState>((set, get) => ({
       formData.append("numberCondominium", payment.numberCondominium || "");
       formData.append("condominiumId", condominiumId);
       formData.append("comments", payment.comments || "");
-  
+
       // Convertir a centavos
       const amountPaidCents = toCents(payment.amountPaid);
       const amountPendingCents = toCents(payment.amountPending);
       formData.append("amountPaid", String(amountPaidCents));
       formData.append("amountPending", String(amountPendingCents));
-  
+
       const paymentGroupId = `${Date.now()}-${Math.random()
         .toString(36)
         .substring(2, 15)}`;
       formData.append("paymentGroupId", paymentGroupId);
-  
+
       formData.append("useCreditBalance", payment.useCreditBalance ? "true" : "false");
       formData.append("paymentType", payment.paymentType || "");
       formData.append(
         "creditUsed",
         payment.creditUsed ? String(toCents(payment.creditUsed)) : "0"
       );
-  
+
       formData.append("paymentDate", formattedPaymentDate || "");
       formData.append("financialAccountId", payment.financialAccountId || "");
-  
+
       // --- OJO: Aquí quitamos la línea que siempre ponía la URL de attachmentPayment ---
       //    formData.append("attachmentPayment", payment.attachmentPayment || "");
-  
+
       // -----------------------------------------
       // CASO: PAGO NO IDENTIFICADO
       // -----------------------------------------
       if (payment.isUnidentifiedPayment) {
         formData.append("isUnidentifiedPayment", JSON.stringify(true));
-  
+
         // Si existe un attachmentPayment (URL) y NO hay archivo, lo enviamos
         if (payment.attachmentPayment && !payment.file) {
           formData.append("attachmentPayment", payment.attachmentPayment);
         }
-  
+
         // Determinar si es CREAR vs ACTUALIZAR
         if (payment.appliedToUser === true) {
           formData.set("amountPaid", "0");
@@ -333,11 +342,17 @@ export const usePaymentStore = create<MaintenancePaymentState>((set, get) => ({
         } else {
           formData.append("appliedToUser", JSON.stringify(payment.appliedToUser));
         }
-  
+
         if (payment.month) {
           formData.append("month", payment.month);
         }
-  
+        // NUEVO: Enviar la propiedad startAt(s) desde el componente
+        if (payment.startAts) {
+          formData.append("startAts", JSON.stringify(payment.startAts));
+        } else if (payment.startAt) {
+          formData.append("startAt", payment.startAt);
+        }
+
         // Si subieron un archivo a "file", se adjunta como attachments
         if (payment.file) {
           if (Array.isArray(payment.file)) {
@@ -346,30 +361,30 @@ export const usePaymentStore = create<MaintenancePaymentState>((set, get) => ({
             formData.append("attachments", payment.file);
           }
         }
-  
+
         // POST al endpoint de pagos NO identificados
         await axios.post(
           `${import.meta.env.VITE_URL_SERVER}/maintenance-fees/create-unidentified`,
           formData,
           { headers: { "Content-Type": "multipart/form-data" } }
         );
-  
+
         set({ loading: false, error: null });
         return;
       }
-  
+
       // -----------------------------------------
       // CASO: PAGO IDENTIFICADO (LÓGICA ORIGINAL)
       // -----------------------------------------
       const { charges } = get();
-  
+
       // Multipago
       if (payment.selectedCharges && payment.selectedCharges.length > 0) {
         const totalSelectedCents = payment.selectedCharges.reduce(
           (sum, sc) => sum + toCents(sc.amount),
           0
         );
-  
+
         if (!payment.useCreditBalance) {
           if (totalSelectedCents !== amountPaidCents) {
             throw new Error(
@@ -378,7 +393,7 @@ export const usePaymentStore = create<MaintenancePaymentState>((set, get) => ({
           }
         }
         formData.append("creditBalance", "0");
-  
+
         const enrichedSelected = payment.selectedCharges
           .map((sc) => {
             const foundCharge = charges.find((c) => c.id === sc.chargeId);
@@ -392,7 +407,7 @@ export const usePaymentStore = create<MaintenancePaymentState>((set, get) => ({
             };
           })
           .sort((a, b) => a.dueDate - b.dueDate);
-  
+
         formData.append("chargeAssignments", JSON.stringify(enrichedSelected));
       }
       // Cargo único
@@ -408,16 +423,22 @@ export const usePaymentStore = create<MaintenancePaymentState>((set, get) => ({
           }
         }
       }
-  
+
       if (payment.month) {
         formData.append("month", payment.month);
       }
-  
+      // NUEVO: Enviar la propiedad startAt(s) desde el componente
+      if (payment.startAts) {
+        formData.append("startAts", JSON.stringify(payment.startAts));
+      } else if (payment.startAt) {
+        formData.append("startAt", payment.startAt);
+      }
+
       // Si existe un attachmentPayment y NO hay archivo, lo enviamos
       if (payment.attachmentPayment && !payment.file) {
         formData.append("attachmentPayment", payment.attachmentPayment);
       }
-  
+
       // Si subieron un archivo a "file", se adjunta como attachments
       if (payment.file) {
         if (Array.isArray(payment.file)) {
@@ -426,22 +447,22 @@ export const usePaymentStore = create<MaintenancePaymentState>((set, get) => ({
           formData.append("attachments", payment.file);
         }
       }
-  
+
       // POST al endpoint de pagos identificados
       await axios.post(
         `${import.meta.env.VITE_URL_SERVER}/maintenance-fees/create`,
         formData,
         { headers: { "Content-Type": "multipart/form-data" } }
       );
-  
+
       // Si es un pago NO identificado que se está aplicando, llamamos updateUnidentifiedPayment
       if (payment.isUnidentifiedPayment && payment.id) {
         await get().updateUnidentifiedPayment(payment, payment.id);
       }
-  
+
       // Recargar cargos asociados al usuario
       await get().fetchUserCharges(payment.numberCondominium);
-  
+
       set({ loading: false, error: null });
     } catch (error: any) {
       console.error("Error al registrar el pago/cargo:", error);

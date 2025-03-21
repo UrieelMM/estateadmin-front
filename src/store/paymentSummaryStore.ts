@@ -3,6 +3,7 @@ import { create } from "zustand";
 import {
   getFirestore,
   collection,
+  collectionGroup,
   getDocs,
   doc,
   getDoc,
@@ -10,6 +11,9 @@ import {
   where,
   documentId,
   onSnapshot,
+  orderBy,
+  limit,
+  startAfter as firestoreStartAfter
 } from "firebase/firestore";
 import { getAuth, getIdTokenResult } from "firebase/auth";
 
@@ -104,6 +108,9 @@ export type PaymentSummaryState = {
   totalCompletedPayments: number;
   lastPaymentDoc: any | null;
   loadingPayments: boolean;
+  pageSize?: number,
+  startAfter?: any,
+  filters?: { month?: string; year?: string }
 
   fetchSummary: (year?: string, forceUpdate?: boolean) => Promise<void>;
   setSelectedYear: (year: string) => void;
@@ -112,7 +119,11 @@ export type PaymentSummaryState = {
   cleanupListeners: (year: string) => void;
   fetchCompletedPayments: (pageSize?: number, startAfter?: any) => Promise<void>;
   resetPaymentsState: () => void;
+  fetchPaymentHistory: (pageSize?: number, startAfter?: any, filters?: { month?: string; year?: string }) => Promise<number>;
 };
+
+// Variable de caché para resultados de paginación (clave basada en filtros y cursor)
+const paymentHistoryCache: Record<string, { payments: PaymentRecord[]; lastDoc: any }> = {};
 
 export const usePaymentSummaryStore = create<PaymentSummaryState>((set, get) => ({
   payments: [],
@@ -150,7 +161,7 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>((set, get) => 
   fetchSummary: async (year?: string, forceUpdate: boolean = false) => {
     const currentYear = year || new Date().getFullYear().toString();
     const store = get();
-    
+
     // Solo verificamos shouldFetchData si no es forceUpdate
     if (!forceUpdate && !store.shouldFetchData(currentYear)) {
       return;
@@ -295,7 +306,10 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>((set, get) => 
                 month: monthCode,
                 amountPaid: parseFloat(totalAmountPaid.toFixed(2)),
                 amountPending: parseFloat(pendingAmount.toFixed(2)),
-                concept: chargeData.concept || "Desconocido",
+                // Ajuste aquí para procesar correctamente los conceptos en pago único y multipago:
+                concept: Array.isArray(chargeData.concept)
+                  ? chargeData.concept.join(", ")
+                  : (chargeData.concept || "Desconocido"),
                 paymentType: chargeData.paymentType,
                 creditBalance: parseFloat(totalCreditBalance.toFixed(2)),
                 creditUsed: parseFloat(totalCreditUsed.toFixed(2)),
@@ -339,7 +353,7 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>((set, get) => 
           }
         }
         if (!include) return;
-        
+
         let monthVal = data.month;
         if (!monthVal && paymentDateObj) {
           monthVal = (paymentDateObj.getMonth() + 1).toString().padStart(2, "0");
@@ -367,19 +381,19 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>((set, get) => 
       });
 
       // Calcular totales y agrupaciones
-      const chartData: Record<string, { 
-        paid: number; 
-        pending: number; 
+      const chartData: Record<string, {
+        paid: number;
+        pending: number;
         saldo: number;
         unidentifiedPayments: number;
         creditUsed: number;
       }> = {};
-      
+
       for (let i = 1; i <= 12; i++) {
         const m = i.toString().padStart(2, "0");
-        chartData[m] = { 
-          paid: 0, 
-          pending: 0, 
+        chartData[m] = {
+          paid: 0,
+          pending: 0,
           saldo: 0,
           unidentifiedPayments: 0,
           creditUsed: 0
@@ -414,10 +428,10 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>((set, get) => 
         const paidCharges = paidChargeCount[m];
         const compliance = totalCharges > 0 ? (paidCharges / totalCharges) * 100 : 0;
         const delinquency = 100 - compliance;
-        
+
         // Calcular el crédito utilizado para este mes
         const totalCreditUsed = chartData[m].creditUsed || 0;
-        
+
         monthlyStats.push({
           month: m,
           paid: parseFloat(paid.toFixed(2)),
@@ -563,7 +577,7 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>((set, get) => 
       const auth = getAuth();
       const user = auth.currentUser;
       if (!user) throw new Error("Usuario no autenticado");
-      
+
       const tokenResult = await getIdTokenResult(user);
       const clientId = tokenResult.claims["clientId"] as string;
       const condominiumId = localStorage.getItem("condominiumId");
@@ -719,10 +733,10 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>((set, get) => 
 
           for (const paymentDoc of paymentsSnapshot.docs) {
             if (processedPayments >= pageSize) break;
-            
+
             const paymentData = paymentDoc.data();
             let formattedDate = '';
-            
+
             if (paymentData.paymentDate) {
               if (paymentData.paymentDate.toDate) {
                 formattedDate = formatDate(paymentData.paymentDate.toDate());
@@ -739,7 +753,9 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>((set, get) => 
               month: chargeData.startAt ? chargeData.startAt.substring(5, 7) : '',
               amountPaid: centsToPesos(paymentData.amountPaid),
               amountPending: centsToPesos(paymentData.amountPending),
-              concept: chargeData.concept || 'Desconocido',
+              concept: Array.isArray(chargeData.concept)
+                ? chargeData.concept.join(", ")
+                : (chargeData.concept || 'Desconocido'),
               paymentType: paymentData.paymentType,
               creditBalance: centsToPesos(paymentData.creditBalance),
               creditUsed: paymentData.creditUsed ? centsToPesos(paymentData.creditUsed) : 0,
@@ -771,7 +787,7 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>((set, get) => 
 
           const data = docSnap.data();
           let formattedDate = '';
-          
+
           if (data.paymentDate) {
             if (data.paymentDate.toDate) {
               formattedDate = formatDate(data.paymentDate.toDate());
@@ -814,7 +830,7 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>((set, get) => 
 
       // Actualizar el estado
       set(state => ({
-        completedPayments: startAfter 
+        completedPayments: startAfter
           ? [...state.completedPayments, ...paymentRecords]
           : paymentRecords,
         lastPaymentDoc: paymentRecords[paymentRecords.length - 1]?.id || null,
@@ -828,6 +844,174 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>((set, get) => 
         error: error.message || "Error fetching payments",
         loadingPayments: false
       });
+    }
+  },
+
+  // NUEVA IMPLEMENTACIÓN DE fetchPaymentHistory CON OPTIMIZACIÓN (COLLECTION GROUP + CACHÉ + PAGINACIÓN CLÁSICA)
+  fetchPaymentHistory: async (pageSize = 20, startAfter = null, filters = {}): Promise<number> => {
+    set({ loadingPayments: true });
+    try {
+      const db = getFirestore();
+      const auth = getAuth();
+      const user = auth.currentUser;
+      if (!user) {
+        throw new Error("Usuario no autenticado");
+      }
+      const tokenResult = await getIdTokenResult(user);
+      const clientId = tokenResult.claims["clientId"] as string;
+      const condominiumId = localStorage.getItem("condominiumId");
+      if (!condominiumId) {
+        throw new Error("Condominio no seleccionado");
+      }
+
+      // Generar llave para caché basada en filtros y cursor
+      const cacheKey = JSON.stringify({
+        filters,
+        startAfter: startAfter ? startAfter.id : "first"
+      });
+      // Usar caché solo si no se aplican filtros (para asegurar que se obtengan datos actualizados)
+      if (!filters.month && !filters.year && paymentHistoryCache[cacheKey]) {
+        const cached = paymentHistoryCache[cacheKey];
+        set({
+          completedPayments: cached.payments,
+          lastPaymentDoc: cached.lastDoc,
+          loadingPayments: false,
+          totalCompletedPayments: cached.payments.length
+        });
+        return cached.payments.length;
+      }
+
+      const paymentsQuery = query(
+        collectionGroup(db, "payments"),
+        where("clientId", "==", clientId),
+        where("condominiumId", "==", condominiumId),
+        orderBy("paymentDate", "desc"),
+        ...(startAfter ? [firestoreStartAfter(startAfter)] : []),
+        limit(pageSize)
+      );
+      const paymentsSnapshot = await getDocs(paymentsQuery);
+
+      let paymentRecords: PaymentRecord[] = [];
+      let lastDoc: any = null;
+      paymentsSnapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        let formattedDate = "";
+        if (data.paymentDate) {
+          if (data.paymentDate.toDate) {
+            formattedDate = formatDate(data.paymentDate.toDate());
+          } else if (typeof data.paymentDate === "string") {
+            const d = new Date(data.paymentDate);
+            formattedDate = !isNaN(d.getTime()) ? formatDate(d) : data.paymentDate;
+          }
+        }
+        // Aplicar filtros (por mes y año) si se especifican
+        if (formattedDate) {
+          const [_day, month, year] = formattedDate.split("/");
+          if (filters.month && month !== filters.month) return;
+          if (filters.year && year !== filters.year) return;
+        }
+        const record: PaymentRecord = {
+          id: docSnap.id,
+          clientId,
+          numberCondominium: data.numberCondominium || "N/A",
+          month: data.month || (formattedDate ? formattedDate.split("/")[1] : ""),
+          amountPaid: centsToPesos(data.amountPaid),
+          amountPending: centsToPesos(data.amountPending),
+          concept: Array.isArray(data.concept)
+            ? data.concept.join(", ")
+            : (data.concept || "Desconocido"),
+          paymentType: data.paymentType,
+          creditBalance: centsToPesos(data.creditBalance),
+          creditUsed: data.creditUsed ? centsToPesos(data.creditUsed) : 0,
+          paid: true,
+          financialAccountId: data.financialAccountId || "N/A",
+          paymentDate: formattedDate,
+          attachmentPayment: data.attachmentPayment,
+          chargeId: data.chargeId || "",
+          userId: data.userId || ""
+        };
+        paymentRecords.push(record);
+        lastDoc = docSnap;
+      });
+
+      // Si no se alcanzó el pageSize, incluir pagos no identificados
+      if (paymentRecords.length < pageSize) {
+        const unidentifiedQuery = query(
+          collection(db, `clients/${clientId}/condominiums/${condominiumId}/unidentifiedPayments`),
+          orderBy("paymentDate", "desc"),
+          ...(startAfter ? [firestoreStartAfter(startAfter)] : []),
+          limit(pageSize - paymentRecords.length)
+        );
+        const unidentifiedSnapshot = await getDocs(unidentifiedQuery);
+        unidentifiedSnapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          let formattedDate = "";
+          if (data.paymentDate) {
+            if (data.paymentDate.toDate) {
+              formattedDate = formatDate(data.paymentDate.toDate());
+            } else if (typeof data.paymentDate === "string") {
+              const d = new Date(data.paymentDate);
+              formattedDate = !isNaN(d.getTime()) ? formatDate(d) : data.paymentDate;
+            }
+          }
+          if (formattedDate) {
+            const [_day, month, year] = formattedDate.split("/");
+            if (filters.month && month !== filters.month) return;
+            if (filters.year && year !== filters.year) return;
+          }
+          const record: PaymentRecord = {
+            id: docSnap.id,
+            clientId,
+            numberCondominium: data.numberCondominium || "N/A",
+            month: data.month || (formattedDate ? formattedDate.split("/")[1] : ""),
+            amountPaid: centsToPesos(data.amountPaid),
+            amountPending: centsToPesos(data.amountPending),
+            concept: "Pago no identificado",
+            paymentType: data.paymentType,
+            creditBalance: data.creditBalance ? centsToPesos(data.creditBalance) : 0,
+            creditUsed: data.creditUsed ? centsToPesos(data.creditUsed) : 0,
+            paid: true,
+            financialAccountId: data.financialAccountId || "N/A",
+            paymentDate: formattedDate,
+            attachmentPayment: data.attachmentPayment,
+            chargeId: docSnap.id,
+            userId: docSnap.id
+          };
+          paymentRecords.push(record);
+          lastDoc = docSnap;
+        });
+      }
+
+      // Ordenar globalmente por fecha (más reciente primero)
+      paymentRecords.sort((a, b) => {
+        const dateA = a.paymentDate ? new Date(a.paymentDate.split("/").reverse().join("-")) : new Date(0);
+        const dateB = b.paymentDate ? new Date(b.paymentDate.split("/").reverse().join("-")) : new Date(0);
+        return dateB.getTime() - dateA.getTime();
+      });
+      paymentRecords = paymentRecords.slice(0, pageSize);
+
+      // Guardar en caché el resultado solo si no se aplican filtros
+      if (!filters.month && !filters.year) {
+        paymentHistoryCache[cacheKey] = {
+          payments: paymentRecords,
+          lastDoc
+        };
+      }
+
+      set({
+        completedPayments: paymentRecords,
+        lastPaymentDoc: lastDoc,
+        loadingPayments: false,
+        totalCompletedPayments: paymentRecords.length
+      });
+      return paymentRecords.length;
+    } catch (error: any) {
+      console.error("Error fetching payment history:", error);
+      set({
+        error: error.message || "Error fetching payment history",
+        loadingPayments: false
+      });
+      return 0;
     }
   },
 }));

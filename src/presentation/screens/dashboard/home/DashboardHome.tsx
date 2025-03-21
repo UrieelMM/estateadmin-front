@@ -28,7 +28,7 @@ const NextEvents = () => {
     .sort((a, b) => dayjs(a.eventDay).diff(dayjs(b.eventDay)));
 
   return (
-    <div className="space-y-3 max-h-[200px] overflow-auto shadow-lg">
+    <div className="space-y-3 max-h-[200px] overflow-auto shadow-lg py-4">
       {weekEvents.length === 0 ? (
         <p className="text-gray-500 dark:text-gray-400 text-sm">No hay eventos esta semana</p>
       ) : (
@@ -69,8 +69,6 @@ const DashboardHome = () => {
       </section>
 
       {/* Grid de información relevante */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        <DirectAccess />
         <Card className="p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
@@ -86,7 +84,8 @@ const DashboardHome = () => {
           </div>
           <NextEvents />
         </Card>
-      </div>
+        <DirectAccess />
+  
     </div>
   )
 }

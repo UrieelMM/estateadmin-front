@@ -69,25 +69,25 @@ const UsersRegistrationForm = () => {
     useDropzone(dropzoneOptions);
 
   return (
-    <div className="divide-gray-900/10 w-full shadow-md rounded-md">
+    <div className="divide-gray-900/10 w-full shadow-md rounded-md px-8 dark:bg-gray-800 dark:text-gray-100 dark:shadow-2xl">
       {loading && <LoadingRegister />}
       <form
         className="bg-white shadow-sm ring-1 w-full flex-col justify-center mx-auto ring-gray-900/5 sm:rounded-xl"
         onSubmit={handleRegisterCondominiums}
       >
-        <div className="px-4 mt-6 pb-6 sm:p-4">
+        <div className="px-4 mt-6 pb-6 sm:p-4 dark:bg-gray-800 dark:text-gray-100">
           <div className="flex-col w-full justify-center">
             <div className="sm:col-span-4">
               <p className="text-md font-bold mt-2 mb-2">
                 Registra a los usuarios del condominio
               </p>
-              <label className="block text-sm font-medium leading-6 text-gray-900">
+              <label className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100">
                 Selecciona el condominio
               </label>
               <div className="mt-2">
                 <select
                   onChange={(e) => setCondominiumId(e.target.value)}
-                  className=" border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5"
+                  className="px-2 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm  ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-50"
                 >
                   <option> Selecciona una opcion </option>
                   {condominiumsList.map((condominium: Condominium) => (
@@ -111,7 +111,7 @@ const UsersRegistrationForm = () => {
             </div>
             <div
               {...getRootProps()}
-              className="mt-3 h-72 align-middle items-center flex justify-center rounded-lg border border-dashed border-gray-900/25 px-6 py-10"
+              className="mt-12 h-72 flex items-center justify-center rounded-lg border border-dashed border-gray-900/25 px-6 py-4 dark:border-indigo-800"
             >
               <input {...getInputProps()} />
               <div className="text-center">
@@ -124,20 +124,20 @@ const UsersRegistrationForm = () => {
                     {fileName}
                   </p>
                 ) : (
-                  <p className="mt-4 text-sm leading-6 font-medium text-indigo-600">
+                  <p className="mt-4 text-sm leading-6 font-medium text-indigo-600 dark:text-indigo-400">
                     {isDragActive
                       ? "Suelta el archivo aquí..."
                       : "Arrastra y suelta el archivo aquí o haz click para seleccionarlo"}
                   </p>
                 )}
-                <p className="text-xs leading-5 text-gray-600">
+                <p className="text-xs leading-5 text-gray-600 dark:text-gray-100">
                   XLS hasta 10MB
                 </p>
               </div>
             </div>
           </div>
         </div>
-        <div className="flex items-center justify-end gap-x-6 border-t border-gray-900/10 px-4 py-4 sm:px-8">
+        <div className="flex items-center justify-end gap-x-6 border-t border-gray-900/10 px-4 py-4 sm:px-8 dark:bg-gray-800 dark:text-gray-100">
           <button type="button" className="btn-secundary">
             Cancelar
           </button>
