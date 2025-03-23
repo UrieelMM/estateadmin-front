@@ -3,6 +3,7 @@ import toast from "react-hot-toast";
 import { useConfigStore } from "../../../../store/useConfigStore";
 import { useFinancialAccountsStore } from "../../../../store/useAccountsStore";
 import { useTheme } from "../../../../context/Theme/ThemeContext";
+import { useCondominiumStore } from "../../../../store/useCondominiumStore";
 import {
   CheckIcon,
   CreditCardIcon,
@@ -31,6 +32,7 @@ import { getAuth, getIdTokenResult } from 'firebase/auth';
 const InitialSetupSteps = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const { isDarkMode, toggleDarkMode } = useTheme();
+  const { fetchCondominiums } = useCondominiumStore();
   const [userData, setUserData] = useState({
     companyName: "",
     email: "",
@@ -54,10 +56,20 @@ const InitialSetupSteps = () => {
   const { config, fetchConfig, updateConfig } = useConfigStore();
   const { createAccount } = useFinancialAccountsStore();
 
-  // Cargar configuración inicial
+  // Cargar configuración inicial y condominios
   useEffect(() => {
-    fetchConfig();
-  }, [fetchConfig]);
+    const initializeData = async () => {
+      try {
+        await fetchCondominiums();
+        await fetchConfig();
+      } catch (error) {
+        console.error("Error al cargar datos iniciales:", error);
+        toast.error("Error al cargar datos iniciales");
+      }
+    };
+    
+    initializeData();
+  }, [fetchConfig, fetchCondominiums]);
 
   // Actualizar userData cuando se cargue la config
   useEffect(() => {

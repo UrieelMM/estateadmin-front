@@ -197,7 +197,6 @@ const useAuthStore = create<AuthStore>((set, get) => {
         } else {
           set({ user: null });
           localStorage.removeItem("dataUserActive");
-          localStorage.removeItem("condominiumId");
           removeActivityListeners();
           if (inactivityTimeout) {
             clearTimeout(inactivityTimeout);
