@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from "react";
 import toast from "react-hot-toast";
+import { useConfigStore } from "../../../../store/useConfigStore";
+import { useFinancialAccountsStore } from "../../../../store/useAccountsStore";
+import { useTheme } from "../../../../context/Theme/ThemeContext";
 import {
   CheckIcon,
   CreditCardIcon,
@@ -22,45 +25,53 @@ import {
 } from "@heroicons/react/24/solid";
 import { motion, AnimatePresence } from "framer-motion";
 import logo from "../../../../assets/logo.png";
+import { getFirestore, doc, setDoc, collection, query, where, getDocs, addDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
+import { getAuth, getIdTokenResult } from 'firebase/auth';
 
 const InitialSetupSteps = () => {
-  // Estado del paso actual (1 a 5)
   const [currentStep, setCurrentStep] = useState(1);
-  // Estado para dark mode
-  const [isDarkMode, setIsDarkMode] = useState(false);
-
-  // Actualiza la clase "dark" en el elemento raíz según el estado
-  useEffect(() => {
-    if (isDarkMode) {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-  }, [isDarkMode]);
-
-  // Datos para el paso 2: Confirma tus datos
-  const userData = {
-    companyName: "Mi Empresa S.A.",
-    email: "contacto@miempresa.com",
-    phoneNumber: "555-123456",
-    address: "Av. Principal 123",
-    RFC: "ABC123456789",
-    country: "México",
-  };
-
-  // Estados para archivos en el paso 3
+  const { isDarkMode, toggleDarkMode } = useTheme();
+  const [userData, setUserData] = useState({
+    companyName: "",
+    email: "",
+    phoneNumber: "",
+    address: "",
+    RFC: "",
+    country: "",
+  });
   const [logoReportsFile, setLogoReportsFile] = useState<File | null>(null);
   const [signReportsFile, setSignReportsFile] = useState<File | null>(null);
   const [logoReportsPreview, setLogoReportsPreview] = useState<string | null>(null);
   const [signReportsPreview, setSignReportsPreview] = useState<string | null>(null);
-
-  // Estado para el formulario del paso 4
   const [accountData, setAccountData] = useState({
     name: "",
     type: "",
     initialBalance: 0,
     description: "",
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const { config, fetchConfig, updateConfig } = useConfigStore();
+  const { createAccount } = useFinancialAccountsStore();
+
+  // Cargar configuración inicial
+  useEffect(() => {
+    fetchConfig();
+  }, [fetchConfig]);
+
+  // Actualizar userData cuando se cargue la config
+  useEffect(() => {
+    if (config) {
+      setUserData({
+        companyName: config.companyName || "",
+        email: config.email || "",
+        phoneNumber: config.phoneNumber || "",
+        address: config.address || "",
+        RFC: config.RFC || "",
+        country: config.country || "",
+      });
+    }
+  }, [config]);
 
   // Función para avanzar pasos con validaciones
   const nextStep = () => {
@@ -72,7 +83,7 @@ const InitialSetupSteps = () => {
       }
     } else if (currentStep === 3) {
       if (!logoReportsFile || !signReportsFile) {
-        toast.error("Debes cargar logoReports y signReports.");
+        toast.error("Debes cargar tus imágenes.");
         return;
       }
     } else if (currentStep === 4) {
@@ -112,10 +123,89 @@ const InitialSetupSteps = () => {
     }));
   };
 
-  // Finalizar el proceso (en el paso 5)
-  const handleFinish = () => {
-    toast.success("¡Configuración inicial completada!");
-    // Aquí actualizarías Firestore o cambiarías el estado global para cerrar el modal
+  // Función para finalizar el proceso
+  const handleFinish = async () => {
+    setIsSubmitting(true);
+    try {
+      const auth = getAuth();
+      const user = auth.currentUser;
+      if (!user) throw new Error("Usuario no autenticado");
+
+      const tokenResult = await getIdTokenResult(user);
+      const clientId = tokenResult.claims["clientId"] as string;
+      if (!clientId) throw new Error("clientId no disponible en el token");
+
+      const condominiumId = localStorage.getItem("condominiumId");
+      if (!condominiumId) throw new Error("Condominio no seleccionado");
+
+      const db = getFirestore();
+
+      // 1. Crear documento del usuario si no existe
+      const userEmail = user.email?.toLowerCase() || "";
+      const userCollRef = collection(
+        db,
+        `clients/${clientId}/condominiums/${condominiumId}/users`
+      );
+      const q = query(userCollRef, where("email", "==", userEmail));
+      const snap = await getDocs(q);
+
+      if (snap.empty) {
+        // Crear el documento del usuario
+        await addDoc(userCollRef, {
+          email: userEmail,
+          role: "admin",
+          darkMode: isDarkMode,
+          createdAt: serverTimestamp(),
+          userId: user.uid
+        });
+      } else {
+        // Actualizar el tema en el documento existente
+        const userDoc = snap.docs[0];
+        await updateDoc(userDoc.ref, {
+          darkMode: isDarkMode,
+          userId: user.uid
+        });
+      }
+
+      // 2. Actualizar configuración general y darkMode
+      await updateConfig(
+        {
+          ...userData,
+          darkMode: isDarkMode
+        },
+        undefined,
+        undefined,
+        logoReportsFile || undefined
+      );
+
+      // 3. Crear cuenta financiera si se proporcionaron datos
+      if (accountData.name) {
+        await createAccount({
+          name: accountData.name,
+          type: accountData.type,
+          description: accountData.description,
+          initialBalance: accountData.initialBalance,
+          active: true
+        });
+      }
+
+      // 4. Marcar configuración inicial como completada
+      const configDocRef = doc(db, "clients", clientId);
+      await setDoc(configDocRef, {
+        initialSetupCompleted: true
+      }, { merge: true });
+
+      toast.success("¡Configuración inicial completada!");
+      
+      // 5. Redirigir después de un breve delay
+      setTimeout(() => {
+        window.location.href = "/dashboard/home";
+      }, 1500);
+    } catch (error: any) {
+      console.error("Error al finalizar configuración:", error);
+      toast.error(error.message || "Error al completar la configuración");
+      setIsSubmitting(false);
+    }
   };
 
   // Header (título e ícono) según el paso actual
@@ -126,13 +216,13 @@ const InitialSetupSteps = () => {
       case 2:
         return { title: "Confirma tus datos", icon: <UserCircleIcon className="h-8 w-8 text-indigo-400" /> };
       case 3:
-        return { title: "Carga logoReports y signReports", icon: <PhotoIcon className="h-8 w-8 text-indigo-400" /> };
+        return { title: "Carga tus imágenes", icon: <PhotoIcon className="h-8 w-8 text-indigo-400" /> };
       case 4:
         return { title: "Crea al menos una cuenta financiera", icon: <CurrencyDollarIcon className="h-8 w-8 text-indigo-400" /> };
       case 5:
         return {
           title: "Elige tu tema",
-          icon: isDarkMode 
+          icon: isDarkMode
             ? <MoonIcon className="h-8 w-8 text-indigo-400" />
             : <SunIcon className="h-8 w-8 text-indigo-400" />,
         };
@@ -172,13 +262,12 @@ const InitialSetupSteps = () => {
               layout
               animate={{ scale: isActive ? 1.2 : 1 }}
               transition={{ type: "spring", stiffness: 300, damping: 20 }}
-              className={`flex items-center justify-center w-10 h-10 rounded-full border-2 font-bold text-lg transition-colors duration-300 ${
-                isCompleted
+              className={`flex items-center justify-center w-10 h-10 rounded-full border-2 font-bold text-lg transition-colors duration-300 ${isCompleted
                   ? "bg-indigo-400 text-white border-indigo-400"
                   : isActive
-                  ? "bg-indigo-100 text-indigo-500 border-indigo-500"
-                  : "bg-white text-gray-600 border-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600"
-              }`}
+                    ? "bg-indigo-100 text-indigo-500 border-indigo-500"
+                    : "bg-white text-gray-600 border-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600"
+                }`}
             >
               {isCompleted ? <CheckIcon className="h-5 w-5" /> : stepNumber}
             </motion.div>
@@ -202,13 +291,12 @@ const InitialSetupSteps = () => {
               layout
               animate={{ scale: isActive ? 1.2 : 1 }}
               transition={{ type: "spring", stiffness: 300, damping: 20 }}
-              className={`flex items-center justify-center w-10 h-10 rounded-full border-2 font-bold text-lg transition-colors duration-300 ${
-                isCompleted
+              className={`flex items-center justify-center w-10 h-10 rounded-full border-2 font-bold text-lg transition-colors duration-300 ${isCompleted
                   ? "bg-indigo-400 text-white border-indigo-400"
                   : isActive
-                  ? "bg-indigo-100 text-indigo-500 border-indigo-500"
-                  : "bg-white text-gray-600 border-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600"
-              }`}
+                    ? "bg-indigo-100 text-indigo-500 border-indigo-500"
+                    : "bg-white text-gray-600 border-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600"
+                }`}
             >
               {isCompleted ? <CheckIcon className="h-5 w-5" /> : stepNumber}
             </motion.div>
@@ -226,9 +314,11 @@ const InitialSetupSteps = () => {
         return (
           <div className="space-y-4 text-center md:text-left">
             <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-              Aquí podrás gestionar toda la información de tu condominio, desde la configuración inicial hasta el control de ingresos, egresos y cuentas financieras.
+              Tu herramienta integral para la administración de condominios. Nuestro sistema te permitirá gestionar cada aspecto de tu comunidad, desde la configuración inicial y el registro de residentes, hasta el control detallado de ingresos, egresos y cuentas financieras. Con una interfaz intuitiva y fácil de usar, <span className="font-bold text-indigo-500">EstateAdmin</span> facilita una gestión transparente y colaborativa.
             </p>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
+            <br />
+            <span className="text-gray-700 dark:text-gray-100 mt-4">Antes de comenzar, necesitamos realizar algunas configuraciones iniciales.</span>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-0" style={{ marginTop: '5px' }}>
               Haz clic en <strong>Siguiente</strong> para continuar.
             </p>
           </div>
@@ -328,7 +418,6 @@ const InitialSetupSteps = () => {
                     <option value="">Seleccione</option>
                     <option value="bank">Banco</option>
                     <option value="cash">Efectivo</option>
-                    <option value="credit">Crédito</option>
                   </select>
                 </div>
               </div>
@@ -371,20 +460,18 @@ const InitialSetupSteps = () => {
               Elige si deseas Modo Día o Modo Noche
             </p>
             <div className="flex items-center justify-start space-x-4">
-              {/* Icono del sol: se ilumina cuando dark mode NO está activado */}
               <SunIcon className={`h-6 w-6 ${isDarkMode ? "text-gray-400" : "text-yellow-500"}`} />
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
                   type="checkbox"
                   checked={isDarkMode}
-                  onChange={() => setIsDarkMode(!isDarkMode)}
+                  onChange={toggleDarkMode}
                   className="sr-only peer"
                 />
                 <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-indigo-500 rounded-full 
                   peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600"
                 ></div>
               </label>
-              {/* Icono de la luna: se ilumina cuando dark mode está activado */}
               <MoonIcon className={`h-6 w-6 ${isDarkMode ? "text-indigo-400" : "text-gray-400"}`} />
             </div>
           </div>
@@ -396,11 +483,8 @@ const InitialSetupSteps = () => {
 
   return (
     // Animación inicial del contenedor
-    <motion.div
+    <div
       className="fixed inset-0 z-50 bg-gradient-to-br from-indigo-50 dark:from-gray-900 to-white dark:to-gray-800 flex items-center justify-center"
-      initial={{ opacity: 0, scale: 0.8 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.5 }}
     >
       {/* Contenedor principal con posición relativa para el logo */}
       <div className="relative w-full max-w-5xl h-auto md:h-[500px] min-h-[600px] bg-white dark:bg-gray-800 rounded-xl shadow-[0_0_10px_rgba(79,70,229,0.5),0_0_200px_#8093e8ac,0_0_100px_#c2abe6c1] p-8 flex flex-col md:flex-row">
@@ -459,10 +543,23 @@ const InitialSetupSteps = () => {
             ) : (
               <button
                 onClick={handleFinish}
-                className="flex items-center bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-700 dark:hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded transition-colors"
+                disabled={isSubmitting}
+                className="flex items-center bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-700 dark:hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded transition-colors disabled:opacity-50"
               >
-                Finalizar
-                <CheckIcon className="h-5 w-5 ml-1" />
+                {isSubmitting ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Procesando...
+                  </>
+                ) : (
+                  <>
+                    Finalizar
+                    <CheckIcon className="h-5 w-5 ml-1" />
+                  </>
+                )}
               </button>
             )}
           </div>
@@ -475,7 +572,7 @@ const InitialSetupSteps = () => {
           className="absolute bottom-4 left-8 h-[40px] w-[40px]"
         />
       </div>
-    </motion.div>
+    </div>
   );
 };
 

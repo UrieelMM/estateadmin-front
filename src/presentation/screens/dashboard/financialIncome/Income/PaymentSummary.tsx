@@ -42,7 +42,7 @@ const PaymentSummary: React.FC = () => {
   }, [fetchCondominiumsUsers]);
 
   useEffect(() => {
-    fetchSummary(selectedYear);
+    fetchSummary(selectedYear, true);
   }, [selectedYear, fetchSummary]);
 
   const handleYearChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -61,6 +61,7 @@ const PaymentSummary: React.FC = () => {
             onChange={handleYearChange}
             className="border border-gray-300 rounded py-2 px-4 dark:bg-gray-900 dark:ring-0 dark:border-none"
           >
+            <option value="">Todos los años</option>
             {["2022", "2023", "2024", "2025"].map((y) => (
               <option key={y} value={y}>
                 {y}

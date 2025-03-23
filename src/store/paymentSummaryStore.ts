@@ -159,7 +159,7 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>((set, get) => 
   },
 
   fetchSummary: async (year?: string, forceUpdate: boolean = false) => {
-    const currentYear = year || new Date().getFullYear().toString();
+    const currentYear = (year === undefined || year === null) ? new Date().getFullYear().toString() : year;
     const store = get();
 
     // Solo verificamos shouldFetchData si no es forceUpdate
@@ -247,7 +247,7 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>((set, get) => 
             chargesSnapshot.docs.map(async (chargeDoc) => {
               const chargeData = chargeDoc.data();
               if (!chargeData.startAt || typeof chargeData.startAt !== "string") return null;
-              if (!chargeData.startAt.startsWith(selectedYearStr)) return null;
+              if (selectedYearStr && !chargeData.startAt.startsWith(selectedYearStr)) return null;
 
               const monthCode = chargeData.startAt.substring(5, 7);
               chargeCount[monthCode] = (chargeCount[monthCode] || 0) + 1;
@@ -345,7 +345,7 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>((set, get) => 
           } else {
             paymentDateObj = new Date(data.paymentDate);
           }
-          if (paymentDateObj && paymentDateObj.getFullYear().toString() === selectedYearStr) {
+          if (!selectedYearStr || (paymentDateObj && paymentDateObj.getFullYear().toString() === selectedYearStr)) {
             include = true;
             if (paymentDateObj) {
               formattedDate = formatDate(paymentDateObj);

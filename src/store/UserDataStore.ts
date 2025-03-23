@@ -4,6 +4,7 @@ import { getFirestore, collection, query, where, getDocs, doc, getDoc } from 'fi
 import { getIdTokenResult, onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../firebase/firebase'; // Ajusta la ruta según tu estructura de carpetas
 import { UserData } from '../interfaces/UserData';
+import { useCondominiumStore } from './useCondominiumStore';
 
 export interface UserState {
   user: UserData | null;
@@ -26,8 +27,8 @@ export interface UserState {
 }
 
 interface Condominium {
+  id: string;
   name: string;
-  uid: string;
 }
 
 const useUserStore = create<UserState>((set, get) => ({
@@ -48,21 +49,45 @@ const useUserStore = create<UserState>((set, get) => ({
           try {
             const token = await user.getIdTokenResult();
             const clientId = token.claims.clientId;
-            const condominiumId = token.claims.condominiumId;
 
-            if(condominiumId) localStorage.setItem("condominiumId", condominiumId as string);
-
-            if (clientId && condominiumId) {
+            if (clientId) {
               const db = getFirestore();
-              const usersRef = collection(db, `clients/${clientId}/condominiums/${condominiumId}/users`);
-              const q = query(usersRef, where("uid", "==", user.uid));
-              const querySnapshot = await getDocs(q);
+              // Primero, obtener todos los condominios donde el usuario tiene acceso
+              const condominiumsRef = collection(db, `clients/${clientId}/condominiums`);
+              const condominiumsSnapshot = await getDocs(condominiumsRef);
+              
+              const condominiums: Condominium[] = [];
+              let userData: UserData | null = null;
 
-              if (!querySnapshot.empty) {
-                const userData = querySnapshot.docs[0].data() as UserData;
-                set({ user: userData });
+              // Para cada condominio, verificar si el usuario tiene acceso
+              for (const condominiumDoc of condominiumsSnapshot.docs) {
+                const usersRef = collection(db, `clients/${clientId}/condominiums/${condominiumDoc.id}/users`);
+                const q = query(usersRef, where("uid", "==", user.uid));
+                const userSnapshot = await getDocs(q);
+
+                if (!userSnapshot.empty) {
+                  // Si el usuario tiene acceso a este condominio, añadirlo a la lista
+                  condominiums.push({
+                    id: condominiumDoc.id,
+                    name: condominiumDoc.data().name
+                  });
+
+                  // Si aún no tenemos los datos del usuario, guardarlos
+                  if (!userData) {
+                    userData = userSnapshot.docs[0].data() as UserData;
+                  }
+                }
+              }
+
+              // Si encontramos condominios y datos del usuario
+              if (condominiums.length > 0 && userData) {
+                set({ 
+                  user: userData,
+                  condominiums,
+                  condominiumsFetched: true
+                });
               } else {
-                console.error('No se encontraron datos del usuario.');
+                console.error('No se encontraron datos del usuario o condominios.');
                 set({ user: null });
               }
             }
@@ -74,8 +99,8 @@ const useUserStore = create<UserState>((set, get) => ({
         }
       });
       set({ authListenerSet: true });
-      return () => unsubscribe(); 
-    } 
+      return () => unsubscribe();
+    }
   },
   fetchCondominiums: async () => {
     // Verifica si los datos de los condominios ya han sido cargados para evitar llamadas múltiples
@@ -94,8 +119,8 @@ const useUserStore = create<UserState>((set, get) => ({
               const condominiumSnap = await getDoc(condominiumRef);
               if (condominiumSnap.exists()) {
                 condominiums.push({
-                  name: condominiumSnap.data().name,
-                  uid
+                  id: uid,
+                  name: condominiumSnap.data().name
                 });
               } else {
                 console.error(`Condominium with UID ${uid} not found.`);
@@ -141,31 +166,18 @@ const useUserStore = create<UserState>((set, get) => ({
       const clientId = token.claims.clientId;
       if (clientId) {
         const db = getFirestore();
-        // Asume una estructura de colección como clients/${clientId}/condominiums/${condominiumId}/users
-        // Nota: necesitas el condominiumId para la ruta, asegúrate de tenerlo disponible o ajusta la ruta según tu estructura
-        const condominiumId = token.claims.condominiumId;
+        const condominiumId = useCondominiumStore.getState().getCurrentCondominiumId();
         if (condominiumId) {
           const userRef = doc(db, `clients/${clientId}/condominiums/${condominiumId}/users`, uid);
           const userSnap = await getDoc(userRef);
           if (userSnap.exists()) {
             const userDetails = userSnap.data() as UserData;
             return userDetails;
-          } else {
-            console.error("User not found.");
-            return null;
           }
-        } else {
-          console.error("Condominium ID not found in token claims.");
-          return null;
         }
-      } else {
-        console.error("Client ID not found in token claims.");
-        return null;
       }
-    } else {
-      console.error("No authenticated user found.");
-      return null;
     }
+    return null;
   },
   fetchCondominiumsUsers: async () => {
     // Verifica si ya se han cargado los datos para evitar llamadas múltiples

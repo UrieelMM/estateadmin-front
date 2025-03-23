@@ -20,7 +20,9 @@ import Loading from "../../components/shared/loaders/Loading";
 import { auth } from "../../../firebase/firebase";
 import logo from "../../../assets/logo.png";
 import ChatBot from "../IA/ChatBot";
-// import InitialSetupSteps from "../dashboard/InitialSetup/InitialSetupSteps";
+import InitialSetupSteps from "../dashboard/InitialSetup/InitialSetupSteps";
+import { getAuth, getIdTokenResult } from "firebase/auth";
+import { getFirestore, doc, getDoc } from "firebase/firestore";
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(" ");
@@ -42,7 +44,39 @@ const LayoutDashboard = ({ children }: Props) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [loadingSession, setLoadingSession] = useState(true);
-  const [componentIsVisible, setComponentIsVisible] = useState(false);
+  const [showInitialSetup, setShowInitialSetup] = useState<boolean | null>(null);
+
+  // Verificar si el usuario necesita hacer la configuración inicial
+  useEffect(() => {
+    const checkInitialSetup = async () => {
+      try {
+        const auth = getAuth();
+        const user = auth.currentUser;
+        if (!user) {
+          setShowInitialSetup(false);
+          return;
+        }
+
+        const tokenResult = await getIdTokenResult(user);
+        const clientId = tokenResult.claims["clientId"] as string;
+        if (!clientId) {
+          setShowInitialSetup(false);
+          return;
+        }
+
+        const db = getFirestore();
+        const configDocRef = doc(db, "clients", clientId);
+        const configDoc = await getDoc(configDocRef);
+
+        setShowInitialSetup(!configDoc.exists() || !configDoc.data()?.initialSetupCompleted);
+      } catch (error) {
+        console.error("Error al verificar configuración inicial:", error);
+        setShowInitialSetup(false);
+      }
+    };
+
+    checkInitialSetup();
+  }, []);
 
   useEffect(() => {
     setLoadingSession(true);
@@ -52,7 +86,6 @@ const LayoutDashboard = ({ children }: Props) => {
       }
     });
     setLoadingSession(false);
-    setComponentIsVisible(true);
     return () => unsubscribe();
   }, [navigate]);
 
@@ -75,19 +108,21 @@ const LayoutDashboard = ({ children }: Props) => {
     }
   };
 
-  if (isLoadingData || loadingSession || !componentIsVisible) {
+  // Mostrar loading mientras verificamos todo
+  if (isLoadingData || loadingSession || showInitialSetup === null) {
     return <Loading />;
   }
 
-  if (!fetchUserData) {
-    return null;
+  // Si necesita configuración inicial, mostrar solo ese componente
+  if (showInitialSetup) {
+    return <InitialSetupSteps />;
   }
 
-  return !isLoadingData && componentIsVisible ? (
+  // Renderizar el layout normal
+  return (
     <div className="min-h-screen bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100">
       <ChatBot />
-      {/* <InitialSetupSteps /> */}
-
+      
       {/* Botón móvil (arriba a la izquierda) para abrir/cerrar sidebar */}
       <div className="lg:hidden px-1 py-4">
         <button
@@ -370,8 +405,6 @@ const LayoutDashboard = ({ children }: Props) => {
         </main>
       </div>
     </div>
-  ) : (
-    <Loading />
   );
 };
 

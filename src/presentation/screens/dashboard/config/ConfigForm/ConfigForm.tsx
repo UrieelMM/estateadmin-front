@@ -177,12 +177,12 @@ const ConfigForm = () => {
           className="bg-white dark:bg-gray-800 shadow-md rounded px-8 pt-6 pb-8 mb-4"
         >
           <div className="flex mb-6 items-center">
-            <div className="h-full w-[120px] dark:bg-white rounded-lg mr-4">
+            <div className="h-full w-[135px] p-2 dark:bg-white rounded-lg mr-4">
               {logoPreviewUrl && (
                 <img
                   src={logoPreviewUrl}
                   alt="Logo de la empresa"
-                  className="mr-4 h-28 w-auto rounded-full bg-cover"
+                  className="mr-4 h-28 w-auto  bg-contain"
                 />
               )}
             </div>
@@ -424,19 +424,30 @@ const ConfigForm = () => {
           <div className="mb-6 text-start font-bold">
             <p className="text-gray-900 dark:text-gray-100 mb-2">Elige tu tema</p>
             <div className="flex items-center justify-start space-x-4">
-              <SunIcon className={`h-6 w-6 ${isDarkMode ? "text-gray-400" : "text-yellow-500"}`} />
+              <SunIcon 
+                className={`h-6 w-6 transition-colors duration-200 ${
+                  isDarkMode ? "text-gray-400" : "text-yellow-500"
+                }`} 
+              />
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
                   type="checkbox"
                   checked={isDarkMode}
-                  onChange={toggleDarkMode}
+                  onChange={() => {
+                    toggleDarkMode();
+                    // No necesitamos setear el estado aquí ya que ThemeContext lo maneja
+                  }}
                   className="sr-only peer"
                 />
                 <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-indigo-500 rounded-full
                   peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600"
                 ></div>
               </label>
-              <MoonIcon className={`h-6 w-6 ${isDarkMode ? "text-indigo-400" : "text-gray-400"}`} />
+              <MoonIcon 
+                className={`h-6 w-6 transition-colors duration-200 ${
+                  isDarkMode ? "text-indigo-400" : "text-gray-400"
+                }`} 
+              />
             </div>
           </div>
 
