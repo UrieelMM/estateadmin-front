@@ -134,7 +134,7 @@ const UnidentifiedPaymentsTable = () => {
   const totalPages = localHasMore ? currentPage + 1 : currentPage;
 
   return (
-    <div className="p-4 bg-white dark:bg-gray-900">
+    <div className="p-4 bg-white dark:bg-gray-900 rounded-lg">
       {/* Filtros */}
       <div className="mb-4 flex space-x-4">
         <select
