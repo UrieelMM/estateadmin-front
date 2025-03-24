@@ -42,7 +42,6 @@ export const usePasswordResetStore = create<PasswordResetState>((set) => ({
         oobCode,
         newPassword
       });
-
       if (response.data.success) {
         toast.success('Contraseña actualizada exitosamente');
         return true;
