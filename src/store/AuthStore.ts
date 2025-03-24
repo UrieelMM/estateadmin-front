@@ -10,11 +10,9 @@ import { create } from "zustand";
 import {
   getFirestore,
   collection,
-  query,
-  where,
   getDocs,
   doc,
-  writeBatch,
+  updateDoc,
 } from "firebase/firestore";
 
 // Se elimina el campo 'password' de la interfaz para evitar almacenar datos sensibles
@@ -154,24 +152,22 @@ const useAuthStore = create<AuthStore>((set, get) => {
           db,
           `clients/${clientId}/condominiums/${condominiumId}/users`
         );
-        const q = query(usersRef, where("email", "==", currentUser.email));
-        const querySnapshot = await getDocs(q);
+        const allDocs = await getDocs(usersRef);
+        const userDoc = allDocs.docs.find(doc => 
+          doc.data().email.toLowerCase() === currentUser.email.toLowerCase()
+        );
 
-        if (querySnapshot.empty) {
+        if (!userDoc) {
           throw new Error("No se encontró el usuario en la colección");
         }
 
-        // Actualización en lote de documentos en Firestore
-        const batch = writeBatch(db);
-        querySnapshot.forEach((docSnapshot) => {
-          const docRef = doc(
-            db,
-            `clients/${clientId}/condominiums/${condominiumId}/users`,
-            docSnapshot.id
-          );
-          batch.update(docRef, { fcmToken: token });
-        });
-        await batch.commit();
+        // Actualizar el token del usuario
+        const docRef = doc(
+          db,
+          `clients/${clientId}/condominiums/${condominiumId}/users`,
+          userDoc.id
+        );
+        await updateDoc(docRef, { fcmToken: token });
       } catch (error: any) {
         console.error("Error al actualizar el token de notificación:", error);
         set({ authError: error.message || "Error al actualizar token" });

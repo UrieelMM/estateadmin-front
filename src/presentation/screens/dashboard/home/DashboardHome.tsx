@@ -28,7 +28,7 @@ const NextEvents = () => {
     .sort((a, b) => dayjs(a.eventDay).diff(dayjs(b.eventDay)));
 
   return (
-    <div className="space-y-3 max-h-[200px] overflow-auto shadow-lg py-4">
+    <div className="space-y-3 px-2 max-h-[200px] overflow-auto shadow-lg py-4">
       {weekEvents.length === 0 ? (
         <p className="text-gray-500 dark:text-gray-400 text-sm">No hay eventos esta semana</p>
       ) : (
