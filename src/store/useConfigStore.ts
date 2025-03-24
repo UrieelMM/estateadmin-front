@@ -8,8 +8,6 @@ import {
   setDoc,
   deleteField,
   collection,
-  query,
-  where,
   getDocs,
 } from 'firebase/firestore';
 import {
@@ -88,7 +86,6 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
       data.logo = data.logoUrl;
 
       // (B) Buscar el doc del usuario por email
-      const userEmail = user.email?.toLowerCase() || "";
       const userCollRef = collection(
         db,
         "clients",
@@ -97,17 +94,14 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
         condominiumId,
         "users"
       );
+      const allDocs = await getDocs(userCollRef);
+      const userDoc = allDocs.docs.find(doc => 
+        doc.data().email.toLowerCase() === user.email?.toLowerCase()
+      );
 
-      const q = query(userCollRef, where("email", "==", userEmail));
-      const snap = await getDocs(q);
-
-      if (!snap.empty) {
-        // const userDoc = snap.docs[0];
-        // const userData = userDoc.data();
-        // Aquí podríamos leer userData.darkMode
-        // y guardarlo en otro estado si quieres
+      if (!userDoc) {
+        throw new Error("No existe un usuario en la subcolección con ese email.");
       }
-      // Si está vacío, significa que no existe un doc con ese email -> depende de tu lógica
 
       // Actualizamos el state
       set({ config: data, loading: false });
@@ -194,7 +188,6 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
       // SI Y SOLO SI 'darkMode' es boolean
       if (typeof darkMode === "boolean") {
         // 1) Localizar el doc del usuario por email
-        const userEmail = user.email?.toLowerCase() || "";
         const userCollRef = collection(
           db,
           "clients",
@@ -203,18 +196,17 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
           condominiumId,
           "users"
         );
-        const q = query(userCollRef, where("email", "==", userEmail));
-        const snap = await getDocs(q);
+        const allDocs = await getDocs(userCollRef);
+        const userDoc = allDocs.docs.find(doc => 
+          doc.data().email.toLowerCase() === user.email?.toLowerCase()
+        );
 
-        if (snap.empty) {
-          // Podrías lanzar un error o ignorar si no existe
+        if (!userDoc) {
           throw new Error("No existe un usuario en la subcolección con ese email.");
-        } else {
-          // Tomamos el primer doc que coincida
-          const userDocRef = snap.docs[0].ref;
-          // 2) Actualizamos el darkMode en ese doc
-          await setDoc(userDocRef, { darkMode }, { merge: true });
         }
+
+        // 2) Actualizamos el darkMode en ese doc
+        await setDoc(userDoc.ref, { darkMode }, { merge: true });
       }
 
       // Éxito: recargar config general

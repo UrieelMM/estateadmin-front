@@ -17,10 +17,13 @@ import {
 } from "@heroicons/react/24/solid";
 import FinancialAccounts from "../FinancialAccounts";
 import { useTheme } from "../../../../../context/Theme/ThemeContext";
+import AdminUsers from "../AdminUsers/AdminUsers";
+import { getAuth } from 'firebase/auth';
 
 const ConfigForm = () => {
   const { config, loading, error, fetchConfig, updateConfig } = useConfigStore();
   const { isDarkMode, toggleDarkMode } = useTheme(); // <-- Valor del ThemeContext (debe ser boolean)
+  const [userRole, setUserRole] = useState<string>('');
 
   // Estados de la pestaña de configuración
   const [companyName, setCompanyName] = useState("");
@@ -77,6 +80,19 @@ const ConfigForm = () => {
       return () => URL.revokeObjectURL(url);
     }
   }, [logoFile]);
+
+  useEffect(() => {
+    const getCurrentUserRole = async () => {
+      const auth = getAuth();
+      const user = auth.currentUser;
+      if (user) {
+        const token = await user.getIdTokenResult();
+        const role = token.claims.role as string;
+        setUserRole(role);
+      }
+    };
+    getCurrentUserRole();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -159,16 +175,30 @@ const ConfigForm = () => {
         >
           Pagos y Facturas
         </button>
-        <button
-          className={`py-2 px-4 ${
-            activeTab === "cuentas"
-              ? "border-b-2 border-indigo-600 text-indigo-600 dark:text-gray-100"
-              : "text-gray-500 dark:text-gray-400"
-          }`}
-          onClick={() => setActiveTab("cuentas")}
-        >
-          Cuentas
-        </button>
+        {userRole === 'admin' && (
+          <>
+            <button
+              className={`py-2 px-4 ${
+                activeTab === "cuentas"
+                  ? "border-b-2 border-indigo-600 text-indigo-600 dark:text-gray-100"
+                  : "text-gray-500 dark:text-gray-400"
+              }`}
+              onClick={() => setActiveTab("cuentas")}
+            >
+              Cuentas Bancarias
+            </button>
+            <button
+              className={`py-2 px-4 ${
+                activeTab === "users"
+                  ? "border-b-2 border-indigo-600 text-indigo-600 dark:text-gray-100"
+                  : "text-gray-500 dark:text-gray-400"
+              }`}
+              onClick={() => setActiveTab("users")}
+            >
+              Usuarios
+            </button>
+          </>
+        )}
       </div>
 
       {activeTab === "config" && (
@@ -177,12 +207,12 @@ const ConfigForm = () => {
           className="bg-white dark:bg-gray-800 shadow-md rounded px-8 pt-6 pb-8 mb-4"
         >
           <div className="flex mb-6 items-center">
-            <div className="h-full w-[135px] p-2 dark:bg-white rounded-lg mr-4">
+            <div className="h-full w-[136px] dark:bg-white rounded-lg p-2 mr-4">
               {logoPreviewUrl && (
                 <img
                   src={logoPreviewUrl}
                   alt="Logo de la empresa"
-                  className="mr-4 h-28 w-auto  bg-contain"
+                  className="mr-4 h-28 w-auto rounded-sm bg-cover"
                 />
               )}
             </div>
@@ -551,7 +581,8 @@ const ConfigForm = () => {
         </div>
       )}
 
-      {activeTab === "cuentas" && <FinancialAccounts />}
+      {userRole === 'admin' && activeTab === "cuentas" && <FinancialAccounts />}
+      {userRole === 'admin' && activeTab === "users" && <AdminUsers />}
     </div>
   );
 };

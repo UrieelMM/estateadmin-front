@@ -139,7 +139,7 @@ const HistoryPaymentsTable: React.FC = () => {
   const totalPages = hasMore ? currentPage + 1 : currentPage;
 
   return (
-    <div className="px-4 sm:px-6 lg:px-8">
+    <div className="px-4 sm:px-6 lg:px-8 dark:bg-gray-900 p-4 rounded-lg ">
       <div className="sm:flex sm:items-center">
         <div className="sm:flex-auto">
           <h1 className="text-base font-semibold leading-6 text-gray-900 dark:text-white">
@@ -171,7 +171,7 @@ const HistoryPaymentsTable: React.FC = () => {
             <select
               value={filters.year}
               onChange={(e) => handleFilterChange('year', e.target.value)}
-              className="block w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm dark:bg-gray-800 dark:border-gray-600 cursor-pointer"
+              className="block w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm dark:bg-gray-900 dark:border-gray-900 cursor-pointer"
             >
               {[2022, 2023, 2024, 2025, 2026, 2027, 2028, 2029, 2030].map((year) => (
                 <option key={year} value={year}>
@@ -187,7 +187,7 @@ const HistoryPaymentsTable: React.FC = () => {
             <select
               value={filters.month}
               onChange={(e) => handleFilterChange('month', e.target.value)}
-              className="block w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm dark:bg-gray-800 dark:border-gray-600 cursor-pointer"
+              className="block w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm dark:bg-gray-900 dark:border-gray-900 cursor-pointer"
             >
               {MONTHS.map((month) => (
                 <option key={month.value} value={month.value}>
