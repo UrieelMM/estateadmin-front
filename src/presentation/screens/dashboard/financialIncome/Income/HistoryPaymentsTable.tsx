@@ -1,33 +1,37 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   FunnelIcon,
   InformationCircleIcon,
-} from '@heroicons/react/24/outline';
-import { usePaymentSummaryStore } from '../../../../../store/paymentSummaryStore';
-import { formatCurrency } from '../../../../../utils/curreyncy';
-import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/solid';
-import LoadingApp from '../../../../components/shared/loaders/LoadingApp';
+  MagnifyingGlassIcon,
+  XMarkIcon,
+} from "@heroicons/react/24/outline";
+import { usePaymentSummaryStore } from "../../../../../store/paymentSummaryStore";
+import { PaymentRecord } from "../../../../../store/paymentSummaryStore";
+import { formatCurrency } from "../../../../../utils/curreyncy";
+import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/solid";
+import LoadingApp from "../../../../components/shared/loaders/LoadingApp";
 
 interface FilterState {
   month: string;
   year: string;
+  folio?: string;
 }
 
 const ITEMS_PER_PAGE = 20;
 const MONTHS = [
-  { value: '', label: 'Todos los meses' },
-  { value: '01', label: 'Enero' },
-  { value: '02', label: 'Febrero' },
-  { value: '03', label: 'Marzo' },
-  { value: '04', label: 'Abril' },
-  { value: '05', label: 'Mayo' },
-  { value: '06', label: 'Junio' },
-  { value: '07', label: 'Julio' },
-  { value: '08', label: 'Agosto' },
-  { value: '09', label: 'Septiembre' },
-  { value: '10', label: 'Octubre' },
-  { value: '11', label: 'Noviembre' },
-  { value: '12', label: 'Diciembre' },
+  { value: "", label: "Todos los meses" },
+  { value: "01", label: "Enero" },
+  { value: "02", label: "Febrero" },
+  { value: "03", label: "Marzo" },
+  { value: "04", label: "Abril" },
+  { value: "05", label: "Mayo" },
+  { value: "06", label: "Junio" },
+  { value: "07", label: "Julio" },
+  { value: "08", label: "Agosto" },
+  { value: "09", label: "Septiembre" },
+  { value: "10", label: "Octubre" },
+  { value: "11", label: "Noviembre" },
+  { value: "12", label: "Diciembre" },
 ];
 
 const HistoryPaymentsTable: React.FC = () => {
@@ -37,23 +41,32 @@ const HistoryPaymentsTable: React.FC = () => {
   // Para la página 1, startAfter es siempre null.
   const [pageCursors, setPageCursors] = useState<any[]>([null]);
   const [filters, setFilters] = useState<FilterState>({
-    month: '',
+    month: "",
     year: new Date().getFullYear().toString(),
+    folio: "",
   });
   const [showFilters, setShowFilters] = useState(false);
   const [loadingPayments, setLoadingPayments] = useState(false);
   // "hasMore" indica si es posible avanzar a una siguiente página
   const [hasMore, setHasMore] = useState(true);
+  const [noResults, _setNoResults] = useState(false);
+  const [showSearchModal, setShowSearchModal] = useState(false);
+  const [searchResults, setSearchResults] = useState<PaymentRecord[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
 
   const {
     completedPayments,
     fetchPaymentHistory,
-    resetPaymentsState
+    resetPaymentsState,
+    searchPaymentByFolio,
+    loadingPayments: _storeLoadingPayments,
   } = usePaymentSummaryStore((state) => ({
     completedPayments: state.completedPayments,
     lastPaymentDoc: state.lastPaymentDoc,
     fetchPaymentHistory: state.fetchPaymentHistory,
-    resetPaymentsState: state.resetPaymentsState
+    resetPaymentsState: state.resetPaymentsState,
+    searchPaymentByFolio: state.searchPaymentByFolio,
+    loadingPayments: state.loadingPayments,
   }));
 
   // Cargar la primera página al montar
@@ -73,7 +86,7 @@ const HistoryPaymentsTable: React.FC = () => {
         }
         setCurrentPage(1);
       } catch (error) {
-        console.error('Error al cargar pagos iniciales:', error);
+        console.error("Error al cargar pagos iniciales:", error);
       } finally {
         setLoadingPayments(false);
       }
@@ -87,21 +100,40 @@ const HistoryPaymentsTable: React.FC = () => {
   // Si se cambian los filtros, se reinicia la paginación
   const handleFilterChange = async (key: keyof FilterState, value: string) => {
     if (loadingPayments) return;
-    try {
-      const newFilters = { ...filters, [key]: value };
-      setFilters(newFilters);
-      setCurrentPage(1);
-      setPageCursors([null]);
-      setHasMore(true);
-      setLoadingPayments(true);
-      resetPaymentsState();
-      const count = await fetchPaymentHistory(ITEMS_PER_PAGE, null, newFilters);
-      setHasMore(count === ITEMS_PER_PAGE);
-    } catch (error) {
-      console.error('Error al cambiar filtros:', error);
-    } finally {
-      setLoadingPayments(false);
+
+    const newFilters = { ...filters, [key]: value };
+    setFilters(newFilters);
+
+    if (key === "folio") {
+      if (value.trim()) {
+        setIsSearching(true);
+        try {
+          const results = await searchPaymentByFolio(value.trim());
+          setSearchResults(results);
+          setShowSearchModal(true);
+        } catch (error) {
+          console.error("Error al buscar por folio:", error);
+        } finally {
+          setIsSearching(false);
+        }
+      } else {
+        setShowSearchModal(false);
+        setSearchResults([]);
+      }
+      return;
     }
+
+    setCurrentPage(1);
+    setPageCursors([null]);
+    setHasMore(true);
+    setLoadingPayments(true);
+    resetPaymentsState();
+    const count = await fetchPaymentHistory(ITEMS_PER_PAGE, null, {
+      month: newFilters.month,
+      year: newFilters.year,
+    });
+    setHasMore(count === ITEMS_PER_PAGE);
+    setLoadingPayments(false);
   };
 
   // Manejo de cambio de página (anterior/siguiente o salto directo)
@@ -116,7 +148,11 @@ const HistoryPaymentsTable: React.FC = () => {
       } else {
         startAfter = pageCursors[newPage - 1];
       }
-      const count = await fetchPaymentHistory(ITEMS_PER_PAGE, startAfter, filters);
+      const count = await fetchPaymentHistory(
+        ITEMS_PER_PAGE,
+        startAfter,
+        filters
+      );
       // Si se intenta avanzar y no se obtienen registros nuevos, se evita actualizar la página
       if (newPage > currentPage && count === 0) {
         setHasMore(false);
@@ -124,12 +160,19 @@ const HistoryPaymentsTable: React.FC = () => {
       }
       setHasMore(count === ITEMS_PER_PAGE);
       // Si se avanzó a una nueva página y aún no se tiene su cursor, se agrega
-      if (newPage > pageCursors.length - 1 && usePaymentSummaryStore.getState().lastPaymentDoc && count > 0) {
-        setPageCursors(prev => [...prev, usePaymentSummaryStore.getState().lastPaymentDoc]);
+      if (
+        newPage > pageCursors.length - 1 &&
+        usePaymentSummaryStore.getState().lastPaymentDoc &&
+        count > 0
+      ) {
+        setPageCursors((prev) => [
+          ...prev,
+          usePaymentSummaryStore.getState().lastPaymentDoc,
+        ]);
       }
       setCurrentPage(newPage);
     } catch (error) {
-      console.error('Error al cambiar de página:', error);
+      console.error("Error al cambiar de página:", error);
     } finally {
       setLoadingPayments(false);
     }
@@ -149,7 +192,23 @@ const HistoryPaymentsTable: React.FC = () => {
             Lista de todos los pagos registrados en el sistema
           </p>
         </div>
-        <div className="mt-4 sm:ml-16 sm:mt-0 sm:flex-none">
+        <div className="mt-4 sm:ml-16 sm:mt-0 sm:flex gap-4">
+          {/* Barra de búsqueda por folio */}
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <MagnifyingGlassIcon
+                className="h-5 w-5 text-gray-400"
+                aria-hidden="true"
+              />
+            </div>
+            <input
+              type="text"
+              value={filters.folio}
+              onChange={(e) => handleFilterChange("folio", e.target.value)}
+              placeholder="Buscar por folio..."
+              className="block w-full rounded-md border border-gray-300 bg-white py-2 pl-10 pr-3 text-sm placeholder-gray-500 focus:border-indigo-500 focus:text-gray-900 focus:placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300"
+            />
+          </div>
           <button
             type="button"
             onClick={() => setShowFilters(!showFilters)}
@@ -165,28 +224,36 @@ const HistoryPaymentsTable: React.FC = () => {
       {showFilters && (
         <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="shadow-lg rounded p-4">
-            <label htmlFor="year-filter" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
+            <label
+              htmlFor="year-filter"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1"
+            >
               Año
             </label>
             <select
               value={filters.year}
-              onChange={(e) => handleFilterChange('year', e.target.value)}
+              onChange={(e) => handleFilterChange("year", e.target.value)}
               className="block w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm dark:bg-gray-900 dark:border-gray-900 cursor-pointer"
             >
-              {[2022, 2023, 2024, 2025, 2026, 2027, 2028, 2029, 2030].map((year) => (
-                <option key={year} value={year}>
-                  {year}
-                </option>
-              ))}
+              {[2022, 2023, 2024, 2025, 2026, 2027, 2028, 2029, 2030].map(
+                (year) => (
+                  <option key={year} value={year}>
+                    {year}
+                  </option>
+                )
+              )}
             </select>
           </div>
           <div className="shadow-lg rounded p-4">
-            <label htmlFor="month-filter" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
+            <label
+              htmlFor="month-filter"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1"
+            >
               Mes
             </label>
             <select
               value={filters.month}
-              onChange={(e) => handleFilterChange('month', e.target.value)}
+              onChange={(e) => handleFilterChange("month", e.target.value)}
               className="block w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm dark:bg-gray-900 dark:border-gray-900 cursor-pointer"
             >
               {MONTHS.map((month) => (
@@ -199,157 +266,173 @@ const HistoryPaymentsTable: React.FC = () => {
         </div>
       )}
 
+      {/* Mensaje de no resultados */}
+      {noResults && (
+        <div className="text-center py-4 text-gray-500 dark:text-gray-400">
+          No se encontraron pagos con el folio especificado
+        </div>
+      )}
+
       {/* Tabla */}
-      <div className="mt-8 flow-root">
-        <div className="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
-          <div className="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
-            <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 sm:rounded-lg">
-              <table className="min-w-full divide-y divide-gray-300 dark:divide-gray-700">
-                <thead className="bg-gray-50 dark:bg-gray-800">
-                  <tr>
-                    <th
-                      scope="col"
-                      className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 dark:text-white sm:pl-6"
-                    >
-                      <div className="flex items-center gap-1">
-                        Fecha
-                        <div className="group relative cursor-pointer">
-                          <InformationCircleIcon className="h-4 w-4 text-gray-400" />
-                          <div className="absolute top-full left-20 transform -translate-x-1/2 mt-2 hidden group-hover:block w-64 p-2 bg-gray-900 text-white text-xs rounded shadow-lg z-10">
-                            Fecha en que se realizó el pago
+      {!noResults && completedPayments.length > 0 && (
+        <div className="mt-8 flow-root">
+          <div className="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
+            <div className="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
+              <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 sm:rounded-lg">
+                <table className="min-w-full divide-y divide-gray-300 dark:divide-gray-700">
+                  <thead className="bg-gray-50 dark:bg-gray-800">
+                    <tr>
+                      <th
+                        scope="col"
+                        className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 dark:text-white sm:pl-6"
+                      >
+                        <div className="flex items-center gap-1">
+                          Fecha
+                          <div className="group relative cursor-pointer">
+                            <InformationCircleIcon className="h-4 w-4 text-gray-400" />
+                            <div className="absolute top-full left-20 transform -translate-x-1/2 mt-2 hidden group-hover:block w-64 p-2 bg-gray-900 text-white text-xs rounded shadow-lg z-10">
+                              Fecha en que se realizó el pago
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white"
-                    >
-                      <div className="flex items-center gap-1">
-                        Monto
-                        <div className="group relative cursor-pointer">
-                          <InformationCircleIcon className="h-4 w-4 text-gray-400" />
-                          <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 hidden group-hover:block w-64 p-2 bg-gray-900 text-white text-xs rounded shadow-lg z-10">
-                            Monto abonado + Saldo a favor utilizado (en caso de que aplique)
+                      </th>
+                      <th
+                        scope="col"
+                        className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white"
+                      >
+                        <div className="flex items-center gap-1">
+                          Monto
+                          <div className="group relative cursor-pointer">
+                            <InformationCircleIcon className="h-4 w-4 text-gray-400" />
+                            <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 hidden group-hover:block w-64 p-2 bg-gray-900 text-white text-xs rounded shadow-lg z-10">
+                              Monto abonado + Saldo a favor utilizado (en caso
+                              de que aplique)
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white"
-                    >
-                      <div className="flex items-center gap-1">
-                        Saldo a favor
-                        <div className="group relative cursor-pointer">
-                          <InformationCircleIcon className="h-4 w-4 text-gray-400" />
-                          <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 hidden group-hover:block w-64 p-2 bg-gray-900 text-white text-xs rounded shadow-lg z-10">
-                            Saldo a favor generado o utilizado en este pago.
+                      </th>
+                      <th
+                        scope="col"
+                        className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white"
+                      >
+                        <div className="flex items-center gap-1">
+                          Saldo a favor
+                          <div className="group relative cursor-pointer">
+                            <InformationCircleIcon className="h-4 w-4 text-gray-400" />
+                            <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 hidden group-hover:block w-64 p-2 bg-gray-900 text-white text-xs rounded shadow-lg z-10">
+                              Saldo a favor generado o utilizado en este pago.
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white"
-                    >
-                      <div className="flex items-center gap-1">
-                        Número de Condominio
-                        <div className="group relative cursor-pointer">
-                          <InformationCircleIcon className="h-4 w-4 text-gray-400" />
-                          <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 hidden group-hover:block w-64 p-2 bg-gray-900 text-white text-xs rounded shadow-lg z-10">
-                            Identificador único del condominio
+                      </th>
+                      <th
+                        scope="col"
+                        className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white"
+                      >
+                        <div className="flex items-center gap-1">
+                          Número de Condomino
+                          <div className="group relative cursor-pointer">
+                            <InformationCircleIcon className="h-4 w-4 text-gray-400" />
+                            <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 hidden group-hover:block w-64 p-2 bg-gray-900 text-white text-xs rounded shadow-lg z-10">
+                              Identificador único del condomino
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white"
-                    >
-                      <div className="flex items-center gap-1">
-                        Concepto
-                        <div className="group relative cursor-pointer">
-                          <InformationCircleIcon className="h-4 w-4 text-gray-400" />
-                          <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 hidden group-hover:block w-64 p-2 bg-gray-900 text-white text-xs rounded shadow-lg z-10">
-                            Descripción del pago realizado
+                      </th>
+                      <th
+                        scope="col"
+                        className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white"
+                      >
+                        <div className="flex items-center gap-1">
+                          Concepto
+                          <div className="group relative cursor-pointer">
+                            <InformationCircleIcon className="h-4 w-4 text-gray-400" />
+                            <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 hidden group-hover:block w-64 p-2 bg-gray-900 text-white text-xs rounded shadow-lg z-10">
+                              Descripción del pago realizado
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white"
-                    >
-                      <div className="flex items-center gap-1">
-                        Comprobante
-                        <div className="group relative cursor-pointer">
-                          <InformationCircleIcon className="h-4 w-4 text-gray-400" />
-                          <div className="absolute top-full left-[-36px] transform -translate-x-1/2 mt-2 hidden group-hover:block w-64 p-2 bg-gray-900 text-white text-xs rounded shadow-lg z-10">
-                            Documento que respalda el pago realizado
+                      </th>
+                      <th
+                        scope="col"
+                        className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white"
+                      >
+                        <div className="flex items-center gap-1">
+                          Comprobante
+                          <div className="group relative cursor-pointer">
+                            <InformationCircleIcon className="h-4 w-4 text-gray-400" />
+                            <div className="absolute top-full left-[-36px] transform -translate-x-1/2 mt-2 hidden group-hover:block w-64 p-2 bg-gray-900 text-white text-xs rounded shadow-lg z-10">
+                              Documento que respalda el pago realizado
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-900">
-                  {completedPayments.map((payment) => (
-                    <tr key={payment.id} className="hover:bg-gray-50 transition-colors dark:hover:bg-gray-700 cursor-pointer">
-                      <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm text-gray-900 dark:text-gray-200 sm:pl-6">
-                        {payment.paymentDate || 'No identificado'}
-                      </td>
-                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 dark:text-gray-200">
-                        {formatCurrency(payment.amountPaid + (payment.creditBalance || 0))}
-                      </td>
-                      <td className="whitespace-nowrap px-3 py-4 text-sm">
-                        <div className="flex flex-col gap-1">
-                          {payment.creditBalance > 0 && (
-                            <span className="text-green-600 dark:text-green-400">
-                              +{formatCurrency(payment.creditBalance)}
-                            </span>
-                          )}
-                          {(payment.creditUsed || 0) > 0 && (
-                            <span className="text-red-600 dark:text-red-400">
-                              -{formatCurrency(payment.creditUsed || 0)}
-                            </span>
-                          )}
-                          {payment.creditBalance === 0 && (payment.creditUsed || 0) === 0 && (
-                            <span className="text-gray-500 dark:text-gray-400">
-                              {formatCurrency(0)}
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 dark:text-gray-200">
-                        {payment.numberCondominium || 'No identificado'}
-                      </td>
-                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 dark:text-gray-200">
-                        {payment.concept || 'No identificado'}
-                      </td>
-                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 dark:text-gray-200">
-                        {payment.attachmentPayment ? (
-                          <a
-                            href={payment.attachmentPayment}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex w-16 items-center bg-indigo-600 dark:bg-indigo-500 text-white px-3 py-1 rounded-md hover:bg-indigo-700 dark:hover:bg-indigo-600"
-                          >
-                            <EyeIcon className="h-5 w-5 mr-1 bg-indigo-500 hover:bg-indigo-600 rounded-full" />
-                            Ver
-                          </a>
-                        ) : (
-                          <EyeSlashIcon className="h-5 w-5 text-gray-400 dark:text-gray-500" />
-                        )}
-                      </td>
+                      </th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-900">
+                    {completedPayments.map((payment) => (
+                      <tr
+                        key={payment.id}
+                        className="hover:bg-gray-50 transition-colors dark:hover:bg-gray-700 cursor-pointer"
+                      >
+                        <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm text-gray-900 dark:text-gray-200 sm:pl-6">
+                          {payment.paymentDate || "No identificado"}
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 dark:text-gray-200">
+                          {formatCurrency(
+                            payment.amountPaid + (payment.creditBalance || 0)
+                          )}
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-4 text-sm">
+                          <div className="flex flex-col gap-1">
+                            {payment.creditBalance > 0 && (
+                              <span className="text-green-600 dark:text-green-400">
+                                +{formatCurrency(payment.creditBalance)}
+                              </span>
+                            )}
+                            {(payment.creditUsed || 0) > 0 && (
+                              <span className="text-red-600 dark:text-red-400">
+                                -{formatCurrency(payment.creditUsed || 0)}
+                              </span>
+                            )}
+                            {payment.creditBalance === 0 &&
+                              (payment.creditUsed || 0) === 0 && (
+                                <span className="text-gray-500 dark:text-gray-400">
+                                  {formatCurrency(0)}
+                                </span>
+                              )}
+                          </div>
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 dark:text-gray-200">
+                          {payment.numberCondominium || "No identificado"}
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 dark:text-gray-200">
+                          {payment.concept || "No identificado"}
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 dark:text-gray-200">
+                          {payment.attachmentPayment ? (
+                            <a
+                              href={payment.attachmentPayment}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex w-16 items-center bg-indigo-600 dark:bg-indigo-500 text-white px-3 py-1 rounded-md hover:bg-indigo-700 dark:hover:bg-indigo-600"
+                            >
+                              <EyeIcon className="h-5 w-5 mr-1 bg-indigo-500 hover:bg-indigo-600 rounded-full" />
+                              Ver
+                            </a>
+                          ) : (
+                            <EyeSlashIcon className="h-5 w-5 text-gray-400 dark:text-gray-500" />
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
 
       {loadingPayments && completedPayments.length > 0 && (
         <div className="flex justify-center items-center py-2">
@@ -378,12 +461,15 @@ const HistoryPaymentsTable: React.FC = () => {
         <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
           <div>
             <p className="text-sm text-gray-700 dark:text-gray-300">
-              Página <span className="font-medium">{currentPage}</span> de{' '}
+              Página <span className="font-medium">{currentPage}</span> de{" "}
               <span className="font-medium">{totalPages}</span>
             </p>
           </div>
           <div>
-            <nav className="isolate inline-flex  rounded-md shadow-sm" aria-label="Pagination">
+            <nav
+              className="isolate inline-flex  rounded-md shadow-sm"
+              aria-label="Pagination"
+            >
               <button
                 onClick={() => handlePageChange(currentPage - 1)}
                 disabled={currentPage === 1 || loadingPayments}
@@ -391,19 +477,21 @@ const HistoryPaymentsTable: React.FC = () => {
               >
                 Anterior
               </button>
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                <button
-                  key={page}
-                  onClick={() => handlePageChange(page)}
-                  className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${
-                    page === currentPage
-                      ? 'z-10 bg-indigo-700 border-2 border-indigo-700 rounded-md text-indigo-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 dark:text-gray-100'
-                      : 'z-10  border-2 border-indigo-700  rounded-md text-indigo-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 dark:text-gray-100'
-                  }`}
-                >
-                  {page}
-                </button>
-              ))}
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                (page) => (
+                  <button
+                    key={page}
+                    onClick={() => handlePageChange(page)}
+                    className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${
+                      page === currentPage
+                        ? "z-10 bg-indigo-700 border-2 border-indigo-700 rounded-md text-indigo-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 dark:text-gray-100"
+                        : "z-10  border-2 border-indigo-700  rounded-md text-indigo-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 dark:text-gray-100"
+                    }`}
+                  >
+                    {page}
+                  </button>
+                )
+              )}
               <button
                 onClick={() => handlePageChange(currentPage + 1)}
                 disabled={loadingPayments || !hasMore}
@@ -415,6 +503,163 @@ const HistoryPaymentsTable: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Modal de búsqueda por folio */}
+      {showSearchModal && (
+        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity z-50">
+          <div className="fixed inset-0 z-50 overflow-y-auto">
+            <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+              <div className="relative transform overflow-hidden rounded-lg bg-white dark:bg-gray-800 px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-4xl sm:p-6">
+                <div className="absolute right-0 top-0 pr-4 pt-4">
+                  <button
+                    type="button"
+                    className="rounded-md bg-white dark:bg-gray-800 text-gray-400 hover:text-gray-500 focus:outline-none"
+                    onClick={() => {
+                      setShowSearchModal(false);
+                      setFilters((prev) => ({ ...prev, folio: "" }));
+                    }}
+                  >
+                    <XMarkIcon className="h-6 w-6" />
+                  </button>
+                </div>
+
+                <div className="mt-3 text-center sm:mt-0 sm:text-left">
+                  <h3 className="text-base font-semibold leading-6 text-gray-900 dark:text-white mb-4">
+                    Resultados de búsqueda por folio
+                  </h3>
+
+                  {isSearching ? (
+                    <div className="flex justify-center items-center py-8">
+                      <LoadingApp />
+                    </div>
+                  ) : searchResults.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                      No se encontraron pagos con el folio especificado
+                    </div>
+                  ) : (
+                    <div className="mt-4">
+                      <div className="flow-root">
+                        <div className="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
+                          <div className="inline-block min-w-full py-2 align-middle">
+                            <table className="min-w-full divide-y divide-gray-300 dark:divide-gray-700">
+                              <thead className="bg-gray-50 dark:bg-gray-800">
+                                <tr>
+                                  <th
+                                    scope="col"
+                                    className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 dark:text-white"
+                                  >
+                                    Fecha
+                                  </th>
+                                  <th
+                                    scope="col"
+                                    className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white"
+                                  >
+                                    Monto
+                                  </th>
+                                  <th
+                                    scope="col"
+                                    className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white"
+                                  >
+                                    Saldo a favor
+                                  </th>
+                                  <th
+                                    scope="col"
+                                    className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white"
+                                  >
+                                    Número de Condomino
+                                  </th>
+                                  <th
+                                    scope="col"
+                                    className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white"
+                                  >
+                                    Concepto
+                                  </th>
+                                  <th
+                                    scope="col"
+                                    className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white"
+                                  >
+                                    Comprobante
+                                  </th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-900">
+                                {searchResults.map((payment) => (
+                                  <tr
+                                    key={payment.id}
+                                    className="hover:bg-gray-50 dark:hover:bg-gray-700"
+                                  >
+                                    <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm text-gray-900 dark:text-gray-200">
+                                      {payment.paymentDate || "No identificado"}
+                                    </td>
+                                    <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 dark:text-gray-200">
+                                      {formatCurrency(
+                                        payment.amountPaid +
+                                          (payment.creditBalance || 0)
+                                      )}
+                                    </td>
+                                    <td className="whitespace-nowrap px-3 py-4 text-sm">
+                                      <div className="flex flex-col gap-1">
+                                        {payment.creditBalance > 0 && (
+                                          <span className="text-green-600 dark:text-green-400">
+                                            +
+                                            {formatCurrency(
+                                              payment.creditBalance
+                                            )}
+                                          </span>
+                                        )}
+                                        {(payment.creditUsed || 0) > 0 && (
+                                          <span className="text-red-600 dark:text-red-400">
+                                            -
+                                            {formatCurrency(
+                                              payment.creditUsed || 0
+                                            )}
+                                          </span>
+                                        )}
+                                        {payment.creditBalance === 0 &&
+                                          (payment.creditUsed || 0) === 0 && (
+                                            <span className="text-gray-500 dark:text-gray-400">
+                                              {formatCurrency(0)}
+                                            </span>
+                                          )}
+                                      </div>
+                                    </td>
+                                    <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 dark:text-gray-200">
+                                      {payment.numberCondominium ||
+                                        "No identificado"}
+                                    </td>
+                                    <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 dark:text-gray-200">
+                                      {payment.concept || "No identificado"}
+                                    </td>
+                                    <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 dark:text-gray-200">
+                                      {payment.attachmentPayment ? (
+                                        <a
+                                          href={payment.attachmentPayment}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="flex w-16 items-center bg-indigo-600 dark:bg-indigo-500 text-white px-3 py-1 rounded-md hover:bg-indigo-700 dark:hover:bg-indigo-600"
+                                        >
+                                          <EyeIcon className="h-5 w-5 mr-1" />
+                                          Ver
+                                        </a>
+                                      ) : (
+                                        <EyeSlashIcon className="h-5 w-5 text-gray-400 dark:text-gray-500" />
+                                      )}
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

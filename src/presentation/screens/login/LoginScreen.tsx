@@ -1,18 +1,17 @@
 import { useEffect, useState } from "react";
 import useAuthStore from "../../../store/AuthStore";
 import { useNavigate } from "react-router-dom";
-import toast from 'react-hot-toast';
+import toast from "react-hot-toast";
 import { auth } from "../../../firebase/firebase";
 import Loading from "../../components/shared/loaders/Loading";
 import logo from "../../../assets/logo.png";
-import { ForgotPasswordForm } from './ForgotPasswordForm';
+import { ForgotPasswordForm } from "./ForgotPasswordForm";
 
 const LoginScreen = () => {
-  
-
   const loginWithEmailAndPassword = useAuthStore(
     (state) => state.loginWithEmailAndPassword
   );
+  const authError = useAuthStore((state) => state.authError);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -24,16 +23,16 @@ const LoginScreen = () => {
 
   //validar si hay un usuario logeado
   useEffect(() => {
-      setLoadingSession(true);
-      const unsubscribe = auth.onAuthStateChanged((user) => {
-        if (user) {
-          navigate("/dashboard/home");
-        }
-      });
-      setTimeout(() => {
-        setLoadingSession(false);
-      }, 400);
-      return () => unsubscribe();
+    setLoadingSession(true);
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      if (user) {
+        navigate("/dashboard/home");
+      }
+    });
+    setTimeout(() => {
+      setLoadingSession(false);
+    }, 400);
+    return () => unsubscribe();
   }, [navigate]);
 
   const handleLoginWithEmailAndPassword = async (e: React.SyntheticEvent) => {
@@ -48,44 +47,26 @@ const LoginScreen = () => {
       if (successLogingUser) {
         navigate("/dashboard/home");
       }
-      setLoading(false);
     } catch (error) {
-      let errorMessage = "Error al iniciar sesión:";
-      switch ((error as { code: string }).code) {
-        case "auth/user-not-found":
-          errorMessage = "Usuario no encontrado";
-          break;
-        case "auth/wrong-password":
-          errorMessage = "Contraseña incorrecta";
-          break;
-        case "auth/invalid-credential":
-          errorMessage = "Correo o contraseña incorrectas";
-          break;
-        case "auth/too-many-requests":
-          errorMessage = "Demasiados intentos, intente más tarde";
-          break;
-        default:
-          errorMessage = "Usuario o contraseña incorrectos";
-          break;
+      if (authError) {
+        toast.error(authError);
       }
-      toast.error(errorMessage);
+    } finally {
       setLoading(false);
     }
   };
 
-  if(loasingSession) return (<Loading />);
+  if (loasingSession) return <Loading />;
 
   return (
     <>
       <div className="flex min-h-full h-screen flex-1 flex-col justify-center px-6 py-12 lg:px-8">
         <div className="sm:mx-auto sm:w-full sm:max-w-sm">
-          <img
-            className="mx-auto h-10 w-auto"
-            src={logo}
-            alt="Your Company"
-          />
+          <img className="mx-auto h-10 w-auto" src={logo} alt="Your Company" />
           <h2 className="mt-10 text-center text-2xl font-bold leading-9 tracking-tight text-gray-900">
-            {showForgotPassword ? 'Recuperar contraseña' : 'Ingresa a tu cuenta'}
+            {showForgotPassword
+              ? "Recuperar contraseña"
+              : "Ingresa a tu cuenta"}
           </h2>
         </div>
 
@@ -130,10 +111,8 @@ const LoginScreen = () => {
                   </label>
                   <div className="text-sm">
                     <button
-                      onClick={(e) => {
-                        e.preventDefault();
-                        setShowForgotPassword(true);
-                      }}
+                      type="button"
+                      onClick={() => setShowForgotPassword(true)}
                       className="font-semibold text-indigo-600 hover:text-indigo-500"
                     >
                       ¿Olvidaste tu contraseña?
@@ -173,11 +152,10 @@ const LoginScreen = () => {
           )}
 
           <div className="flex-col justify-center items-center">
-          <p className="mt-10 text-center text-sm text-gray-500">
-            ¿No tienes una cuenta?{" "}
-            
-          </p>
-          <a
+            <p className="mt-10 text-center text-sm text-gray-500">
+              ¿No tienes una cuenta?{" "}
+            </p>
+            <a
               href="#"
               className="font-semibold leading-6 text-center block text-indigo-600 hover:text-indigo-500"
             >

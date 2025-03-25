@@ -3,7 +3,13 @@ import toast from "react-hot-toast";
 import { Modal } from "antd";
 import useUserStore from "../../../../store/UserDataStore";
 import { useCalendarEventsStore } from "../../../../store/useReservationStore";
-import { UserIcon, MapPinIcon, CalendarIcon, ClockIcon, PencilIcon } from "@heroicons/react/24/solid";
+import {
+  UserIcon,
+  MapPinIcon,
+  CalendarIcon,
+  ClockIcon,
+  PencilIcon,
+} from "@heroicons/react/24/solid";
 
 interface CalendarEvent {
   id: string;
@@ -22,7 +28,9 @@ interface FormCalendarProps {
 }
 
 const FormCalendar = ({ isOpen, onClose }: FormCalendarProps) => {
-  const fetchCondominiumsUsers = useUserStore((state) => state.fetchCondominiumsUsers);
+  const fetchCondominiumsUsers = useUserStore(
+    (state) => state.fetchCondominiumsUsers
+  );
   const condominiumsUsers = useUserStore((state) => state.condominiumsUsers);
   const { createEvent } = useCalendarEventsStore();
 
@@ -36,7 +44,10 @@ const FormCalendar = ({ isOpen, onClose }: FormCalendarProps) => {
 
   // Estados para el manejo de adeudos pendientes y evento pendiente
   const [confirmModalVisible, setConfirmModalVisible] = useState(false);
-  const [pendingEventData, setPendingEventData] = useState<Omit<CalendarEvent, "id"> | null>(null);
+  const [pendingEventData, setPendingEventData] = useState<Omit<
+    CalendarEvent,
+    "id"
+  > | null>(null);
   const [unpaidCharges, setUnpaidCharges] = useState<any[]>([]);
 
   useEffect(() => {
@@ -102,7 +113,8 @@ const FormCalendar = ({ isOpen, onClose }: FormCalendarProps) => {
         setConfirmModalVisible(true);
       } else {
         // Mostrar el error (por ejemplo, de empalme de reservas) en el toast
-        const errorMessage = (error as any).message || "Ocurrió un error al crear el evento.";
+        const errorMessage =
+          (error as any).message || "Ocurrió un error al crear el evento.";
         toast.error(errorMessage);
       }
     }
@@ -126,7 +138,10 @@ const FormCalendar = ({ isOpen, onClose }: FormCalendarProps) => {
       onClose();
     } catch (error) {
       console.error("Error al crear el evento:", error);
-      const errorMessage = (error instanceof Error) ? error.message : "Ocurrió un error al crear el evento.";
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Ocurrió un error al crear el evento.";
       toast.error(errorMessage);
     }
   };
@@ -136,7 +151,7 @@ const FormCalendar = ({ isOpen, onClose }: FormCalendarProps) => {
   return (
     <>
       <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
-        <div className="bg-white p-5 rounded-lg max-w-2xl w-full">
+        <div className="bg-white p-5 rounded-lg max-w-2xl w-full dark:bg-gray-800">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-lg font-semibold">Registrar Evento</h2>
             <button
@@ -146,9 +161,15 @@ const FormCalendar = ({ isOpen, onClose }: FormCalendarProps) => {
               X
             </button>
           </div>
-          <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <form
+            onSubmit={handleSubmit}
+            className="grid grid-cols-1 md:grid-cols-2 gap-4"
+          >
             <div>
-              <label htmlFor="resident" className="block mb-2 text-sm font-medium text-gray-900">
+              <label
+                htmlFor="resident"
+                className="block mb-2 text-sm font-medium text-gray-900 dark:text-gray-100"
+              >
                 Condomino
               </label>
               <div className="relative">
@@ -159,7 +180,7 @@ const FormCalendar = ({ isOpen, onClose }: FormCalendarProps) => {
                   id="resident"
                   value={selectedResidentId}
                   onChange={(e) => setSelectedResidentId(e.target.value)}
-                  className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5 pl-10 placeholder:animate-pulse"
+                  className="w-full pl-10 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
                   required
                 >
                   <option value="">Seleccione un condomino</option>
@@ -172,7 +193,10 @@ const FormCalendar = ({ isOpen, onClose }: FormCalendarProps) => {
               </div>
             </div>
             <div>
-              <label htmlFor="commonArea" className="block mb-2 text-sm font-medium text-gray-900">
+              <label
+                htmlFor="commonArea"
+                className="block mb-2 text-sm font-medium text-gray-900 dark:text-gray-100"
+              >
                 Área Común
               </label>
               <div className="relative">
@@ -183,7 +207,7 @@ const FormCalendar = ({ isOpen, onClose }: FormCalendarProps) => {
                   id="commonArea"
                   value={commonArea}
                   onChange={(e) => setCommonArea(e.target.value)}
-                  className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5 pl-10 placeholder:animate-pulse"
+                  className="w-full pl-10 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
                   required
                 >
                   <option value="">Seleccione un área</option>
@@ -195,7 +219,10 @@ const FormCalendar = ({ isOpen, onClose }: FormCalendarProps) => {
               </div>
             </div>
             <div>
-              <label htmlFor="eventDate" className="block mb-2 text-sm font-medium text-gray-900">
+              <label
+                htmlFor="eventDate"
+                className="block mb-2 text-sm font-medium text-gray-900 dark:text-gray-100"
+              >
                 Día del Evento
               </label>
               <div className="relative">
@@ -207,13 +234,16 @@ const FormCalendar = ({ isOpen, onClose }: FormCalendarProps) => {
                   id="eventDate"
                   value={eventDate}
                   onChange={(e) => setEventDate(e.target.value)}
-                  className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5 pl-10 placeholder:animate-pulse"
+                  className="w-full pl-10 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
                   required
                 />
               </div>
             </div>
             <div>
-              <label htmlFor="startTime" className="block mb-2 text-sm font-medium text-gray-900">
+              <label
+                htmlFor="startTime"
+                className="block mb-2 text-sm font-medium text-gray-900 dark:text-gray-100"
+              >
                 Inicio del Evento
               </label>
               <div className="relative">
@@ -225,13 +255,16 @@ const FormCalendar = ({ isOpen, onClose }: FormCalendarProps) => {
                   id="startTime"
                   value={startTime}
                   onChange={(e) => setStartTime(e.target.value)}
-                  className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5 pl-10 placeholder:animate-pulse"
+                  className="w-full pl-10 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
                   required
                 />
               </div>
             </div>
             <div>
-              <label htmlFor="endTime" className="block mb-2 text-sm font-medium text-gray-900">
+              <label
+                htmlFor="endTime"
+                className="block mb-2 text-sm font-medium text-gray-900 dark:text-gray-100"
+              >
                 Fin del Evento
               </label>
               <div className="relative">
@@ -243,13 +276,16 @@ const FormCalendar = ({ isOpen, onClose }: FormCalendarProps) => {
                   id="endTime"
                   value={endTime}
                   onChange={(e) => setEndTime(e.target.value)}
-                  className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5 pl-10 placeholder:animate-pulse"
+                  className="w-full pl-10 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
                   required
                 />
               </div>
             </div>
             <div className="md:col-span-2">
-              <label htmlFor="comments" className="block mb-2 text-sm font-medium text-gray-900">
+              <label
+                htmlFor="comments"
+                className="block mb-2 text-sm font-medium text-gray-900 dark:text-gray-100"
+              >
                 Comentarios
               </label>
               <div className="relative">
@@ -260,7 +296,7 @@ const FormCalendar = ({ isOpen, onClose }: FormCalendarProps) => {
                   id="comments"
                   value={comments}
                   onChange={(e) => setComments(e.target.value)}
-                  className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5 pl-10 placeholder:animate-pulse"
+                  className="w-full pl-10 h-20 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
                   placeholder="Comentarios sobre el evento (opcional)"
                 ></textarea>
               </div>
@@ -299,7 +335,8 @@ const FormCalendar = ({ isOpen, onClose }: FormCalendarProps) => {
         <ul className="list-disc pl-5 my-2">
           {unpaidCharges.map((charge) => (
             <li key={charge.id}>
-              Concepto: <span className="font-bold">{charge.concept}</span> Monto: <span className="font-bold">${charge.amount}</span>
+              Concepto: <span className="font-bold">{charge.concept}</span>{" "}
+              Monto: <span className="font-bold">${charge.amount}</span>
             </li>
           ))}
         </ul>

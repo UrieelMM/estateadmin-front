@@ -27,7 +27,10 @@ interface AuthStore {
   user: User | null;
   authError: string | null;
   // Inicia sesión con email y contraseña, retornando el usuario autenticado o null en error
-  loginWithEmailAndPassword: (user: { email: string; password: string }) => Promise<User | null>;
+  loginWithEmailAndPassword: (user: {
+    email: string;
+    password: string;
+  }) => Promise<User | null>;
   // Cierra sesión del usuario
   logoutUser: () => Promise<void>;
   // Actualiza el token de notificación en Firestore usando actualización en lote
@@ -107,9 +110,25 @@ const useAuthStore = create<AuthStore>((set, get) => {
         return loggedUser;
       } catch (error: any) {
         console.error("Error en login:", error);
-        // Manejo centralizado de errores: se actualiza el estado 'authError'
-        set({ authError: error.message || "Error al iniciar sesión" });
-        return null;
+        let errorMessage = "";
+        switch (error.code) {
+          case "auth/user-not-found":
+            errorMessage = "Usuario no encontrado";
+            break;
+          case "auth/wrong-password":
+            errorMessage = "Contraseña incorrecta";
+            break;
+          case "auth/invalid-credential":
+            errorMessage = "Correo o contraseña incorrectas";
+            break;
+          case "auth/too-many-requests":
+            errorMessage = "Demasiados intentos, intente más tarde";
+            break;
+          default:
+            errorMessage = "Usuario o contraseña incorrectos";
+        }
+        set({ authError: errorMessage });
+        throw error;
       }
     },
 
@@ -145,7 +164,8 @@ const useAuthStore = create<AuthStore>((set, get) => {
 
         // Obtener el condominiumId desde el localStorage
         const condominiumId = localStorage.getItem("condominiumId");
-        if (!condominiumId) throw new Error("No se encontró condominiumId en el localStorage");
+        if (!condominiumId)
+          throw new Error("No se encontró condominiumId en el localStorage");
 
         // Buscar el usuario en la colección mediante su email
         const usersRef = collection(
@@ -153,8 +173,9 @@ const useAuthStore = create<AuthStore>((set, get) => {
           `clients/${clientId}/condominiums/${condominiumId}/users`
         );
         const allDocs = await getDocs(usersRef);
-        const userDoc = allDocs.docs.find(doc => 
-          doc.data().email.toLowerCase() === currentUser.email.toLowerCase()
+        const userDoc = allDocs.docs.find(
+          (doc) =>
+            doc.data().email.toLowerCase() === currentUser.email.toLowerCase()
         );
 
         if (!userDoc) {

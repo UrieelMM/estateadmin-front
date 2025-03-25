@@ -4,7 +4,7 @@ import { useConfigStore } from "../../../../../store/useConfigStore";
 import { countriesList } from "../../../../../utils/countriesList";
 import { useDropzone } from "react-dropzone";
 import {
-  CheckIcon, 
+  CheckIcon,
   PhotoIcon,
   BuildingOffice2Icon,
   EnvelopeIcon,
@@ -18,12 +18,13 @@ import {
 import FinancialAccounts from "../FinancialAccounts";
 import { useTheme } from "../../../../../context/Theme/ThemeContext";
 import AdminUsers from "../AdminUsers/AdminUsers";
-import { getAuth } from 'firebase/auth';
+import { getAuth } from "firebase/auth";
 
 const ConfigForm = () => {
-  const { config, loading, error, fetchConfig, updateConfig } = useConfigStore();
+  const { config, loading, error, fetchConfig, updateConfig } =
+    useConfigStore();
   const { isDarkMode, toggleDarkMode } = useTheme(); // <-- Valor del ThemeContext (debe ser boolean)
-  const [userRole, setUserRole] = useState<string>('');
+  const [userRole, setUserRole] = useState<string>("");
 
   // Estados de la pestaña de configuración
   const [companyName, setCompanyName] = useState("");
@@ -51,8 +52,18 @@ const ConfigForm = () => {
 
   // Datos dummy para la tabla de facturas
   const [invoices, _setInvoices] = useState([
-    { id: "inv1", date: "2025-01-10", concept: "Factura Enero", downloadUrl: "#" },
-    { id: "inv2", date: "2025-02-10", concept: "Factura Febrero", downloadUrl: "#" },
+    {
+      id: "inv1",
+      date: "2025-01-10",
+      concept: "Factura Enero",
+      downloadUrl: "#",
+    },
+    {
+      id: "inv2",
+      date: "2025-02-10",
+      concept: "Factura Febrero",
+      downloadUrl: "#",
+    },
   ]);
 
   useEffect(() => {
@@ -175,7 +186,7 @@ const ConfigForm = () => {
         >
           Pagos y Facturas
         </button>
-        {userRole === 'admin' && (
+        {userRole === "admin" && (
           <>
             <button
               className={`py-2 px-4 ${
@@ -227,7 +238,9 @@ const ConfigForm = () => {
 
           {/* DATOS DE LA EMPRESA */}
           <div className="mb-6">
-            <h2 className="text-xl font-semibold text-indigo-600 mb-4 dark:text-indigo-500">Datos de la empresa</h2>
+            <h2 className="text-xl font-semibold text-indigo-600 mb-4 dark:text-indigo-500">
+              Datos de la empresa
+            </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* companyName */}
               <div className="mb-4">
@@ -238,9 +251,7 @@ const ConfigForm = () => {
                   Nombre de la empresa
                 </label>
                 <div className="relative">
-                  <BuildingOffice2Icon
-                    className="h-5 w-5 absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400"
-                  />
+                  <BuildingOffice2Icon className="h-5 w-5 absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400" />
                   <input
                     type="text"
                     id="companyName"
@@ -259,9 +270,7 @@ const ConfigForm = () => {
                   Email
                 </label>
                 <div className="relative">
-                  <EnvelopeIcon
-                    className="h-5 w-5 absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400"
-                  />
+                  <EnvelopeIcon className="h-5 w-5 absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400" />
                   <input
                     type="email"
                     id="email"
@@ -280,9 +289,7 @@ const ConfigForm = () => {
                   Teléfono
                 </label>
                 <div className="relative">
-                  <PhoneIcon
-                    className="h-5 w-5 absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400"
-                  />
+                  <PhoneIcon className="h-5 w-5 absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400" />
                   <input
                     type="text"
                     id="phoneNumber"
@@ -301,9 +308,7 @@ const ConfigForm = () => {
                   Dirección
                 </label>
                 <div className="relative">
-                  <MapPinIcon
-                    className="h-5 w-5 absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400"
-                  />
+                  <MapPinIcon className="h-5 w-5 absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400" />
                   <input
                     type="text"
                     id="address"
@@ -322,9 +327,7 @@ const ConfigForm = () => {
                   RFC
                 </label>
                 <div className="relative">
-                  <IdentificationIcon
-                    className="h-5 w-5 absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400"
-                  />
+                  <IdentificationIcon className="h-5 w-5 absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400" />
                   <input
                     type="text"
                     id="RFC"
@@ -343,9 +346,7 @@ const ConfigForm = () => {
                   País
                 </label>
                 <div className="relative">
-                  <GlobeAltIcon
-                    className="h-5 w-5 absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400"
-                  />
+                  <GlobeAltIcon className="h-5 w-5 absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400" />
                   <select
                     id="country"
                     value={country}
@@ -366,7 +367,9 @@ const ConfigForm = () => {
 
           {/* Archivos */}
           <div className="mb-6">
-            <h2 className="text-xl font-semibold text-indigo-600 mb-4 dark:text-indigo-500">Archivos</h2>
+            <h2 className="text-xl font-semibold text-indigo-600 mb-4 dark:text-indigo-500">
+              Archivos
+            </h2>
             {/* Logo */}
             <div className="mb-4">
               <label
@@ -390,7 +393,9 @@ const ConfigForm = () => {
                 type="file"
                 id="logo"
                 accept="image/png, image/jpeg"
-                onChange={(e) => setLogoFile(e.target.files ? e.target.files[0] : null)}
+                onChange={(e) =>
+                  setLogoFile(e.target.files ? e.target.files[0] : null)
+                }
                 className="hidden"
               />
             </div>
@@ -417,7 +422,9 @@ const ConfigForm = () => {
                 type="file"
                 id="signature"
                 accept="image/png, image/jpeg"
-                onChange={(e) => setSignatureFile(e.target.files ? e.target.files[0] : null)}
+                onChange={(e) =>
+                  setSignatureFile(e.target.files ? e.target.files[0] : null)
+                }
                 className="hidden"
               />
             </div>
@@ -438,13 +445,17 @@ const ConfigForm = () => {
                 ) : (
                   <PhotoIcon className="h-5 w-5 mr-2 text-gray-200" />
                 )}
-                {logoReportsFile ? "Archivo seleccionado" : "Seleccionar archivo"}
+                {logoReportsFile
+                  ? "Archivo seleccionado"
+                  : "Seleccionar archivo"}
               </label>
               <input
                 type="file"
                 id="logoReports"
                 accept="image/png, image/jpeg"
-                onChange={(e) => setLogoReportsFile(e.target.files ? e.target.files[0] : null)}
+                onChange={(e) =>
+                  setLogoReportsFile(e.target.files ? e.target.files[0] : null)
+                }
                 className="hidden"
               />
             </div>
@@ -452,12 +463,14 @@ const ConfigForm = () => {
 
           {/* Toggle de Dark Mode */}
           <div className="mb-6 text-start font-bold">
-            <p className="text-gray-900 dark:text-gray-100 mb-2">Elige tu tema</p>
+            <p className="text-gray-900 dark:text-gray-100 mb-2">
+              Elige tu tema
+            </p>
             <div className="flex items-center justify-start space-x-4">
-              <SunIcon 
+              <SunIcon
                 className={`h-6 w-6 transition-colors duration-200 ${
                   isDarkMode ? "text-gray-400" : "text-yellow-500"
-                }`} 
+                }`}
               />
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
@@ -469,14 +482,15 @@ const ConfigForm = () => {
                   }}
                   className="sr-only peer"
                 />
-                <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-indigo-500 rounded-full
+                <div
+                  className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-indigo-500 rounded-full
                   peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600"
                 ></div>
               </label>
-              <MoonIcon 
+              <MoonIcon
                 className={`h-6 w-6 transition-colors duration-200 ${
                   isDarkMode ? "text-indigo-400" : "text-gray-400"
-                }`} 
+                }`}
               />
             </div>
           </div>
@@ -494,7 +508,9 @@ const ConfigForm = () => {
 
       {activeTab === "payments" && (
         <div className="bg-white dark:bg-gray-800 shadow-md rounded px-8 pt-6 pb-8 mb-4">
-          <h2 className="text-2xl font-semibold text-black mb-4 dark:text-gray-100">Pagos y Facturas</h2>
+          <h2 className="text-2xl font-semibold text-black mb-4 dark:text-gray-100">
+            Pagos y Facturas
+          </h2>
           {/* Formulario para subir comprobante de pago */}
           <form onSubmit={handlePaymentSubmit} className="mb-8">
             <div className="flex flex-row md:flex-col gap-4 mb-8">
@@ -509,7 +525,7 @@ const ConfigForm = () => {
                   id="invoiceSelect"
                   value={selectedInvoice}
                   onChange={(e) => setSelectedInvoice(e.target.value)}
-                    className="w-full pl-2 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
+                  className="w-full pl-2 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
                 >
                   <option value="">Seleccione una factura</option>
                   {invoiceOptions.map((inv) => (
@@ -551,9 +567,15 @@ const ConfigForm = () => {
             <table className="min-w-full bg-white dark:bg-gray-800">
               <thead>
                 <tr>
-                  <th className="py-2 px-4 border-b border-gray-200 dark:border-gray-600 dark:text-gray-100">Fecha</th>
-                  <th className="py-2 px-4 border-b border-gray-200 dark:border-gray-600 dark:text-gray-100">Concepto</th>
-                  <th className="py-2 px-4 border-b border-gray-200 dark:border-gray-600 dark:text-gray-100">Acciones</th>
+                  <th className="py-2 px-4 border-b border-gray-200 dark:border-gray-600 dark:text-gray-100">
+                    Fecha
+                  </th>
+                  <th className="py-2 px-4 border-b border-gray-200 dark:border-gray-600 dark:text-gray-100">
+                    Concepto
+                  </th>
+                  <th className="py-2 px-4 border-b border-gray-200 dark:border-gray-600 dark:text-gray-100">
+                    Acciones
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -580,9 +602,8 @@ const ConfigForm = () => {
           </div>
         </div>
       )}
-
-      {userRole === 'admin' && activeTab === "cuentas" && <FinancialAccounts />}
-      {userRole === 'admin' && activeTab === "users" && <AdminUsers />}
+      {userRole === "admin" && activeTab === "cuentas" && <FinancialAccounts />}
+      {userRole === "admin" && activeTab === "users" && <AdminUsers />}
     </div>
   );
 };
