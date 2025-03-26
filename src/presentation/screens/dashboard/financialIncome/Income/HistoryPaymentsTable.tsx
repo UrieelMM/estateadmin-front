@@ -484,7 +484,7 @@ const HistoryPaymentsTable: React.FC = () => {
                     onClick={() => handlePageChange(page)}
                     className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${
                       page === currentPage
-                        ? "z-10 bg-indigo-700 border-2 border-indigo-700 rounded-md text-indigo-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 dark:text-gray-100"
+                        ? "z-10 bg-indigo-700 border-2 text-white border-indigo-700 rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 dark:text-gray-100"
                         : "z-10  border-2 border-indigo-700  rounded-md text-indigo-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 dark:text-gray-100"
                     }`}
                   >

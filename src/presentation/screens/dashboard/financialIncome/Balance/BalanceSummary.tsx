@@ -22,7 +22,7 @@ const BalanceGeneral: React.FC = () => {
     monthlyStats: monthlyStatsIncomes,
     shouldFetchData: shouldFetchDataIncomes,
     setupRealtimeListeners: setupRealtimeListenersIncomes,
-    cleanupListeners: cleanupListenersIncomes
+    cleanupListeners: cleanupListenersIncomes,
   } = usePaymentSummaryStore(
     (state) => ({
       loading: state.loading,
@@ -34,22 +34,23 @@ const BalanceGeneral: React.FC = () => {
       monthlyStats: state.monthlyStats,
       shouldFetchData: state.shouldFetchData,
       setupRealtimeListeners: state.setupRealtimeListeners,
-      cleanupListeners: state.cleanupListeners
+      cleanupListeners: state.cleanupListeners,
     }),
     shallow
   );
 
   // Calcular el saldo a favor global a partir de monthlyStats
-  const totalCreditGlobal = useMemo(() => 
-    monthlyStatsIncomes.reduce((acc, stat) => acc + stat.saldo, 0)
-  , [monthlyStatsIncomes]);
+  const totalCreditGlobal = useMemo(
+    () => monthlyStatsIncomes.reduce((acc, stat) => acc + stat.saldo, 0),
+    [monthlyStatsIncomes]
+  );
 
   // Calcular el total de ingresos incluyendo el saldo a favor y créditos utilizados
   const totalIncomeWithCredit = useMemo(() => {
     const totalFromMonthlyStats = monthlyStatsIncomes.reduce((acc, stat) => {
       return acc + stat.paid + (stat.creditUsed || 0);
     }, 0);
-    
+
     // Incluir el total de ingresos, más el saldo a favor por aplicar
     return totalFromMonthlyStats + totalCreditGlobal;
   }, [totalIncome, monthlyStatsIncomes, totalCreditGlobal]);
@@ -64,7 +65,7 @@ const BalanceGeneral: React.FC = () => {
     monthlyStats: monthlyStatsExpenses,
     shouldFetchData: shouldFetchDataExpenses,
     setupRealtimeListeners: setupRealtimeListenersExpenses,
-    cleanupListeners: cleanupListenersExpenses
+    cleanupListeners: cleanupListenersExpenses,
   } = useExpenseSummaryStore(
     (state) => ({
       loading: state.loading,
@@ -76,7 +77,7 @@ const BalanceGeneral: React.FC = () => {
       monthlyStats: state.monthlyStats,
       shouldFetchData: state.shouldFetchData,
       setupRealtimeListeners: state.setupRealtimeListeners,
-      cleanupListeners: state.cleanupListeners
+      cleanupListeners: state.cleanupListeners,
     }),
     shallow
   );
@@ -131,6 +132,7 @@ const BalanceGeneral: React.FC = () => {
             onChange={handleYearChange}
             className="border border-gray-300 rounded py-2 px-8 dark:bg-gray-900 cursor-pointer"
           >
+            <option value="">Todos los años</option>
             {["2022", "2023", "2024", "2025"].map((y) => (
               <option key={y} value={y}>
                 {y}

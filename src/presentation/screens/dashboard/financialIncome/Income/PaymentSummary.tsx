@@ -12,7 +12,10 @@ import GrowthSection from "../Summary/GrowthSection";
 import MonthComparisonTable from "../Summary/MonthComparisonTable";
 import DetailedConceptsTable from "../Summary/DetailedConceptsTable";
 import ConceptGrowthSection from "../Summary/ConceptGrowthSection.";
-import { DocumentTextIcon, WrenchScrewdriverIcon } from "@heroicons/react/24/solid";
+import {
+  DocumentTextIcon,
+  WrenchScrewdriverIcon,
+} from "@heroicons/react/24/solid";
 import SkeletonLoading from "../../../../components/shared/loaders/SkeletonLoading";
 
 const PaymentSummary: React.FC = () => {
@@ -35,7 +38,9 @@ const PaymentSummary: React.FC = () => {
     shallow
   );
 
-  const fetchCondominiumsUsers = useUserStore((state) => state.fetchCondominiumsUsers);
+  const fetchCondominiumsUsers = useUserStore(
+    (state) => state.fetchCondominiumsUsers
+  );
 
   useEffect(() => {
     fetchCondominiumsUsers();
@@ -92,7 +97,8 @@ const PaymentSummary: React.FC = () => {
                 <h3 className="font-bold text-lg">Reporte de Ingresos</h3>
               </div>
               <p className="text-sm text-gray-600 mb-4 dark:text-gray-100">
-                Genera el reporte de ingresos por concepto de cuota de mantenimiento.
+                Genera el reporte de ingresos por concepto de cuota de
+                mantenimiento.
               </p>
               <PDFReportGenerator year={selectedYear} />
             </div>

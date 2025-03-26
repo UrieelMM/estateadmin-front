@@ -13,7 +13,6 @@ import ExpenseSummaryCards from "./ExpensesSummary/ExpenseSummaryCards";
 import PDFExpenseReportGenerator from "./ExpensesSummary/PDFExpenseReportGenerator";
 import SkeletonLoading from "../../../../components/shared/loaders/SkeletonLoading";
 
-
 // import ExpensePDFReportGenerator from "./ExpensePDFReportGenerator"; // Si deseas PDF
 
 /**
@@ -42,7 +41,9 @@ const ExpenseSummary: React.FC = () => {
   );
 
   // Opcional: si requieres cargar usuarios/condominios, como en PaymentSummary
-  const fetchCondominiumsUsers = useUserStore((state) => state.fetchCondominiumsUsers);
+  const fetchCondominiumsUsers = useUserStore(
+    (state) => state.fetchCondominiumsUsers
+  );
 
   useEffect(() => {
     fetchCondominiumsUsers();
@@ -50,7 +51,7 @@ const ExpenseSummary: React.FC = () => {
 
   // Cada vez que cambia el año seleccionado, invocamos fetchSummary
   useEffect(() => {
-    fetchSummary(selectedYear);
+    fetchSummary(selectedYear, true);
   }, [selectedYear, fetchSummary]);
 
   // Manejar el cambio de año
@@ -63,7 +64,6 @@ const ExpenseSummary: React.FC = () => {
 
   return (
     <div className="p-4">
-
       {/* Selector de Año */}
       <div className="flex flex-col md:flex-row gap-4 mb-4">
         <div>
@@ -73,6 +73,7 @@ const ExpenseSummary: React.FC = () => {
             onChange={handleYearChange}
             className="border border-gray-300 rounded py-2 px-8 dark:bg-gray-900 cursor-pointer"
           >
+            <option value="">Todos los años</option>
             {["2022", "2023", "2024", "2025"].map((y) => (
               <option key={y} value={y}>
                 {y}
@@ -89,11 +90,9 @@ const ExpenseSummary: React.FC = () => {
       {/* Si ya no está loading o sí hay data, mostramos secciones */}
       {!showSpinner && (
         <>
-
           {/* Tarjetas con totales, mes con mayor/menor gasto, etc. */}
           <ExpenseSummaryCards />
 
-          
           {/* Tabla detallada con truncado de descripción */}
           <ExpenseConceptAnalyticsAdvanced />
 
@@ -102,7 +101,6 @@ const ExpenseSummary: React.FC = () => {
 
           {/* Comparativa de egresos por concepto en el tiempo (tipo Growth) */}
           <ExpenseConceptGrowthSection />
-
 
           {/* Tabla comparativa mensual */}
           <ExpenseMonthComparisonTable />

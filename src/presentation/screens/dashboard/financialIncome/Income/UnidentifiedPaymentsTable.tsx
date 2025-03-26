@@ -21,7 +21,9 @@ const UnidentifiedPaymentsTable = () => {
   // Estados para filtros de mes, año y aplicado.
   // Se asigna por defecto el año actual para que el filtro de mes funcione desde el inicio.
   const [filterMonth, setFilterMonth] = useState<number | undefined>(undefined);
-  const [filterYear, setFilterYear] = useState<number>(new Date().getFullYear());
+  const [filterYear, setFilterYear] = useState<number>(
+    new Date().getFullYear()
+  );
   const [filterApplied, setFilterApplied] = useState<string>("todos");
 
   // Estados de paginación
@@ -36,9 +38,15 @@ const UnidentifiedPaymentsTable = () => {
     const loadInitialPayments = async () => {
       setLoadingPayments(true);
       try {
-        const count = await fetchPayments(pageSize, null, filterMonth, filterYear);
+        const count = await fetchPayments(
+          pageSize,
+          null,
+          filterMonth,
+          filterYear
+        );
         setLocalHasMore(count === pageSize);
-        const updatedLastVisible = useUnidentifiedPaymentsStore.getState().lastVisible;
+        const updatedLastVisible =
+          useUnidentifiedPaymentsStore.getState().lastVisible;
         if (updatedLastVisible) {
           setPageCursors([null, updatedLastVisible]);
         } else {
@@ -65,7 +73,8 @@ const UnidentifiedPaymentsTable = () => {
     try {
       const count = await fetchPayments(pageSize, null, newMonth, newYear);
       setLocalHasMore(count === pageSize);
-      const updatedLastVisible = useUnidentifiedPaymentsStore.getState().lastVisible;
+      const updatedLastVisible =
+        useUnidentifiedPaymentsStore.getState().lastVisible;
       if (updatedLastVisible) {
         setPageCursors([null, updatedLastVisible]);
       } else {
@@ -100,14 +109,26 @@ const UnidentifiedPaymentsTable = () => {
       } else {
         startAfter = pageCursors[newPage - 1];
       }
-      const count = await fetchPayments(pageSize, startAfter, filterMonth, filterYear);
+      const count = await fetchPayments(
+        pageSize,
+        startAfter,
+        filterMonth,
+        filterYear
+      );
       if (newPage > currentPage && count === 0) {
         setLocalHasMore(false);
         return;
       }
       setLocalHasMore(count === pageSize);
-      if (newPage > pageCursors.length - 1 && useUnidentifiedPaymentsStore.getState().lastVisible && count > 0) {
-        setPageCursors((prev) => [...prev, useUnidentifiedPaymentsStore.getState().lastVisible]);
+      if (
+        newPage > pageCursors.length - 1 &&
+        useUnidentifiedPaymentsStore.getState().lastVisible &&
+        count > 0
+      ) {
+        setPageCursors((prev) => [
+          ...prev,
+          useUnidentifiedPaymentsStore.getState().lastVisible,
+        ]);
       }
       setCurrentPage(newPage);
     } catch (error) {
@@ -120,7 +141,9 @@ const UnidentifiedPaymentsTable = () => {
   // Filtrado adicional según el estado aplicado
   const filteredPayments = payments.filter((payment) => {
     if (filterApplied === "todos") return true;
-    return filterApplied === "aplicado" ? payment.appliedToUser : !payment.appliedToUser;
+    return filterApplied === "aplicado"
+      ? payment.appliedToUser
+      : !payment.appliedToUser;
   });
 
   const formatDate = (date: Date) => {
@@ -190,13 +213,27 @@ const UnidentifiedPaymentsTable = () => {
         <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
           <thead className="bg-indigo-600 dark:bg-gray-800">
             <tr>
-              <th className="px-4 py-2 text-center text-sm font-medium text-white">Fecha de pago</th>
-              <th className="px-4 py-2 text-center text-sm font-medium text-white">Fecha de registro</th>
-              <th className="px-4 py-2 text-center text-sm font-medium text-white">Monto abonado</th>
-              <th className="px-4 py-2 text-center text-sm font-medium text-white">Comprobante</th>
-              <th className="px-4 py-2 text-center text-sm font-medium text-white">Tipo de pago</th>
-              <th className="px-4 py-2 text-center text-sm font-medium text-white">Aplicado</th>
-              <th className="px-4 py-2 text-center text-sm font-medium text-white">Acciones</th>
+              <th className="px-4 py-2 text-center text-sm font-medium text-white">
+                Fecha de pago
+              </th>
+              <th className="px-4 py-2 text-center text-sm font-medium text-white">
+                Fecha de registro
+              </th>
+              <th className="px-4 py-2 text-center text-sm font-medium text-white">
+                Monto abonado
+              </th>
+              <th className="px-4 py-2 text-center text-sm font-medium text-white">
+                Comprobante
+              </th>
+              <th className="px-4 py-2 text-center text-sm font-medium text-white">
+                Tipo de pago
+              </th>
+              <th className="px-4 py-2 text-center text-sm font-medium text-white">
+                Aplicado
+              </th>
+              <th className="px-4 py-2 text-center text-sm font-medium text-white">
+                Acciones
+              </th>
             </tr>
           </thead>
           <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
@@ -288,7 +325,10 @@ const UnidentifiedPaymentsTable = () => {
             </p>
           </div>
           <div>
-            <nav className="isolate inline-flex rounded-md shadow-sm" aria-label="Pagination">
+            <nav
+              className="isolate inline-flex rounded-md shadow-sm"
+              aria-label="Pagination"
+            >
               <button
                 onClick={() => handlePageChange(currentPage - 1)}
                 disabled={currentPage === 1 || loadingPayments}
@@ -296,19 +336,21 @@ const UnidentifiedPaymentsTable = () => {
               >
                 Anterior
               </button>
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                <button
-                  key={page}
-                  onClick={() => handlePageChange(page)}
-                  className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${
-                    page === currentPage
-                     ? 'z-10 bg-indigo-700 border-2 border-indigo-700 rounded-md text-indigo-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 dark:text-gray-100'
-                      : 'z-10  border-2 border-indigo-700  rounded-md text-indigo-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 dark:text-gray-100'
-                  }`}
-                >
-                  {page}
-                </button>
-              ))}
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                (page) => (
+                  <button
+                    key={page}
+                    onClick={() => handlePageChange(page)}
+                    className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${
+                      page === currentPage
+                        ? "z-10 bg-indigo-700 border-2 border-indigo-700 rounded-md text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 dark:text-gray-100"
+                        : "z-10  border-2 border-indigo-700  rounded-md text-indigo-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 dark:text-gray-100"
+                    }`}
+                  >
+                    {page}
+                  </button>
+                )
+              )}
               <button
                 onClick={() => handlePageChange(currentPage + 1)}
                 disabled={loadingPayments || !hasMore}

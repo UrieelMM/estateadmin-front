@@ -9,6 +9,9 @@ import {
   getDocs,
   QueryDocumentSnapshot,
   DocumentData,
+  query,
+  orderBy,
+  limit,
 } from "firebase/firestore";
 import { getAuth, getIdTokenResult } from "firebase/auth";
 
@@ -39,22 +42,22 @@ function centsToPesos(value: any): number {
 
 export interface ExpenseRecord {
   id: string;
-  folio: string;           // "EA-..."
-  amount: number;          // Monto del egreso en pesos (float)
-  concept: string;         // Concepto del egreso
-  paymentType: string;     // Tipo de pago
-  expenseDate: string;     // "YYYY-MM-DD HH:mm"
-  registerDate: string;    // "YYYY-MM-DD HH:mm"
-  invoiceUrl?: string;     // Comprobante, opcional
-  description?: string;    // Descripción adicional
+  folio: string; // "EA-..."
+  amount: number; // Monto del egreso en pesos (float)
+  concept: string; // Concepto del egreso
+  paymentType: string; // Tipo de pago
+  expenseDate: string; // "YYYY-MM-DD HH:mm"
+  registerDate: string; // "YYYY-MM-DD HH:mm"
+  invoiceUrl?: string; // Comprobante, opcional
+  description?: string; // Descripción adicional
 }
 
 /**
  * Estadística mensual: Para cada mes, cuánto se gastó en total.
  */
 export interface ExpenseMonthlyStat {
-  month: string;   // "01", "02", etc.
-  spent: number;   // Suma de amount
+  month: string; // "01", "02", etc.
+  spent: number; // Suma de amount
 }
 
 interface ExpenseSummaryState {
@@ -72,226 +75,454 @@ interface ExpenseSummaryState {
   selectedYear: string;
   unsubscribe: Record<string, (() => void) | undefined>;
   lastFetch: Record<string, number>;
+  completedExpenses: ExpenseRecord[];
+  totalCompletedExpenses: number;
+  lastExpenseDoc: any | null;
+  loadingExpenses: boolean;
+  pageSize?: number;
+  startAfter?: any;
+  filters?: { month?: string; year?: string };
 
   // Métodos
-  fetchSummary: (year?: string) => Promise<void>;
+  fetchSummary: (year?: string, forceUpdate?: boolean) => Promise<void>;
   setSelectedYear: (year: string) => void;
   shouldFetchData: (year: string) => boolean;
   setupRealtimeListeners: (year: string) => void;
   cleanupListeners: (year: string) => void;
+  resetExpensesState: () => void;
+  fetchExpenseHistory: (
+    pageSize?: number,
+    startAfter?: any,
+    filters?: { month?: string; year?: string }
+  ) => Promise<number>;
+  searchExpenseByFolio: (folio: string) => Promise<ExpenseRecord | null>;
 }
 
-export const useExpenseSummaryStore = create<ExpenseSummaryState>((set, get) => {
-  // Función auxiliar para procesar los datos
-  const processExpenseData = async (
-    snapshot: any,
-    year: string,
-    clientId: string,
-    updateAdminData = false
-  ) => {
-    let fetched: ExpenseRecord[] = snapshot.docs
-      .map((doc: QueryDocumentSnapshot<DocumentData>) => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          folio: data.folio || "",
-          amount: centsToPesos(data.amount),
-          concept: data.concept || "Desconocido",
-          paymentType: data.paymentType || "Desconocido",
-          expenseDate: data.expenseDate || "",
-          registerDate: data.registerDate || "",
-          invoiceUrl: data.invoiceUrl || undefined,
-          description: data.description || "",
-        };
-      })
-      .filter((ex: ExpenseRecord) => ex.expenseDate.startsWith(year));
+// Variable de caché para resultados de paginación
+const expenseHistoryCache: Record<
+  string,
+  { expenses: ExpenseRecord[]; lastDoc: any }
+> = {};
 
-    let totalSpent = 0;
-    const conceptRecords: Record<string, ExpenseRecord[]> = {};
-    const monthlyMap: Record<string, number> = {
-      "01": 0, "02": 0, "03": 0, "04": 0,
-      "05": 0, "06": 0, "07": 0, "08": 0,
-      "09": 0, "10": 0, "11": 0, "12": 0,
-    };
+export const useExpenseSummaryStore = create<ExpenseSummaryState>(
+  (set, get) => {
+    // Función auxiliar para procesar los datos
+    const processExpenseData = async (
+      snapshot: any,
+      year: string,
+      clientId: string,
+      updateAdminData = false
+    ) => {
+      let fetched: ExpenseRecord[] = snapshot.docs
+        .map((doc: QueryDocumentSnapshot<DocumentData>) => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            folio: data.folio || "",
+            amount: centsToPesos(data.amount),
+            concept: data.concept || "Desconocido",
+            paymentType: data.paymentType || "Desconocido",
+            expenseDate: data.expenseDate || "",
+            registerDate: data.registerDate || "",
+            invoiceUrl: data.invoiceUrl || undefined,
+            description: data.description || "",
+          };
+        })
+        // Solo filtrar por año si se ha seleccionado un año específico
+        .filter(
+          (ex: ExpenseRecord) => !year || ex.expenseDate.startsWith(year)
+        );
 
-    fetched.forEach((exp) => {
-      totalSpent += exp.amount;
-      if (!conceptRecords[exp.concept]) {
-        conceptRecords[exp.concept] = [];
-      }
-      conceptRecords[exp.concept].push(exp);
+      let totalSpent = 0;
+      const conceptRecords: Record<string, ExpenseRecord[]> = {};
+      const monthlyMap: Record<string, number> = {
+        "01": 0,
+        "02": 0,
+        "03": 0,
+        "04": 0,
+        "05": 0,
+        "06": 0,
+        "07": 0,
+        "08": 0,
+        "09": 0,
+        "10": 0,
+        "11": 0,
+        "12": 0,
+      };
 
-      const mm = exp.expenseDate.substring(5, 7);
-      if (monthlyMap[mm] !== undefined) {
-        monthlyMap[mm] += exp.amount;
-      }
-    });
+      fetched.forEach((exp) => {
+        totalSpent += exp.amount;
+        if (!conceptRecords[exp.concept]) {
+          conceptRecords[exp.concept] = [];
+        }
+        conceptRecords[exp.concept].push(exp);
 
-    const monthlyStats = Object.entries(monthlyMap).map(([m, spent]) => ({
-      month: m,
-      spent,
-    }));
+        const mm = exp.expenseDate.substring(5, 7);
+        if (monthlyMap[mm] !== undefined) {
+          monthlyMap[mm] += exp.amount;
+        }
+      });
 
-    const updateData: Partial<ExpenseSummaryState> = {
-      expenses: fetched,
-      totalSpent,
-      conceptRecords,
-      monthlyStats,
-      loading: false,
-      error: null,
-    };
+      const monthlyStats = Object.entries(monthlyMap).map(([m, spent]) => ({
+        month: m,
+        spent,
+      }));
 
-    // Actualizar datos del administrador si es necesario
-    if (updateAdminData) {
-      const db = getFirestore();
-      const clientDocRef = doc(db, "clients", clientId);
-      const clientDocSnap = await getDoc(clientDocRef);
-      
-      if (clientDocSnap.exists()) {
-        const clientData = clientDocSnap.data();
-        updateData.adminCompany = clientData.companyName || "";
-        updateData.adminPhone = clientData.phoneNumber || "";
-        updateData.adminEmail = clientData.email || "";
-        
-        const logoUrl = clientData.logoReports || "";
-        const signUrl = clientData.signReports || "";
-        if (logoUrl || signUrl) {
-          // Ejecutar las conversiones a base64 en paralelo
-          const [logoBase64, signatureBase64] = await Promise.all([
-            logoUrl ? getBase64FromUrl(logoUrl) : Promise.resolve(""),
-            signUrl ? getBase64FromUrl(signUrl) : Promise.resolve(""),
-          ]);
-          updateData.logoBase64 = logoBase64;
-          updateData.signatureBase64 = signatureBase64;
+      const updateData: Partial<ExpenseSummaryState> = {
+        expenses: fetched,
+        totalSpent,
+        conceptRecords,
+        monthlyStats,
+        loading: false,
+        error: null,
+      };
+
+      // Actualizar datos del administrador si es necesario
+      if (updateAdminData) {
+        const db = getFirestore();
+        const clientDocRef = doc(db, "clients", clientId);
+        const clientDocSnap = await getDoc(clientDocRef);
+
+        if (clientDocSnap.exists()) {
+          const clientData = clientDocSnap.data();
+          updateData.adminCompany = clientData.companyName || "";
+          updateData.adminPhone = clientData.phoneNumber || "";
+          updateData.adminEmail = clientData.email || "";
+
+          const logoUrl = clientData.logoReports || "";
+          const signUrl = clientData.signReports || "";
+          if (logoUrl || signUrl) {
+            // Ejecutar las conversiones a base64 en paralelo
+            const [logoBase64, signatureBase64] = await Promise.all([
+              logoUrl ? getBase64FromUrl(logoUrl) : Promise.resolve(""),
+              signUrl ? getBase64FromUrl(signUrl) : Promise.resolve(""),
+            ]);
+            updateData.logoBase64 = logoBase64;
+            updateData.signatureBase64 = signatureBase64;
+          }
         }
       }
-    }
 
-    return updateData;
-  };
+      return updateData;
+    };
 
-  return {
-    expenses: [],
-    totalSpent: 0,
-    conceptRecords: {},
-    monthlyStats: [],
-    adminCompany: "",
-    adminPhone: "",
-    adminEmail: "",
-    logoBase64: "",
-    signatureBase64: "",
-    loading: false,
-    error: null,
-    selectedYear: new Date().getFullYear().toString(),
-    unsubscribe: {},
-    lastFetch: {},
+    return {
+      expenses: [],
+      totalSpent: 0,
+      conceptRecords: {},
+      monthlyStats: [],
+      adminCompany: "",
+      adminPhone: "",
+      adminEmail: "",
+      logoBase64: "",
+      signatureBase64: "",
+      loading: false,
+      error: null,
+      selectedYear: new Date().getFullYear().toString(),
+      unsubscribe: {},
+      lastFetch: {},
+      completedExpenses: [],
+      totalCompletedExpenses: 0,
+      lastExpenseDoc: null,
+      loadingExpenses: false,
 
-    fetchSummary: async (year?: string) => {
-      const currentYear = year || new Date().getFullYear().toString();
-      const store = get();
-      
-      if (!store.shouldFetchData(currentYear)) {
-        return;
-      }
+      fetchSummary: async (year?: string, forceUpdate: boolean = false) => {
+        // Si year es undefined, null o string vacío, significa "Todos los años"
+        const currentYear = year;
+        const store = get();
 
-      set({ loading: true, error: null });
-      try {
-        const db = getFirestore();
-        const auth = getAuth();
-        const user = auth.currentUser;
-        if (!user) throw new Error("Usuario no autenticado");
-        
-        const tokenResult = await getIdTokenResult(user);
-        const clientId = tokenResult.claims["clientId"] as string;
-        const condominiumId = localStorage.getItem("condominiumId");
-        if (!condominiumId) throw new Error("Condominio no seleccionado");
+        // Solo verificamos shouldFetchData si no es forceUpdate
+        if (!forceUpdate && !store.shouldFetchData(currentYear || "all")) {
+          return;
+        }
 
-        const expensesRef = collection(
-          db,
-          `clients/${clientId}/condominiums/${condominiumId}/expenses`
-        );
+        set({ loading: true, error: null });
+        try {
+          const db = getFirestore();
+          const auth = getAuth();
+          const user = auth.currentUser;
+          if (!user) throw new Error("Usuario no autenticado");
 
-        const snapshot = await getDocs(expensesRef);
-        const updateData = await processExpenseData(snapshot, currentYear, clientId, true);
+          const tokenResult = await getIdTokenResult(user);
+          const clientId = tokenResult.claims["clientId"] as string;
+          const condominiumId = localStorage.getItem("condominiumId");
+          if (!condominiumId) throw new Error("Condominio no seleccionado");
 
-        set({
-          ...updateData,
-          lastFetch: {
-            ...get().lastFetch,
-            [currentYear]: Date.now()
-          }
-        });
+          const expensesRef = collection(
+            db,
+            `clients/${clientId}/condominiums/${condominiumId}/expenses`
+          );
 
-      } catch (error: any) {
-        console.error("Error fetching expense summary:", error);
-        set({
-          error: error.message || "Error fetching expense summary",
-          loading: false,
-        });
-      }
-    },
+          const snapshot = await getDocs(expensesRef);
+          const updateData = await processExpenseData(
+            snapshot,
+            currentYear || "",
+            clientId,
+            true
+          );
 
-    setupRealtimeListeners: async (year: string) => {
-      const store = get();
-      if (store.unsubscribe[year]) return;
+          set({
+            ...updateData,
+            lastFetch: {
+              ...get().lastFetch,
+              [currentYear || "all"]: Date.now(),
+            },
+          });
+        } catch (error: any) {
+          console.error("Error fetching expense summary:", error);
+          set({
+            error: error.message || "Error fetching expense summary",
+            loading: false,
+          });
+        }
+      },
 
-      try {
-        const db = getFirestore();
-        const auth = getAuth();
-        const user = auth.currentUser;
-        if (!user) throw new Error("Usuario no autenticado");
-        
-        const tokenResult = await getIdTokenResult(user);
-        const clientId = tokenResult.claims["clientId"] as string;
-        const condominiumId = localStorage.getItem("condominiumId");
-        if (!condominiumId) throw new Error("Condominio no seleccionado");
+      setupRealtimeListeners: async (year: string) => {
+        const store = get();
+        if (store.unsubscribe[year]) return;
 
-        const expensesRef = collection(
-          db,
-          `clients/${clientId}/condominiums/${condominiumId}/expenses`
-        );
+        try {
+          const db = getFirestore();
+          const auth = getAuth();
+          const user = auth.currentUser;
+          if (!user) throw new Error("Usuario no autenticado");
 
-        // Configurar listener en tiempo real
-        const unsubscribe = onSnapshot(expensesRef, async (snapshot) => {
-          const updateData = await processExpenseData(snapshot, year, clientId, true);
-          set(updateData);
-        }, (error) => {
-          console.error("Error en listener:", error);
+          const tokenResult = await getIdTokenResult(user);
+          const clientId = tokenResult.claims["clientId"] as string;
+          const condominiumId = localStorage.getItem("condominiumId");
+          if (!condominiumId) throw new Error("Condominio no seleccionado");
+
+          const expensesRef = collection(
+            db,
+            `clients/${clientId}/condominiums/${condominiumId}/expenses`
+          );
+
+          // Configurar listener en tiempo real
+          const unsubscribe = onSnapshot(
+            expensesRef,
+            async (snapshot) => {
+              const updateData = await processExpenseData(
+                snapshot,
+                year,
+                clientId,
+                true
+              );
+              set(updateData);
+            },
+            (error) => {
+              console.error("Error en listener:", error);
+              set({ error: error.message, loading: false });
+            }
+          );
+
+          set((state) => ({
+            unsubscribe: {
+              ...state.unsubscribe,
+              [year]: unsubscribe,
+            },
+          }));
+        } catch (error: any) {
+          console.error("Error setting up listeners:", error);
           set({ error: error.message, loading: false });
+        }
+      },
+
+      setSelectedYear: (year: string) => set({ selectedYear: year }),
+
+      shouldFetchData: (year: string) => {
+        const lastFetchTime = get().lastFetch[year];
+        const now = Date.now();
+        // Si no hay datos previos o han pasado más de 5 minutos, recargar
+        return !lastFetchTime || now - lastFetchTime > 300000;
+      },
+
+      cleanupListeners: (year: string) => {
+        const store = get();
+        if (store.unsubscribe[year]) {
+          store.unsubscribe[year]!();
+          set((state) => ({
+            unsubscribe: {
+              ...state.unsubscribe,
+              [year]: undefined,
+            },
+          }));
+        }
+      },
+
+      resetExpensesState: () => {
+        set({
+          completedExpenses: [],
+          totalCompletedExpenses: 0,
+          lastExpenseDoc: null,
+          loadingExpenses: false,
         });
+      },
 
-        set(state => ({
-          unsubscribe: {
-            ...state.unsubscribe,
-            [year]: unsubscribe
+      fetchExpenseHistory: async (
+        pageSize = 20,
+        startAfter = null,
+        filters = {}
+      ): Promise<number> => {
+        set({ loadingExpenses: true });
+        try {
+          const db = getFirestore();
+          const auth = getAuth();
+          const user = auth.currentUser;
+          if (!user) {
+            throw new Error("Usuario no autenticado");
           }
-        }));
-
-      } catch (error: any) {
-        console.error("Error setting up listeners:", error);
-        set({ error: error.message, loading: false });
-      }
-    },
-
-    setSelectedYear: (year: string) => set({ selectedYear: year }),
-
-    shouldFetchData: (year: string) => {
-      const lastFetchTime = get().lastFetch[year];
-      const now = Date.now();
-      return !lastFetchTime || (now - lastFetchTime) > 300000;
-    },
-
-    cleanupListeners: (year: string) => {
-      const store = get();
-      if (store.unsubscribe[year]) {
-        store.unsubscribe[year]!();
-        set(state => ({
-          unsubscribe: {
-            ...state.unsubscribe,
-            [year]: undefined
+          const tokenResult = await getIdTokenResult(user);
+          const clientId = tokenResult.claims["clientId"] as string;
+          const condominiumId = localStorage.getItem("condominiumId");
+          if (!condominiumId) {
+            throw new Error("Condominio no seleccionado");
           }
-        }));
-      }
-    }
-  };
-});
+
+          // Generar llave para caché basada en filtros y cursor
+          const cacheKey = JSON.stringify({
+            filters,
+            startAfter: startAfter ? startAfter.id : "first",
+          });
+
+          // Usar caché solo si no se aplican filtros
+          if (
+            !filters.month &&
+            !filters.year &&
+            expenseHistoryCache[cacheKey]
+          ) {
+            const cached = expenseHistoryCache[cacheKey];
+            set({
+              completedExpenses: cached.expenses,
+              lastExpenseDoc: cached.lastDoc,
+              loadingExpenses: false,
+              totalCompletedExpenses: cached.expenses.length,
+            });
+            return cached.expenses.length;
+          }
+
+          const expensesRef = collection(
+            db,
+            `clients/${clientId}/condominiums/${condominiumId}/expenses`
+          );
+
+          const expensesQuery = query(
+            expensesRef,
+            orderBy("expenseDate", "desc"),
+            ...(startAfter ? [startAfter(startAfter)] : []),
+            limit(pageSize)
+          );
+
+          const snapshot = await getDocs(expensesQuery);
+          let expenseRecords: ExpenseRecord[] = [];
+          let lastDoc: any = null;
+
+          snapshot.forEach((doc) => {
+            const data = doc.data();
+            const expenseDate = data.expenseDate || "";
+
+            // Aplicar filtros si se especifican
+            if (expenseDate) {
+              const [year, month] = expenseDate.split("-");
+              if (filters.month && month !== filters.month) return;
+              if (filters.year && year !== filters.year) return;
+            }
+
+            const record: ExpenseRecord = {
+              id: doc.id,
+              folio: data.folio || "",
+              amount: centsToPesos(data.amount),
+              concept: data.concept || "Desconocido",
+              paymentType: data.paymentType || "Desconocido",
+              expenseDate: data.expenseDate || "",
+              registerDate: data.registerDate || "",
+              invoiceUrl: data.invoiceUrl || undefined,
+              description: data.description || "",
+            };
+
+            expenseRecords.push(record);
+            lastDoc = doc;
+          });
+
+          // Ordenar por fecha (más reciente primero)
+          expenseRecords.sort((a, b) => {
+            const dateA = a.expenseDate ? new Date(a.expenseDate) : new Date(0);
+            const dateB = b.expenseDate ? new Date(b.expenseDate) : new Date(0);
+            return dateB.getTime() - dateA.getTime();
+          });
+
+          expenseRecords = expenseRecords.slice(0, pageSize);
+
+          // Guardar en caché el resultado solo si no se aplican filtros
+          if (!filters.month && !filters.year) {
+            expenseHistoryCache[cacheKey] = {
+              expenses: expenseRecords,
+              lastDoc,
+            };
+          }
+
+          set({
+            completedExpenses: expenseRecords,
+            lastExpenseDoc: lastDoc,
+            loadingExpenses: false,
+            totalCompletedExpenses: expenseRecords.length,
+          });
+
+          return expenseRecords.length;
+        } catch (error: any) {
+          console.error("Error fetching expense history:", error);
+          set({
+            error: error.message || "Error fetching expense history",
+            loadingExpenses: false,
+          });
+          return 0;
+        }
+      },
+
+      searchExpenseByFolio: async (
+        folio: string
+      ): Promise<ExpenseRecord | null> => {
+        try {
+          const db = getFirestore();
+          const auth = getAuth();
+          const user = auth.currentUser;
+          if (!user) throw new Error("Usuario no autenticado");
+
+          const tokenResult = await getIdTokenResult(user);
+          const clientId = tokenResult.claims["clientId"] as string;
+          const condominiumId = localStorage.getItem("condominiumId");
+          if (!condominiumId) throw new Error("Condominio no seleccionado");
+
+          const expensesRef = collection(
+            db,
+            `clients/${clientId}/condominiums/${condominiumId}/expenses`
+          );
+
+          const snapshot = await getDocs(expensesRef);
+          const expense = snapshot.docs.find(
+            (doc) => doc.data().folio === folio
+          );
+
+          if (expense) {
+            const data = expense.data();
+            return {
+              id: expense.id,
+              folio: data.folio || "",
+              amount: centsToPesos(data.amount),
+              concept: data.concept || "Desconocido",
+              paymentType: data.paymentType || "Desconocido",
+              expenseDate: data.expenseDate || "",
+              registerDate: data.registerDate || "",
+              invoiceUrl: data.invoiceUrl || undefined,
+              description: data.description || "",
+            };
+          }
+
+          return null;
+        } catch (error: any) {
+          console.error("Error al buscar egreso por folio:", error);
+          return null;
+        }
+      },
+    };
+  }
+);
