@@ -1,8 +1,11 @@
 // src/components/paymentSummary/AccountSummaryCards.tsx
 import React from "react";
-import { PaymentRecord, usePaymentSummaryStore } from "../../../../../store/paymentSummaryStore";
+import {
+  PaymentRecord,
+  usePaymentSummaryStore,
+} from "../../../../../store/paymentSummaryStore";
 
-const AccountSummaryCards: React.FC<{ 
+const AccountSummaryCards: React.FC<{
   payments: PaymentRecord[];
   accountId: string;
 }> = ({ payments, accountId }) => {
@@ -16,16 +19,23 @@ const AccountSummaryCards: React.FC<{
   const totalPayments = payments.reduce((acc, pr) => acc + pr.amountPaid, 0);
 
   // Calcular el total de crédito usado
-  const totalCreditUsed = payments.reduce((acc, pr) => acc + (pr.creditUsed || 0), 0);
+  const totalCreditUsed = payments.reduce(
+    (acc, pr) => acc + (pr.creditUsed || 0),
+    0
+  );
 
   // Calcular saldo a favor disponible
-  const accountMonthlyStats = monthlyStats.filter(stat => 
-    payments.some(p => p.month === stat.month)
+  const accountMonthlyStats = monthlyStats.filter((stat) =>
+    payments.some((p) => p.month === stat.month)
   );
-  const totalSaldo = accountMonthlyStats.reduce((acc, stat) => acc + stat.saldo, 0);
+  const totalSaldo = accountMonthlyStats.reduce(
+    (acc, stat) => acc + stat.saldo,
+    0
+  );
 
   // Total de ingresos = pagos regulares + saldo inicial + crédito usado + saldo disponible
-  const realTotalIncome = totalPayments + initialBalance + totalCreditUsed + totalSaldo;
+  const realTotalIncome =
+    totalPayments + initialBalance + totalCreditUsed + totalSaldo;
 
   const formatCurrency = (value: number): string =>
     "$" +
@@ -42,7 +52,7 @@ const AccountSummaryCards: React.FC<{
           <span className="text-sm font-medium text-gray-600 dark:text-gray-100">
             Total ingresos:
           </span>
-          <span className="text-2xl font-semibold text-indigo-600 dark:text-gray-100">
+          <span className="text-2xl font-semibold text-gray-800 dark:text-gray-100">
             {formatCurrency(realTotalIncome)}
           </span>
         </div>
@@ -54,7 +64,7 @@ const AccountSummaryCards: React.FC<{
           <span className="text-sm font-medium text-gray-600 dark:text-gray-100">
             Saldo a favor:
           </span>
-          <span className="text-2xl font-semibold text-indigo-600 dark:text-gray-100">
+          <span className="text-2xl font-semibold text-gray-800 dark:text-gray-100">
             {formatCurrency(totalSaldo)}
           </span>
         </div>

@@ -1,7 +1,10 @@
 // src/components/paymentSummary/GrowthSection.tsx
 import React, { useMemo } from "react";
 import GrowthCard from "./GrowthCard";
-import { usePaymentSummaryStore, MonthlyStat } from "../../../../../store/paymentSummaryStore";
+import {
+  usePaymentSummaryStore,
+  MonthlyStat,
+} from "../../../../../store/paymentSummaryStore";
 
 const GrowthSection: React.FC = React.memo(() => {
   const monthlyStats = usePaymentSummaryStore((state) => state.monthlyStats);
@@ -28,23 +31,39 @@ const GrowthSection: React.FC = React.memo(() => {
 
   const overallGrowthMetrics = useMemo(() => {
     if (filteredMonthlyStats.length < 2) return [];
-    const previousMonthStats = filteredMonthlyStats[filteredMonthlyStats.length - 2];
-    const currentMonthStats = filteredMonthlyStats[filteredMonthlyStats.length - 1];
+    const previousMonthStats =
+      filteredMonthlyStats[filteredMonthlyStats.length - 2];
+    const currentMonthStats =
+      filteredMonthlyStats[filteredMonthlyStats.length - 1];
     return [
       {
-        title: "Monto abonado",
-        current: currentMonthStats.paid + currentMonthStats.saldo,
-        previous: previousMonthStats.paid + previousMonthStats.saldo,
+        title: "Monto Abonado",
+        current:
+          currentMonthStats.paid +
+          currentMonthStats.creditUsed +
+          (currentMonthStats.saldo > 0 ? currentMonthStats.saldo : 0),
+        previous:
+          previousMonthStats.paid +
+          previousMonthStats.creditUsed +
+          (previousMonthStats.saldo > 0 ? previousMonthStats.saldo : 0),
       },
       {
-        title: "Monto pendiente",
-        current: currentMonthStats.pending,
-        previous: previousMonthStats.pending,
+        title: "Cargos",
+        current: currentMonthStats.charges,
+        previous: previousMonthStats.charges,
       },
       {
-        title: "Saldo a favor",
-        current: currentMonthStats.saldo,
-        previous: previousMonthStats.saldo,
+        title: "Saldo",
+        current:
+          currentMonthStats.charges -
+          (currentMonthStats.paid +
+            currentMonthStats.creditUsed +
+            (currentMonthStats.saldo > 0 ? currentMonthStats.saldo : 0)),
+        previous:
+          previousMonthStats.charges -
+          (previousMonthStats.paid +
+            previousMonthStats.creditUsed +
+            (previousMonthStats.saldo > 0 ? previousMonthStats.saldo : 0)),
       },
     ];
   }, [filteredMonthlyStats]);
@@ -54,7 +73,7 @@ const GrowthSection: React.FC = React.memo(() => {
   return (
     <>
       <h3 className="text-xl font-bold mb-4">
-        Recaudación respecto al mes anterior
+        Comparación con el mes anterior
       </h3>
       <dl className="mt-5 grid grid-cols-1 divide-y divide-gray-200 rounded-lg bg-white shadow md:grid-cols-3 md:divide-x md:divide-y-0 mb-8 dark:bg-gray-800 dark:divide-gray-700">
         {overallGrowthMetrics.map((metric) => (

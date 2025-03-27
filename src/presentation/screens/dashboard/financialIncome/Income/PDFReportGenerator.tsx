@@ -2,7 +2,11 @@
 import React from "react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { PaymentRecord, MonthlyStat, usePaymentSummaryStore } from "../../../../../store/paymentSummaryStore";
+import {
+  PaymentRecord,
+  MonthlyStat,
+  usePaymentSummaryStore,
+} from "../../../../../store/paymentSummaryStore";
 import useUserStore from "../../../../../store/UserDataStore";
 
 interface Condominium {
@@ -44,7 +48,10 @@ const monthNames: Record<string, string> = {
   "12": "Diciembre",
 };
 
-const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({ year, concept }) => {
+const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({
+  year,
+  concept,
+}) => {
   // Obtener datos del store
   const {
     totalPending,
@@ -77,7 +84,9 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({ year, concept }
   }));
 
   // Si se pasa un concepto, obtener la data correspondiente del store
-  const computedConceptData: PaymentRecord[] | undefined = concept ? conceptRecords[concept] : undefined;
+  const computedConceptData: PaymentRecord[] | undefined = concept
+    ? conceptRecords[concept]
+    : undefined;
 
   // Función de formateo de moneda sin el prefijo "MX"
   const formatCurrency = (value: number): string =>
@@ -99,22 +108,36 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({ year, concept }
     const currentMonthNumber = now.getMonth() + 1;
     const currentStats =
       year === currentYear
-        ? sortedMonthlyStats.filter((stat) => parseInt(stat.month, 10) <= currentMonthNumber)
+        ? sortedMonthlyStats.filter(
+            (stat) => parseInt(stat.month, 10) <= currentMonthNumber
+          )
         : sortedMonthlyStats;
     const nonZeroStats = currentStats.filter((stat) => stat.paid > 0);
     let computedMinMonth = "";
     let computedMaxMonth = "";
     if (currentStats.length > 0) {
       if (nonZeroStats.length > 0) {
-        const sortedByPaidAsc = [...nonZeroStats].sort((a, b) => a.paid - b.paid);
-        computedMinMonth = monthNames[sortedByPaidAsc[0].month] || sortedByPaidAsc[0].month;
-        const sortedByPaidDesc = [...nonZeroStats].sort((a, b) => b.paid - a.paid);
-        computedMaxMonth = monthNames[sortedByPaidDesc[0].month] || sortedByPaidDesc[0].month;
+        const sortedByPaidAsc = [...nonZeroStats].sort(
+          (a, b) => a.paid - b.paid
+        );
+        computedMinMonth =
+          monthNames[sortedByPaidAsc[0].month] || sortedByPaidAsc[0].month;
+        const sortedByPaidDesc = [...nonZeroStats].sort(
+          (a, b) => b.paid - a.paid
+        );
+        computedMaxMonth =
+          monthNames[sortedByPaidDesc[0].month] || sortedByPaidDesc[0].month;
       } else {
-        const sortedByPaidAsc = [...currentStats].sort((a, b) => a.paid - b.paid);
-        computedMinMonth = monthNames[sortedByPaidAsc[0].month] || sortedByPaidAsc[0].month;
-        const sortedByPaidDesc = [...currentStats].sort((a, b) => b.paid - a.paid);
-        computedMaxMonth = monthNames[sortedByPaidDesc[0].month] || sortedByPaidDesc[0].month;
+        const sortedByPaidAsc = [...currentStats].sort(
+          (a, b) => a.paid - b.paid
+        );
+        computedMinMonth =
+          monthNames[sortedByPaidAsc[0].month] || sortedByPaidAsc[0].month;
+        const sortedByPaidDesc = [...currentStats].sort(
+          (a, b) => b.paid - a.paid
+        );
+        computedMaxMonth =
+          monthNames[sortedByPaidDesc[0].month] || sortedByPaidDesc[0].month;
       }
     }
 
@@ -146,7 +169,8 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({ year, concept }
       monthlyStats.forEach((stat) => {
         computedTotalIncome += stat.paid + stat.creditUsed + stat.saldo;
       });
-      const financialAccountsMap = usePaymentSummaryStore.getState().financialAccountsMap;
+      const financialAccountsMap =
+        usePaymentSummaryStore.getState().financialAccountsMap;
       let totalInitialBalance = 0;
       for (const key in financialAccountsMap) {
         totalInitialBalance += financialAccountsMap[key].initialBalance;
@@ -156,27 +180,56 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({ year, concept }
       doc.setFont("helvetica", "bold");
       doc.text("Total Ingresos:", 14, 50);
       doc.setFont("helvetica", "normal");
-      doc.text(formatCurrency(computedTotalIncome), 14 + doc.getTextWidth("Total Ingresos:") + 4, 50);
+      doc.text(
+        formatCurrency(computedTotalIncome),
+        14 + doc.getTextWidth("Total Ingresos:") + 4,
+        50
+      );
 
       doc.setFont("helvetica", "bold");
       doc.text("Total Pendiente:", 14, 60);
       doc.setFont("helvetica", "normal");
-      doc.text(formatCurrency(totalPending), 14 + doc.getTextWidth("Total Pendiente:") + 4, 60);
+      doc.text(
+        formatCurrency(totalPending),
+        14 + doc.getTextWidth("Total Pendiente:") + 4,
+        60
+      );
 
       doc.setFont("helvetica", "bold");
       doc.text("Mes con mayor ingresos:", 14, 70);
       doc.setFont("helvetica", "normal");
-      doc.text(computedMaxMonth, 14 + doc.getTextWidth("Mes con mayor ingresos:") + 5, 70);
+      doc.text(
+        computedMaxMonth,
+        14 + doc.getTextWidth("Mes con mayor ingresos:") + 5,
+        70
+      );
 
       doc.setFont("helvetica", "bold");
       doc.text("Mes con menor ingresos:", 14, 80);
       doc.setFont("helvetica", "normal");
-      doc.text(computedMinMonth, 14 + doc.getTextWidth("Mes con menor ingresos:") + 5, 80);
+      doc.text(
+        computedMinMonth,
+        14 + doc.getTextWidth("Mes con menor ingresos:") + 5,
+        80
+      );
     }
 
     // --- Reporte Individual por Concepto ---
     if (concept && computedConceptData) {
-      const monthKeys = ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"];
+      const monthKeys = [
+        "01",
+        "02",
+        "03",
+        "04",
+        "05",
+        "06",
+        "07",
+        "08",
+        "09",
+        "10",
+        "11",
+        "12",
+      ];
       let totalPaid = 0,
         totalPendingConcept = 0,
         totalCredit = 0;
@@ -190,18 +243,31 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({ year, concept }
           }
           return recMonth === m;
         });
-        
+
         // Calcular los totales para este mes
-        const monthPaid = recsForMonth.reduce((sum, rec) => sum + rec.amountPaid, 0);
-        const monthCreditUsed = recsForMonth.reduce((sum, rec) => sum + (rec.creditUsed || 0), 0);
-        const monthCreditBalance = recsForMonth.reduce((sum, rec) => sum + rec.creditBalance, 0);
-        
+        const monthPaid = recsForMonth.reduce(
+          (sum, rec) => sum + rec.amountPaid,
+          0
+        );
+        const monthCreditUsed = recsForMonth.reduce(
+          (sum, rec) => sum + (rec.creditUsed || 0),
+          0
+        );
+        const monthCreditBalance = recsForMonth.reduce(
+          (sum, rec) => sum + rec.creditBalance,
+          0
+        );
+
         // Monto abonado es la suma de pagos regulares + crédito usado + saldo disponible
-        const paid = monthPaid + monthCreditUsed + (monthCreditBalance - monthCreditUsed);
-        const pending = recsForMonth.reduce((sum, rec) => sum + rec.amountPending, 0);
+        const paid =
+          monthPaid + monthCreditUsed + (monthCreditBalance - monthCreditUsed);
+        const pending = recsForMonth.reduce(
+          (sum, rec) => sum + rec.amountPending,
+          0
+        );
         // Saldo a favor es el saldo disponible menos el usado
         const credit = monthCreditBalance - monthCreditUsed;
-        
+
         totalPaid += paid;
         totalPendingConcept += pending;
         totalCredit += credit;
@@ -209,7 +275,8 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({ year, concept }
         const paidCount = recsForMonth.filter((r) => r.paid).length;
         globalTotalRecords += totalRecords;
         globalPaidRecords += paidCount;
-        const compliance = totalRecords > 0 ? (paidCount / totalRecords) * 100 : 0;
+        const compliance =
+          totalRecords > 0 ? (paidCount / totalRecords) * 100 : 0;
         const delinquency = 100 - compliance;
         return [
           monthNames[m] || m,
@@ -220,7 +287,10 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({ year, concept }
           delinquency.toFixed(2) + "%",
         ];
       });
-      const totalCompliance = globalTotalRecords > 0 ? (globalPaidRecords / globalTotalRecords) * 100 : 0;
+      const totalCompliance =
+        globalTotalRecords > 0
+          ? (globalPaidRecords / globalTotalRecords) * 100
+          : 0;
       const totalDelinquency = 100 - totalCompliance;
       rows.push([
         "Total",
@@ -244,7 +314,11 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({ year, concept }
           ],
         ],
         body: rows,
-        headStyles: { fillColor: [75, 68, 224], textColor: 255, fontStyle: "bold" },
+        headStyles: {
+          fillColor: [75, 68, 224],
+          textColor: 255,
+          fontStyle: "bold",
+        },
         styles: { fontSize: 10 },
         didParseCell: (data) => {
           if (data.row.index === rows.length - 1) {
@@ -262,8 +336,23 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({ year, concept }
         : 95;
       sortedCondominiums.forEach((cond) => {
         const condDataFull = detailed[cond.number] || [];
-        const condData = condDataFull.filter((item) => item.concept === concept);
-        const monthKeys = ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"];
+        const condData = condDataFull.filter(
+          (item) => item.concept === concept
+        );
+        const monthKeys = [
+          "01",
+          "02",
+          "03",
+          "04",
+          "05",
+          "06",
+          "07",
+          "08",
+          "09",
+          "10",
+          "11",
+          "12",
+        ];
         let totalPaidCond = 0,
           totalPendingCond = 0,
           totalCreditCond = 0;
@@ -276,16 +365,31 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({ year, concept }
             return recMonth === m;
           });
           // Calcular los totales para este mes
-          const monthPaid = recordsForMonth.reduce((sum, r) => sum + r.amountPaid, 0);
-          const monthCreditUsed = recordsForMonth.reduce((sum, r) => sum + (r.creditUsed || 0), 0);
-          const monthCreditBalance = recordsForMonth.reduce((sum, r) => sum + r.creditBalance, 0);
-          
+          const monthPaid = recordsForMonth.reduce(
+            (sum, r) => sum + r.amountPaid,
+            0
+          );
+          const monthCreditUsed = recordsForMonth.reduce(
+            (sum, r) => sum + (r.creditUsed || 0),
+            0
+          );
+          const monthCreditBalance = recordsForMonth.reduce(
+            (sum, r) => sum + r.creditBalance,
+            0
+          );
+
           // Monto abonado es la suma de pagos regulares + crédito usado + saldo disponible
-          const amountPaid = monthPaid + monthCreditUsed + (monthCreditBalance - monthCreditUsed);
-          const amountPending = recordsForMonth.reduce((sum, r) => sum + r.amountPending, 0);
+          const amountPaid =
+            monthPaid +
+            monthCreditUsed +
+            (monthCreditBalance - monthCreditUsed);
+          const amountPending = recordsForMonth.reduce(
+            (sum, r) => sum + r.amountPending,
+            0
+          );
           // Saldo a favor es el saldo disponible menos el usado
           const credit = monthCreditBalance - monthCreditUsed;
-          
+
           totalPaidCond += amountPaid;
           totalPendingCond += amountPending;
           totalCreditCond += credit;
@@ -305,7 +409,9 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({ year, concept }
         doc.setFontSize(12);
         doc.setFont("helvetica", "bold");
         doc.text(
-          `Detalle del Condomino: ${cond.number}${cond.name ? " - " + cond.name : ""}`,
+          `Detalle del Condomino: ${cond.number}${
+            cond.name ? " - " + cond.name : ""
+          }`,
           14,
           currentY
         );
@@ -314,7 +420,11 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({ year, concept }
           startY: currentY,
           head: [["Mes", "Monto Abonado", "Monto Pendiente", "Saldo a favor"]],
           body: condRows,
-          headStyles: { fillColor: [75, 68, 224], textColor: 255, fontStyle: "bold" },
+          headStyles: {
+            fillColor: [75, 68, 224],
+            textColor: 255,
+            fontStyle: "bold",
+          },
           styles: { fontSize: 10 },
           didParseCell: (data) => {
             if (data.row.index === condRows.length - 1) {
@@ -328,26 +438,86 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({ year, concept }
       });
     } else {
       // --- Reporte General ---
-      const compRows = monthlyStats.map((stat) => [
-        monthNames[stat.month] || stat.month,
-        formatCurrency(stat.paid + stat.creditUsed + stat.saldo),
-        formatCurrency(stat.pending),
-        formatCurrency(stat.saldo),
-        formatCurrency(stat.unidentifiedPayments),
-        stat.complianceRate.toFixed(2) + "%",
-        stat.delinquencyRate.toFixed(2) + "%",
-      ]);
+      const compRows = monthlyStats.map((stat) => {
+        // Obtener todos los registros del mes
+        const monthRecords = Object.values(detailed)
+          .flat()
+          .filter((rec) => rec.month === stat.month);
+
+        // 1. Cargos: Usar el valor de charges del monthlyStats
+        const totalCharges = stat.charges;
+
+        // 2. Monto Abonado: Pagos + crédito usado + saldo disponible
+        const totalPaid = monthRecords.reduce(
+          (sum, rec) => sum + rec.amountPaid,
+          0
+        );
+        const totalCreditUsed = monthRecords.reduce(
+          (sum, rec) => sum + (rec.creditUsed || 0),
+          0
+        );
+        const totalCreditBalance = monthRecords.reduce(
+          (sum, rec) => sum + rec.creditBalance,
+          0
+        );
+        const totalCredit = totalCreditBalance - totalCreditUsed;
+        const totalPaidWithCredit =
+          totalPaid + totalCreditUsed + (totalCredit > 0 ? totalCredit : 0);
+
+        // 3. Saldo: Diferencia entre cargos y monto abonado
+        const balance = totalCharges - totalPaidWithCredit;
+
+        return [
+          monthNames[stat.month] || stat.month,
+          formatCurrency(totalPaidWithCredit),
+          formatCurrency(totalCharges),
+          formatCurrency(balance),
+          formatCurrency(stat.unidentifiedPayments),
+          stat.complianceRate.toFixed(2) + "%",
+          stat.delinquencyRate.toFixed(2) + "%",
+        ];
+      });
+
       let totalPaidGlobal = 0,
-        totalPendingGlobal = 0,
-        totalSaldoGlobal = 0,
+        totalChargesGlobal = 0,
+        totalBalanceGlobal = 0,
         totalUnidentifiedGlobal = 0;
+
       monthlyStats.forEach((stat) => {
-        totalPaidGlobal += stat.paid + stat.creditUsed + stat.saldo;
-        totalPendingGlobal += stat.pending;
-        totalSaldoGlobal += stat.saldo;
+        // 1. Cargos: Usar el valor de charges del monthlyStats
+        const totalCharges = stat.charges;
+
+        // 2. Monto Abonado: Pagos + crédito usado + saldo disponible
+        const monthRecords = Object.values(detailed)
+          .flat()
+          .filter((rec) => rec.month === stat.month);
+        const totalPaid = monthRecords.reduce(
+          (sum, rec) => sum + rec.amountPaid,
+          0
+        );
+        const totalCreditUsed = monthRecords.reduce(
+          (sum, rec) => sum + (rec.creditUsed || 0),
+          0
+        );
+        const totalCreditBalance = monthRecords.reduce(
+          (sum, rec) => sum + rec.creditBalance,
+          0
+        );
+        const totalCredit = totalCreditBalance - totalCreditUsed;
+        const totalPaidWithCredit =
+          totalPaid + totalCreditUsed + (totalCredit > 0 ? totalCredit : 0);
+
+        // 3. Saldo: Diferencia entre cargos y monto abonado
+        const balance = totalCharges - totalPaidWithCredit;
+
+        totalPaidGlobal += totalPaidWithCredit;
+        totalChargesGlobal += totalCharges;
+        totalBalanceGlobal += balance;
         totalUnidentifiedGlobal += stat.unidentifiedPayments;
       });
-      const financialAccountsMap = usePaymentSummaryStore.getState().financialAccountsMap;
+
+      const financialAccountsMap =
+        usePaymentSummaryStore.getState().financialAccountsMap;
       let totalInitialBalance = 0;
       for (const key in financialAccountsMap) {
         totalInitialBalance += financialAccountsMap[key].initialBalance;
@@ -356,17 +526,19 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({ year, concept }
 
       const avgCompliance =
         monthlyStats.length > 0
-          ? monthlyStats.reduce((sum, stat) => sum + stat.complianceRate, 0) / monthlyStats.length
+          ? monthlyStats.reduce((sum, stat) => sum + stat.complianceRate, 0) /
+            monthlyStats.length
           : 0;
       const avgDelinquency =
         monthlyStats.length > 0
-          ? monthlyStats.reduce((sum, stat) => sum + stat.delinquencyRate, 0) / monthlyStats.length
+          ? monthlyStats.reduce((sum, stat) => sum + stat.delinquencyRate, 0) /
+            monthlyStats.length
           : 0;
       compRows.push([
         "Total",
         formatCurrency(totalPaidGlobal),
-        formatCurrency(totalPendingGlobal),
-        formatCurrency(totalSaldoGlobal),
+        formatCurrency(totalChargesGlobal),
+        formatCurrency(totalBalanceGlobal),
         formatCurrency(totalUnidentifiedGlobal),
         avgCompliance.toFixed(2) + "%",
         avgDelinquency.toFixed(2) + "%",
@@ -382,17 +554,40 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({ year, concept }
           [
             "Mes",
             "Monto Abonado",
-            "Monto Pendiente",
-            "Saldo a favor",
+            "Cargos",
+            "Saldo",
             "Pagos no identificados",
             "% Cumplimiento",
             "% Morosidad",
           ],
         ],
         body: compRows,
-        headStyles: { fillColor: [75, 68, 224], textColor: 255, fontStyle: "bold" },
+        headStyles: {
+          fillColor: [75, 68, 224],
+          textColor: 255,
+          fontStyle: "bold",
+        },
         styles: { fontSize: 10 },
         didParseCell: (data) => {
+          // Saldo = columna 3
+          if (data.section === "body" && data.column.index === 3) {
+            let numericValue = 0;
+            if (typeof data.cell.raw === "string") {
+              numericValue =
+                parseFloat(data.cell.raw.replace(/[^0-9.-]/g, "")) || 0;
+            } else if (typeof data.cell.raw === "number") {
+              numericValue = data.cell.raw;
+            }
+            if (numericValue < 0) {
+              // Si el saldo es negativo, significa que tiene un crédito
+              data.cell.text = [`+${formatCurrency(Math.abs(numericValue))}`];
+              data.cell.styles.textColor = [0, 128, 0]; // verde
+            } else if (numericValue > 0) {
+              // Si el saldo es positivo, significa que debe dinero
+              data.cell.text = [formatCurrency(numericValue)];
+              data.cell.styles.textColor = [255, 0, 0]; // rojo
+            }
+          }
           if (data.row.index === compRows.length - 1) {
             data.cell.styles.fontStyle = "bold";
           }
@@ -414,72 +609,131 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({ year, concept }
         ? (doc as any).lastAutoTable.finalY + 15
         : 95;
       if (conceptRecords && Object.keys(conceptRecords).length > 0) {
-        (Object.entries(conceptRecords) as [string, PaymentRecord[]][]).forEach(([conceptKey, recs]) => {
-          doc.setFontSize(12);
-          doc.setFont("helvetica", "bold");
-          doc.text(`Ingresos - Concepto: ${conceptKey}`, 14, currentY);
-          currentY += 6;
-          const monthKeys = ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"];
-          let totalPaidConcept = 0,
-            totalPendingConcept = 0,
-            totalCreditConcept = 0;
-          let globalTotalRecords = 0,
-            globalPaidRecords = 0;
-          const rows = monthKeys.map((m) => {
-            const recordsForMonth = recs.filter((r) => r.month === m);
-            // Calcular los totales para este mes
-            const monthPaid = recordsForMonth.reduce((sum, r) => sum + r.amountPaid, 0);
-            const monthCreditUsed = recordsForMonth.reduce((sum, r) => sum + (r.creditUsed || 0), 0);
-            const monthCreditBalance = recordsForMonth.reduce((sum, r) => sum + r.creditBalance, 0);
-            
-            // Monto abonado es la suma de pagos regulares + crédito usado + saldo disponible
-            const paid = monthPaid + monthCreditUsed + (monthCreditBalance - monthCreditUsed);
-            const pending = recordsForMonth.reduce((sum, r) => sum + r.amountPending, 0);
-            // Saldo a favor es el saldo disponible menos el usado
-            const credit = monthCreditBalance - monthCreditUsed;
-            
-            totalPaidConcept += paid;
-            totalPendingConcept += pending;
-            totalCreditConcept += credit;
-            globalTotalRecords += recordsForMonth.length;
-            globalPaidRecords += recordsForMonth.filter((r) => r.paid).length;
-            const compliance = recordsForMonth.length > 0 ? (recordsForMonth.filter((r) => r.paid).length / recordsForMonth.length) * 100 : 0;
-            const delinquency = 100 - compliance;
-            return [
-              monthNames[m] || m,
-              formatCurrency(paid),
-              formatCurrency(pending),
-              formatCurrency(credit),
-              compliance.toFixed(2) + "%",
-              delinquency.toFixed(2) + "%",
+        (Object.entries(conceptRecords) as [string, PaymentRecord[]][]).forEach(
+          ([conceptKey, recs]) => {
+            doc.setFontSize(12);
+            doc.setFont("helvetica", "bold");
+            doc.text(`Ingresos - Concepto: ${conceptKey}`, 14, currentY);
+            currentY += 6;
+            const monthKeys = [
+              "01",
+              "02",
+              "03",
+              "04",
+              "05",
+              "06",
+              "07",
+              "08",
+              "09",
+              "10",
+              "11",
+              "12",
             ];
-          });
-          const totalCompliance = globalTotalRecords > 0 ? (globalPaidRecords / globalTotalRecords) * 100 : 0;
-          const totalDelinquency = 100 - totalCompliance;
-          rows.push([
-            "Total",
-            formatCurrency(totalPaidConcept),
-            formatCurrency(totalPendingConcept),
-            formatCurrency(totalCreditConcept),
-            globalTotalRecords > 0 ? totalCompliance.toFixed(2) + "%" : "0.00%",
-            globalTotalRecords > 0 ? totalDelinquency.toFixed(2) + "%" : "0.00%",
-          ]);
-          autoTable(doc, {
-            startY: currentY,
-            head: [["Mes", "Monto Abonado", "Monto Pendiente", "Saldo a favor", "% Cumplimiento", "% Morosidad"]],
-            body: rows,
-            headStyles: { fillColor: [75, 68, 224], textColor: 255, fontStyle: "bold" },
-            styles: { fontSize: 10 },
-            didParseCell: (data) => {
-              if (data.row.index === rows.length - 1) {
-                data.cell.styles.fontStyle = "bold";
-              }
-            },
-          });
-          currentY = (doc as any).lastAutoTable
-            ? (doc as any).lastAutoTable.finalY + 10
-            : currentY + 10;
-        });
+            let totalPaidConcept = 0,
+              totalPendingConcept = 0,
+              totalCreditConcept = 0;
+            let globalTotalRecords = 0,
+              globalPaidRecords = 0;
+            const rows = monthKeys.map((m) => {
+              const recordsForMonth = recs.filter((r) => r.month === m);
+              // Calcular los totales para este mes
+              const monthPaid = recordsForMonth.reduce(
+                (sum, r) => sum + r.amountPaid,
+                0
+              );
+              const monthCreditUsed = recordsForMonth.reduce(
+                (sum, r) => sum + (r.creditUsed || 0),
+                0
+              );
+              const monthCreditBalance = recordsForMonth.reduce(
+                (sum, r) => sum + r.creditBalance,
+                0
+              );
+              const totalCharges = recordsForMonth.reduce(
+                (sum, r) => sum + r.referenceAmount,
+                0
+              );
+
+              // Monto abonado es la suma de pagos regulares + crédito usado + saldo disponible
+              const paid =
+                monthPaid +
+                monthCreditUsed +
+                (monthCreditBalance - monthCreditUsed);
+              const pending = recordsForMonth.reduce(
+                (sum, r) => sum + r.amountPending,
+                0
+              );
+              // Saldo a favor es el saldo disponible menos el usado
+              const credit = monthCreditBalance - monthCreditUsed;
+
+              totalPaidConcept += paid;
+              totalPendingConcept += pending;
+              totalCreditConcept += credit;
+              globalTotalRecords += recordsForMonth.length;
+              globalPaidRecords += recordsForMonth.filter((r) => r.paid).length;
+              const compliance =
+                recordsForMonth.length > 0
+                  ? (recordsForMonth.filter((r) => r.paid).length /
+                      recordsForMonth.length) *
+                    100
+                  : 0;
+              const delinquency = 100 - compliance;
+              return [
+                monthNames[m] || m,
+                formatCurrency(paid),
+                formatCurrency(totalCharges),
+                formatCurrency(totalCharges - paid),
+                compliance.toFixed(2) + "%",
+                delinquency.toFixed(2) + "%",
+              ];
+            });
+            const totalCompliance =
+              globalTotalRecords > 0
+                ? (globalPaidRecords / globalTotalRecords) * 100
+                : 0;
+            const totalDelinquency = 100 - totalCompliance;
+            rows.push([
+              "Total",
+              formatCurrency(totalPaidConcept),
+              formatCurrency(totalPendingConcept),
+              formatCurrency(totalPendingConcept - totalPaidConcept),
+              globalTotalRecords > 0
+                ? totalCompliance.toFixed(2) + "%"
+                : "0.00%",
+              globalTotalRecords > 0
+                ? totalDelinquency.toFixed(2) + "%"
+                : "0.00%",
+            ]);
+            autoTable(doc, {
+              startY: currentY,
+              head: [
+                [
+                  "Mes",
+                  "Monto Abonado",
+                  "Cargos",
+                  "Saldo",
+                  "% Cumplimiento",
+                  "% Morosidad",
+                ],
+              ],
+              body: rows,
+              headStyles: {
+                fillColor: [75, 68, 224],
+                textColor: 255,
+                fontStyle: "bold",
+              },
+              styles: { fontSize: 10 },
+              didParseCell: (data) => {
+                if (data.row.index === rows.length - 1) {
+                  data.cell.styles.fontStyle = "bold";
+                }
+              },
+            });
+            currentY = (doc as any).lastAutoTable
+              ? (doc as any).lastAutoTable.finalY + 10
+              : currentY + 10;
+          }
+        );
       }
 
       const sortedCondominiums = [...allCondominiums].sort((a, b) =>
@@ -489,13 +743,28 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({ year, concept }
         doc.setFontSize(12);
         doc.setFont("helvetica", "bold");
         doc.text(
-          `Detalle del Condomino: ${cond.number}${cond.name ? " - " + cond.name : ""}`,
+          `Detalle del Condomino: ${cond.number}${
+            cond.name ? " - " + cond.name : ""
+          }`,
           14,
           currentY
         );
         currentY += 6;
         const condData = detailed[cond.number] || [];
-        const monthKeys = ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"];
+        const monthKeys = [
+          "01",
+          "02",
+          "03",
+          "04",
+          "05",
+          "06",
+          "07",
+          "08",
+          "09",
+          "10",
+          "11",
+          "12",
+        ];
         let totalPaidCond = 0,
           totalPendingCond = 0,
           totalCreditCond = 0;
@@ -508,32 +777,60 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({ year, concept }
             return recMonth === m;
           });
           // Calcular los totales para este mes
-          const monthPaid = recordsForMonth.reduce((sum, r) => sum + r.amountPaid, 0);
-          const monthCreditUsed = recordsForMonth.reduce((sum, r) => sum + (r.creditUsed || 0), 0);
-          const monthCreditBalance = recordsForMonth.reduce((sum, r) => sum + r.creditBalance, 0);
-          
+          const monthPaid = recordsForMonth.reduce(
+            (sum, r) => sum + r.amountPaid,
+            0
+          );
+          const monthCreditUsed = recordsForMonth.reduce(
+            (sum, r) => sum + (r.creditUsed || 0),
+            0
+          );
+          const monthCreditBalance = recordsForMonth.reduce(
+            (sum, r) => sum + r.creditBalance,
+            0
+          );
+          const totalCharges = recordsForMonth.reduce(
+            (sum, r) => sum + r.referenceAmount,
+            0
+          );
+
           // Monto abonado es la suma de pagos regulares + crédito usado + saldo disponible
-          const amountPaid = monthPaid + monthCreditUsed + (monthCreditBalance - monthCreditUsed);
-          const amountPending = recordsForMonth.reduce((sum, r) => sum + r.amountPending, 0);
+          const amountPaid =
+            monthPaid +
+            monthCreditUsed +
+            (monthCreditBalance - monthCreditUsed);
+          const amountPending = recordsForMonth.reduce(
+            (sum, r) => sum + r.amountPending,
+            0
+          );
           // Saldo a favor es el saldo disponible menos el usado
           const credit = monthCreditBalance - monthCreditUsed;
-          
+
           totalPaidCond += amountPaid;
           totalPendingCond += amountPending;
           totalCreditCond += credit;
-          return [monthNames[m], formatCurrency(amountPaid), formatCurrency(amountPending), formatCurrency(credit)];
+          return [
+            monthNames[m],
+            formatCurrency(amountPaid),
+            formatCurrency(totalCharges),
+            formatCurrency(totalCharges - amountPaid),
+          ];
         });
         rows.push([
           "Total",
           formatCurrency(totalPaidCond),
           formatCurrency(totalPendingCond),
-          formatCurrency(totalCreditCond),
+          formatCurrency(totalPendingCond - totalPaidCond),
         ]);
         autoTable(doc, {
           startY: currentY,
-          head: [["Mes", "Monto Abonado", "Monto Pendiente", "Saldo a favor"]],
+          head: [["Mes", "Monto Abonado", "Cargos", "Saldo"]],
           body: rows,
-          headStyles: { fillColor: [75, 68, 224], textColor: 255, fontStyle: "bold" },
+          headStyles: {
+            fillColor: [75, 68, 224],
+            textColor: 255,
+            fontStyle: "bold",
+          },
           styles: { fontSize: 10 },
           didParseCell: (data) => {
             if (data.row.index === rows.length - 1) {
@@ -591,7 +888,9 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({ year, concept }
         onClick={generatePDF}
         className="bg-indigo-600 text-white text-sm py-2 px-1 rounded w-[220px] font-medium hover:bg-indigo-700"
       >
-        {concept ? `Generar reporte para ${concept}` : "Generar reporte General"}
+        {concept
+          ? `Generar reporte para ${concept}`
+          : "Generar reporte General"}
       </button>
     </div>
   );

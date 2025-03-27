@@ -63,6 +63,7 @@ export interface PaymentRecord {
   attachmentPayment?: string; // URL del comprobante de pago
   chargeId?: string; // ID del cargo asociado
   userId?: string; // ID del usuario asociado
+  referenceAmount: number; // en pesos
 }
 
 export type MonthlyStat = {
@@ -74,6 +75,7 @@ export type MonthlyStat = {
   complianceRate: number;
   delinquencyRate: number;
   creditUsed: number;
+  charges: number;
 };
 
 export type FinancialAccountInfo = {
@@ -285,10 +287,14 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>(
                   return null;
 
                 const monthCode = chargeData.startAt.substring(5, 7);
-                chargeCount[monthCode] = (chargeCount[monthCode] || 0) + 1;
-                if (chargeData.paid === true) {
-                  paidChargeCount[monthCode] =
-                    (paidChargeCount[monthCode] || 0) + 1;
+                // Solo contar cargos que tengan un monto mayor a 0
+                if (centsToPesos(chargeData.amount) > 0) {
+                  chargeCount[monthCode] = (chargeCount[monthCode] || 0) + 1;
+                  // Si el amount es 0, significa que está pagado completamente
+                  if (centsToPesos(chargeData.amount) === 0) {
+                    paidChargeCount[monthCode] =
+                      (paidChargeCount[monthCode] || 0) + 1;
+                  }
                 }
 
                 const paymentsRef = collection(
@@ -339,6 +345,10 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>(
                   pendingAmount = totalAmountPendingFromPayments;
                 }
 
+                // Obtener el referenceAmount directamente del cargo
+                const referenceAmount =
+                  centsToPesos(chargeData.referenceAmount) || 0;
+
                 const record: PaymentRecord = {
                   id: chargeDoc.id,
                   clientId,
@@ -346,7 +356,6 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>(
                   month: monthCode,
                   amountPaid: parseFloat(totalAmountPaid.toFixed(2)),
                   amountPending: parseFloat(pendingAmount.toFixed(2)),
-                  // Ajuste aquí para procesar correctamente los conceptos en pago único y multipago:
                   concept: Array.isArray(chargeData.concept)
                     ? chargeData.concept.join(", ")
                     : chargeData.concept || "Desconocido",
@@ -359,6 +368,7 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>(
                   attachmentPayment: chargeData.attachmentPayment,
                   chargeId: chargeDoc.id,
                   userId: userObj.id,
+                  referenceAmount: parseFloat(referenceAmount.toFixed(2)),
                 };
                 return record;
               })
@@ -432,6 +442,9 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>(
             attachmentPayment: data.attachmentPayment,
             chargeId: docSnap.id,
             userId: docSnap.id,
+            referenceAmount: parseFloat(
+              centsToPesos(data.referenceAmount).toFixed(2)
+            ),
           };
           paymentRecords.push(record);
         });
@@ -445,6 +458,7 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>(
             saldo: number;
             unidentifiedPayments: number;
             creditUsed: number;
+            charges: number;
           }
         > = {};
 
@@ -456,13 +470,21 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>(
             saldo: 0,
             unidentifiedPayments: 0,
             creditUsed: 0,
+            charges: 0,
           };
         }
 
         let totalIncome = 0;
         let totalPending = 0;
+
+        // Procesar todos los registros
         paymentRecords.forEach((pr) => {
           if (!pr.month) return;
+
+          // Sumar el referenceAmount a los cargos del mes
+          chartData[pr.month].charges += pr.referenceAmount;
+
+          // Resto de cálculos
           chartData[pr.month].paid += pr.amountPaid;
           if (!pr.paid) {
             chartData[pr.month].pending += pr.amountPending;
@@ -483,10 +505,13 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>(
           const pending = chartData[m].pending;
           const saldo = chartData[m].saldo;
           const unidentifiedPayments = chartData[m].unidentifiedPayments;
-          const totalCharges = chargeCount[m];
-          const paidCharges = paidChargeCount[m];
+          const totalCharges = chartData[m].charges;
+          const totalChargesForMonth = chargeCount[m];
+          const paidChargesForMonth = paidChargeCount[m];
           const compliance =
-            totalCharges > 0 ? (paidCharges / totalCharges) * 100 : 0;
+            totalChargesForMonth > 0
+              ? (paidChargesForMonth / totalChargesForMonth) * 100
+              : 0;
           const delinquency = 100 - compliance;
 
           // Calcular el crédito utilizado para este mes
@@ -501,6 +526,7 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>(
             complianceRate: parseFloat(compliance.toFixed(2)),
             delinquencyRate: parseFloat(delinquency.toFixed(2)),
             creditUsed: parseFloat(totalCreditUsed.toFixed(2)),
+            charges: parseFloat(totalCharges.toFixed(2)),
           });
         }
 
@@ -855,6 +881,9 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>(
                 attachmentPayment: paymentData.attachmentPayment,
                 chargeId: chargeDoc.id,
                 userId: userDoc.id,
+                referenceAmount: parseFloat(
+                  centsToPesos(chargeData.amount).toFixed(2)
+                ),
               };
 
               paymentRecords.push(record);
@@ -911,6 +940,9 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>(
               attachmentPayment: data.attachmentPayment,
               chargeId: docSnap.id,
               userId: docSnap.id,
+              referenceAmount: parseFloat(
+                centsToPesos(data.referenceAmount).toFixed(2)
+              ),
             };
 
             paymentRecords.push(record);
@@ -1036,6 +1068,7 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>(
             attachmentPayment: data.attachmentPayment,
             chargeId: data.chargeId || "",
             userId: data.userId || "",
+            referenceAmount: parseFloat(centsToPesos(data.amount).toFixed(2)),
           };
           paymentRecords.push(record);
           lastDoc = docSnap;
@@ -1092,6 +1125,7 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>(
               attachmentPayment: data.attachmentPayment,
               chargeId: docSnap.id,
               userId: docSnap.id,
+              referenceAmount: parseFloat(centsToPesos(data.amount).toFixed(2)),
             };
             paymentRecords.push(record);
             lastDoc = docSnap;
@@ -1210,6 +1244,7 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>(
             attachmentPayment: data.attachmentPayment,
             chargeId: data.chargeId || "",
             userId: data.userId || "",
+            referenceAmount: parseFloat(centsToPesos(data.amount).toFixed(2)),
           };
           paymentRecords.push(record);
         });
@@ -1249,6 +1284,9 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>(
             attachmentPayment: data.attachmentPayment,
             chargeId: docSnap.id,
             userId: docSnap.id,
+            referenceAmount: parseFloat(
+              centsToPesos(data.referenceAmount).toFixed(2)
+            ),
           };
           paymentRecords.push(record);
         });

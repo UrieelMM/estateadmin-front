@@ -31,13 +31,18 @@ const MONTH_NAMES: Record<string, string> = {
 };
 
 const AnnualGeneralStats: React.FC = () => {
-  const conceptRecords = usePaymentSummaryStore((state) => state.conceptRecords);
+  const conceptRecords = usePaymentSummaryStore(
+    (state) => state.conceptRecords
+  );
 
   const formatCurrency = (value: number): string => {
-    return "$" + value.toLocaleString("en-US", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    });
+    return (
+      "$" +
+      value.toLocaleString("en-US", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })
+    );
   };
 
   const formatLargeValues = (value: number): string => {
@@ -51,8 +56,10 @@ const AnnualGeneralStats: React.FC = () => {
   };
 
   // Forzar 'val' a string
-  const formatMonthLabel = (m: string | number): string => MONTH_NAMES[String(m)] || String(m);
-  const getMonthName = (m: string | number): string => MONTH_NAMES[String(m)] || "N/A";
+  const formatMonthLabel = (m: string | number): string =>
+    MONTH_NAMES[String(m)] || String(m);
+  const getMonthName = (m: string | number): string =>
+    MONTH_NAMES[String(m)] || "N/A";
 
   const chartColors = ["#8093E8", "#74B9E7", "#A7CFE6", "#B79FE6", "#C2ABE6"];
 
@@ -63,7 +70,7 @@ const AnnualGeneralStats: React.FC = () => {
     bestMonth,
     worstMonth,
     monthlyAverage,
-    hasData
+    hasData,
   } = useMemo(() => {
     if (!conceptRecords || Object.keys(conceptRecords).length < 1) {
       return {
@@ -73,32 +80,51 @@ const AnnualGeneralStats: React.FC = () => {
         bestMonth: ["N/A", 0],
         worstMonth: ["N/A", 0],
         monthlyAverage: 0,
-        hasData: false
+        hasData: false,
       };
     }
 
     const conceptTotals: Record<string, number> = {};
     const monthlyTotals: Record<string, number> = {
-      "01": 0, "02": 0, "03": 0, "04": 0, "05": 0, "06": 0,
-      "07": 0, "08": 0, "09": 0, "10": 0, "11": 0, "12": 0,
+      "01": 0,
+      "02": 0,
+      "03": 0,
+      "04": 0,
+      "05": 0,
+      "06": 0,
+      "07": 0,
+      "08": 0,
+      "09": 0,
+      "10": 0,
+      "11": 0,
+      "12": 0,
     };
 
     Object.entries(conceptRecords).forEach(([concept, records]) => {
       let sumConcept = 0;
       records.forEach((rec) => {
-        sumConcept += rec.amountPaid + (rec.creditUsed || 0);
+        // Monto abonado = pagos + crédito usado + saldo disponible
+        const amountPaidWithCredit =
+          rec.amountPaid +
+          (rec.creditUsed || 0) +
+          (rec.creditBalance - (rec.creditUsed || 0));
+        sumConcept += amountPaidWithCredit;
         if (monthlyTotals[rec.month] !== undefined) {
-          monthlyTotals[rec.month] += rec.amountPaid + (rec.creditUsed || 0);
+          monthlyTotals[rec.month] += amountPaidWithCredit;
         }
       });
       conceptTotals[concept] = sumConcept;
     });
 
     // Lista completa de conceptos (incluye Pago no identificado)
-    const conceptList = Object.entries(conceptTotals).sort((a, b) => b[1] - a[1]);
+    const conceptList = Object.entries(conceptTotals).sort(
+      (a, b) => b[1] - a[1]
+    );
 
     // --- FILTRO SOLO PARA LAS CARDS DE MEJOR/PEOR CONCEPTO ---
-    const conceptListForCards = conceptList.filter(([c]) => c !== "Pago no identificado");
+    const conceptListForCards = conceptList.filter(
+      ([c]) => c !== "Pago no identificado"
+    );
 
     // Mejor concepto
     const bestConcept = conceptListForCards[0] || ["N/A", 0];
@@ -118,14 +144,20 @@ const AnnualGeneralStats: React.FC = () => {
     const monthList = Object.entries(monthlyTotals).sort((a, b) => b[1] - a[1]);
     const bestMonth = monthList[0] || ["N/A", 0];
 
-    const worstMonthIdx = monthList.slice().reverse().findIndex(([_, val]) => val > 0);
+    const worstMonthIdx = monthList
+      .slice()
+      .reverse()
+      .findIndex(([_, val]) => val > 0);
     let worstMonth: [string, number] = ["N/A", 0];
     if (worstMonthIdx !== -1) {
       const realIdx = monthList.length - 1 - worstMonthIdx;
       worstMonth = monthList[realIdx];
     }
 
-    const annualGrandTotal = conceptList.reduce((acc, [, total]) => acc + total, 0);
+    const annualGrandTotal = conceptList.reduce(
+      (acc, [, total]) => acc + total,
+      0
+    );
     const monthlyAverage = annualGrandTotal / 12;
 
     return {
@@ -135,7 +167,7 @@ const AnnualGeneralStats: React.FC = () => {
       bestMonth,
       worstMonth,
       monthlyAverage,
-      hasData: true
+      hasData: true,
     };
   }, [conceptRecords]);
 
@@ -159,14 +191,34 @@ const AnnualGeneralStats: React.FC = () => {
     const sorted = Object.entries(conceptTotals).sort((a, b) => b[1] - a[1]);
     const topConcepts = sorted.slice(0, 5).map(([c]) => c);
     const otherConcepts = sorted.slice(5).map(([c]) => c);
-    const months = ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"];
+    const months = [
+      "01",
+      "02",
+      "03",
+      "04",
+      "05",
+      "06",
+      "07",
+      "08",
+      "09",
+      "10",
+      "11",
+      "12",
+    ];
     const data = months.map((m) => {
       const row: any = { month: m };
       topConcepts.forEach((concept) => {
         const recs = conceptRecords[concept] || [];
         const sumThisMonth = recs
           .filter((r) => r.month === m)
-          .reduce((acc, r) => acc + r.amountPaid + r.creditBalance, 0);
+          .reduce((acc, r) => {
+            // Monto abonado = pagos + crédito usado + saldo disponible
+            const amountPaidWithCredit =
+              r.amountPaid +
+              (r.creditUsed || 0) +
+              (r.creditBalance - (r.creditUsed || 0));
+            return acc + amountPaidWithCredit;
+          }, 0);
         row[concept] = sumThisMonth;
       });
       if (otherConcepts.length > 0) {
@@ -175,7 +227,14 @@ const AnnualGeneralStats: React.FC = () => {
           const recs = conceptRecords[concept] || [];
           const sumThisMonth = recs
             .filter((r) => r.month === m)
-            .reduce((acc, r) => acc + r.amountPaid + r.creditBalance, 0);
+            .reduce((acc, r) => {
+              // Monto abonado = pagos + crédito usado + saldo disponible
+              const amountPaidWithCredit =
+                r.amountPaid +
+                (r.creditUsed || 0) +
+                (r.creditBalance - (r.creditUsed || 0));
+              return acc + amountPaidWithCredit;
+            }, 0);
           sumOthers += sumThisMonth;
         });
         row["Otros"] = sumOthers;
@@ -196,21 +255,31 @@ const AnnualGeneralStats: React.FC = () => {
       {/* Tarjetas */}
       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
         <div className="p-4 shadow-md rounded-md">
-          <p className="text-sm text-gray-600 dark:text-gray-100">Concepto con más ingresos </p>
-          <p className="text-base font-semibold text-indigo-500">{bestConcept[0]}</p>
+          <p className="text-sm text-gray-600 dark:text-gray-100">
+            Concepto con más ingresos{" "}
+          </p>
+          <p className="text-base font-semibold text-indigo-500">
+            {bestConcept[0]}
+          </p>
           <p className="text-xl font-semibold">
             {formatCurrency(Number(bestConcept[1]))}
           </p>
         </div>
         <div className="p-4 shadow-md rounded-md">
-          <p className="text-sm text-gray-600 dark:text-gray-100">Concepto rezagado </p>
-          <p className="text-base font-semibold text-indigo-500">{worstConcept[0]}</p>
+          <p className="text-sm text-gray-600 dark:text-gray-100">
+            Concepto rezagado{" "}
+          </p>
+          <p className="text-base font-semibold text-indigo-500">
+            {worstConcept[0]}
+          </p>
           <p className="text-xl font-semibold">
             {formatCurrency(Number(worstConcept[1]))}
           </p>
         </div>
         <div className="p-4 shadow-md rounded-md">
-          <p className="text-sm text-gray-600 dark:text-gray-100">Mes con mayor recaudación</p>
+          <p className="text-sm text-gray-600 dark:text-gray-100">
+            Mes con mayor recaudación
+          </p>
           <p className="text-base font-semibold text-indigo-500">
             {getMonthName(bestMonth[0])}
           </p>
@@ -219,7 +288,9 @@ const AnnualGeneralStats: React.FC = () => {
           </p>
         </div>
         <div className="p-4 shadow-md rounded-md">
-          <p className="text-sm text-gray-600 dark:text-gray-100">Mes con menor recaudación</p>
+          <p className="text-sm text-gray-600 dark:text-gray-100">
+            Mes con menor recaudación
+          </p>
           <p className="text-base font-semibold text-indigo-500">
             {getMonthName(worstMonth[0])}
           </p>
@@ -228,13 +299,19 @@ const AnnualGeneralStats: React.FC = () => {
           </p>
         </div>
         <div className="p-4 shadow-md rounded-md">
-          <p className="text-sm text-gray-600 dark:text-gray-100">Ingreso promedio mensual</p>
-          <p className="text-xl font-semibold">{formatCurrency(monthlyAverage)}</p>
+          <p className="text-sm text-gray-600 dark:text-gray-100">
+            Ingreso promedio mensual
+          </p>
+          <p className="text-xl font-semibold">
+            {formatCurrency(monthlyAverage)}
+          </p>
         </div>
       </div>
 
       {/* Gráfica de pastel */}
-      <h3 className="text-lg font-bold mb-2">Distribución de recaudación anual por concepto</h3>
+      <h3 className="text-lg font-bold mb-2">
+        Distribución de recaudación anual por concepto
+      </h3>
       <div style={{ width: "100%", height: 320 }}>
         <ResponsiveContainer>
           <PieChart>
@@ -262,7 +339,10 @@ const AnnualGeneralStats: React.FC = () => {
 
       {/* Gráfica de áreas apiladas */}
       <h3 className="text-lg font-bold mt-8 mb-2">
-        Evolución mensual <span className="text-xs font-medium text-gray-500 dark:text-gray-100">(5 principales conceptos + otros)</span>
+        Evolución mensual{" "}
+        <span className="text-xs font-medium text-gray-500 dark:text-gray-100">
+          (5 principales conceptos + otros)
+        </span>
       </h3>
       <div style={{ width: "100%", height: 400 }}>
         <ResponsiveContainer>
@@ -281,7 +361,9 @@ const AnnualGeneralStats: React.FC = () => {
             />
             <Tooltip
               formatter={(val: number) => formatCurrency(val)}
-              labelFormatter={(label) => `Mes: ${formatMonthLabel(String(label))}`}
+              labelFormatter={(label) =>
+                `Mes: ${formatMonthLabel(String(label))}`
+              }
             />
             <Legend />
             {areaStackData.areaKeys.map((concept, idx) => (

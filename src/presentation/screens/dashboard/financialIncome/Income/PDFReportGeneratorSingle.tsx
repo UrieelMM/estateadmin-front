@@ -12,6 +12,7 @@ export interface PaymentRecord {
   amountPending: number;
   creditBalance: number;
   creditUsed?: number;
+  referenceAmount: number; // Monto original del cargo que no se modifica con los pagos
   // Podría ser un string o arreglo de strings
   paymentDate?: string | string[];
   // ... otros campos ...
@@ -21,7 +22,7 @@ export interface PDFReportGeneratorSingleProps {
   year: string;
   condominium: { number: string; name: string };
   // Estructura: { '2025-01': [PaymentRecord, ...], '2025-02': [...], ... }
-  detailed: Record<string, PaymentRecord[]>; 
+  detailed: Record<string, PaymentRecord[]>;
   // Estructura por concepto: { "Mantenimiento": { '2025-01': [PaymentRecord...], '2025-02': [...], ...}, ... }
   detailedByConcept: Record<string, Record<string, PaymentRecord[]>>;
   adminCompany: string;
@@ -78,8 +79,8 @@ function formatDateDMY(dateStr: string): string {
 }
 
 /**
- * Extrae todas las fechas de paymentDate (puede ser string o string[]) 
- * de un arreglo de PaymentRecord, las formatea a dd/mm/aaaa 
+ * Extrae todas las fechas de paymentDate (puede ser string o string[])
+ * de un arreglo de PaymentRecord, las formatea a dd/mm/aaaa
  * y las une separadas por coma.
  */
 function getAllPaymentDates(records: PaymentRecord[]): string {
@@ -144,7 +145,11 @@ const PDFReportGeneratorSingle: React.FC<PDFReportGeneratorSingleProps> = ({
     doc.setFont("helvetica", "bold");
     doc.text("Condomino:", 14, yPos);
     doc.setFont("helvetica", "normal");
-    doc.text(`${condominium.number} - ${condominium.name}`, 14 + doc.getTextWidth("Condomino:") + 4, yPos);
+    doc.text(
+      `${condominium.number} - ${condominium.name}`,
+      14 + doc.getTextWidth("Condomino:") + 4,
+      yPos
+    );
     yPos += 10;
 
     // --- REPORTE GENERAL (SIN FECHA) ---
@@ -169,59 +174,81 @@ const PDFReportGeneratorSingle: React.FC<PDFReportGeneratorSingleProps> = ({
 
     const generalData: (string | number)[][] = [];
     let totalPaidGeneral = 0,
-      totalPendingGeneral = 0,
-      totalCreditGeneral = 0;
+      totalChargesGeneral = 0,
+      totalBalanceGeneral = 0;
 
     for (let i = 1; i <= 12; i++) {
       const monthNum = i.toString().padStart(2, "0");
       const key = `${year}-${monthNum}`;
       const records = detailed[key] || [];
       const totalPaid = records.reduce((acc, rec) => acc + rec.amountPaid, 0);
-      const totalPending = records.reduce((acc, rec) => acc + rec.amountPending, 0);
-      const totalCreditUsed = records.reduce((acc, rec) => acc + (rec.creditUsed || 0), 0);
-      const totalCreditBalance = records.reduce((acc, rec) => acc + rec.creditBalance, 0);
+      const totalCharges = records.reduce(
+        (acc, rec) => acc + rec.referenceAmount,
+        0
+      );
+      const totalCreditUsed = records.reduce(
+        (acc, rec) => acc + (rec.creditUsed || 0),
+        0
+      );
+      const totalCreditBalance = records.reduce(
+        (acc, rec) => acc + rec.creditBalance,
+        0
+      );
       const totalCredit = totalCreditBalance - totalCreditUsed;
 
-      totalPaidGeneral += totalPaid + totalCreditUsed + totalCredit;
-      totalPendingGeneral += totalPending;
-      totalCreditGeneral += totalCredit;
+      // Monto Abonado incluye los pagos menos el saldo a favor usado, más el saldo a favor disponible
+      const totalPaidWithCredit =
+        totalPaid - totalCreditUsed + (totalCredit > 0 ? totalCredit : 0);
+
+      // El saldo es la diferencia entre cargos y pagos (incluyendo créditos)
+      const balance = totalCharges - totalPaidWithCredit;
+
+      totalPaidGeneral += totalPaidWithCredit;
+      totalChargesGeneral += totalCharges;
+      totalBalanceGeneral += balance;
 
       generalData.push([
         monthNames[monthNum],
-        formatCurrency(totalPaid + totalCreditUsed + totalCredit),
-        formatCurrency(totalPending),
-        formatCurrency(totalCredit),
+        formatCurrency(totalPaidWithCredit),
+        formatCurrency(totalCharges),
+        formatCurrency(balance),
       ]);
     }
     // Agregamos fila de Totales
     generalData.push([
       "Total",
       formatCurrency(totalPaidGeneral),
-      formatCurrency(totalPendingGeneral),
-      formatCurrency(totalCreditGeneral),
+      formatCurrency(totalChargesGeneral),
+      formatCurrency(totalBalanceGeneral),
     ]);
 
     autoTable(doc, {
       startY: yPos,
-      head: [["Mes", "Monto Abonado", "Monto Pendiente", "Saldo a Favor"]],
+      head: [["Mes", "Monto Abonado", "Cargos", "Saldo"]],
       body: generalData,
       theme: "grid",
-      headStyles: { fillColor: [77, 68, 224], fontStyle: "bold", textColor: 255 },
+      headStyles: {
+        fillColor: [77, 68, 224],
+        fontStyle: "bold",
+        textColor: 255,
+      },
       styles: { fontSize: 10 },
       didParseCell: (data) => {
-        // Saldo a Favor = columna 3
+        // Saldo = columna 3
         if (data.section === "body" && data.column.index === 3) {
           let numericValue = 0;
           if (typeof data.cell.raw === "string") {
-            numericValue = parseFloat(data.cell.raw.replace(/[^0-9.-]/g, "")) || 0;
+            numericValue =
+              parseFloat(data.cell.raw.replace(/[^0-9.-]/g, "")) || 0;
           } else if (typeof data.cell.raw === "number") {
             numericValue = data.cell.raw;
           }
-          if (numericValue > 0) {
-            data.cell.text = [`+${data.cell.text[0]}`];
+          if (numericValue < 0) {
+            // Si el saldo es negativo, significa que tiene un crédito
+            data.cell.text = [`+${formatCurrency(Math.abs(numericValue))}`];
             data.cell.styles.textColor = [0, 128, 0]; // verde
-          } else if (numericValue < 0) {
-            // Se formatea el número negativo con la función formatCurrency
+          } else if (numericValue > 0) {
+            // Si el saldo es positivo, significa que debe dinero
             data.cell.text = [formatCurrency(numericValue)];
             data.cell.styles.textColor = [255, 0, 0]; // rojo
           }
@@ -248,67 +275,88 @@ const PDFReportGeneratorSingle: React.FC<PDFReportGeneratorSingleProps> = ({
 
       const conceptData: (string | number)[][] = [];
       let totalPaidConcept = 0,
-        totalPendingConcept = 0,
-        totalCreditConcept = 0;
+        totalChargesConcept = 0,
+        totalBalanceConcept = 0;
 
       for (let i = 1; i <= 12; i++) {
         const monthNum = i.toString().padStart(2, "0");
         const key = `${year}-${monthNum}`;
         const records = detailedByConcept[concept][key] || [];
         const totalPaid = records.reduce((acc, rec) => acc + rec.amountPaid, 0);
-        const totalPending = records.reduce((acc, rec) => acc + rec.amountPending, 0);
-        const totalCreditUsed = records.reduce((acc, rec) => acc + (rec.creditUsed || 0), 0);
-        const totalCreditBalance = records.reduce((acc, rec) => acc + rec.creditBalance, 0);
+        const totalCharges = records.reduce(
+          (acc, rec) => acc + rec.referenceAmount,
+          0
+        );
+        const totalCreditUsed = records.reduce(
+          (acc, rec) => acc + (rec.creditUsed || 0),
+          0
+        );
+        const totalCreditBalance = records.reduce(
+          (acc, rec) => acc + rec.creditBalance,
+          0
+        );
         const totalCredit = totalCreditBalance - totalCreditUsed;
 
-        totalPaidConcept += totalPaid + totalCreditUsed + totalCredit;
-        totalPendingConcept += totalPending;
-        totalCreditConcept += totalCredit;
+        // Monto Abonado incluye los pagos menos el saldo a favor usado, más el saldo a favor disponible
+        const totalPaidWithCredit =
+          totalPaid - totalCreditUsed + (totalCredit > 0 ? totalCredit : 0);
+
+        // El saldo es la diferencia entre cargos y pagos (incluyendo créditos)
+        const balance = totalCharges - totalPaidWithCredit;
+
+        totalPaidConcept += totalPaidWithCredit;
+        totalChargesConcept += totalCharges;
+        totalBalanceConcept += balance;
 
         // Obtener fecha(s) de pago
         const allDates = getAllPaymentDates(records);
 
         conceptData.push([
           monthNames[monthNum],
-          formatCurrency(totalPaid + totalCreditUsed + totalCredit),
-          formatCurrency(totalPending),
-          formatCurrency(totalCredit),
-          allDates, // la nueva columna
+          formatCurrency(totalPaidWithCredit),
+          formatCurrency(totalCharges),
+          formatCurrency(balance),
+          allDates,
         ]);
       }
 
       conceptData.push([
         "Total",
         formatCurrency(totalPaidConcept),
-        formatCurrency(totalPendingConcept),
-        formatCurrency(totalCreditConcept),
+        formatCurrency(totalChargesConcept),
+        formatCurrency(totalBalanceConcept),
         "",
       ]);
 
       autoTable(doc, {
         startY: yPos,
-        head: [
-          ["Mes", "Monto Abonado", "Monto Pendiente", "Saldo a Favor", "Fecha(s) de Pago"],
-        ],
+        head: [["Mes", "Monto Abonado", "Cargos", "Saldo", "Fecha(s) de Pago"]],
         body: conceptData,
         theme: "grid",
-        headStyles: { fillColor: [77, 68, 224], fontStyle: "bold", textColor: 255 },
+        headStyles: {
+          fillColor: [77, 68, 224],
+          fontStyle: "bold",
+          textColor: 255,
+        },
         styles: { fontSize: 10 },
         didParseCell: (data) => {
-          // Saldo a Favor => columna 3
+          // Saldo = columna 3
           if (data.section === "body" && data.column.index === 3) {
             let numericValue = 0;
             if (typeof data.cell.raw === "string") {
-              numericValue = parseFloat(data.cell.raw.replace(/[^0-9.-]/g, "")) || 0;
+              numericValue =
+                parseFloat(data.cell.raw.replace(/[^0-9.-]/g, "")) || 0;
             } else if (typeof data.cell.raw === "number") {
               numericValue = data.cell.raw;
             }
-            if (numericValue > 0) {
-              data.cell.text = [`+${data.cell.text[0]}`];
-              data.cell.styles.textColor = [0, 128, 0];
-            } else if (numericValue < 0) {
+            if (numericValue < 0) {
+              // Si el saldo es negativo, significa que tiene un crédito
+              data.cell.text = [`+${formatCurrency(Math.abs(numericValue))}`];
+              data.cell.styles.textColor = [0, 128, 0]; // verde
+            } else if (numericValue > 0) {
+              // Si el saldo es positivo, significa que debe dinero
               data.cell.text = [formatCurrency(numericValue)];
-              data.cell.styles.textColor = [255, 0, 0];
+              data.cell.styles.textColor = [255, 0, 0]; // rojo
             }
           }
           // Fila totales => la última

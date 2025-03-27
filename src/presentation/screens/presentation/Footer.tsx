@@ -1,52 +1,54 @@
-
 const Footer = () => {
   return (
-    <footer className="py-12 bg-white sm:py-16 lg:py-8 shadow-[0_-400px_400px_-100px_#9c80ff14]">
+    <footer
+      className="py-12 bg-white sm:py-16 lg:py-8 shadow-[0_-400px_400px_-100px_#9c80ff14]"
+      id="about"
+    >
       <div className="px-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
         <img
           className="w-auto h-16 mx-auto"
           src="https://firebasestorage.googleapis.com/v0/b/administracioncondominio-93419.appspot.com/o/estateAdminUploads%2Fassets%2FEstateAdminLogoWebp.webp?alt=media&token=28bbc321-b3e6-4dae-b49c-fffd0a5f7bf3"
-          alt="Logo"
+          alt="EstateAdmin Logo"
         />
 
         <ul className="flex flex-wrap items-center justify-center space-x-12 md:space-x-16 mt-14">
           <li>
             <a
-              href="#"
-              title=""
+              href="#features"
+              title="Características"
               className="inline-flex text-lg font-medium text-gray-900 transition-all duration-200 transform font-pj hover:-translate-y-1 hover:text-gray-600"
             >
-              About
+              Características
             </a>
           </li>
 
           <li>
             <a
-              href="#"
-              title=""
+              href="#about"
+              title="Sobre nosotros"
               className="inline-flex text-lg font-medium text-gray-900 transition-all duration-200 transform font-pj hover:-translate-y-1 hover:text-gray-600"
             >
-              Works
+              Sobre nosotros
             </a>
           </li>
 
           <li>
             <a
-              href="#"
-              title=""
+              href="#contact"
+              title="Contacto"
               className="inline-flex mt-8 -ml-12 text-lg font-medium text-gray-900 transition-all duration-200 transform font-pj hover:-translate-y-1 hover:text-gray-600 sm:ml-0 sm:mt-0"
             >
-              Support
+              Contacto
             </a>
           </li>
 
           <li>
             <a
-              href="#"
-              title=""
+              href="/privacy"
+              title="Política de Privacidad"
               className="inline-flex mt-8 text-lg font-medium text-gray-900 transition-all duration-200 transform font-pj hover:-translate-y-1 hover:text-gray-600 sm:mt-0"
             >
-              Help
+              Privacidad
             </a>
           </li>
         </ul>
@@ -89,131 +91,17 @@ const Footer = () => {
               y2="-0.5"
               transform="matrix(-0.5547 0.83205 0.83205 0.5547 151 1)"
             />
-            <line
-              y1="-0.5"
-              x2="18.0278"
-              y2="-0.5"
-              transform="matrix(-0.5547 0.83205 0.83205 0.5547 18 1)"
-            />
-            <line
-              y1="-0.5"
-              x2="18.0278"
-              y2="-0.5"
-              transform="matrix(-0.5547 0.83205 0.83205 0.5547 53 1)"
-            />
-            <line
-              y1="-0.5"
-              x2="18.0278"
-              y2="-0.5"
-              transform="matrix(-0.5547 0.83205 0.83205 0.5547 88 1)"
-            />
-            <line
-              y1="-0.5"
-              x2="18.0278"
-              y2="-0.5"
-              transform="matrix(-0.5547 0.83205 0.83205 0.5547 123 1)"
-            />
-            <line
-              y1="-0.5"
-              x2="18.0278"
-              y2="-0.5"
-              transform="matrix(-0.5547 0.83205 0.83205 0.5547 158 1)"
-            />
-            <line
-              y1="-0.5"
-              x2="18.0278"
-              y2="-0.5"
-              transform="matrix(-0.5547 0.83205 0.83205 0.5547 25 1)"
-            />
-            <line
-              y1="-0.5"
-              x2="18.0278"
-              y2="-0.5"
-              transform="matrix(-0.5547 0.83205 0.83205 0.5547 60 1)"
-            />
-            <line
-              y1="-0.5"
-              x2="18.0278"
-              y2="-0.5"
-              transform="matrix(-0.5547 0.83205 0.83205 0.5547 95 1)"
-            />
-            <line
-              y1="-0.5"
-              x2="18.0278"
-              y2="-0.5"
-              transform="matrix(-0.5547 0.83205 0.83205 0.5547 130 1)"
-            />
-            <line
-              y1="-0.5"
-              x2="18.0278"
-              y2="-0.5"
-              transform="matrix(-0.5547 0.83205 0.83205 0.5547 165 1)"
-            />
-            <line
-              y1="-0.5"
-              x2="18.0278"
-              y2="-0.5"
-              transform="matrix(-0.5547 0.83205 0.83205 0.5547 32 1)"
-            />
-            <line
-              y1="-0.5"
-              x2="18.0278"
-              y2="-0.5"
-              transform="matrix(-0.5547 0.83205 0.83205 0.5547 67 1)"
-            />
-            <line
-              y1="-0.5"
-              x2="18.0278"
-              y2="-0.5"
-              transform="matrix(-0.5547 0.83205 0.83205 0.5547 102 1)"
-            />
-            <line
-              y1="-0.5"
-              x2="18.0278"
-              y2="-0.5"
-              transform="matrix(-0.5547 0.83205 0.83205 0.5547 137 1)"
-            />
-            <line
-              y1="-0.5"
-              x2="18.0278"
-              y2="-0.5"
-              transform="matrix(-0.5547 0.83205 0.83205 0.5547 172 1)"
-            />
-            <line
-              y1="-0.5"
-              x2="18.0278"
-              y2="-0.5"
-              transform="matrix(-0.5547 0.83205 0.83205 0.5547 39 1)"
-            />
-            <line
-              y1="-0.5"
-              x2="18.0278"
-              y2="-0.5"
-              transform="matrix(-0.5547 0.83205 0.83205 0.5547 74 1)"
-            />
-            <line
-              y1="-0.5"
-              x2="18.0278"
-              y2="-0.5"
-              transform="matrix(-0.5547 0.83205 0.83205 0.5547 109 1)"
-            />
-            <line
-              y1="-0.5"
-              x2="18.0278"
-              y2="-0.5"
-              transform="matrix(-0.5547 0.83205 0.83205 0.5547 144 1)"
-            />
           </svg>
         </div>
 
         <ul className="flex items-center justify-center mt-12 space-x-3">
           <li>
             <a
-              href="#"
+              href="https://wa.me/+527711953837"
               target="_blank"
-              title=""
+              title="WhatsApp Business"
               className="inline-flex items-center justify-center w-10 h-10 text-gray-900 transition-all duration-200 rounded-full hover:bg-gray-100 focus:outline-none focus:bg-gray-200 focus:ring-2 focus:ring-offset-2 focus:ring-gray-200"
-              rel="noopener"
+              rel="noopener noreferrer"
             >
               <svg
                 className="w-6 h-6"
@@ -221,18 +109,18 @@ const Footer = () => {
                 viewBox="0 0 24 24"
                 fill="currentColor"
               >
-                <path d="M19.633 7.997c.013.175.013.349.013.523 0 5.325-4.053 11.461-11.46 11.461-2.282 0-4.402-.661-6.186-1.809.324.037.636.05.973.05a8.07 8.07 0 0 0 5.001-1.721 4.036 4.036 0 0 1-3.767-2.793c.249.037.499.062.761.062.361 0 .724-.05 1.061-.137a4.027 4.027 0 0 1-3.23-3.953v-.05c.537.299 1.16.486 1.82.511a4.022 4.022 0 0 1-1.796-3.354c0-.748.199-1.434.548-2.032a11.457 11.457 0 0 0 8.306 4.215c-.062-.3-.1-.611-.1-.923a4.026 4.026 0 0 1 4.028-4.028c1.16 0 2.207.486 2.943 1.272a7.957 7.957 0 0 0 2.556-.973 4.02 4.02 0 0 1-1.771 2.22 8.073 8.073 0 0 0 2.319-.624 8.645 8.645 0 0 1-2.019 2.083z" />
+                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
               </svg>
             </a>
           </li>
 
           <li>
             <a
-              href="#"
+              href="https://facebook.com/estateadmin"
               target="_blank"
-              title=""
+              title="Facebook"
               className="inline-flex items-center justify-center w-10 h-10 text-gray-900 transition-all duration-200 rounded-full hover:bg-gray-100 focus:outline-none focus:bg-gray-200 focus:ring-2 focus:ring-offset-2 focus:ring-gray-200"
-              rel="noopener"
+              rel="noopener noreferrer"
             >
               <svg
                 className="w-6 h-6"
@@ -247,11 +135,11 @@ const Footer = () => {
 
           <li>
             <a
-              href="#"
+              href="https://instagram.com/estateadmin"
               target="_blank"
-              title=""
+              title="Instagram"
               className="inline-flex items-center justify-center w-10 h-10 text-gray-900 transition-all duration-200 rounded-full hover:bg-gray-100 focus:outline-none focus:bg-gray-200 focus:ring-2 focus:ring-offset-2 focus:ring-gray-200"
-              rel="noopener"
+              rel="noopener noreferrer"
             >
               <svg
                 className="w-6 h-6"
@@ -268,11 +156,11 @@ const Footer = () => {
 
           <li>
             <a
-              href="#"
+              href="https://github.com/estateadmin"
               target="_blank"
-              title=""
+              title="GitHub"
               className="inline-flex items-center justify-center w-10 h-10 text-gray-900 transition-all duration-200 rounded-full hover:bg-gray-100 focus:outline-none focus:bg-gray-200 focus:ring-2 focus:ring-offset-2 focus:ring-gray-200"
-              rel="noopener"
+              rel="noopener noreferrer"
             >
               <svg
                 className="w-6 h-6"
@@ -290,8 +178,11 @@ const Footer = () => {
           </li>
         </ul>
 
+        <p>Dirección: 43815 Guerreo Tizayuca Hidalgo, México</p>
+
         <p className="text-base font-normal text-center text-gray-600 mt-7 font-pj">
-          © Copyright 2025, Todos los derechos reservados<br />
+          © Copyright 2024, Todos los derechos reservados
+          <br />
           Un servicio de <span className="font-bold">Omnipixel</span>
         </p>
       </div>

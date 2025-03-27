@@ -15,6 +15,7 @@ interface CalendarEvent {
   id: string;
   name: string;
   number: string;
+  phone: string;
   eventDay: string;
   commonArea: string;
   startTime: string;
@@ -82,6 +83,7 @@ const FormCalendar = ({ isOpen, onClose }: FormCalendarProps) => {
     const eventData: Omit<CalendarEvent, "id"> = {
       name: resident.name,
       number: resident.number || "",
+      phone: resident.phone || "",
       eventDay: eventDate,
       commonArea,
       startTime,

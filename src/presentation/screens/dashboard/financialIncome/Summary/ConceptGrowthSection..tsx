@@ -23,10 +23,13 @@ const ConceptGrowthSection: React.FC = React.memo(() => {
       : null;
 
   const formatCurrency = (value: number): string => {
-    return "$" + value.toLocaleString("en-US", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    });
+    return (
+      "$" +
+      value.toLocaleString("en-US", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })
+    );
   };
 
   const pastelColors = ["#8093E8", "#74B9E7", "#A7CFE6", "#B79FE6", "#C2ABE6"];
@@ -37,7 +40,7 @@ const ConceptGrowthSection: React.FC = React.memo(() => {
         totalCurrent: 0,
         dataArr: [],
         growthArr: [],
-        hasData: false
+        hasData: false,
       };
     }
 
@@ -54,11 +57,25 @@ const ConceptGrowthSection: React.FC = React.memo(() => {
     Object.entries(conceptRecords).forEach(([concept, records]) => {
       const currentValue = records
         .filter((record) => record.month === currentMonthString)
-        .reduce((sum, record) => sum + record.amountPaid + record.creditBalance, 0);
+        .reduce(
+          (sum, record) =>
+            sum +
+            record.amountPaid +
+            (record.creditUsed || 0) +
+            (record.creditBalance > 0 ? record.creditBalance : 0),
+          0
+        );
       const previousValue = previousMonthString
         ? records
-          .filter((record) => record.month === previousMonthString)
-          .reduce((sum, record) => sum + record.amountPaid + record.creditBalance, 0)
+            .filter((record) => record.month === previousMonthString)
+            .reduce(
+              (sum, record) =>
+                sum +
+                record.amountPaid +
+                (record.creditUsed || 0) +
+                (record.creditBalance > 0 ? record.creditBalance : 0),
+              0
+            )
         : 0;
 
       totalCurrent += currentValue;
@@ -78,7 +95,9 @@ const ConceptGrowthSection: React.FC = React.memo(() => {
   const pieData = useMemo(() => {
     const sorted = [...dataArr].sort((a, b) => b.currentValue - a.currentValue);
     const topFive = sorted.slice(0, 5);
-    const others = sorted.slice(5).reduce((sum, item) => sum + item.currentValue, 0);
+    const others = sorted
+      .slice(5)
+      .reduce((sum, item) => sum + item.currentValue, 0);
     if (others > 0) {
       topFive.push({ concept: "Otros", currentValue: others });
     }
@@ -110,7 +129,7 @@ const ConceptGrowthSection: React.FC = React.memo(() => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div className="p-4 shadow-md rounded-md">
           <p className="text-sm text-gray-600 dark:text-gray-100">
-            Ingreso promedio por concepto activo
+            Monto Abonado promedio por concepto
           </p>
           <p className="text-2xl font-semibold">
             {formatCurrency(totalCurrent / (dataArr.length || 1))}
@@ -118,34 +137,42 @@ const ConceptGrowthSection: React.FC = React.memo(() => {
         </div>
         <div className="p-4 shadow-md rounded-md">
           <p className="text-sm text-gray-600 dark:text-gray-100">
-            Concepto con más ingresos
+            Concepto con mayor recaudación
           </p>
           <p className="text-lg font-semibold">
-            {dataArr.sort((a, b) => b.currentValue - a.currentValue)[0]?.concept || "N/A"}{" "}
+            {dataArr.sort((a, b) => b.currentValue - a.currentValue)[0]
+              ?.concept || "N/A"}{" "}
             <span className="text-sm text-gray-600 dark:text-gray-100">
-              ({formatCurrency(
-                dataArr.sort((a, b) => b.currentValue - a.currentValue)[0]?.currentValue || 0
-              )})
+              (
+              {formatCurrency(
+                dataArr.sort((a, b) => b.currentValue - a.currentValue)[0]
+                  ?.currentValue || 0
+              )}
+              )
             </span>
           </p>
         </div>
         <div className="p-4 shadow-md rounded-md">
-          <p className="text-sm text-gray-600 dark:text-gray-100">Concepto rezagado</p>
+          <p className="text-sm text-gray-600 dark:text-gray-100">
+            Concepto con menor recaudación
+          </p>
           <p className="text-lg font-semibold">
-            {dataArr.sort((a, b) => a.currentValue - b.currentValue)[0]?.concept || "N/A"}{" "}
+            {dataArr.sort((a, b) => a.currentValue - b.currentValue)[0]
+              ?.concept || "N/A"}{" "}
             <span className="text-sm text-gray-600 dark:text-gray-100">
-              ({formatCurrency(
-                dataArr.sort((a, b) => a.currentValue - b.currentValue)[0]?.currentValue || 0
-              )})
+              (
+              {formatCurrency(
+                dataArr.sort((a, b) => a.currentValue - b.currentValue)[0]
+                  ?.currentValue || 0
+              )}
+              )
             </span>
           </p>
         </div>
       </div>
 
       {/* Gráfica de pastel para distribución de recaudación (mes actual) */}
-      <h4 className="text-lg font-bold mb-2">
-        Distribución de recaudación
-      </h4>
+      <h4 className="text-lg font-bold mb-2">Distribución de Monto Abonado</h4>
       <div style={{ width: "100%", height: 300 }}>
         <ResponsiveContainer>
           <PieChart>
@@ -156,9 +183,7 @@ const ConceptGrowthSection: React.FC = React.memo(() => {
               cx="50%"
               cy="50%"
               outerRadius={80}
-              label={({ name, value }) =>
-                `${name}: ${formatCurrency(value)}`
-              }
+              label={({ name, value }) => `${name}: ${formatCurrency(value)}`}
             >
               {pieData.map((_entry, index) => (
                 <Cell

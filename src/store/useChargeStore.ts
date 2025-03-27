@@ -2,12 +2,7 @@
 
 import { create } from "zustand";
 import { getAuth, getIdTokenResult } from "firebase/auth";
-import {
-  getFirestore,
-  collection,
-  addDoc,
-  getDocs
-} from "firebase/firestore";
+import { getFirestore, collection, addDoc, getDocs } from "firebase/firestore";
 
 /**
  * Interfaz para la creación de cargos.
@@ -24,7 +19,10 @@ interface CreateChargeOptions {
 interface ChargeState {
   loading: boolean;
   error: string | null;
-  createChargeForOne: (userId: string, options: CreateChargeOptions) => Promise<void>;
+  createChargeForOne: (
+    userId: string,
+    options: CreateChargeOptions
+  ) => Promise<void>;
   createChargeForAll: (options: CreateChargeOptions) => Promise<void>;
 }
 
@@ -64,6 +62,7 @@ export const useChargeStore = create<ChargeState>((set) => ({
       await addDoc(chargesRef, {
         concept: options.concept,
         amount: amountCents,
+        referenceAmount: amountCents, // Guardamos el monto original
         generatedAt: now,
         startAt: options.startAt,
         dueDate: options.dueDate,
@@ -73,7 +72,10 @@ export const useChargeStore = create<ChargeState>((set) => ({
       set({ loading: false, error: null });
     } catch (error: any) {
       console.error("Error al crear cargo para un usuario:", error);
-      set({ loading: false, error: error.message || "Error al crear el cargo" });
+      set({
+        loading: false,
+        error: error.message || "Error al crear el cargo",
+      });
     }
   },
 
@@ -129,9 +131,10 @@ export const useChargeStore = create<ChargeState>((set) => ({
           addDoc(chargesRef, {
             concept: options.concept,
             amount: amountCents, // GUARDADO EN CENTAVOS
+            referenceAmount: amountCents, // Guardamos el monto original
             generatedAt: now,
-            startAt: options.startAt,  // Se almacena como string
-            dueDate: options.dueDate,  // String
+            startAt: options.startAt, // Se almacena como string
+            dueDate: options.dueDate, // String
             paid: options.paid,
           }).then(() => Promise.resolve())
         );
@@ -141,7 +144,10 @@ export const useChargeStore = create<ChargeState>((set) => ({
       set({ loading: false, error: null });
     } catch (error: any) {
       console.error("Error al crear cargo para todos los usuarios:", error);
-      set({ loading: false, error: error.message || "Error al crear los cargos" });
+      set({
+        loading: false,
+        error: error.message || "Error al crear los cargos",
+      });
     }
   },
 }));

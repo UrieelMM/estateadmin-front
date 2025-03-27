@@ -1,6 +1,10 @@
 // src/components/Summary/DetailedConceptsTable.tsx
 import React, { useMemo, useState } from "react";
-import { usePaymentSummaryStore, PaymentRecord, MonthlyStat } from "../../../../../store/paymentSummaryStore";
+import {
+  usePaymentSummaryStore,
+  PaymentRecord,
+  MonthlyStat,
+} from "../../../../../store/paymentSummaryStore";
 import PDFReportGenerator from "../Income/PDFReportGenerator";
 import useUserStore from "../../../../../store/UserDataStore";
 
@@ -56,7 +60,9 @@ const DetailedConceptsTable: React.FC<DetailedConceptsTableProps> = React.memo(
     const [showAll, setShowAll] = useState(false);
 
     const sortedMonthlyStats: MonthlyStat[] = useMemo(() => {
-      return [...monthlyStats].sort((a, b) => parseInt(a.month, 10) - parseInt(b.month, 10));
+      return [...monthlyStats].sort(
+        (a, b) => parseInt(a.month, 10) - parseInt(b.month, 10)
+      );
     }, [monthlyStats]);
 
     const filteredConceptEntries = Object.entries(conceptRecords || {}).filter(
@@ -67,7 +73,8 @@ const DetailedConceptsTable: React.FC<DetailedConceptsTableProps> = React.memo(
       ? filteredConceptEntries
       : filteredConceptEntries.slice(0, 3);
 
-    if (!conceptRecords || Object.keys(conceptRecords).length === 0) return null;
+    if (!conceptRecords || Object.keys(conceptRecords).length === 0)
+      return null;
 
     return (
       <div className="mb-8 flex flex-col lg:flex-row gap-4">
@@ -80,7 +87,20 @@ const DetailedConceptsTable: React.FC<DetailedConceptsTableProps> = React.memo(
               </summary>
               <div className="p-4">
                 {(() => {
-                  const monthKeys = ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"];
+                  const monthKeys = [
+                    "01",
+                    "02",
+                    "03",
+                    "04",
+                    "05",
+                    "06",
+                    "07",
+                    "08",
+                    "09",
+                    "10",
+                    "11",
+                    "12",
+                  ];
                   let totalPaid = 0,
                     totalPend = 0,
                     totalCredit = 0,
@@ -89,27 +109,49 @@ const DetailedConceptsTable: React.FC<DetailedConceptsTableProps> = React.memo(
 
                   const rows = monthKeys.map((m) => {
                     const recs = records.filter((r) => r.month === m);
-                    const monthPaid = recs.reduce((sum, r) => sum + r.amountPaid, 0);
-                    const monthCreditUsed = recs.reduce((sum, r) => sum + (r.creditUsed || 0), 0);
-                    const monthCreditBalance = recs.reduce((sum, r) => sum + r.creditBalance, 0);
-                    
+                    const monthPaid = recs.reduce(
+                      (sum, r) => sum + r.amountPaid,
+                      0
+                    );
+                    const monthCreditUsed = recs.reduce(
+                      (sum, r) => sum + (r.creditUsed || 0),
+                      0
+                    );
+                    const monthCreditBalance = recs.reduce(
+                      (sum, r) => sum + r.creditBalance,
+                      0
+                    );
+
                     // Monto abonado es la suma de pagos regulares + crédito usado + saldo disponible
-                    const paid = monthPaid + monthCreditUsed + (monthCreditBalance - monthCreditUsed);
-                    const pending = recs.reduce((sum, r) => sum + r.amountPending, 0);
-                    // Saldo a favor es el saldo disponible menos el usado
-                    const credit = monthCreditBalance - monthCreditUsed;
+                    const paid =
+                      monthPaid +
+                      monthCreditUsed +
+                      (monthCreditBalance > 0 ? monthCreditBalance : 0);
+                    const pending = recs.reduce(
+                      (sum, r) => sum + r.amountPending,
+                      0
+                    );
+                    // Saldo es la diferencia entre cargos y monto abonado
+                    const balance = pending - paid;
 
                     totalPaid += paid;
                     totalPend += pending;
-                    totalCredit += credit;
+                    totalCredit += balance;
                     totalRecords += recs.length;
                     totalPaidRecords += recs.filter((r) => r.paid).length;
 
-                    const compliance = recs.length > 0 ? (recs.filter((r) => r.paid).length / recs.length) * 100 : 0;
+                    const compliance =
+                      recs.length > 0
+                        ? (recs.filter((r) => r.paid).length / recs.length) *
+                          100
+                        : 0;
                     const delinquency = 100 - compliance;
 
                     return (
-                      <tr key={m} className="hover:bg-gray-50 transition-colors dark:hover:bg-gray-700 cursor-pointer">
+                      <tr
+                        key={m}
+                        className="hover:bg-gray-50 transition-colors dark:hover:bg-gray-700 cursor-pointer"
+                      >
                         <td className="border p-2">{monthNames[m] || m}</td>
                         <td className="border p-2">
                           {"$" +
@@ -125,20 +167,29 @@ const DetailedConceptsTable: React.FC<DetailedConceptsTableProps> = React.memo(
                               maximumFractionDigits: 2,
                             })}
                         </td>
-                        <td className="border p-2">
+                        <td
+                          className={`border p-2 ${
+                            balance < 0 ? "text-green-600" : "text-red-600"
+                          }`}
+                        >
                           {"$" +
-                            credit.toLocaleString("en-US", {
+                            balance.toLocaleString("en-US", {
                               minimumFractionDigits: 2,
                               maximumFractionDigits: 2,
                             })}
                         </td>
                         <td className="border p-2">{compliance.toFixed(2)}%</td>
-                        <td className="border p-2">{delinquency.toFixed(2)}%</td>
+                        <td className="border p-2">
+                          {delinquency.toFixed(2)}%
+                        </td>
                       </tr>
                     );
                   });
 
-                  const totalCompliance = totalRecords > 0 ? (totalPaidRecords / totalRecords) * 100 : 0;
+                  const totalCompliance =
+                    totalRecords > 0
+                      ? (totalPaidRecords / totalRecords) * 100
+                      : 0;
                   const totalDelinquency = 100 - totalCompliance;
 
                   return (
@@ -148,9 +199,9 @@ const DetailedConceptsTable: React.FC<DetailedConceptsTableProps> = React.memo(
                           <thead>
                             <tr>
                               <th className="border p-2">Mes</th>
-                              <th className="border p-2">Monto abonado</th>
-                              <th className="border p-2">Monto pendiente</th>
-                              <th className="border p-2">Saldo a favor</th>
+                              <th className="border p-2">Monto Abonado</th>
+                              <th className="border p-2">Cargos</th>
+                              <th className="border p-2">Saldo</th>
                               <th className="border p-2">% Cumplimiento</th>
                               <th className="border p-2">% Morosidad</th>
                             </tr>
@@ -173,15 +224,25 @@ const DetailedConceptsTable: React.FC<DetailedConceptsTableProps> = React.memo(
                                     maximumFractionDigits: 2,
                                   })}
                               </td>
-                              <td className="border p-2 font-bold">
+                              <td
+                                className={`border p-2 font-bold ${
+                                  totalCredit < 0
+                                    ? "text-green-600"
+                                    : "text-red-600"
+                                }`}
+                              >
                                 {"$" +
                                   totalCredit.toLocaleString("en-US", {
                                     minimumFractionDigits: 2,
                                     maximumFractionDigits: 2,
                                   })}
                               </td>
-                              <td className="border p-2 font-bold">{totalCompliance.toFixed(2)}%</td>
-                              <td className="border p-2 font-bold">{totalDelinquency.toFixed(2)}%</td>
+                              <td className="border p-2 font-bold">
+                                {totalCompliance.toFixed(2)}%
+                              </td>
+                              <td className="border p-2 font-bold">
+                                {totalDelinquency.toFixed(2)}%
+                              </td>
                             </tr>
                           </tbody>
                         </table>
@@ -194,7 +255,9 @@ const DetailedConceptsTable: React.FC<DetailedConceptsTableProps> = React.memo(
                         maxMonth={maxMonth}
                         minMonth={minMonth}
                         monthlyStats={sortedMonthlyStats}
-                        detailed={detailed as unknown as Record<string, PaymentRecord[]>}
+                        detailed={
+                          detailed as unknown as Record<string, PaymentRecord[]>
+                        }
                         allCondominiums={condominiumsUsers.map((user) => ({
                           number: String(user.number),
                           name: user.name,
@@ -216,14 +279,14 @@ const DetailedConceptsTable: React.FC<DetailedConceptsTableProps> = React.memo(
 
           {/* Nuevo: Botón para mostrar más/menos si hay más de 3 conceptos */}
           {filteredConceptEntries.length > 3 && (
-           <div className="mt-4 flex justify-center">
-            <button
-              className="px-4 py-2 border-b border-indigo-500 text-indigo-500 bg-transparent hover:border-indigo-700 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-500"
-              onClick={() => setShowAll(!showAll)}
-            >
-              {showAll ? "Mostrar menos" : "Mostrar más"}
-            </button>
-           </div>
+            <div className="mt-4 flex justify-center">
+              <button
+                className="px-4 py-2 border-b border-indigo-500 text-indigo-500 bg-transparent hover:border-indigo-700 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-500"
+                onClick={() => setShowAll(!showAll)}
+              >
+                {showAll ? "Mostrar menos" : "Mostrar más"}
+              </button>
+            </div>
           )}
         </div>
       </div>

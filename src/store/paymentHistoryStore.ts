@@ -32,12 +32,13 @@ export interface PaymentRecord {
   id: string;
   numberCondominium: string;
   month: string; // "YYYY-MM"
-  amountPaid: number;    // en pesos, float
+  amountPaid: number; // en pesos, float
   amountPending: number; // en pesos, float
   creditBalance: number; // en pesos, float
-  creditUsed?: number;   // NUEVO: crédito utilizado (en pesos, float)
+  creditUsed?: number; // NUEVO: crédito utilizado (en pesos, float)
   concept: string;
-  paymentDate?: string;  
+  paymentDate?: string;
+  referenceAmount: number; // Monto original del cargo que no se modifica con los pagos
 }
 
 type PaymentHistoryState = {
@@ -75,8 +76,8 @@ function timestampToSpanishString(ts: Timestamp): string {
   const d = ts.toDate();
   const day = d.getDate();
   const year = d.getFullYear();
-  const monthName = d.toLocaleString("es-MX", { month: "long" }); 
-  return `${day} de ${monthName} de ${year}`; 
+  const monthName = d.toLocaleString("es-MX", { month: "long" });
+  return `${day} de ${monthName} de ${year}`;
 }
 
 export const usePaymentHistoryStore = create<PaymentHistoryState>((set) => ({
@@ -157,7 +158,9 @@ export const usePaymentHistoryStore = create<PaymentHistoryState>((set) => ({
       const userData = userDoc.data();
       const userId = userDoc.id;
       // Se obtiene el saldo a favor actual directamente del usuario
-      const currentCreditBalance = parseFloat(userData.totalCreditBalance || '0');
+      const currentCreditBalance = parseFloat(
+        userData.totalCreditBalance || "0"
+      );
 
       // 3. Cargar todos los cargos
       const chargesRef = collection(
@@ -176,39 +179,73 @@ export const usePaymentHistoryStore = create<PaymentHistoryState>((set) => ({
       });
 
       const yearToCheck = year || new Date().getFullYear().toString();
-
       const paymentRecords: PaymentRecord[] = [];
 
-      // 4. Recorrer cargos y subcolección payments (filtrando por año)
+      // 4. Primero procesamos los cargos
+      const chargesByMonth: Record<string, number> = {}; // Para almacenar la suma de referenceAmount por mes
+
       for (const chargeDoc of chargesSnapshot.docs) {
         const chargeData = chargeDoc.data();
-        if (!chargeData.startAt || typeof chargeData.startAt !== "string") continue;
+        if (!chargeData.startAt || typeof chargeData.startAt !== "string")
+          continue;
         if (!chargeData.startAt.startsWith(yearToCheck)) continue;
 
         // "YYYY-MM"
         const monthValue = chargeData.startAt.substring(0, 7);
 
-        // payments subcollection
+        // Sumamos el referenceAmount al mes correspondiente
+        if (!chargesByMonth[monthValue]) {
+          chargesByMonth[monthValue] = 0;
+        }
+        chargesByMonth[monthValue] += centsToPesos(chargeData.referenceAmount);
+      }
+
+      // 5. Ahora procesamos los pagos
+      for (const chargeDoc of chargesSnapshot.docs) {
+        const chargeData = chargeDoc.data();
+        if (!chargeData.startAt || typeof chargeData.startAt !== "string")
+          continue;
+        if (!chargeData.startAt.startsWith(yearToCheck)) continue;
+
+        const monthValue = chargeData.startAt.substring(0, 7);
         const paymentsRef = collection(
           db,
           `clients/${clientId}/condominiums/${condominiumId}/users/${userId}/charges/${chargeDoc.id}/payments`
         );
         const paymentsSnapshot = await getDocs(paymentsRef);
 
+        // Si no hay pagos, crear un registro con el cargo original
+        if (paymentsSnapshot.empty) {
+          const record: PaymentRecord = {
+            id: chargeDoc.id,
+            numberCondominium: selectedNumber,
+            month: monthValue,
+            amountPaid: 0,
+            amountPending: centsToPesos(chargeData.amount),
+            creditBalance: 0,
+            creditUsed: 0,
+            concept: chargeData.concept || "Sin concepto",
+            referenceAmount: chargesByMonth[monthValue], // Usamos el total de cargos del mes
+          };
+          paymentRecords.push(record);
+          continue;
+        }
+
+        // Si hay pagos, procesar cada uno
         paymentsSnapshot.forEach((paymentDoc) => {
           const paymentData = paymentDoc.data();
 
-          // Detectar si paymentDate es Timestamp o string
           let finalDateStr = "";
           if (paymentData.paymentDate) {
             if ((paymentData.paymentDate as any).toDate) {
-              finalDateStr = timestampToSpanishString(paymentData.paymentDate as Timestamp);
+              finalDateStr = timestampToSpanishString(
+                paymentData.paymentDate as Timestamp
+              );
             } else if (typeof paymentData.paymentDate === "string") {
               finalDateStr = paymentData.paymentDate;
             }
           }
 
-          // AQUÍ convertimos centavos a pesos y extraemos creditUsed si existe
           const record: PaymentRecord = {
             id: paymentDoc.id,
             numberCondominium: selectedNumber,
@@ -216,16 +253,19 @@ export const usePaymentHistoryStore = create<PaymentHistoryState>((set) => ({
             amountPaid: centsToPesos(paymentData.amountPaid),
             amountPending: centsToPesos(paymentData.amountPending),
             creditBalance: centsToPesos(paymentData.creditBalance),
-            creditUsed: paymentData.creditUsed ? centsToPesos(paymentData.creditUsed) : 0,
+            creditUsed: paymentData.creditUsed
+              ? centsToPesos(paymentData.creditUsed)
+              : 0,
             concept: chargeData.concept || "Sin concepto",
             paymentDate: finalDateStr,
+            referenceAmount: chargesByMonth[monthValue], // Usamos el total de cargos del mes
           };
 
           paymentRecords.push(record);
         });
       }
 
-      // 5. Agrupar por mes
+      // 6. Agrupar por mes
       const detailed: Record<string, PaymentRecord[]> = {};
       paymentRecords.forEach((pr) => {
         const key = pr.month || "Desconocido";
@@ -243,8 +283,11 @@ export const usePaymentHistoryStore = create<PaymentHistoryState>((set) => ({
         }
       }
 
-      // 6. Agrupar por concepto
-      const detailedByConcept: Record<string, Record<string, PaymentRecord[]>> = {};
+      // 7. Agrupar por concepto
+      const detailedByConcept: Record<
+        string,
+        Record<string, PaymentRecord[]>
+      > = {};
       const conceptsSet = new Set<string>();
       paymentRecords.forEach((pr) => conceptsSet.add(pr.concept));
 
@@ -264,7 +307,7 @@ export const usePaymentHistoryStore = create<PaymentHistoryState>((set) => ({
         detailedByConcept[pr.concept][pr.month].push(pr);
       });
 
-      // 7. Setear estado incluyendo el saldo actual y el monto pendiente
+      // 8. Setear estado incluyendo el saldo actual y el monto pendiente
       set({
         payments: paymentRecords,
         detailed,

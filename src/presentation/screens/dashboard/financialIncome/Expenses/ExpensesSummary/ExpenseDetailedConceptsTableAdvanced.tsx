@@ -228,8 +228,8 @@ const ExpenseDetailedConceptsTableAdvanced: React.FC = () => {
           </button>
         </div>
       </div>
-
-      {/* Filtros */}
+        
+        {/* Filtros */}
       {showFilters && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Filtro por Año */}
@@ -307,8 +307,8 @@ const ExpenseDetailedConceptsTableAdvanced: React.FC = () => {
                       <th className="px-3 py-3.5 text-center text-sm font-semibold text-gray-900 dark:text-white">
                         Comprobante
                       </th>
-                    </tr>
-                  </thead>
+                </tr>
+              </thead>
                   <tbody className="divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-900">
                     {completedExpenses.map((exp) => (
                       <tr
@@ -331,27 +331,27 @@ const ExpenseDetailedConceptsTableAdvanced: React.FC = () => {
                         </td>
                         <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 dark:text-gray-200">
                           {formatDate(exp.expenseDate)}
-                        </td>
+                    </td>
                         <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 dark:text-gray-200">
-                          {exp.invoiceUrl ? (
-                            <a
-                              href={exp.invoiceUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
+                      {exp.invoiceUrl ? (
+                        <a
+                          href={exp.invoiceUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
                               className="flex w-16 items-center bg-indigo-600 dark:bg-indigo-500 text-white px-3 py-1 rounded-md hover:bg-indigo-700 dark:hover:bg-indigo-600"
-                            >
+                        >
                               <EyeIcon className="h-5 w-5 mr-1" />
-                              Ver
-                            </a>
-                          ) : (
-                            <EyeSlashIcon className="h-5 w-5 text-gray-400 dark:text-gray-500" />
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                          Ver
+                        </a>
+                      ) : (
+                        <EyeSlashIcon className="h-5 w-5 text-gray-400 dark:text-gray-500" />
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
             </div>
           </div>
         </div>
@@ -363,73 +363,73 @@ const ExpenseDetailedConceptsTableAdvanced: React.FC = () => {
         </div>
       )}
 
-      {/* Paginación */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6 dark:bg-gray-800 dark:border-gray-700 mt-4">
-          <div className="flex flex-1 justify-between sm:hidden">
-            <button
+          {/* Paginación */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6 dark:bg-gray-800 dark:border-gray-700 mt-4">
+              <div className="flex flex-1 justify-between sm:hidden">
+                <button
               onClick={() => handlePageChange(currentPage - 1)}
               disabled={currentPage === 1 || loadingExpenses}
-              className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200"
-            >
-              Anterior
-            </button>
-            <button
+                  className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200"
+                >
+                  Anterior
+                </button>
+                <button
               onClick={() => handlePageChange(currentPage + 1)}
               disabled={currentPage === totalPages || loadingExpenses}
-              className="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200"
-            >
-              Siguiente
-            </button>
-          </div>
-          <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
-            <div>
-              <p className="text-sm text-gray-700 dark:text-gray-300">
+                  className="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200"
+                >
+                  Siguiente
+                </button>
+              </div>
+              <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm text-gray-700 dark:text-gray-300">
                 Página <span className="font-medium">{currentPage}</span> de{" "}
                 <span className="font-medium">{totalPages}</span>
-              </p>
-            </div>
-            <div>
+                  </p>
+                </div>
+                <div>
               <nav
                 className="isolate inline-flex -space-x-px rounded-md shadow-sm"
                 aria-label="Pagination"
               >
-                <button
+                    <button
                   onClick={() => handlePageChange(currentPage - 1)}
                   disabled={currentPage === 1 || loadingExpenses}
-                  className="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed dark:ring-gray-600 dark:hover:bg-gray-700"
-                >
-                  <span className="sr-only">Anterior</span>
-                  <ChevronLeftIcon className="h-5 w-5" aria-hidden="true" />
-                </button>
+                      className="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed dark:ring-gray-600 dark:hover:bg-gray-700"
+                    >
+                      <span className="sr-only">Anterior</span>
+                      <ChevronLeftIcon className="h-5 w-5" aria-hidden="true" />
+                    </button>
                 {Array.from({ length: totalPages }, (_, i) => i + 1).map(
                   (page) => (
-                    <button
-                      key={page}
+                      <button
+                        key={page}
                       onClick={() => handlePageChange(page)}
-                      className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${
-                        page === currentPage
+                        className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${
+                          page === currentPage
                           ? "z-10 bg-indigo-600 text-white focus:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
                           : "text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 dark:text-gray-300 dark:ring-gray-600 dark:hover:bg-gray-700"
-                      }`}
-                    >
-                      {page}
-                    </button>
+                        }`}
+                      >
+                        {page}
+                      </button>
                   )
                 )}
-                <button
+                    <button
                   onClick={() => handlePageChange(currentPage + 1)}
                   disabled={currentPage === totalPages || loadingExpenses}
-                  className="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed dark:ring-gray-600 dark:hover:bg-gray-700"
-                >
-                  <span className="sr-only">Siguiente</span>
-                  <ChevronRightIcon className="h-5 w-5" aria-hidden="true" />
-                </button>
-              </nav>
+                      className="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed dark:ring-gray-600 dark:hover:bg-gray-700"
+                    >
+                      <span className="sr-only">Siguiente</span>
+                      <ChevronRightIcon className="h-5 w-5" aria-hidden="true" />
+                    </button>
+                  </nav>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+          )}
 
       {/* Modal de búsqueda por folio */}
       {showSearchModal && (
