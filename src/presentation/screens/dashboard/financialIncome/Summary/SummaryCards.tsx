@@ -39,16 +39,15 @@ const Tooltip: React.FC<{ text: string }> = ({ text }) => {
 };
 
 const SummaryCards: React.FC = React.memo(() => {
-  const { totalIncome, totalPending, monthlyStats, payments } =
-    usePaymentSummaryStore(
-      (state) => ({
-        totalIncome: state.totalIncome,
-        totalPending: state.totalPending,
-        monthlyStats: state.monthlyStats,
-        payments: state.payments,
-      }),
-      shallow
-    );
+  const { payments } = usePaymentSummaryStore(
+    (state) => ({
+      totalIncome: state.totalIncome,
+      totalPending: state.totalPending,
+      monthlyStats: state.monthlyStats,
+      payments: state.payments,
+    }),
+    shallow
+  );
 
   // Calcular el total de cargos (suma de referenceAmount)
   const totalCharges = payments.reduce(
