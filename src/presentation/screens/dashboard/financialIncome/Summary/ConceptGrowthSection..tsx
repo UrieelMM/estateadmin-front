@@ -61,8 +61,8 @@ const ConceptGrowthSection: React.FC = React.memo(() => {
           (sum, record) =>
             sum +
             record.amountPaid +
-            (record.creditUsed || 0) +
-            (record.creditBalance > 0 ? record.creditBalance : 0),
+            (record.creditBalance > 0 ? record.creditBalance : 0) -
+            (record.creditUsed || 0),
           0
         );
       const previousValue = previousMonthString
@@ -72,8 +72,8 @@ const ConceptGrowthSection: React.FC = React.memo(() => {
               (sum, record) =>
                 sum +
                 record.amountPaid +
-                (record.creditUsed || 0) +
-                (record.creditBalance > 0 ? record.creditBalance : 0),
+                (record.creditBalance > 0 ? record.creditBalance : 0) -
+                (record.creditUsed || 0),
               0
             )
         : 0;

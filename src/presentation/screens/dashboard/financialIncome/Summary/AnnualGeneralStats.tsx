@@ -106,8 +106,8 @@ const AnnualGeneralStats: React.FC = () => {
         // Monto abonado = pagos + crédito usado + saldo disponible
         const amountPaidWithCredit =
           rec.amountPaid +
-          (rec.creditUsed || 0) +
-          (rec.creditBalance - (rec.creditUsed || 0));
+          (rec.creditBalance > 0 ? rec.creditBalance : 0) -
+          (rec.creditUsed || 0);
         sumConcept += amountPaidWithCredit;
         if (monthlyTotals[rec.month] !== undefined) {
           monthlyTotals[rec.month] += amountPaidWithCredit;
@@ -215,8 +215,8 @@ const AnnualGeneralStats: React.FC = () => {
             // Monto abonado = pagos + crédito usado + saldo disponible
             const amountPaidWithCredit =
               r.amountPaid +
-              (r.creditUsed || 0) +
-              (r.creditBalance - (r.creditUsed || 0));
+              (r.creditBalance > 0 ? r.creditBalance : 0) -
+              (r.creditUsed || 0);
             return acc + amountPaidWithCredit;
           }, 0);
         row[concept] = sumThisMonth;
@@ -231,8 +231,8 @@ const AnnualGeneralStats: React.FC = () => {
               // Monto abonado = pagos + crédito usado + saldo disponible
               const amountPaidWithCredit =
                 r.amountPaid +
-                (r.creditUsed || 0) +
-                (r.creditBalance - (r.creditUsed || 0));
+                (r.creditBalance > 0 ? r.creditBalance : 0) -
+                (r.creditUsed || 0);
               return acc + amountPaidWithCredit;
             }, 0);
           sumOthers += sumThisMonth;

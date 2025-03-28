@@ -33,9 +33,12 @@ const AccountSummaryCards: React.FC<{
     0
   );
 
-  // Total de ingresos = pagos regulares + saldo inicial + crédito usado + saldo disponible
+  // Total de ingresos = pagos regulares + saldo inicial + saldo disponible - crédito usado
   const realTotalIncome =
-    totalPayments + initialBalance + totalCreditUsed + totalSaldo;
+    totalPayments +
+    initialBalance +
+    (totalSaldo > 0 ? totalSaldo : 0) -
+    totalCreditUsed;
 
   const formatCurrency = (value: number): string =>
     "$" +

@@ -69,7 +69,9 @@ const SummaryCards: React.FC = React.memo(() => {
     0
   );
   const totalPaidWithCredit =
-    totalPaid + totalCreditUsed + (totalCreditBalance - totalCreditUsed);
+    totalPaid +
+    (totalCreditBalance > 0 ? totalCreditBalance : 0) -
+    totalCreditUsed;
 
   // Calcular el saldo (diferencia entre cargos y monto abonado)
   const balance = totalCharges - totalPaidWithCredit;

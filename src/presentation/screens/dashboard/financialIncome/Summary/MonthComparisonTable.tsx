@@ -116,7 +116,7 @@ const MonthComparisonTable: React.FC = React.memo(() => {
                 </td>
                 <td className="border p-2">
                   {formatCurrency(
-                    row.paid + row.creditUsed + (row.saldo > 0 ? row.saldo : 0)
+                    row.paid + (row.saldo > 0 ? row.saldo : 0) - row.creditUsed
                   )}
                 </td>
                 <td className="border p-2">{formatCurrency(row.charges)}</td>
@@ -124,18 +124,18 @@ const MonthComparisonTable: React.FC = React.memo(() => {
                   className={`border p-2 ${
                     row.charges -
                       (row.paid +
-                        row.creditUsed +
-                        (row.saldo > 0 ? row.saldo : 0)) <
+                        (row.saldo > 0 ? row.saldo : 0) -
+                        row.creditUsed) <
                     0
-                      ? "text-green-400"
+                      ? "text-green-500 dark:text-green-400"
                       : "text-red-500 dark:text-red-400"
                   }`}
                 >
                   {formatCurrency(
                     row.charges -
                       (row.paid +
-                        row.creditUsed +
-                        (row.saldo > 0 ? row.saldo : 0))
+                        (row.saldo > 0 ? row.saldo : 0) -
+                        row.creditUsed)
                   )}
                 </td>
                 <td className="border p-2">
@@ -148,7 +148,7 @@ const MonthComparisonTable: React.FC = React.memo(() => {
               </tr>
             ))}
             {/* Fila de totales */}
-            <tr className="bg-indigo-100 dark:bg-gray-800">
+            <tr>
               <td className="border p-2 font-semibold">Totales</td>
               <td className="border p-2 font-semibold">
                 {formatCurrency(totals.paid)}
@@ -159,7 +159,7 @@ const MonthComparisonTable: React.FC = React.memo(() => {
               <td
                 className={`border p-2 font-semibold ${
                   totals.saldo < 0
-                    ? "text-green-400"
+                    ? "text-green-500 dark:text-green-400"
                     : "text-red-500 dark:text-red-400"
                 }`}
               >

@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
-import { useAdminUsersStore } from '../../../../../store/useAdminUsersStore';
-import { Dialog, Transition } from '@headlessui/react';
-import { Fragment } from 'react';
+import { useState, useEffect } from "react";
+import { useAdminUsersStore } from "../../../../../store/useAdminUsersStore";
+import { Dialog, Transition } from "@headlessui/react";
+import { Fragment } from "react";
 import {
   UserCircleIcon,
   EnvelopeIcon,
@@ -9,8 +9,8 @@ import {
   BuildingOffice2Icon,
   PhotoIcon,
   ClipboardDocumentIcon,
-} from '@heroicons/react/24/solid';
-import { toast } from 'react-hot-toast';
+} from "@heroicons/react/24/solid";
+import { toast } from "react-hot-toast";
 
 interface EditUserModalProps {
   isOpen: boolean;
@@ -19,28 +19,33 @@ interface EditUserModalProps {
   condominiums: any[];
 }
 
-const EditUserModal = ({ isOpen, onClose, user, condominiums }: EditUserModalProps) => {
+const EditUserModal = ({
+  isOpen,
+  onClose,
+  user,
+  condominiums,
+}: EditUserModalProps) => {
   const { updateUser, fetchUsers } = useAdminUsersStore();
   const [formData, setFormData] = useState({
-    name: user?.name || '',
-    lastName: user?.lastName || '',
-    email: user?.email || '',
-    role: user?.role || 'admin' as 'admin' | 'admin-assistant',
+    name: user?.name || "",
+    lastName: user?.lastName || "",
+    email: user?.email || "",
+    role: user?.role || ("admin" as "admin" | "admin-assistant"),
     condominiumUids: user?.condominiumUids || [],
     active: user?.active || true,
-    photoURL: user?.photoURL || '',
+    photoURL: user?.photoURL || "",
   });
 
   useEffect(() => {
     if (user) {
       setFormData({
-        name: user.name || '',
-        lastName: user.lastName || '',
-        email: user.email || '',
-        role: user.role || 'admin' as 'admin' | 'admin-assistant',
+        name: user.name || "",
+        lastName: user.lastName || "",
+        email: user.email || "",
+        role: user.role || ("admin" as "admin" | "admin-assistant"),
         condominiumUids: user.condominiumUids || [],
         active: user.active || true,
-        photoURL: user.photoURL || '',
+        photoURL: user.photoURL || "",
       });
     }
   }, [user]);
@@ -55,11 +60,11 @@ const EditUserModal = ({ isOpen, onClose, user, condominiums }: EditUserModalPro
   };
 
   const handleCondominiumToggle = (condominiumId: string) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       condominiumUids: prev.condominiumUids.includes(condominiumId)
         ? prev.condominiumUids.filter((id: string) => id !== condominiumId)
-        : [...prev.condominiumUids, condominiumId]
+        : [...prev.condominiumUids, condominiumId],
     }));
   };
 
@@ -104,7 +109,9 @@ const EditUserModal = ({ isOpen, onClose, user, condominiums }: EditUserModalPro
                     <input
                       type="text"
                       value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, name: e.target.value })
+                      }
                       className="px-2 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm  ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
                     />
                   </div>
@@ -115,7 +122,9 @@ const EditUserModal = ({ isOpen, onClose, user, condominiums }: EditUserModalPro
                     <input
                       type="text"
                       value={formData.lastName}
-                      onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, lastName: e.target.value })
+                      }
                       className="px-2 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm  ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
                     />
                   </div>
@@ -125,7 +134,12 @@ const EditUserModal = ({ isOpen, onClose, user, condominiums }: EditUserModalPro
                     </label>
                     <select
                       value={formData.role}
-                      onChange={(e) => setFormData({ ...formData, role: e.target.value as 'admin' | 'admin-assistant' })}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          role: e.target.value as "admin" | "admin-assistant",
+                        })
+                      }
                       className="px-2 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm  ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
                     >
                       <option value="admin">Administrador</option>
@@ -138,7 +152,12 @@ const EditUserModal = ({ isOpen, onClose, user, condominiums }: EditUserModalPro
                     </label>
                     <select
                       value={formData.active.toString()}
-                      onChange={(e) => setFormData({ ...formData, active: e.target.value === 'true' })}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          active: e.target.value === "true",
+                        })
+                      }
                       className="px-2 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm  ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
                     >
                       <option value="true">Activo</option>
@@ -151,14 +170,21 @@ const EditUserModal = ({ isOpen, onClose, user, condominiums }: EditUserModalPro
                     </label>
                     <div className="space-y-2">
                       {condominiums.map((condo) => (
-                        <label key={condo.id} className="flex items-center space-x-2">
+                        <label
+                          key={condo.id}
+                          className="flex items-center space-x-2"
+                        >
                           <input
                             type="checkbox"
-                            checked={formData.condominiumUids.includes(condo.id)}
+                            checked={formData.condominiumUids.includes(
+                              condo.id
+                            )}
                             onChange={() => handleCondominiumToggle(condo.id)}
                             className="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                           />
-                          <span className="text-sm text-gray-700 dark:text-gray-300">{condo.name}</span>
+                          <span className="text-sm text-gray-700 dark:text-gray-300">
+                            {condo.name}
+                          </span>
                         </label>
                       ))}
                     </div>
@@ -235,11 +261,15 @@ const PasswordModal = ({ isOpen, onClose, password }: PasswordModalProps) => {
                 </Dialog.Title>
                 <div className="mt-2">
                   <p className="text-sm text-gray-500 dark:text-gray-300 mb-4">
-                    Se ha generado una contraseña temporal para el nuevo usuario. Por favor, comparta estas credenciales de forma segura.
+                    Se ha generado una contraseña temporal para el nuevo
+                    usuario. Por favor, comparta estas credenciales de forma
+                    segura.
                   </p>
                   <div className="flex items-center space-x-2">
                     <div className="flex-1 p-2 bg-gray-100 dark:bg-gray-700 rounded">
-                      <code className="text-indigo-600 dark:text-indigo-400">{password}</code>
+                      <code className="text-indigo-600 dark:text-indigo-400">
+                        {password}
+                      </code>
                     </div>
                     <button
                       onClick={handleCopyPassword}
@@ -277,21 +307,21 @@ const AdminUsers = () => {
     fetchUsers,
     fetchCondominiums,
     createUser,
-    toggleUserActive
+    toggleUserActive,
   } = useAdminUsersStore();
 
-  const [selectedCondominium, setSelectedCondominium] = useState('');
+  const [selectedCondominium, setSelectedCondominium] = useState("");
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingUser, setEditingUser] = useState<any>(null);
   const [formData, setFormData] = useState({
-    name: '',
-    lastName: '',
-    email: '',
-    role: 'admin' as 'admin' | 'admin-assistant',
-    photoURL: '',
+    name: "",
+    lastName: "",
+    email: "",
+    role: "admin" as "admin" | "admin-assistant",
+    photoURL: "",
     condominiumUids: [] as string[],
-    uid: '',
-    active: true
+    uid: "",
+    active: true,
   });
   const [generatedPassword, setGeneratedPassword] = useState<string>("");
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -313,7 +343,7 @@ const AdminUsers = () => {
     const userData = {
       ...formData,
       condominiumUids: [selectedCondominium],
-      uid: Date.now().toString()
+      uid: Date.now().toString(),
     };
 
     const result = await createUser(userData);
@@ -324,14 +354,14 @@ const AdminUsers = () => {
     }
     setShowCreateForm(false);
     setFormData({
-      name: '',
-      lastName: '',
-      email: '',
-      role: 'admin' as 'admin' | 'admin-assistant',
-      photoURL: '',
+      name: "",
+      lastName: "",
+      email: "",
+      role: "admin" as "admin" | "admin-assistant",
+      photoURL: "",
       condominiumUids: [],
-      uid: '',
-      active: true
+      uid: "",
+      active: true,
     });
   };
 
@@ -345,7 +375,9 @@ const AdminUsers = () => {
   return (
     <div className="space-y-6 bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Usuarios Administrativos</h2>
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+          Usuarios Administrativos
+        </h2>
         {selectedCondominium && users.length < 2 && (
           <button
             onClick={() => setShowCreateForm(true)}
@@ -375,7 +407,10 @@ const AdminUsers = () => {
       </div>
 
       {showCreateForm && selectedCondominium && (
-        <form onSubmit={handleSubmit} className="space-y-4 bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+        <form
+          onSubmit={handleSubmit}
+          className="space-y-4 bg-gray-50 dark:bg-gray-700 p-4 rounded-lg"
+        >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -389,7 +424,9 @@ const AdminUsers = () => {
                   type="text"
                   required
                   value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
                   className="px-10 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm  ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
                 />
               </div>
@@ -406,7 +443,9 @@ const AdminUsers = () => {
                   type="text"
                   required
                   value={formData.lastName}
-                  onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, lastName: e.target.value })
+                  }
                   className="px-10 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm  ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
                 />
               </div>
@@ -423,7 +462,9 @@ const AdminUsers = () => {
                   type="email"
                   required
                   value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, email: e.target.value })
+                  }
                   className="px-10 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm  ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
                 />
               </div>
@@ -439,7 +480,12 @@ const AdminUsers = () => {
                 <select
                   required
                   value={formData.role}
-                  onChange={(e) => setFormData({ ...formData, role: e.target.value as 'admin' | 'admin-assistant' })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      role: e.target.value as "admin" | "admin-assistant",
+                    })
+                  }
                   className="px-10 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm  ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
                 >
                   <option value="admin">Administrador</option>
@@ -458,7 +504,9 @@ const AdminUsers = () => {
                 <input
                   type="url"
                   value={formData.photoURL}
-                  onChange={(e) => setFormData({ ...formData, photoURL: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, photoURL: e.target.value })
+                  }
                   className="px-10 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm  ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
                   placeholder="https://ejemplo.com/foto.jpg"
                 />
@@ -529,11 +577,13 @@ const AdminUsers = () => {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900 dark:text-white">{user.email}</div>
+                    <div className="text-sm text-gray-900 dark:text-white">
+                      {user.email}
+                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100">
-                      {user.role === 'admin' ? 'Administrador' : 'Asistente'}
+                      {user.role === "admin" ? "Administrador" : "Asistente"}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -541,17 +591,17 @@ const AdminUsers = () => {
                       onClick={() => handleToggleActive(user.id!, !user.active)}
                       className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
                         user.active
-                          ? 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100'
-                          : 'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100'
+                          ? "bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100"
+                          : "bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100"
                       }`}
                     >
-                      {user.active ? 'Activo' : 'Inactivo'}
+                      {user.active ? "Activo" : "Inactivo"}
                     </button>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <button
                       onClick={() => setEditingUser(user)}
-                      className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300"
+                      className="bg-indigo-600 px-3 py-2 rounded-md text-white hover:bg-indigo-700 ml-2"
                     >
                       Editar
                     </button>
@@ -583,4 +633,4 @@ const AdminUsers = () => {
   );
 };
 
-export default AdminUsers; 
+export default AdminUsers;

@@ -125,8 +125,8 @@ const DetailedConceptsTable: React.FC<DetailedConceptsTableProps> = React.memo(
                     // Monto abonado es la suma de pagos regulares + crédito usado + saldo disponible
                     const paid =
                       monthPaid +
-                      monthCreditUsed +
-                      (monthCreditBalance > 0 ? monthCreditBalance : 0);
+                      (monthCreditBalance > 0 ? monthCreditBalance : 0) -
+                      monthCreditUsed;
                     const pending = recs.reduce(
                       (sum, r) => sum + r.amountPending,
                       0

@@ -260,7 +260,9 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({
 
         // Monto abonado es la suma de pagos regulares + crédito usado + saldo disponible
         const paid =
-          monthPaid + monthCreditUsed + (monthCreditBalance - monthCreditUsed);
+          monthPaid +
+          (monthCreditBalance > 0 ? monthCreditBalance : 0) -
+          monthCreditUsed;
         const pending = recsForMonth.reduce(
           (sum, rec) => sum + rec.amountPending,
           0
@@ -462,7 +464,7 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({
         );
         const totalCredit = totalCreditBalance - totalCreditUsed;
         const totalPaidWithCredit =
-          totalPaid + totalCreditUsed + (totalCredit > 0 ? totalCredit : 0);
+          totalPaid + (totalCredit > 0 ? totalCredit : 0) - totalCreditUsed;
 
         // 3. Saldo: Diferencia entre cargos y monto abonado
         const balance = totalCharges - totalPaidWithCredit;
@@ -505,7 +507,7 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({
         );
         const totalCredit = totalCreditBalance - totalCreditUsed;
         const totalPaidWithCredit =
-          totalPaid + totalCreditUsed + (totalCredit > 0 ? totalCredit : 0);
+          totalPaid + (totalCredit > 0 ? totalCredit : 0) - totalCreditUsed;
 
         // 3. Saldo: Diferencia entre cargos y monto abonado
         const balance = totalCharges - totalPaidWithCredit;
@@ -657,8 +659,8 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({
               // Monto abonado es la suma de pagos regulares + crédito usado + saldo disponible
               const paid =
                 monthPaid +
-                monthCreditUsed +
-                (monthCreditBalance - monthCreditUsed);
+                (monthCreditBalance > 0 ? monthCreditBalance : 0) -
+                monthCreditUsed;
               const pending = recordsForMonth.reduce(
                 (sum, r) => sum + r.amountPending,
                 0
@@ -735,113 +737,6 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({
           }
         );
       }
-
-      const sortedCondominiums = [...allCondominiums].sort((a, b) =>
-        a.number.localeCompare(b.number, undefined, { numeric: true })
-      );
-      sortedCondominiums.forEach((cond) => {
-        doc.setFontSize(12);
-        doc.setFont("helvetica", "bold");
-        doc.text(
-          `Detalle del Condomino: ${cond.number}${
-            cond.name ? " - " + cond.name : ""
-          }`,
-          14,
-          currentY
-        );
-        currentY += 6;
-        const condData = detailed[cond.number] || [];
-        const monthKeys = [
-          "01",
-          "02",
-          "03",
-          "04",
-          "05",
-          "06",
-          "07",
-          "08",
-          "09",
-          "10",
-          "11",
-          "12",
-        ];
-        let totalPaidCond = 0,
-          totalPendingCond = 0,
-          totalCreditCond = 0;
-        const rows = monthKeys.map((m) => {
-          const recordsForMonth = condData.filter((item) => {
-            let recMonth = item.month;
-            if (recMonth.includes("-")) {
-              recMonth = recMonth.split("-")[1];
-            }
-            return recMonth === m;
-          });
-          // Calcular los totales para este mes
-          const monthPaid = recordsForMonth.reduce(
-            (sum, r) => sum + r.amountPaid,
-            0
-          );
-          const monthCreditUsed = recordsForMonth.reduce(
-            (sum, r) => sum + (r.creditUsed || 0),
-            0
-          );
-          const monthCreditBalance = recordsForMonth.reduce(
-            (sum, r) => sum + r.creditBalance,
-            0
-          );
-          const totalCharges = recordsForMonth.reduce(
-            (sum, r) => sum + r.referenceAmount,
-            0
-          );
-
-          // Monto abonado es la suma de pagos regulares + crédito usado + saldo disponible
-          const amountPaid =
-            monthPaid +
-            monthCreditUsed +
-            (monthCreditBalance - monthCreditUsed);
-          const amountPending = recordsForMonth.reduce(
-            (sum, r) => sum + r.amountPending,
-            0
-          );
-          // Saldo a favor es el saldo disponible menos el usado
-          const credit = monthCreditBalance - monthCreditUsed;
-
-          totalPaidCond += amountPaid;
-          totalPendingCond += amountPending;
-          totalCreditCond += credit;
-          return [
-            monthNames[m],
-            formatCurrency(amountPaid),
-            formatCurrency(totalCharges),
-            formatCurrency(totalCharges - amountPaid),
-          ];
-        });
-        rows.push([
-          "Total",
-          formatCurrency(totalPaidCond),
-          formatCurrency(totalPendingCond),
-          formatCurrency(totalPendingCond - totalPaidCond),
-        ]);
-        autoTable(doc, {
-          startY: currentY,
-          head: [["Mes", "Monto Abonado", "Cargos", "Saldo"]],
-          body: rows,
-          headStyles: {
-            fillColor: [75, 68, 224],
-            textColor: 255,
-            fontStyle: "bold",
-          },
-          styles: { fontSize: 10 },
-          didParseCell: (data) => {
-            if (data.row.index === rows.length - 1) {
-              data.cell.styles.fontStyle = "bold";
-            }
-          },
-        });
-        currentY = (doc as any).lastAutoTable
-          ? (doc as any).lastAutoTable.finalY + 10
-          : currentY + 10;
-      });
     }
 
     // --- Página para firma y datos de la administradora ---

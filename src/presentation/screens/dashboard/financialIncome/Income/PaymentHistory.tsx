@@ -157,7 +157,9 @@ const PaymentHistory = () => {
     .map(([month, data]) => ({
       month: monthNames[month] || month,
       paid:
-        data.paid + data.creditUsed + (data.creditBalance - data.creditUsed),
+        data.paid +
+        (data.creditBalance > 0 ? data.creditBalance : 0) -
+        data.creditUsed,
       pending: data.pending,
       saldo: data.saldo,
     }));

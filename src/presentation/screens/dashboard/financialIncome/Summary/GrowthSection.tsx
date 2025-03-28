@@ -40,12 +40,12 @@ const GrowthSection: React.FC = React.memo(() => {
         title: "Monto Abonado",
         current:
           currentMonthStats.paid +
-          currentMonthStats.creditUsed +
-          (currentMonthStats.saldo > 0 ? currentMonthStats.saldo : 0),
+          (currentMonthStats.saldo > 0 ? currentMonthStats.saldo : 0) -
+          currentMonthStats.creditUsed,
         previous:
           previousMonthStats.paid +
-          previousMonthStats.creditUsed +
-          (previousMonthStats.saldo > 0 ? previousMonthStats.saldo : 0),
+          (previousMonthStats.saldo > 0 ? previousMonthStats.saldo : 0) -
+          previousMonthStats.creditUsed,
       },
       {
         title: "Cargos",
@@ -57,13 +57,13 @@ const GrowthSection: React.FC = React.memo(() => {
         current:
           currentMonthStats.charges -
           (currentMonthStats.paid +
-            currentMonthStats.creditUsed +
-            (currentMonthStats.saldo > 0 ? currentMonthStats.saldo : 0)),
+            (currentMonthStats.saldo > 0 ? currentMonthStats.saldo : 0) -
+            currentMonthStats.creditUsed),
         previous:
           previousMonthStats.charges -
           (previousMonthStats.paid +
-            previousMonthStats.creditUsed +
-            (previousMonthStats.saldo > 0 ? previousMonthStats.saldo : 0)),
+            (previousMonthStats.saldo > 0 ? previousMonthStats.saldo : 0) -
+            previousMonthStats.creditUsed),
       },
     ];
   }, [filteredMonthlyStats]);
