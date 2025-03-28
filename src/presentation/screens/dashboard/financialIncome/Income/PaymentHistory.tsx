@@ -1,7 +1,10 @@
 // src/components/PaymentHistory.tsx
 
 import { useState, useEffect, useMemo } from "react";
-import { usePaymentHistoryStore, PaymentRecord } from "../../../../../store/paymentHistoryStore";
+import {
+  usePaymentHistoryStore,
+  PaymentRecord,
+} from "../../../../../store/paymentHistoryStore";
 import useUserStore from "../../../../../store/UserDataStore";
 import {
   LineChart,
@@ -22,18 +25,24 @@ const chartColors = ["#8093E8", "#74B9E7", "#A7CFE6", "#B79FE6", "#C2ABE6"];
  * Formato de moneda: $2,500.00
  */
 const formatCurrency = (value: number): string => {
-  return "$" + value.toLocaleString("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
+  return (
+    "$" +
+    value.toLocaleString("en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })
+  );
 };
 
 const PaymentHistory = () => {
   const [selectedUserUid, setSelectedUserUid] = useState<string>("");
-  const [selectedCondominiumNumber, setSelectedCondominiumNumber] = useState<string>("");
+  const [selectedCondominiumNumber, setSelectedCondominiumNumber] =
+    useState<string>("");
 
   // Obtener lista de condominios (usuarios)
-  const fetchCondominiumsUsers = useUserStore((state) => state.fetchCondominiumsUsers);
+  const fetchCondominiumsUsers = useUserStore(
+    (state) => state.fetchCondominiumsUsers
+  );
   const condominiumsUsers = useUserStore((state) => state.condominiumsUsers);
 
   // Store de historial individual
@@ -52,7 +61,7 @@ const PaymentHistory = () => {
     logoBase64,
     signatureBase64,
     currentCreditBalance, // NUEVO: saldo actual (en centavos)
-    pendingAmount,        // NUEVO: monto pendiente (suma de cargos no pagados)
+    pendingAmount, // NUEVO: monto pendiente (suma de cargos no pagados)
   } = usePaymentHistoryStore();
 
   // Cargar usuarios al montar
@@ -104,7 +113,16 @@ const PaymentHistory = () => {
   // Preparar datos para la gráfica: agrupar por mes (YYYY-MM) => { paid, pending, saldo }
   const chartData = payments.reduce(
     (
-      acc: Record<string, { paid: number; pending: number; saldo: number; creditUsed: number; creditBalance: number }>,
+      acc: Record<
+        string,
+        {
+          paid: number;
+          pending: number;
+          saldo: number;
+          creditUsed: number;
+          creditBalance: number;
+        }
+      >,
       payment: PaymentRecord
     ) => {
       let [_yearPart, monthPart] = ["", ""];
@@ -115,10 +133,16 @@ const PaymentHistory = () => {
       }
 
       if (!acc[monthPart]) {
-        acc[monthPart] = { paid: 0, pending: 0, saldo: 0, creditUsed: 0, creditBalance: 0 };
+        acc[monthPart] = {
+          paid: 0,
+          pending: 0,
+          saldo: 0,
+          creditUsed: 0,
+          creditBalance: 0,
+        };
       }
       acc[monthPart].paid += payment.amountPaid;
-      acc[monthPart].pending += payment.amountPending;
+      acc[monthPart].pending += payment.referenceAmount;
       acc[monthPart].creditUsed += payment.creditUsed || 0;
       acc[monthPart].creditBalance += payment.creditBalance;
       acc[monthPart].saldo += payment.creditBalance - (payment.creditUsed || 0);
@@ -132,7 +156,8 @@ const PaymentHistory = () => {
     .sort((a, b) => parseInt(a[0]) - parseInt(b[0]))
     .map(([month, data]) => ({
       month: monthNames[month] || month,
-      paid: data.paid + data.creditUsed + (data.creditBalance - data.creditUsed),
+      paid:
+        data.paid + data.creditUsed + (data.creditBalance - data.creditUsed),
       pending: data.pending,
       saldo: data.saldo,
     }));
@@ -151,20 +176,27 @@ const PaymentHistory = () => {
       }
     });
 
-    const bestMonthName = monthMaxIndex !== -1 ? chartArray[monthMaxIndex].month : "N/A";
+    const bestMonthName =
+      monthMaxIndex !== -1 ? chartArray[monthMaxIndex].month : "N/A";
     return { totalPaidYear, bestMonthName };
   }, [chartArray]);
 
   // Obtenemos el condómino seleccionado (para el PDF)
-  const selectedCondo = condominiumsUsers.find((u) => u.uid === selectedUserUid);
+  const selectedCondo = condominiumsUsers.find(
+    (u) => u.uid === selectedUserUid
+  );
 
   return (
     <div className="p-4">
       {/* Filtros: Selección de Condómino y Año */}
       <div className="flex flex-col gap-4 mb-4 mt-6">
         <div>
-          <h2 className="text-xl font-bold mb-4">Resumen individual por condómino</h2>
-          <label className="block font-medium mb-1">Selecciona un Condómino</label>
+          <h2 className="text-xl font-bold mb-4">
+            Resumen individual por condómino
+          </h2>
+          <label className="block font-medium mb-1">
+            Selecciona un Condómino
+          </label>
           <select
             value={selectedUserUid}
             onChange={handleUserChange}
@@ -207,25 +239,31 @@ const PaymentHistory = () => {
       {/* Tarjetas con datos interesantes del año */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
         <div className="p-4 shadow-md rounded-md">
-          <p className="text-sm text-gray-600 dark:text-gray-100">Total Pagado en el Año</p>
+          <p className="text-sm text-gray-600 dark:text-gray-100">
+            Total Monto Abonado en el Año
+          </p>
           <p className="text-xl font-semibold">
             {formatCurrency(totalPaidYear)}
           </p>
         </div>
         <div className="p-4 shadow-md rounded-md">
-          <p className="text-sm text-gray-600 dark:text-gray-100">Total Pendiente</p>
+          <p className="text-sm text-gray-600 dark:text-gray-100">
+            Total Cargos
+          </p>
           <p className="text-xl font-semibold">
             {formatCurrency(pendingAmount)}
           </p>
         </div>
         <div className="p-4 shadow-md rounded-md">
-          <p className="text-sm text-gray-600 dark:text-gray-100">Saldo a favor total</p>
+          <p className="text-sm text-gray-600 dark:text-gray-100">Saldo</p>
           <p className="text-xl font-semibold">
             {formatCurrency(currentCreditBalance / 100)}
           </p>
         </div>
         <div className="p-4 shadow-md rounded-md">
-          <p className="text-sm text-gray-600 dark:text-gray-100">Mes con mayor recaudación</p>
+          <p className="text-sm text-gray-600 dark:text-gray-100">
+            Mes con mayor recaudación
+          </p>
           <p className="text-xl font-semibold">{bestMonthName}</p>
         </div>
       </div>
@@ -235,10 +273,16 @@ const PaymentHistory = () => {
         <h3 className="text-xl font-semibold mb-2">Resumen por mes</h3>
         {chartArray.length > 0 ? (
           <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={chartArray} margin={{ top: 20, right: 20, left: 0, bottom: 0 }}>
+            <LineChart
+              data={chartArray}
+              margin={{ top: 20, right: 20, left: 0, bottom: 0 }}
+            >
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="month" />
-              <YAxis tickFormatter={(val: number) => formatCurrency(val)} width={80} />
+              <YAxis
+                tickFormatter={(val: number) => formatCurrency(val)}
+                width={80}
+              />
               <Tooltip formatter={(val: number) => formatCurrency(val)} />
               <Legend />
               <Line
@@ -253,7 +297,7 @@ const PaymentHistory = () => {
               <Line
                 type="monotone"
                 dataKey="pending"
-                name="Monto Pendiente"
+                name="Cargos"
                 stroke={chartColors[1]}
                 strokeWidth={2}
                 dot={{ r: 3 }}
@@ -262,7 +306,7 @@ const PaymentHistory = () => {
               <Line
                 type="monotone"
                 dataKey="saldo"
-                name="Saldo a favor"
+                name="Saldo"
                 stroke={chartColors[2]}
                 strokeWidth={2}
                 dot={{ r: 3 }}

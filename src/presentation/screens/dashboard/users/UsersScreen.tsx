@@ -3,9 +3,11 @@ import { useState, useEffect } from "react";
 import { UserData } from "../../../../interfaces/UserData";
 import useUserStore from "../../../../store/UserDataStore";
 import UserDetailsCondominium from "../../../components/shared/userDetails/UserDetailsCondominium";
+import EditUserModal from "../../../components/shared/userDetails/EditUserModal";
 
 const UsersScreen = () => {
   const [open, setOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const [users, setUsers] = useState<UserData[]>([]);
   const [userDetails, setUserDetails] = useState<UserData | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -14,10 +16,10 @@ const UsersScreen = () => {
   const pageSize = 10; // Cantidad de usuarios por página
 
   const fetchUserDetails = useUserStore((state) => state.fetchUserDetails);
-  const fetchPaginatedCondominiumsUsers = useUserStore(state => state.fetchPaginatedCondominiumsUsers);
-  const searchUsersByName = useUserStore(
-    (state) => state.searchUsersByName
+  const fetchPaginatedCondominiumsUsers = useUserStore(
+    (state) => state.fetchPaginatedCondominiumsUsers
   );
+  const searchUsersByName = useUserStore((state) => state.searchUsersByName);
 
   const handleViewUser = async (userUid: string) => {
     setOpen(!open);
@@ -27,9 +29,17 @@ const UsersScreen = () => {
     }
   };
 
+  const handleEditUser = async (userUid: string) => {
+    setEditOpen(true);
+    const res = await fetchUserDetails(userUid);
+    if (res) {
+      setUserDetails(res);
+    }
+  };
+
   const handleSearch = async (e: React.FormEvent<EventTarget>) => {
     e.preventDefault();
-    if(!searchTerm.trim()) return fetchUsers(1);
+    if (!searchTerm.trim()) return fetchUsers(1);
 
     setCurrentPage(1); // Resetear a la primera página después de la búsqueda
     if (searchTerm.trim() !== "") {
@@ -43,6 +53,10 @@ const UsersScreen = () => {
   const fetchUsers = async (page: number) => {
     const fetchedUsers = await fetchPaginatedCondominiumsUsers(pageSize, page);
     setUsers(fetchedUsers);
+  };
+
+  const handleEditSuccess = () => {
+    fetchUsers(currentPage); // Recargar la página actual
   };
 
   useEffect(() => {
@@ -79,7 +93,10 @@ const UsersScreen = () => {
               name="user-search"
               onChange={(e) => setSearchTerm(e.target.value)}
               id="user-search"
-              style={{backgroundColor: "white !important", color: "black !important", }}
+              style={{
+                backgroundColor: "white !important",
+                color: "black !important",
+              }}
               className="block w-full p-4 pl-10 text-sm border outline-none border-indigo-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-50 dark:bg-gray-900 dark:text-gray-100 dark:ring-0 dark:focus:border-indigo-300"
               placeholder="Buscar por nombre"
             />
@@ -135,7 +152,10 @@ const UsersScreen = () => {
             </thead>
             <tbody className="divide-y divide-gray-200 bg-white dark:bg-gray-800 dark:divide-gray-100">
               {users.map((user) => (
-                <tr key={user.email} className="hover:bg-gray-50 transition-colors dark:hover:bg-gray-700 cursor-pointer">
+                <tr
+                  key={user.email}
+                  className="hover:bg-gray-50 transition-colors dark:hover:bg-gray-700 cursor-pointer"
+                >
                   <td className="w-full max-w-0 py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:w-auto sm:max-w-none sm:pl-0 dark:text-gray-100">
                     {user.name} {user.lastName}
                     <dl className="font-normal lg:hidden">
@@ -163,13 +183,18 @@ const UsersScreen = () => {
                     <div className="flex-col lg:flex-row">
                       <a
                         href="#"
-                        className="bg-green-50 p-2 rounded-md text-green-900 hover:bg-green-100 mr-2"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handleEditUser(user.uid);
+                        }}
+                        className="bg-indigo-50 p-2 rounded-md text-indigo-900 hover:bg-indigo-100 mr-2"
                       >
                         Editar
                       </a>
-                      <a onClick={() => handleViewUser(user.uid)}
+                      <a
+                        onClick={() => handleViewUser(user.uid)}
                         href="#"
-                        className="bg-indigo-50 px-3 py-2 rounded-md text-indigo-900 hover:bg-indigo-100 ml-2"
+                        className="bg-indigo-600 px-3 py-2 rounded-md text-white hover:bg-indigo-700 ml-2"
                       >
                         Ver
                       </a>
@@ -182,7 +207,9 @@ const UsersScreen = () => {
         </div>
         <div className="flex justify-end gap-2 mt-4">
           <button
-            onClick={() => setCurrentPage((prevPage) => Math.max(prevPage - 1, 1))}
+            onClick={() =>
+              setCurrentPage((prevPage) => Math.max(prevPage - 1, 1))
+            }
             disabled={currentPage === 1}
             className="px-4 py-2 cursor-pointer btn-secundary "
           >
@@ -201,6 +228,12 @@ const UsersScreen = () => {
         open={open}
         setOpen={setOpen}
         userDetails={userDetails}
+      />
+      <EditUserModal
+        open={editOpen}
+        setOpen={setEditOpen}
+        userDetails={userDetails}
+        onSuccess={handleEditSuccess}
       />
     </>
   );

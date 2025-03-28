@@ -169,13 +169,11 @@ export const usePaymentHistoryStore = create<PaymentHistoryState>((set) => ({
       );
       const chargesSnapshot = await getDocs(chargesRef);
 
-      // Calcular el monto pendiente total de cargos no pagados (sin filtrar por año)
+      // Calcular el monto total de cargos usando referenceAmount
       let pendingAmount = 0;
       chargesSnapshot.docs.forEach((chargeDoc) => {
         const chargeData = chargeDoc.data();
-        if (!chargeData.paid) {
-          pendingAmount += centsToPesos(chargeData.amount);
-        }
+        pendingAmount += centsToPesos(chargeData.referenceAmount || 0);
       });
 
       const yearToCheck = year || new Date().getFullYear().toString();

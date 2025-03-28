@@ -31,6 +31,42 @@ const MonthComparisonTable: React.FC = React.memo(() => {
     );
   }, [monthlyStats]);
 
+  // Calcular totales
+  const totals = useMemo(() => {
+    return sortedMonthlyStats.reduce(
+      (acc, curr) => ({
+        paid: acc.paid + curr.paid,
+        pending: acc.pending + curr.pending,
+        saldo: acc.saldo + curr.saldo,
+        unidentifiedPayments:
+          acc.unidentifiedPayments + curr.unidentifiedPayments,
+        complianceRate: acc.complianceRate + curr.complianceRate,
+        delinquencyRate: acc.delinquencyRate + curr.delinquencyRate,
+        creditUsed: acc.creditUsed + curr.creditUsed,
+        charges: acc.charges + curr.charges,
+      }),
+      {
+        paid: 0,
+        pending: 0,
+        saldo: 0,
+        unidentifiedPayments: 0,
+        complianceRate: 0,
+        delinquencyRate: 0,
+        creditUsed: 0,
+        charges: 0,
+      }
+    );
+  }, [sortedMonthlyStats]);
+
+  // Calcular promedios
+  const averages = useMemo(
+    () => ({
+      complianceRate: totals.complianceRate / sortedMonthlyStats.length,
+      delinquencyRate: totals.delinquencyRate / sortedMonthlyStats.length,
+    }),
+    [totals, sortedMonthlyStats.length]
+  );
+
   // Función de formateo de moneda (con dos decimales)
   const formatCurrency = (value: number): string =>
     "$" +
@@ -91,8 +127,8 @@ const MonthComparisonTable: React.FC = React.memo(() => {
                         row.creditUsed +
                         (row.saldo > 0 ? row.saldo : 0)) <
                     0
-                      ? "text-green-600"
-                      : "text-red-600"
+                      ? "text-green-400"
+                      : "text-red-500 dark:text-red-400"
                   }`}
                 >
                   {formatCurrency(
@@ -111,6 +147,35 @@ const MonthComparisonTable: React.FC = React.memo(() => {
                 </td>
               </tr>
             ))}
+            {/* Fila de totales */}
+            <tr className="bg-indigo-100 dark:bg-gray-800">
+              <td className="border p-2 font-semibold">Totales</td>
+              <td className="border p-2 font-semibold">
+                {formatCurrency(totals.paid)}
+              </td>
+              <td className="border p-2 font-semibold">
+                {formatCurrency(totals.charges)}
+              </td>
+              <td
+                className={`border p-2 font-semibold ${
+                  totals.saldo < 0
+                    ? "text-green-400"
+                    : "text-red-500 dark:text-red-400"
+                }`}
+              >
+                {totals.saldo < 0 ? "+" : ""}
+                {formatCurrency(Math.abs(totals.saldo))}
+              </td>
+              <td className="border p-2 font-semibold">
+                {formatCurrency(totals.unidentifiedPayments)}
+              </td>
+              <td className="border p-2 font-semibold">
+                {averages.complianceRate.toFixed(2)}%
+              </td>
+              <td className="border p-2 font-semibold">
+                {averages.delinquencyRate.toFixed(2)}%
+              </td>
+            </tr>
           </tbody>
         </table>
       </div>

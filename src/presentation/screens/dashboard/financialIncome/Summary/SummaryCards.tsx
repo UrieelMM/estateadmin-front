@@ -179,7 +179,9 @@ const SummaryCards: React.FC = React.memo(() => {
             </div>
             <p
               className={`mt-1 text-2xl font-semibold ${
-                balance < 0 ? "text-green-600" : "text-red-600"
+                balance < 0
+                  ? "text-green-400"
+                  : "text-red-500 dark:text-red-400"
               }`}
             >
               {balance < 0

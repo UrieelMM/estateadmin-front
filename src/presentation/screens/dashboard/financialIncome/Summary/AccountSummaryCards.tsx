@@ -62,7 +62,7 @@ const AccountSummaryCards: React.FC<{
       <div className="p-4 shadow-xl rounded-md bg-white dark:bg-gray-800">
         <div className="flex flex-col gap-y-1">
           <span className="text-sm font-medium text-gray-600 dark:text-gray-100">
-            Saldo a favor:
+            Saldo
           </span>
           <span className="text-2xl font-semibold text-gray-800 dark:text-gray-100">
             {formatCurrency(totalSaldo)}

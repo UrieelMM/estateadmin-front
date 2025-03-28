@@ -69,7 +69,7 @@ const AnnualGeneralStats: React.FC = () => {
     worstConcept,
     bestMonth,
     worstMonth,
-    monthlyAverage,
+    // monthlyAverage,
     hasData,
   } = useMemo(() => {
     if (!conceptRecords || Object.keys(conceptRecords).length < 1) {
@@ -253,7 +253,7 @@ const AnnualGeneralStats: React.FC = () => {
   return (
     <div className="mb-8 w-full">
       {/* Tarjetas */}
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-8">
         <div className="p-4 shadow-md rounded-md">
           <p className="text-sm text-gray-600 dark:text-gray-100">
             Concepto con más ingresos{" "}
@@ -298,14 +298,14 @@ const AnnualGeneralStats: React.FC = () => {
             {formatCurrency(Number(worstMonth[1]))}
           </p>
         </div>
-        <div className="p-4 shadow-md rounded-md">
+        {/* <div className="p-4 shadow-md rounded-md">
           <p className="text-sm text-gray-600 dark:text-gray-100">
             Ingreso promedio mensual
           </p>
           <p className="text-xl font-semibold">
             {formatCurrency(monthlyAverage)}
           </p>
-        </div>
+        </div> */}
       </div>
 
       {/* Gráfica de pastel */}
