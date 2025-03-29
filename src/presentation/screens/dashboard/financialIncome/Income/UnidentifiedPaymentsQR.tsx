@@ -1,18 +1,31 @@
 import { useState, useRef } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { v4 as uuidv4 } from "uuid";
+import { useUnidentifiedPaymentsStore } from "../../../../../store/useUnidentifiedPaymentsStore";
+import toast from "react-hot-toast";
 
 const UnidentifiedPaymentsQR = () => {
   const [showQR, setShowQR] = useState(false);
   const [qrUrl, setQrUrl] = useState("");
   const qrRef = useRef<HTMLDivElement>(null);
+  const { createQRData } = useUnidentifiedPaymentsStore();
 
-  const generateQR = () => {
-    // Generar un ID único de 16 caracteres
-    const uniqueId = uuidv4().replace(/-/g, "").substring(0, 16);
-    const url = `${window.location.origin}/unidentified-payments/${uniqueId}`;
-    setQrUrl(url);
-    setShowQR(true);
+  const generateQR = async () => {
+    try {
+      // Generar un ID único de 16 caracteres
+      const uniqueId = uuidv4().replace(/-/g, "").substring(0, 16);
+
+      // Crear los datos del QR
+      await createQRData(uniqueId);
+
+      const url = `${window.location.origin}/unidentified-payments/${uniqueId}`;
+      setQrUrl(url);
+      setShowQR(true);
+      toast.success("QR generado correctamente");
+    } catch (error: any) {
+      console.error("Error al generar QR:", error);
+      toast.error("Error al generar el QR");
+    }
   };
 
   const printQR = () => {

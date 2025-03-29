@@ -7,7 +7,7 @@ import {
 
 const UnidentifiedPaymentsPublic = () => {
   const { qrId } = useParams<{ qrId: string }>();
-  const { fetchPayments } = useUnidentifiedPaymentsStore();
+  const { getQRData } = useUnidentifiedPaymentsStore();
   const [payments, setPayments] = useState<UnidentifiedPayment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -18,21 +18,13 @@ const UnidentifiedPaymentsPublic = () => {
         setLoading(true);
         setError(null);
 
-        // Obtener los últimos 100 pagos
-        await fetchPayments(100);
-        const currentPayments =
-          useUnidentifiedPaymentsStore.getState().payments;
+        if (!qrId) {
+          throw new Error("ID de QR no válido");
+        }
 
-        // Filtrar solo los pagos más recientes (últimos 30 días)
-        const thirtyDaysAgo = new Date();
-        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-        const recentPayments = currentPayments.filter(
-          (payment) => new Date(payment.paymentDate) > thirtyDaysAgo
-        );
-
-        setPayments(recentPayments);
-      } catch (error) {
+        const qrPayments = await getQRData(qrId);
+        setPayments(qrPayments);
+      } catch (error: any) {
         console.error("Error al cargar pagos:", error);
         setError(
           "No se pudieron cargar los pagos. Por favor, intente más tarde."
@@ -43,7 +35,7 @@ const UnidentifiedPaymentsPublic = () => {
     };
 
     loadPayments();
-  }, [fetchPayments, qrId]);
+  }, [getQRData, qrId]);
 
   const formatDate = (date: Date) => {
     return new Date(date).toLocaleDateString("es-MX");
