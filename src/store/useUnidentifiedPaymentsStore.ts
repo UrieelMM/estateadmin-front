@@ -10,9 +10,8 @@ import {
   limit,
   startAfter as firestoreStartAfter,
   Timestamp,
-  doc,
-  setDoc,
-  getDoc,
+  addDoc,
+  collectionGroup,
 } from "firebase/firestore";
 import axios from "axios";
 
@@ -65,7 +64,7 @@ interface UnidentifiedPaymentsState {
   openPaymentModal: (payment: UnidentifiedPayment) => void;
   closePaymentModal: () => void;
 
-  createQRData: (qrId: string) => Promise<void>;
+  createQRData: () => Promise<string>;
   getQRData: (qrId: string) => Promise<UnidentifiedPayment[]>;
 }
 
@@ -365,7 +364,7 @@ export const useUnidentifiedPaymentsStore = create<UnidentifiedPaymentsState>(
       }
     },
 
-    createQRData: async (qrId: string) => {
+    createQRData: async (): Promise<string> => {
       try {
         const auth = getAuth();
         const user = auth.currentUser;
@@ -375,27 +374,35 @@ export const useUnidentifiedPaymentsStore = create<UnidentifiedPaymentsState>(
         const clientId = tokenResult.claims.clientId as string;
         if (!clientId) throw new Error("No se encontró el ID del cliente");
 
-        // Obtener los pagos no identificados
+        const condominiumId = localStorage.getItem("condominiumId");
+        if (!condominiumId) throw new Error("Condominio no seleccionado");
+
+        // Obtener los pagos no identificados (máximo 100)
         await get().fetchPayments(100);
         const currentPayments = get().payments;
 
-        // Filtrar solo los últimos 30 días
+        // Filtrar los pagos de los últimos 30 días
         const thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
         const recentPayments = currentPayments.filter(
           (payment) => new Date(payment.paymentDate) > thirtyDaysAgo
         );
 
-        // Guardar los datos en una colección pública
+        // Guardar los datos en la colección pública en la ruta correcta
         const db = getFirestore();
-        const qrRef = doc(db, "publicQRs", qrId);
-        await setDoc(qrRef, {
+        const publicQRsRef = collection(
+          db,
+          `clients/${clientId}/condominiums/${condominiumId}/publicQRs`
+        );
+        const docRef = await addDoc(publicQRsRef, {
           payments: recentPayments,
-          createdAt: new Date(),
+          createdAt: Timestamp.now(),
           clientId,
         });
+
+        return docRef.id;
       } catch (error: any) {
-        console.error("Error al crear datos del QR:", error);
+        console.error("Error al generar QR:", error);
         throw error;
       }
     },
@@ -403,14 +410,16 @@ export const useUnidentifiedPaymentsStore = create<UnidentifiedPaymentsState>(
     getQRData: async (qrId: string) => {
       try {
         const db = getFirestore();
-        const qrRef = doc(db, "publicQRs", qrId);
-        const qrDoc = await getDoc(qrRef);
-
-        if (!qrDoc.exists()) {
+        // Se crea una query para buscar el documento en cualquier subcolección "publicQRs" con ese id
+        const q = query(
+          collectionGroup(db, "publicQRs"),
+          where("__name__", "==", qrId)
+        );
+        const snapshot = await getDocs(q);
+        if (snapshot.empty) {
           throw new Error("QR no encontrado");
         }
-
-        const qrData = qrDoc.data();
+        const qrData = snapshot.docs[0].data();
         return qrData.payments as UnidentifiedPayment[];
       } catch (error: any) {
         console.error("Error al obtener datos del QR:", error);

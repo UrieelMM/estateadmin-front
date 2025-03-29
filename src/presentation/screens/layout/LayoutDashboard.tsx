@@ -151,121 +151,121 @@ const LayoutDashboard = ({ children }: Props) => {
         <aside
           className={classNames(
             "fixed inset-y-0 left-0 w-52 md:w-56 border-r border-gray-200 dark:border-gray-700 dark:bg-gray-800",
-            "h-screen" // Ocupa todo el alto
+            "h-screen flex flex-col"
           )}
         >
-          <div className="flex flex-col h-full">
-            {/* Logo */}
-            <div className="flex items-center justify-between h-16 border-b border-gray-200 dark:border-gray-700 p-4">
-              <img className="h-8 w-auto" src={logo} alt="Your Company" />
-            </div>
+          {/* Header fijo */}
+          <div className="flex-none h-16 border-b border-gray-200 dark:border-gray-700 p-4">
+            <img className="h-8 w-auto" src={logo} alt="Your Company" />
+          </div>
 
-            <nav
-              className="flex-1 flex flex-col justify-between"
-              aria-label="Sidebar"
-            >
-              <ul className="py-6 space-y-2">
-                {navigation.map((item) => (
-                  <li key={item.name}>
-                    {!item.children ? (
-                      <Link
-                        to={item.href}
-                        className={classNames(
-                          item.current
-                            ? "bg-indigo-100"
-                            : "hover:bg-indigo-100 dark:hover:bg-gray-700",
-                          "group flex items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md"
-                        )}
-                      >
-                        <item.icon
-                          className="mr-3 h-6 w-6 text-gray-400 dark:text-gray-300"
-                          aria-hidden="true"
-                        />
-                        {item.name}
-                      </Link>
-                    ) : (
-                      <Disclosure as="div" className="space-y-1">
-                        {({ open }) => (
-                          <>
-                            <Disclosure.Button
-                              className={classNames(
-                                item.current
-                                  ? "bg-indigo-100"
-                                  : "hover:bg-indigo-100 dark:hover:bg-gray-700",
-                                "group w-full flex items-center px-4 py-2 text-left text-sm font-medium text-gray-600 dark:text-gray-100 rounded-md focus:outline-none"
-                              )}
-                            >
-                              <item.icon
-                                className="mr-3 h-6 w-6 text-gray-400 dark:text-gray-300"
-                                aria-hidden="true"
-                              />
-                              {item.name}
-                              <ChevronRightIcon
-                                className={`${
-                                  open ? "transform rotate-90" : ""
-                                } ml-auto h-5 w-5 transition-transform`}
-                              />
-                            </Disclosure.Button>
-                            <Disclosure.Panel className="space-y-1">
-                              {item.children.map((subItem) => (
-                                <Disclosure.Button
-                                  key={subItem.name}
-                                  as={Link}
-                                  to={subItem.href}
-                                  className="group w-full flex items-center pl-11 pr-2 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md hover:bg-indigo-100 dark:hover:bg-gray-700"
-                                >
-                                  {subItem.name}
-                                </Disclosure.Button>
-                              ))}
-                            </Disclosure.Panel>
-                          </>
-                        )}
-                      </Disclosure>
-                    )}
-                  </li>
-                ))}
-              </ul>
-              <ul className="py-6">
-                <li className="w-40 h-36 mb-8 bg-gradient-to-tr from-[#9f86f81c] to-[#746dfc17] shadow-lg flex justify-center items-center rounded-lg mx-auto">
-                  <div className="group flex-col justify-center items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md">
-                    <div className="flex justify-center items-center">
-                      <ShieldExclamationIcon
-                        className="h-6 w-6 text-indigo-400"
+          {/* Contenido con scroll */}
+          <nav className="flex-1 overflow-y-auto" aria-label="Sidebar">
+            <ul className="py-6 space-y-2">
+              {navigation.map((item) => (
+                <li key={item.name}>
+                  {!item.children ? (
+                    <Link
+                      to={item.href}
+                      className={classNames(
+                        item.current
+                          ? "bg-indigo-100"
+                          : "hover:bg-indigo-100 dark:hover:bg-gray-700",
+                        "group flex items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md"
+                      )}
+                    >
+                      <item.icon
+                        className="mr-3 h-6 w-6 text-gray-400 dark:text-gray-300"
                         aria-hidden="true"
                       />
-                    </div>
-                    <p className="text-xs mt-2 mb-2 text-center">
-                      ¿Necesitas ayuda?
-                    </p>
-                    <button className="bg-indigo-400 text-xs text-center m-0 text-white rounded-md p-1">
-                      <span className="block mb-0.5">Contacta a soporte</span>
-                    </button>
-                  </div>
+                      {item.name}
+                    </Link>
+                  ) : (
+                    <Disclosure as="div" className="space-y-1">
+                      {({ open }) => (
+                        <>
+                          <Disclosure.Button
+                            className={classNames(
+                              item.current
+                                ? "bg-indigo-100"
+                                : "hover:bg-indigo-100 dark:hover:bg-gray-700",
+                              "group w-full flex items-center px-4 py-2 text-left text-sm font-medium text-gray-600 dark:text-gray-100 rounded-md focus:outline-none"
+                            )}
+                          >
+                            <item.icon
+                              className="mr-3 h-6 w-6 text-gray-400 dark:text-gray-300"
+                              aria-hidden="true"
+                            />
+                            {item.name}
+                            <ChevronRightIcon
+                              className={`${
+                                open ? "transform rotate-90" : ""
+                              } ml-auto h-5 w-5 transition-transform`}
+                            />
+                          </Disclosure.Button>
+                          <Disclosure.Panel className="space-y-1">
+                            {item.children.map((subItem) => (
+                              <Disclosure.Button
+                                key={subItem.name}
+                                as={Link}
+                                to={subItem.href}
+                                className="group w-full flex items-center pl-11 pr-2 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md hover:bg-indigo-100 dark:hover:bg-gray-700"
+                              >
+                                {subItem.name}
+                              </Disclosure.Button>
+                            ))}
+                          </Disclosure.Panel>
+                        </>
+                      )}
+                    </Disclosure>
+                  )}
                 </li>
-                <li>
-                  <Link
-                    to="/dashborad/client-config"
-                    className="group flex items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md"
-                  >
-                    <Cog6ToothIcon
-                      className="mr-3 h-6 w-6 text-gray-400 dark:text-gray-300"
+              ))}
+            </ul>
+          </nav>
+
+          {/* Footer fijo */}
+          <div className="flex-none py-6">
+            <ul>
+              <li className="w-40 h-36 mb-8 bg-gradient-to-tr from-[#9f86f81c] to-[#746dfc17] shadow-lg flex justify-center items-center rounded-lg mx-auto">
+                <div className="group flex-col justify-center items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md">
+                  <div className="flex justify-center items-center">
+                    <ShieldExclamationIcon
+                      className="h-6 w-6 text-indigo-400"
                       aria-hidden="true"
                     />
-                    Configuración
-                  </Link>
-                </li>
-                <li>
-                  <button
-                    type="button"
-                    onClick={handleLogout}
-                    className="group flex items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md"
-                  >
-                    <ArrowRightEndOnRectangleIcon className="mr-3 h-6 w-6 text-gray-400 dark:text-gray-300" />
-                    Cerrar sesión
+                  </div>
+                  <p className="text-xs mt-2 mb-2 text-center">
+                    ¿Necesitas ayuda?
+                  </p>
+                  <button className="bg-indigo-400 text-xs text-center m-0 text-white rounded-md p-1">
+                    <span className="block mb-0.5">Contacta a soporte</span>
                   </button>
-                </li>
-              </ul>
-            </nav>
+                </div>
+              </li>
+              <li>
+                <Link
+                  to="/dashborad/client-config"
+                  className="group flex items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md"
+                >
+                  <Cog6ToothIcon
+                    className="mr-3 h-6 w-6 text-gray-400 dark:text-gray-300"
+                    aria-hidden="true"
+                  />
+                  Configuración
+                </Link>
+              </li>
+              <li>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="group flex items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md"
+                >
+                  <ArrowRightEndOnRectangleIcon className="mr-3 h-6 w-6 text-gray-400 dark:text-gray-300" />
+                  Cerrar sesión
+                </button>
+              </li>
+            </ul>
           </div>
         </aside>
       </div>
@@ -279,133 +279,132 @@ const LayoutDashboard = ({ children }: Props) => {
         <aside
           className={classNames(
             "fixed inset-y-0 left-0 w-52 md:w-56 border-r border-gray-200 dark:border-gray-700 dark:bg-gray-800 transform transition-transform duration-300 ease-in-out",
-            "h-screen z-50", // Para superponerse al contenido
+            "h-screen z-50 flex flex-col",
             isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
           )}
         >
-          <div className="flex flex-col h-full">
-            {/* Botón para cerrar en móvil */}
-            <div className="flex items-center justify-between h-16 border-b border-gray-200 dark:border-gray-700 p-4">
-              <img className="h-8 w-auto" src={logo} alt="Your Company" />
-              <button
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="text-gray-500 dark:text-gray-400"
-              >
-                <span className="sr-only">Close sidebar</span>
-                <XMarkIcon className="block h-6 w-6" aria-hidden="true" />
-              </button>
-            </div>
-            <nav
-              className="flex-1 flex flex-col justify-between"
-              aria-label="Sidebar"
+          {/* Header fijo */}
+          <div className="flex-none flex items-center justify-between h-16 border-b border-gray-200 dark:border-gray-700 p-4">
+            <img className="h-8 w-auto" src={logo} alt="Your Company" />
+            <button
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="text-gray-500 dark:text-gray-400"
             >
-              <ul className="py-6 space-y-2">
-                {navigation.map((item) => (
-                  <li key={item.name}>
-                    {!item.children ? (
-                      <Link
-                        to={item.href}
-                        onClick={() => setIsMobileMenuOpen(false)}
-                        className={classNames(
-                          item.current
-                            ? "bg-indigo-100"
-                            : "hover:bg-indigo-100",
-                          "group flex items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md"
-                        )}
-                      >
-                        <item.icon
-                          className="mr-3 h-6 w-6 text-gray-400 dark:text-gray-300"
-                          aria-hidden="true"
-                        />
-                        {item.name}
-                      </Link>
-                    ) : (
-                      <Disclosure as="div" className="space-y-1">
-                        {({ open }) => (
-                          <>
-                            <Disclosure.Button
-                              className={classNames(
-                                item.current
-                                  ? "bg-indigo-100 "
-                                  : "hover:bg-indigo-100 dark:hover:bg-gray-700",
-                                "group w-full flex items-center px-4 py-2 text-left text-sm font-medium text-gray-600 dark:text-gray-100 rounded-md focus:outline-none"
-                              )}
-                            >
-                              <item.icon
-                                className="mr-3 h-6 w-6 text-gray-400 dark:text-gray-300"
-                                aria-hidden="true"
-                              />
-                              {item.name}
-                              <ChevronRightIcon
-                                className={`${
-                                  open ? "transform rotate-90" : ""
-                                } ml-auto h-5 w-5 transition-transform`}
-                              />
-                            </Disclosure.Button>
-                            <Disclosure.Panel className="space-y-1">
-                              {item.children.map((subItem) => (
-                                <Disclosure.Button
-                                  key={subItem.name}
-                                  as={Link}
-                                  to={subItem.href}
-                                  className="group w-full flex items-center pl-11 pr-2 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md hover:bg-indigo-100 dark:hover:bg-gray-700"
-                                >
-                                  {subItem.name}
-                                </Disclosure.Button>
-                              ))}
-                            </Disclosure.Panel>
-                          </>
-                        )}
-                      </Disclosure>
-                    )}
-                  </li>
-                ))}
-              </ul>
-              <ul className="py-6">
-                <li className="w-40 h-36 mb-8 bg-gradient-to-tr from-[#9f86f81c] to-[#746dfc17] shadow-lg flex justify-center items-center rounded-lg mx-auto">
-                  <div className="group flex-col justify-center items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md">
-                    <div className="flex justify-center items-center">
-                      <ShieldExclamationIcon
-                        className="h-6 w-6 text-indigo-400"
+              <span className="sr-only">Close sidebar</span>
+              <XMarkIcon className="block h-6 w-6" aria-hidden="true" />
+            </button>
+          </div>
+
+          {/* Contenido con scroll */}
+          <nav className="flex-1 overflow-y-auto" aria-label="Sidebar">
+            <ul className="py-6 space-y-2">
+              {navigation.map((item) => (
+                <li key={item.name}>
+                  {!item.children ? (
+                    <Link
+                      to={item.href}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className={classNames(
+                        item.current ? "bg-indigo-100" : "hover:bg-indigo-100",
+                        "group flex items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md"
+                      )}
+                    >
+                      <item.icon
+                        className="mr-3 h-6 w-6 text-gray-400 dark:text-gray-300"
                         aria-hidden="true"
                       />
-                    </div>
-                    <p className="text-xs mt-2 mb-2 text-center">
-                      ¿Necesitas ayuda?
-                    </p>
-                    <button className="bg-indigo-400 text-xs text-center m-0 text-white rounded-md p-1">
-                      <span className="block mb-0.5">Contacta a soporte</span>
-                    </button>
-                  </div>
+                      {item.name}
+                    </Link>
+                  ) : (
+                    <Disclosure as="div" className="space-y-1">
+                      {({ open }) => (
+                        <>
+                          <Disclosure.Button
+                            className={classNames(
+                              item.current
+                                ? "bg-indigo-100 "
+                                : "hover:bg-indigo-100 dark:hover:bg-gray-700",
+                              "group w-full flex items-center px-4 py-2 text-left text-sm font-medium text-gray-600 dark:text-gray-100 rounded-md focus:outline-none"
+                            )}
+                          >
+                            <item.icon
+                              className="mr-3 h-6 w-6 text-gray-400 dark:text-gray-300"
+                              aria-hidden="true"
+                            />
+                            {item.name}
+                            <ChevronRightIcon
+                              className={`${
+                                open ? "transform rotate-90" : ""
+                              } ml-auto h-5 w-5 transition-transform`}
+                            />
+                          </Disclosure.Button>
+                          <Disclosure.Panel className="space-y-1">
+                            {item.children.map((subItem) => (
+                              <Disclosure.Button
+                                key={subItem.name}
+                                as={Link}
+                                to={subItem.href}
+                                className="group w-full flex items-center pl-11 pr-2 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md hover:bg-indigo-100 dark:hover:bg-gray-700"
+                              >
+                                {subItem.name}
+                              </Disclosure.Button>
+                            ))}
+                          </Disclosure.Panel>
+                        </>
+                      )}
+                    </Disclosure>
+                  )}
                 </li>
-                <li>
-                  <Link
-                    to="/dashborad/client-config"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="group flex items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md"
-                  >
-                    <Cog6ToothIcon
-                      className="mr-3 h-6 w-6 text-gray-400 dark:text-gray-300"
+              ))}
+            </ul>
+          </nav>
+
+          {/* Footer fijo */}
+          <div className="flex-none py-6">
+            <ul>
+              <li className="w-40 h-36 mb-8 bg-gradient-to-tr from-[#9f86f81c] to-[#746dfc17] shadow-lg flex justify-center items-center rounded-lg mx-auto">
+                <div className="group flex-col justify-center items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md">
+                  <div className="flex justify-center items-center">
+                    <ShieldExclamationIcon
+                      className="h-6 w-6 text-indigo-400"
                       aria-hidden="true"
                     />
-                    Configuración
-                  </Link>
-                </li>
-                <li>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsMobileMenuOpen(false);
-                      handleLogout();
-                    }}
-                    className="group flex items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md"
-                  >
-                    <ArrowRightEndOnRectangleIcon className="mr-3 h-6 w-6 text-gray-400 dark:text-gray-300" />
-                    Cerrar sesión
+                  </div>
+                  <p className="text-xs mt-2 mb-2 text-center">
+                    ¿Necesitas ayuda?
+                  </p>
+                  <button className="bg-indigo-400 text-xs text-center m-0 text-white rounded-md p-1">
+                    <span className="block mb-0.5">Contacta a soporte</span>
                   </button>
-                </li>
-              </ul>
-            </nav>
+                </div>
+              </li>
+              <li>
+                <Link
+                  to="/dashborad/client-config"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="group flex items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md"
+                >
+                  <Cog6ToothIcon
+                    className="mr-3 h-6 w-6 text-gray-400 dark:text-gray-300"
+                    aria-hidden="true"
+                  />
+                  Configuración
+                </Link>
+              </li>
+              <li>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    handleLogout();
+                  }}
+                  className="group flex items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md"
+                >
+                  <ArrowRightEndOnRectangleIcon className="mr-3 h-6 w-6 text-gray-400 dark:text-gray-300" />
+                  Cerrar sesión
+                </button>
+              </li>
+            </ul>
           </div>
         </aside>
       </div>
