@@ -124,11 +124,11 @@ const LayoutDashboard = ({ children }: Props) => {
 
   // Renderizar el layout normal
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100">
+    <div className="min-h-screen bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100 overflow-x-hidden">
       <ChatBot />
 
       {/* Botón móvil (arriba a la izquierda) para abrir/cerrar sidebar */}
-      <div className="lg:hidden px-1 py-4">
+      <div className="xl:hidden px-1 py-4">
         <button
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           className="text-gray-500 hover:text-gray-600 focus:outline-none dark:text-gray-400 dark:hover:text-gray-300"
@@ -147,7 +147,7 @@ const LayoutDashboard = ({ children }: Props) => {
         ---------------------------------
         En dispositivos grandes, lo hacemos "fixed" para que no se mueva al hacer scroll.
       */}
-      <div className="hidden lg:block">
+      <div className="hidden xl:block">
         <aside
           className={classNames(
             "fixed inset-y-0 left-0 w-52 md:w-56 border-r border-gray-200 dark:border-gray-700 dark:bg-gray-800",
@@ -208,15 +208,14 @@ const LayoutDashboard = ({ children }: Props) => {
                             </Disclosure.Button>
                             <Disclosure.Panel className="space-y-1">
                               {item.children.map((subItem) => (
-                                <Link to={subItem.href} key={subItem.name}>
-                                  <Disclosure.Button
-                                    as="a"
-                                    href={subItem.href}
-                                    className="group w-full flex items-center pl-11 pr-2 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md hover:bg-indigo-100 dark:hover:bg-gray-700"
-                                  >
-                                    {subItem.name}
-                                  </Disclosure.Button>
-                                </Link>
+                                <Disclosure.Button
+                                  key={subItem.name}
+                                  as={Link}
+                                  to={subItem.href}
+                                  className="group w-full flex items-center pl-11 pr-2 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md hover:bg-indigo-100 dark:hover:bg-gray-700"
+                                >
+                                  {subItem.name}
+                                </Disclosure.Button>
                               ))}
                             </Disclosure.Panel>
                           </>
@@ -272,14 +271,14 @@ const LayoutDashboard = ({ children }: Props) => {
       </div>
 
       {/*
-        SIDEBAR PARA MÓVIL (usa 'fixed' también).
+        SIDEBAR PARA MÓVIL Y TABLET (usa 'fixed' también).
         Cuando isMobileMenuOpen = true, lo mostramos;
         caso contrario, se oculta a la izquierda.
       */}
-      <div className="lg:hidden">
+      <div className="xl:hidden">
         <aside
           className={classNames(
-            "fixed inset-y-0 left-0 w-52 md:w-56 border-r border-gray-200 dark:border-gray-700 dark:bg-gray-800 transform transition-transform",
+            "fixed inset-y-0 left-0 w-52 md:w-56 border-r border-gray-200 dark:border-gray-700 dark:bg-gray-800 transform transition-transform duration-300 ease-in-out",
             "h-screen z-50", // Para superponerse al contenido
             isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
           )}
@@ -345,14 +344,14 @@ const LayoutDashboard = ({ children }: Props) => {
                             </Disclosure.Button>
                             <Disclosure.Panel className="space-y-1">
                               {item.children.map((subItem) => (
-                                <Link
-                                  to={subItem.href}
+                                <Disclosure.Button
                                   key={subItem.name}
-                                  onClick={() => setIsMobileMenuOpen(false)}
+                                  as={Link}
+                                  to={subItem.href}
                                   className="group w-full flex items-center pl-11 pr-2 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md hover:bg-indigo-100 dark:hover:bg-gray-700"
                                 >
                                   {subItem.name}
-                                </Link>
+                                </Disclosure.Button>
                               ))}
                             </Disclosure.Panel>
                           </>
@@ -416,7 +415,7 @@ const LayoutDashboard = ({ children }: Props) => {
         -------------------
         - En pantallas grandes tiene margin-left para dejar espacio al sidebar fijo.
       */}
-      <div className="lg:ml-52 md:ml-56">
+      <div className="xl:ml-52">
         <Navbar />
         <main className="p-4 bg-white dark:bg-gray-800 min-h-screen">
           {children}

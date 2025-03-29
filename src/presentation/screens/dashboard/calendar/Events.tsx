@@ -435,7 +435,7 @@ export default function CalendarReservations() {
           </Menu>
         </div>
       </header>
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-col lg:flex-row flex-1 overflow-hidden">
         <div className="flex-1 overflow-auto">
           {view === "day" && (
             <DayView
@@ -458,7 +458,7 @@ export default function CalendarReservations() {
             <YearView currentDate={currentDate} events={displayedEvents} />
           )}
         </div>
-        <aside className="w-80 border-l p-4 overflow-auto dark:bg-gray-800">
+        <aside className="w-full lg:w-80 border-t lg:border-t-0 lg:border-l p-4 overflow-auto dark:bg-gray-800">
           <h2 className="text-lg font-semibold mb-4">Eventos de la Semana</h2>
           <div className="flex items-center justify-between mb-4 dark:text-gray-100">
             <button

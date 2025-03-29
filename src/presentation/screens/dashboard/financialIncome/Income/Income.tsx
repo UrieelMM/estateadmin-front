@@ -9,19 +9,20 @@ import UnidentifiedPaymentsTable from "./UnidentifiedPaymentsTable";
 import HistoryPaymentsTable from "./HistoryPaymentsTable";
 import { usePaymentSummaryStore } from "../../../../../store/paymentSummaryStore";
 
-
 const Income = () => {
   const [open, setOpen] = useState(false);
   // Ahora el estado puede ser: "summary", "accountSummary", "history" o "morosidad"
   const [activeTab, setActiveTab] = useState("summary");
-  const { fetchSummary, cleanupListeners } = usePaymentSummaryStore((state) => ({
-    fetchSummary: state.fetchSummary,
-    cleanupListeners: state.cleanupListeners
-  }));
+  const { fetchSummary, cleanupListeners } = usePaymentSummaryStore(
+    (state) => ({
+      fetchSummary: state.fetchSummary,
+      cleanupListeners: state.cleanupListeners,
+    })
+  );
 
   useEffect(() => {
     const currentYear = new Date().getFullYear().toString();
-    
+
     // Configurar
     const loadData = async () => {
       try {
@@ -30,20 +31,20 @@ const Income = () => {
         console.error("Error loading summary:", error);
       }
     };
-    
+
     loadData();
 
     // Limpiar al desmontar
     return () => {
       cleanupListeners(currentYear);
     };
-  }, []); 
+  }, []);
 
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
     if (["summary", "accountSummary"].includes(tab)) {
       const currentYear = new Date().getFullYear().toString();
-      fetchSummary(currentYear).catch(error => {
+      fetchSummary(currentYear).catch((error) => {
         console.error("Error refreshing summary:", error);
       });
     }
@@ -66,7 +67,7 @@ const Income = () => {
         <div className="mb-4">
           <div className="border-b border-gray-200">
             <nav
-              className="-mb-px flex space-x-8 dark:border-gray-800"
+              className="-mb-px flex space-x-8 dark:border-gray-800 overflow-x-auto custom-scrollbar"
               aria-label="Tabs"
             >
               {/* 1. Tab Resumen General */}
@@ -160,11 +161,11 @@ const Income = () => {
             </>
           )}
           {activeTab === "history-and-send-receipts" && (
-            <div className="w-full flex justify-start mt-8">
-              <div className="w-[70%]">
+            <div className="lg:p-4 flex mt-0 lg:mt-8 flex-col lg:flex-row gap-4">
+              <div className="w-full lg:w-[70%]">
                 <PaymentHistory />
               </div>
-              <div className="w-[30%] ml-2">
+              <div className="w-full lg:w-[30%] ml-2">
                 <DownloadReceipts />
               </div>
             </div>
