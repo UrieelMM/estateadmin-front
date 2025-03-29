@@ -47,13 +47,17 @@ const BalanceGeneral: React.FC = () => {
 
   // Calcular el total de ingresos incluyendo el saldo a favor y créditos utilizados
   const totalIncomeWithCredit = useMemo(() => {
-    const totalFromMonthlyStats = monthlyStatsIncomes.reduce((acc, stat) => {
-      return acc + stat.paid + (stat.creditUsed || 0);
+    const totalCreditUsed = monthlyStatsIncomes.reduce((acc, stat) => {
+      return acc + (stat.creditUsed || 0);
     }, 0);
 
-    // Incluir el total de ingresos, más el saldo a favor por aplicar
-    return totalFromMonthlyStats + totalCreditGlobal;
-  }, [totalIncome, monthlyStatsIncomes, totalCreditGlobal]);
+    // Usamos totalIncome del store y totalCreditGlobal para el saldo a favor
+    return (
+      totalIncome +
+      (totalCreditGlobal > 0 ? totalCreditGlobal : 0) -
+      totalCreditUsed
+    );
+  }, [monthlyStatsIncomes, totalIncome, totalCreditGlobal]);
 
   // Datos de egresos
   const {

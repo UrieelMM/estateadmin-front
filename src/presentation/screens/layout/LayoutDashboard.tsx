@@ -44,7 +44,9 @@ const LayoutDashboard = ({ children }: Props) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [loadingSession, setLoadingSession] = useState(true);
-  const [showInitialSetup, setShowInitialSetup] = useState<boolean | null>(null);
+  const [showInitialSetup, setShowInitialSetup] = useState<boolean | null>(
+    null
+  );
 
   // Verificar si el usuario necesita hacer la configuración inicial
   useEffect(() => {
@@ -68,7 +70,9 @@ const LayoutDashboard = ({ children }: Props) => {
         const configDocRef = doc(db, "clients", clientId);
         const configDoc = await getDoc(configDocRef);
 
-        setShowInitialSetup(!configDoc.exists() || !configDoc.data()?.initialSetupCompleted);
+        setShowInitialSetup(
+          !configDoc.exists() || !configDoc.data()?.initialSetupCompleted
+        );
       } catch (error) {
         console.error("Error al verificar configuración inicial:", error);
         setShowInitialSetup(false);
@@ -122,7 +126,7 @@ const LayoutDashboard = ({ children }: Props) => {
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100">
       <ChatBot />
-      
+
       {/* Botón móvil (arriba a la izquierda) para abrir/cerrar sidebar */}
       <div className="lg:hidden px-1 py-4">
         <button
@@ -156,7 +160,10 @@ const LayoutDashboard = ({ children }: Props) => {
               <img className="h-8 w-auto" src={logo} alt="Your Company" />
             </div>
 
-            <nav className="flex-1 flex flex-col justify-between" aria-label="Sidebar">
+            <nav
+              className="flex-1 flex flex-col justify-between"
+              aria-label="Sidebar"
+            >
               <ul className="py-6 space-y-2">
                 {navigation.map((item) => (
                   <li key={item.name}>
@@ -164,7 +171,9 @@ const LayoutDashboard = ({ children }: Props) => {
                       <Link
                         to={item.href}
                         className={classNames(
-                          item.current ? "bg-indigo-100" : "hover:bg-indigo-100 dark:hover:bg-gray-700",
+                          item.current
+                            ? "bg-indigo-100"
+                            : "hover:bg-indigo-100 dark:hover:bg-gray-700",
                           "group flex items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md"
                         )}
                       >
@@ -226,7 +235,9 @@ const LayoutDashboard = ({ children }: Props) => {
                         aria-hidden="true"
                       />
                     </div>
-                    <p className="text-xs mt-2 mb-2 text-center">¿Necesitas ayuda?</p>
+                    <p className="text-xs mt-2 mb-2 text-center">
+                      ¿Necesitas ayuda?
+                    </p>
                     <button className="bg-indigo-400 text-xs text-center m-0 text-white rounded-md p-1">
                       <span className="block mb-0.5">Contacta a soporte</span>
                     </button>
@@ -285,7 +296,10 @@ const LayoutDashboard = ({ children }: Props) => {
                 <XMarkIcon className="block h-6 w-6" aria-hidden="true" />
               </button>
             </div>
-            <nav className="flex-1 flex flex-col justify-between" aria-label="Sidebar">
+            <nav
+              className="flex-1 flex flex-col justify-between"
+              aria-label="Sidebar"
+            >
               <ul className="py-6 space-y-2">
                 {navigation.map((item) => (
                   <li key={item.name}>
@@ -294,7 +308,9 @@ const LayoutDashboard = ({ children }: Props) => {
                         to={item.href}
                         onClick={() => setIsMobileMenuOpen(false)}
                         className={classNames(
-                          item.current ? "bg-indigo-100" : "hover:bg-indigo-100",
+                          item.current
+                            ? "bg-indigo-100"
+                            : "hover:bg-indigo-100",
                           "group flex items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md"
                         )}
                       >
@@ -329,8 +345,8 @@ const LayoutDashboard = ({ children }: Props) => {
                             </Disclosure.Button>
                             <Disclosure.Panel className="space-y-1">
                               {item.children.map((subItem) => (
-                                <Link 
-                                  to={subItem.href} 
+                                <Link
+                                  to={subItem.href}
                                   key={subItem.name}
                                   onClick={() => setIsMobileMenuOpen(false)}
                                   className="group w-full flex items-center pl-11 pr-2 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md hover:bg-indigo-100 dark:hover:bg-gray-700"
@@ -355,7 +371,9 @@ const LayoutDashboard = ({ children }: Props) => {
                         aria-hidden="true"
                       />
                     </div>
-                    <p className="text-xs mt-2 mb-2 text-center">¿Necesitas ayuda?</p>
+                    <p className="text-xs mt-2 mb-2 text-center">
+                      ¿Necesitas ayuda?
+                    </p>
                     <button className="bg-indigo-400 text-xs text-center m-0 text-white rounded-md p-1">
                       <span className="block mb-0.5">Contacta a soporte</span>
                     </button>

@@ -11,7 +11,6 @@ import {
   doc as createDoc,
 } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { toast } from "react-hot-toast";
 
 /**
  * Tipos de datos para un egreso
@@ -27,6 +26,7 @@ export interface ExpenseRecord {
   invoiceUrl?: string; // URL o referencia al archivo de factura/recibo
   description?: string; // Descripción opcional
   financialAccountId: string; // ID de la cuenta financiera
+  providerId?: string;
 }
 
 /**
@@ -40,6 +40,7 @@ export interface ExpenseCreateInput {
   description?: string;
   file?: File; // Comprobante, factura, etc.
   financialAccountId: string; // Nuevo campo requerido
+  providerId?: string;
 }
 
 interface ExpenseState {
@@ -122,6 +123,7 @@ export const useExpenseStore = create<ExpenseState>((set, get) => ({
           invoiceUrl: data.invoiceUrl ?? undefined,
           description: data.description ?? "",
           financialAccountId: data.financialAccountId ?? "",
+          providerId: data.providerId ?? undefined,
         };
       });
 
@@ -176,6 +178,11 @@ export const useExpenseStore = create<ExpenseState>((set, get) => ({
         financialAccountId: data.financialAccountId,
       };
 
+      // Solo agregar providerId si existe
+      if (data.providerId) {
+        expenseData.providerId = data.providerId;
+      }
+
       // Subir archivo si existe
       let invoiceUrl = "";
       if (data.file) {
@@ -202,11 +209,8 @@ export const useExpenseStore = create<ExpenseState>((set, get) => ({
 
       // Actualizar la lista de egresos
       await get().refreshExpenses();
-
-      toast.success("Egreso registrado correctamente");
     } catch (error) {
       console.error("Error al crear egreso:", error);
-      toast.error("Error al registrar el egreso");
       set({ error: "Error al registrar el egreso" });
     } finally {
       set({ loading: false });

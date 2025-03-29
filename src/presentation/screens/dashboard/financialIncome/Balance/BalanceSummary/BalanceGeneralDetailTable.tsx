@@ -4,8 +4,8 @@ import React from "react";
 interface IncomeMonthlyStat {
   month: string;
   paid: number;
-  saldo: number;  // Saldo a favor (creditBalance)
-  creditUsed: number;  // Nuevo campo para el crédito usado
+  saldo: number; // Saldo a favor (creditBalance)
+  creditUsed: number; // Nuevo campo para el crédito usado
 }
 
 interface ExpenseMonthlyStat {
@@ -43,11 +43,11 @@ const BalanceGeneralDetailTable: React.FC<BalanceGeneralDetailTableProps> = ({
     const monthLabel = monthNames[m] || m;
     const incomeStat = incomesMonthlyStats.find((stat) => stat.month === m);
     const expenseStat = expensesMonthlyStats.find((stat) => stat.month === m);
-    
+
     // Calculamos los ingresos totales como:
-    // paid (pagos) + saldo (saldo a favor por aplicar) + creditUsed (saldo aplicado)
-    const ingresos = incomeStat 
-      ? incomeStat.paid + incomeStat.saldo + incomeStat.creditUsed
+    // (paid + saldo) - creditUsed
+    const ingresos = incomeStat
+      ? incomeStat.paid + incomeStat.saldo - incomeStat.creditUsed
       : 0;
     const egresos = expenseStat ? expenseStat.spent : 0;
     const balance = ingresos - egresos;
@@ -66,19 +66,38 @@ const BalanceGeneralDetailTable: React.FC<BalanceGeneralDetailTableProps> = ({
       <table className="min-w-full">
         <thead>
           <tr>
-            <th className="border px-4 py-2 dark:bg-gray-900 dark:text-gray-100">Mes</th>
-            <th className="border px-4 py-2 dark:bg-gray-900 dark:text-gray-100">Ingresos</th>
-            <th className="border px-4 py-2 dark:bg-gray-900 dark:text-gray-100">Egresos</th>
-            <th className="border px-4 py-2 dark:bg-gray-900 dark:text-gray-100">Balance</th>
+            <th className="border px-4 py-2 dark:bg-gray-900 dark:text-gray-100">
+              Mes
+            </th>
+            <th className="border px-4 py-2 dark:bg-gray-900 dark:text-gray-100">
+              Ingresos
+            </th>
+            <th className="border px-4 py-2 dark:bg-gray-900 dark:text-gray-100">
+              Egresos
+            </th>
+            <th className="border px-4 py-2 dark:bg-gray-900 dark:text-gray-100">
+              Balance
+            </th>
           </tr>
         </thead>
         <tbody>
           {data.map((row, index) => (
-            <tr key={index} className={index % 2 === 0 ? "bg-gray-50" : "bg-white"}>
-              <td className="border px-4 py-2 dark:bg-gray-800 dark:text-gray-100">{row.month}</td>
-              <td className="border px-4 py-2 dark:bg-gray-800 dark:text-gray-100">{formatCurrency(row.ingresos)}</td>
-              <td className="border px-4 py-2 dark:bg-gray-800 dark:text-gray-100">{formatCurrency(row.egresos)}</td>
-              <td className="border px-4 py-2 dark:bg-gray-800 dark:text-gray-100">{formatCurrency(row.balance)}</td>
+            <tr
+              key={index}
+              className={index % 2 === 0 ? "bg-gray-50" : "bg-white"}
+            >
+              <td className="border px-4 py-2 dark:bg-gray-800 dark:text-gray-100">
+                {row.month}
+              </td>
+              <td className="border px-4 py-2 dark:bg-gray-800 dark:text-gray-100">
+                {formatCurrency(row.ingresos)}
+              </td>
+              <td className="border px-4 py-2 dark:bg-gray-800 dark:text-gray-100">
+                {formatCurrency(row.egresos)}
+              </td>
+              <td className="border px-4 py-2 dark:bg-gray-800 dark:text-gray-100">
+                {formatCurrency(row.balance)}
+              </td>
             </tr>
           ))}
         </tbody>

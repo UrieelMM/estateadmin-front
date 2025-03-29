@@ -128,7 +128,7 @@ const MonthComparisonTable: React.FC = React.memo(() => {
                         row.creditUsed) <
                     0
                       ? "text-green-500 dark:text-green-400"
-                      : "text-red-500 dark:text-red-400"
+                      : "text-red-600 dark:text-red-400"
                   }`}
                 >
                   {formatCurrency(
@@ -160,7 +160,7 @@ const MonthComparisonTable: React.FC = React.memo(() => {
                 className={`border p-2 font-semibold ${
                   totals.saldo < 0
                     ? "text-green-500 dark:text-green-400"
-                    : "text-red-500 dark:text-red-400"
+                    : "text-red-600 dark:text-red-400"
                 }`}
               >
                 {totals.saldo < 0 ? "+" : ""}

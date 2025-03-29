@@ -50,6 +50,7 @@ export interface ExpenseRecord {
   registerDate: string; // "YYYY-MM-DD HH:mm"
   invoiceUrl?: string; // Comprobante, opcional
   description?: string; // Descripción adicional
+  providerId?: string; // ID del proveedor asociado, opcional
 }
 
 /**
@@ -96,6 +97,10 @@ interface ExpenseSummaryState {
     filters?: { month?: string; year?: string }
   ) => Promise<number>;
   searchExpenseByFolio: (folio: string) => Promise<ExpenseRecord | null>;
+  getExpensesByProvider: (
+    providerId: string,
+    year: string
+  ) => Promise<ExpenseRecord[]>;
 }
 
 // Variable de caché para resultados de paginación
@@ -126,6 +131,7 @@ export const useExpenseSummaryStore = create<ExpenseSummaryState>(
             registerDate: data.registerDate || "",
             invoiceUrl: data.invoiceUrl || undefined,
             description: data.description || "",
+            providerId: data.providerId || undefined,
           };
         })
         // Solo filtrar por año si se ha seleccionado un año específico
@@ -437,6 +443,7 @@ export const useExpenseSummaryStore = create<ExpenseSummaryState>(
               registerDate: data.registerDate || "",
               invoiceUrl: data.invoiceUrl || undefined,
               description: data.description || "",
+              providerId: data.providerId || undefined,
             };
 
             expenseRecords.push(record);
@@ -514,6 +521,7 @@ export const useExpenseSummaryStore = create<ExpenseSummaryState>(
               registerDate: data.registerDate || "",
               invoiceUrl: data.invoiceUrl || undefined,
               description: data.description || "",
+              providerId: data.providerId || undefined,
             };
           }
 
@@ -521,6 +529,57 @@ export const useExpenseSummaryStore = create<ExpenseSummaryState>(
         } catch (error: any) {
           console.error("Error al buscar egreso por folio:", error);
           return null;
+        }
+      },
+
+      // Nueva función para obtener egresos por proveedor
+      getExpensesByProvider: async (
+        providerId: string,
+        year: string
+      ): Promise<ExpenseRecord[]> => {
+        try {
+          const db = getFirestore();
+          const auth = getAuth();
+          const user = auth.currentUser;
+          if (!user) throw new Error("Usuario no autenticado");
+
+          const tokenResult = await getIdTokenResult(user);
+          const clientId = tokenResult.claims["clientId"] as string;
+          const condominiumId = localStorage.getItem("condominiumId");
+          if (!condominiumId) throw new Error("Condominio no seleccionado");
+
+          const expensesRef = collection(
+            db,
+            `clients/${clientId}/condominiums/${condominiumId}/expenses`
+          );
+
+          const snapshot = await getDocs(expensesRef);
+          const expenses = snapshot.docs
+            .map((doc) => {
+              const data = doc.data();
+              return {
+                id: doc.id,
+                folio: data.folio || "",
+                amount: centsToPesos(data.amount),
+                concept: data.concept || "Desconocido",
+                paymentType: data.paymentType || "Desconocido",
+                expenseDate: data.expenseDate || "",
+                registerDate: data.registerDate || "",
+                invoiceUrl: data.invoiceUrl || undefined,
+                description: data.description || "",
+                providerId: data.providerId || undefined,
+              };
+            })
+            .filter(
+              (expense) =>
+                expense.providerId === providerId &&
+                expense.expenseDate.startsWith(year)
+            );
+
+          return expenses;
+        } catch (error: any) {
+          console.error("Error al obtener egresos por proveedor:", error);
+          return [];
         }
       },
     };

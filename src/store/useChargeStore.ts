@@ -67,6 +67,8 @@ export const useChargeStore = create<ChargeState>((set) => ({
         startAt: options.startAt,
         dueDate: options.dueDate,
         paid: options.paid,
+        clientId: clientId,
+        condominiumId: condominiumId,
       });
 
       set({ loading: false, error: null });
@@ -136,6 +138,8 @@ export const useChargeStore = create<ChargeState>((set) => ({
             startAt: options.startAt, // Se almacena como string
             dueDate: options.dueDate, // String
             paid: options.paid,
+            clientId: clientId,
+            condominiumId: condominiumId,
           }).then(() => Promise.resolve())
         );
       });
