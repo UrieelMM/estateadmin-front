@@ -4,7 +4,6 @@ import { getToken, onMessage } from "firebase/messaging";
 import { messaging } from "../../../../firebase/firebase";
 import useAuthStore from "../../../../store/AuthStore";
 
-
 const Notifications = () => {
   const { user, updateNotificationToken } = useAuthStore();
   const [fcmToken, setFcmToken] = useState<string | null>(null);
@@ -21,7 +20,7 @@ const Notifications = () => {
             updateNotificationToken(currentToken);
           }
         } else {
-          console.log("No se obtuvo token; es posible que el usuario no haya otorgado permiso.");
+          // No se obtuvo token; es posible que el usuario no haya otorgado permiso.
         }
       })
       .catch((err) => {
@@ -39,8 +38,7 @@ const Notifications = () => {
 
   // Escucha mensajes en primer plano
   useEffect(() => {
-    const unsubscribe = onMessage(messaging, (payload) => {
-      console.log("Mensaje recibido en primer plano:", payload);
+    const unsubscribe = onMessage(messaging, (_payload) => {
       // Aquí puedes agregar lógica para mostrar la notificación en la UI si lo deseas
     });
     return () => unsubscribe();

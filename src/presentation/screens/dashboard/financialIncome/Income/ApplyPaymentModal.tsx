@@ -43,7 +43,6 @@ const ApplyPaymentModal = ({
   financialAccountId: propFinancialAccountId, // Cuenta donde se registra el pago
   paymentId: propPaymentId, // ID del pago no identificado
 }: ApplyPaymentModalProps) => {
-  console.log("paymentId", propPaymentId);
   // ---------------------------
   //  Estados locales
   // ---------------------------
@@ -79,12 +78,16 @@ const ApplyPaymentModal = ({
   const [useCreditBalance, setUseCreditBalance] = useState<boolean>(false);
   const [selectedCharges, setSelectedCharges] = useState<SelectedCharge[]>([]);
   // Estado para valores visuales de cada cargo
-  const [chargeDisplayValues, setChargeDisplayValues] = useState<{ [key: string]: string }>({});
+  const [chargeDisplayValues, setChargeDisplayValues] = useState<{
+    [key: string]: string;
+  }>({});
 
   // ---------------------------
   //  Stores
   // ---------------------------
-  const fetchCondominiumsUsers = useUserStore((state) => state.fetchCondominiumsUsers);
+  const fetchCondominiumsUsers = useUserStore(
+    (state) => state.fetchCondominiumsUsers
+  );
   const condominiumsUsers = useUserStore((state) => state.condominiumsUsers);
 
   const {
@@ -172,7 +175,9 @@ const ApplyPaymentModal = ({
     if (checked) {
       setSelectedCharges((prev) => [...prev, { chargeId, amount: 0 }]);
     } else {
-      setSelectedCharges((prev) => prev.filter((sc) => sc.chargeId !== chargeId));
+      setSelectedCharges((prev) =>
+        prev.filter((sc) => sc.chargeId !== chargeId)
+      );
     }
   };
 
@@ -209,7 +214,8 @@ const ApplyPaymentModal = ({
       setFileName(acceptedFiles[0].name);
     },
   };
-  const { getRootProps, getInputProps, isDragActive } = useDropzone(dropzoneOptions);
+  const { getRootProps, getInputProps, isDragActive } =
+    useDropzone(dropzoneOptions);
 
   // ---------------------------
   //  Submit
@@ -245,7 +251,9 @@ const ApplyPaymentModal = ({
       return;
     }
     if (useCreditBalance) {
-      if (Number(effectiveTotal).toFixed(2) !== Number(totalAssigned).toFixed(2)) {
+      if (
+        Number(effectiveTotal).toFixed(2) !== Number(totalAssigned).toFixed(2)
+      ) {
         toast.error(
           "En pago con saldo a favor, la suma de montos asignados debe ser igual a (monto abonado + crédito disponible)."
         );
@@ -263,7 +271,8 @@ const ApplyPaymentModal = ({
     }
     if (
       useCreditBalance &&
-      (!selectedUser?.totalCreditBalance || Number(selectedUser.totalCreditBalance) / 100 <= 0)
+      (!selectedUser?.totalCreditBalance ||
+        Number(selectedUser.totalCreditBalance) / 100 <= 0)
     ) {
       toast.error("No tienes saldo a favor disponible.");
       setLoading(false);
@@ -371,7 +380,10 @@ const ApplyPaymentModal = ({
                               onClick={() => setOpen(false)}
                             >
                               <span className="absolute -inset-2.5" />
-                              <XMarkIcon className="h-6 w-6" aria-hidden="true" />
+                              <XMarkIcon
+                                className="h-6 w-6"
+                                aria-hidden="true"
+                              />
                             </button>
                           </div>
                         </div>
@@ -402,10 +414,14 @@ const ApplyPaymentModal = ({
                                   id="nameRecipient"
                                   className="px-8 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
                                   value={
-                                    users.find((u) => u.number === numberCondominium)?.uid || ""
+                                    users.find(
+                                      (u) => u.number === numberCondominium
+                                    )?.uid || ""
                                   }
                                 >
-                                  <option value="">Selecciona un condómino</option>
+                                  <option value="">
+                                    Selecciona un condómino
+                                  </option>
                                   {users
                                     .filter(
                                       (user) =>
@@ -441,7 +457,9 @@ const ApplyPaymentModal = ({
                                   id="paymentDate"
                                   className="px-8 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
                                   value={
-                                    paymentDate ? paymentDate.toISOString().slice(0, 16) : ""
+                                    paymentDate
+                                      ? paymentDate.toISOString().slice(0, 16)
+                                      : ""
                                   }
                                 />
                               </div>
@@ -465,7 +483,11 @@ const ApplyPaymentModal = ({
                                   name="amountPaid"
                                   id="amountPaid"
                                   className="px-8 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
-                                  value={amountPaid ? formatCurrency(Number(amountPaid)) : ""}
+                                  value={
+                                    amountPaid
+                                      ? formatCurrency(Number(amountPaid))
+                                      : ""
+                                  }
                                 />
                               </div>
                             </div>
@@ -489,8 +511,12 @@ const ApplyPaymentModal = ({
                                   className="block w-full rounded-md border-0 pl-10 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 opacity-80 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:focus:ring-2 dark:ring-indigo-500"
                                   value={paymentType}
                                 >
-                                  <option value="">Selecciona un tipo de pago</option>
-                                  <option value="Transferencia">Transferencia</option>
+                                  <option value="">
+                                    Selecciona un tipo de pago
+                                  </option>
+                                  <option value="Transferencia">
+                                    Transferencia
+                                  </option>
                                   <option value="Efectivo">Efectivo</option>
                                   <option value="Tarjeta">Tarjeta</option>
                                   <option value="Depósito">Depósito</option>
@@ -521,11 +547,15 @@ const ApplyPaymentModal = ({
                                     setAmountPending(e.target.value);
                                     setAmountPendingDisplay(e.target.value);
                                   }}
-                                  onFocus={() => setAmountPendingDisplay(amountPending)}
+                                  onFocus={() =>
+                                    setAmountPendingDisplay(amountPending)
+                                  }
                                   onBlur={() => {
                                     const num = parseFloat(amountPending);
                                     if (!isNaN(num)) {
-                                      setAmountPendingDisplay(formatCurrency(num));
+                                      setAmountPendingDisplay(
+                                        formatCurrency(num)
+                                      );
                                     } else {
                                       setAmountPendingDisplay("");
                                     }
@@ -535,103 +565,174 @@ const ApplyPaymentModal = ({
                             </div>
 
                             {/* Saldo a favor */}
-                            {selectedUser && !isUnidentifiedPayment && Number(selectedUser.totalCreditBalance) > 0 && (
-                              <div>
-                                <label className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100">
-                                  Saldo a favor disponible: {formatCurrency(Number(selectedUser.totalCreditBalance) / 100)}
-                                </label>
-                                <div className="mt-2 flex items-center space-x-4">
-                                  <label className="flex items-center dark:text-gray-100">
-                                    <input
-                                      type="radio"
-                                      name="useCreditBalance"
-                                      value="false"
-                                      checked={!useCreditBalance}
-                                      onChange={() => setUseCreditBalance(false)}
-                                      className="mr-2"
-                                    />
-                                    No utilizar saldo a favor
+                            {selectedUser &&
+                              !isUnidentifiedPayment &&
+                              Number(selectedUser.totalCreditBalance) > 0 && (
+                                <div>
+                                  <label className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100">
+                                    Saldo a favor disponible:{" "}
+                                    {formatCurrency(
+                                      Number(selectedUser.totalCreditBalance) /
+                                        100
+                                    )}
                                   </label>
-                                  <label className="flex items-center dark:text-gray-100">
-                                    <input
-                                      type="radio"
-                                      name="useCreditBalance"
-                                      value="true"
-                                      checked={useCreditBalance}
-                                      onChange={() => setUseCreditBalance(true)}
-                                      className="mr-2"
-                                    />
-                                    Utilizar saldo a favor
-                                  </label>
+                                  <div className="mt-2 flex items-center space-x-4">
+                                    <label className="flex items-center dark:text-gray-100">
+                                      <input
+                                        type="radio"
+                                        name="useCreditBalance"
+                                        value="false"
+                                        checked={!useCreditBalance}
+                                        onChange={() =>
+                                          setUseCreditBalance(false)
+                                        }
+                                        className="mr-2"
+                                      />
+                                      No utilizar saldo a favor
+                                    </label>
+                                    <label className="flex items-center dark:text-gray-100">
+                                      <input
+                                        type="radio"
+                                        name="useCreditBalance"
+                                        value="true"
+                                        checked={useCreditBalance}
+                                        onChange={() =>
+                                          setUseCreditBalance(true)
+                                        }
+                                        className="mr-2"
+                                      />
+                                      Utilizar saldo a favor
+                                    </label>
+                                  </div>
                                 </div>
-                              </div>
-                            )}
+                              )}
 
                             {/* Lista de cargos pendientes */}
-                            {numberCondominium && charges.length > 0 && !isUnidentifiedPayment && (
-                              <div>
-                                <label className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100">
-                                  Selecciona cargos a pagar
-                                </label>
-                                <div className="mt-2 space-y-2">
-                                  {charges.map((charge) => {
-                                    const isChecked = selectedCharges.some((sc) => sc.chargeId === charge.id);
-                                    return (
-                                      <div key={charge.id} className="flex items-center space-x-2">
-                                        <input
-                                          type="checkbox"
-                                          disabled={isUnidentifiedPayment}
-                                          checked={isChecked}
-                                          onChange={(e) => handleToggleCharge(charge.id, e.target.checked)}
-                                          className="accent-indigo-600 dark:accent-indigo-400"
-                                        />
-                                        <span className="flex-1 dark:text-gray-100">
-                                          {`${charge.concept} | Mes: ${charge.month || "Sin mes"} | Monto: ${formatCurrency(charge.amount / 100)}`}
-                                        </span>
-                                        {isChecked && (
-                                          <div className="relative">
-                                            <input
-                                              type="text"
-                                              min="0"
-                                              step="any"
-                                              className="w-18 rounded-md border-gray-300 pl-5 h-8 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
-                                              placeholder="Monto a aplicar"
-                                              value={chargeDisplayValues[charge.id] || ""}
-                                              onChange={(e) => {
-                                                const rawValue = e.target.value;
-                                                const newNumber = parseFloat(rawValue.replace(/[^0-9.]/g, "")) || 0;
-                                                handleAmountChange(charge.id, newNumber);
-                                                setChargeDisplayValues((prev) => ({ ...prev, [charge.id]: rawValue }));
-                                              }}
-                                              onFocus={() => {
-                                                const selected = selectedCharges.find((sc) => sc.chargeId === charge.id);
-                                                if (selected) {
-                                                  setChargeDisplayValues((prev) => ({ ...prev, [charge.id]: selected.amount.toString() }));
+                            {numberCondominium &&
+                              charges.length > 0 &&
+                              !isUnidentifiedPayment && (
+                                <div>
+                                  <label className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100">
+                                    Selecciona cargos a pagar
+                                  </label>
+                                  <div className="mt-2 space-y-2">
+                                    {charges.map((charge) => {
+                                      const isChecked = selectedCharges.some(
+                                        (sc) => sc.chargeId === charge.id
+                                      );
+                                      return (
+                                        <div
+                                          key={charge.id}
+                                          className="flex items-center space-x-2"
+                                        >
+                                          <input
+                                            type="checkbox"
+                                            disabled={isUnidentifiedPayment}
+                                            checked={isChecked}
+                                            onChange={(e) =>
+                                              handleToggleCharge(
+                                                charge.id,
+                                                e.target.checked
+                                              )
+                                            }
+                                            className="accent-indigo-600 dark:accent-indigo-400"
+                                          />
+                                          <span className="flex-1 dark:text-gray-100">
+                                            {`${charge.concept} | Mes: ${
+                                              charge.month || "Sin mes"
+                                            } | Monto: ${formatCurrency(
+                                              charge.amount / 100
+                                            )}`}
+                                          </span>
+                                          {isChecked && (
+                                            <div className="relative">
+                                              <input
+                                                type="text"
+                                                min="0"
+                                                step="any"
+                                                className="w-18 rounded-md border-gray-300 pl-5 h-8 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
+                                                placeholder="Monto a aplicar"
+                                                value={
+                                                  chargeDisplayValues[
+                                                    charge.id
+                                                  ] || ""
                                                 }
-                                              }}
-                                              onBlur={() => {
-                                                const selected = selectedCharges.find((sc) => sc.chargeId === charge.id);
-                                                if (selected) {
-                                                  setChargeDisplayValues((prev) => ({ ...prev, [charge.id]: formatCurrency(selected.amount) }));
-                                                }
-                                              }}
-                                            />
-                                          </div>
-                                        )}
-                                      </div>
-                                    );
-                                  })}
+                                                onChange={(e) => {
+                                                  const rawValue =
+                                                    e.target.value;
+                                                  const newNumber =
+                                                    parseFloat(
+                                                      rawValue.replace(
+                                                        /[^0-9.]/g,
+                                                        ""
+                                                      )
+                                                    ) || 0;
+                                                  handleAmountChange(
+                                                    charge.id,
+                                                    newNumber
+                                                  );
+                                                  setChargeDisplayValues(
+                                                    (prev) => ({
+                                                      ...prev,
+                                                      [charge.id]: rawValue,
+                                                    })
+                                                  );
+                                                }}
+                                                onFocus={() => {
+                                                  const selected =
+                                                    selectedCharges.find(
+                                                      (sc) =>
+                                                        sc.chargeId ===
+                                                        charge.id
+                                                    );
+                                                  if (selected) {
+                                                    setChargeDisplayValues(
+                                                      (prev) => ({
+                                                        ...prev,
+                                                        [charge.id]:
+                                                          selected.amount.toString(),
+                                                      })
+                                                    );
+                                                  }
+                                                }}
+                                                onBlur={() => {
+                                                  const selected =
+                                                    selectedCharges.find(
+                                                      (sc) =>
+                                                        sc.chargeId ===
+                                                        charge.id
+                                                    );
+                                                  if (selected) {
+                                                    setChargeDisplayValues(
+                                                      (prev) => ({
+                                                        ...prev,
+                                                        [charge.id]:
+                                                          formatCurrency(
+                                                            selected.amount
+                                                          ),
+                                                      })
+                                                    );
+                                                  }
+                                                }}
+                                              />
+                                            </div>
+                                          )}
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                  <div className="mt-2">
+                                    <span className="text-sm font-bold dark:text-gray-100">
+                                      Saldo restante a aplicar:{" "}
+                                      {formatCurrency(remainingEffective)}
+                                    </span>
+                                  </div>
                                 </div>
-                                <div className="mt-2">
-                                  <span className="text-sm font-bold dark:text-gray-100">
-                                    Saldo restante a aplicar: {formatCurrency(remainingEffective)}
-                                  </span>
-                                </div>
-                              </div>
-                            )}
+                              )}
                             <div>
                               <p className="text-xs text-indigo-500 font-bold dark:text-gray-100 m-0">
-                                *En caso de que no se seleccione un comprobante se usará el previamente cargado en el pago.
+                                *En caso de que no se seleccione un comprobante
+                                se usará el previamente cargado en el pago.
                               </p>
                             </div>
 
@@ -642,9 +743,14 @@ const ApplyPaymentModal = ({
                             >
                               <input {...getInputProps()} />
                               <div className="text-center">
-                                <PhotoIcon className="mx-auto h-12 w-12 text-gray-300" aria-hidden="true" />
+                                <PhotoIcon
+                                  className="mx-auto h-12 w-12 text-gray-300"
+                                  aria-hidden="true"
+                                />
                                 {fileName ? (
-                                  <p className="mt-4 text-sm leading-6 text-gray-600">{fileName}</p>
+                                  <p className="mt-4 text-sm leading-6 text-gray-600">
+                                    {fileName}
+                                  </p>
                                 ) : (
                                   <p className="mt-4 text-sm leading-6 font-medium text-indigo-600">
                                     {isDragActive
@@ -652,7 +758,9 @@ const ApplyPaymentModal = ({
                                       : "Arrastra y suelta el comprobante aquí o haz click para seleccionarlo"}
                                   </p>
                                 )}
-                                <p className="text-xs leading-5 text-gray-600">Hasta 10MB</p>
+                                <p className="text-xs leading-5 text-gray-600">
+                                  Hasta 10MB
+                                </p>
                               </div>
                             </div>
 

@@ -32,8 +32,8 @@ export type MaintenancePayment = {
   numberCondominium: string;
   comments?: string;
 
-  amountPaid: number;      // en pesos
-  amountPending: number;   // en pesos
+  amountPaid: number; // en pesos
+  amountPending: number; // en pesos
 
   file: File | File[] | null;
   chargeId?: string;
@@ -83,7 +83,10 @@ type MaintenancePaymentState = {
 
   fetchUserCharges: (numberCondominium: string) => Promise<void>;
   addMaintenancePayment: (payment: MaintenancePayment) => Promise<void>;
-  updateUnidentifiedPayment: (payment: MaintenancePayment, paymentId: string) => Promise<void>;
+  updateUnidentifiedPayment: (
+    payment: MaintenancePayment,
+    paymentId: string
+  ) => Promise<void>;
 
   // NUEVO: Método separado para editar el pago no identificado
   editUnidentifiedPayment: (paymentId: string) => Promise<void>;
@@ -164,7 +167,10 @@ export const usePaymentStore = create<MaintenancePaymentState>((set, get) => ({
         db,
         `clients/${clientId}/condominiums/${condominiumId}/users`
       );
-      const userQuery = query(usersRef, where("number", "==", numberCondominium));
+      const userQuery = query(
+        usersRef,
+        where("number", "==", numberCondominium)
+      );
       const userSnap = await getDocs(userQuery);
       if (userSnap.empty) {
         throw new Error(
@@ -218,15 +224,17 @@ export const usePaymentStore = create<MaintenancePaymentState>((set, get) => ({
           paid: data.paid ?? false,
           invoiceRequired: data.invoiceRequired ?? false,
           dueDate,
-          startAt: startAtStr,  // Se incluye startAt formateado
+          startAt: startAtStr, // Se incluye startAt formateado
         };
       });
-
 
       set({ charges: newCharges, loading: false, error: null });
     } catch (error: any) {
       console.error("Error al obtener cargos:", error);
-      set({ error: error.message || "Error al obtener cargos", loading: false });
+      set({
+        error: error.message || "Error al obtener cargos",
+        loading: false,
+      });
     }
   },
 
@@ -258,7 +266,9 @@ export const usePaymentStore = create<MaintenancePaymentState>((set, get) => ({
 
       // POST al endpoint de pagos no identificados para actualizar
       await axios.post(
-        `${import.meta.env.VITE_URL_SERVER}/maintenance-fees/create-unidentified`,
+        `${
+          import.meta.env.VITE_URL_SERVER
+        }/maintenance-fees/create-unidentified`,
         formData,
         { headers: { "Content-Type": "multipart/form-data" } }
       );
@@ -280,7 +290,10 @@ export const usePaymentStore = create<MaintenancePaymentState>((set, get) => ({
       if (payment.paymentDate) {
         const date = new Date(payment.paymentDate);
         if (!isNaN(date.getTime())) {
-          formattedPaymentDate = date.toISOString().slice(0, 16).replace('T', ' ');
+          formattedPaymentDate = date
+            .toISOString()
+            .slice(0, 16)
+            .replace("T", " ");
         }
       }
 
@@ -311,7 +324,10 @@ export const usePaymentStore = create<MaintenancePaymentState>((set, get) => ({
         .substring(2, 15)}`;
       formData.append("paymentGroupId", paymentGroupId);
 
-      formData.append("useCreditBalance", payment.useCreditBalance ? "true" : "false");
+      formData.append(
+        "useCreditBalance",
+        payment.useCreditBalance ? "true" : "false"
+      );
       formData.append("paymentType", payment.paymentType || "");
       formData.append(
         "creditUsed",
@@ -340,7 +356,10 @@ export const usePaymentStore = create<MaintenancePaymentState>((set, get) => ({
           formData.set("amountPaid", "0");
           formData.set("appliedToUser", "true");
         } else {
-          formData.append("appliedToUser", JSON.stringify(payment.appliedToUser));
+          formData.append(
+            "appliedToUser",
+            JSON.stringify(payment.appliedToUser)
+          );
         }
 
         if (payment.month) {
@@ -364,7 +383,9 @@ export const usePaymentStore = create<MaintenancePaymentState>((set, get) => ({
 
         // POST al endpoint de pagos NO identificados
         await axios.post(
-          `${import.meta.env.VITE_URL_SERVER}/maintenance-fees/create-unidentified`,
+          `${
+            import.meta.env.VITE_URL_SERVER
+          }/maintenance-fees/create-unidentified`,
           formData,
           { headers: { "Content-Type": "multipart/form-data" } }
         );
@@ -492,8 +513,6 @@ export const usePaymentStore = create<MaintenancePaymentState>((set, get) => ({
         clientId,
         condominiumId,
       };
-
-      console.log("data", data)
 
       // PATCH al nuevo endpoint que sólo edita pagos no identificados
       await axios.patch(

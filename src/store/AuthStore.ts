@@ -66,7 +66,6 @@ const useAuthStore = create<AuthStore>((set, get) => {
       clearTimeout(inactivityTimeout);
     }
     inactivityTimeout = setTimeout(async () => {
-      console.log("Cerrando sesión por inactividad.");
       await get().logoutUser();
     }, INACTIVITY_LIMIT);
   };

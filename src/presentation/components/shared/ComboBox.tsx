@@ -1,44 +1,31 @@
-import { Fragment, useEffect, useState } from 'react'
-import { Menu, Transition } from '@headlessui/react'
-import { ChevronDownIcon } from '@heroicons/react/20/solid'
-import { useCondominiumStore } from '../../../store/useCondominiumStore'
+import { Fragment, useEffect, useState } from "react";
+import { Menu, Transition } from "@headlessui/react";
+import { ChevronDownIcon } from "@heroicons/react/20/solid";
+import { useCondominiumStore } from "../../../store/useCondominiumStore";
 
 function classNames(...classes: string[]) {
-    return classes.filter(Boolean).join(' ')
+  return classes.filter(Boolean).join(" ");
 }
 
 const ComboBox = () => {
   const [mounted, setMounted] = useState(false);
-  const { 
-    condominiums, 
-    selectedCondominium, 
+  const {
+    condominiums,
+    selectedCondominium,
     isLoading,
     error,
-    fetchCondominiums, 
-    setSelectedCondominium 
+    fetchCondominiums,
+    setSelectedCondominium,
   } = useCondominiumStore();
 
   // Efecto inicial para cargar los condominios
   useEffect(() => {
     if (!mounted) {
-      console.log("ComboBox - Montaje inicial");
       fetchCondominiums().then(() => {
         setMounted(true);
-        console.log("ComboBox - Condominios cargados inicialmente");
       });
     }
   }, [mounted, fetchCondominiums]);
-
-  // Efecto para monitorear cambios en los condominios
-  useEffect(() => {
-    console.log("ComboBox - Estado actual:", {
-      condominiums,
-      selectedCondominium,
-      isLoading,
-      error,
-      mounted
-    });
-  }, [condominiums, selectedCondominium, isLoading, error, mounted]);
 
   if (isLoading) {
     return (
@@ -69,7 +56,10 @@ const ComboBox = () => {
       <div>
         <Menu.Button className="inline-flex w-full justify-center gap-x-1.5 rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-900">
           {selectedCondominium?.name || "Seleccionar condominio"}
-          <ChevronDownIcon className="-mr-1 h-5 w-5 text-gray-400" aria-hidden="true" />
+          <ChevronDownIcon
+            className="-mr-1 h-5 w-5 text-gray-400"
+            aria-hidden="true"
+          />
         </Menu.Button>
       </div>
 
@@ -85,19 +75,21 @@ const ComboBox = () => {
         <Menu.Items className="absolute left-0 z-10 mt-2 w-56 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none dark:bg-gray-800">
           <div className="py-1">
             {condominiums.map((condominium) => {
-              console.log("Renderizando condominio:", condominium);
               return (
                 <Menu.Item key={condominium.id}>
                   {({ active }) => (
                     <button
                       onClick={() => {
-                        console.log("ComboBox - Seleccionando condominio:", condominium);
                         setSelectedCondominium(condominium);
                       }}
                       className={classNames(
-                        active ? 'bg-gray-100 text-gray-900 dark:bg-gray-700 dark:text-gray-100' : 'text-gray-700 dark:text-gray-200',
-                        'block w-full px-4 py-2 text-left text-sm',
-                        selectedCondominium?.id === condominium.id ? 'bg-indigo-50 dark:bg-indigo-900' : ''
+                        active
+                          ? "bg-gray-100 text-gray-900 dark:bg-gray-700 dark:text-gray-100"
+                          : "text-gray-700 dark:text-gray-200",
+                        "block w-full px-4 py-2 text-left text-sm",
+                        selectedCondominium?.id === condominium.id
+                          ? "bg-indigo-50 dark:bg-indigo-900"
+                          : ""
                       )}
                     >
                       {condominium.name}
@@ -110,7 +102,7 @@ const ComboBox = () => {
         </Menu.Items>
       </Transition>
     </Menu>
-  )
-}
+  );
+};
 
-export default ComboBox
+export default ComboBox;

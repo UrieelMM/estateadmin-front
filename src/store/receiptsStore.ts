@@ -50,9 +50,9 @@ export const useReceiptStore = create<ReceiptStoreState>((set) => ({
       const monthFormatted = month.toString().padStart(2, "0");
 
       // Construir el endpoint usando el campo compuesto esperado (yearMonth = "yyyy-MM")
-      const endpoint = `https://us-central1-administracioncondominio-93419.cloudfunctions.net/sendReceiptsByEmail?year=${year}&month=${monthFormatted}&clientId=${clientId}&condominiumId=${condominiumId}&email=${encodeURIComponent(email)}&docType=${docType}`;
-      
-      console.log("Endpoint:", endpoint); // Para depuración
+      const endpoint = `https://us-central1-administracioncondominio-93419.cloudfunctions.net/sendReceiptsByEmail?year=${year}&month=${monthFormatted}&clientId=${clientId}&condominiumId=${condominiumId}&email=${encodeURIComponent(
+        email
+      )}&docType=${docType}`;
 
       const response = await axios.get(endpoint);
       alert(response.data);

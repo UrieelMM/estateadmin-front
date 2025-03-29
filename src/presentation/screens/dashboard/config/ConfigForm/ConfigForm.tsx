@@ -110,7 +110,6 @@ const ConfigForm = () => {
 
     try {
       // Verifica qué valor es isDarkMode
-      console.log("isDarkMode =>", isDarkMode, "Type:", typeof isDarkMode);
 
       // Enviamos darkMode asegurándonos de que sea boolean (con !!)
       await updateConfig(

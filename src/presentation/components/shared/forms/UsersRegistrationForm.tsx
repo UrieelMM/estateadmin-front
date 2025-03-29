@@ -49,7 +49,6 @@ const UsersRegistrationForm = () => {
       setCondominiumId("");
       setFileName("");
     } catch (error) {
-      console.log(error);
       toast.error("Error al registrar los usuarios");
     } finally {
       setLoading(false);
