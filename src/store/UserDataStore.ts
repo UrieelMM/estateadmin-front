@@ -14,6 +14,7 @@ import { getIdTokenResult, onAuthStateChanged } from "firebase/auth";
 import { auth } from "../firebase/firebase"; // Ajusta la ruta según tu estructura de carpetas
 import { UserData } from "../interfaces/UserData";
 import { useCondominiumStore } from "./useCondominiumStore";
+import * as Sentry from "@sentry/react";
 
 export interface UserState {
   user: UserData | null;
@@ -117,7 +118,7 @@ const useUserStore = create<UserState>((set, get) => ({
               }
             }
           } catch (error) {
-            console.error("Error al obtener los datos del usuario:", error);
+            Sentry.captureException(error);
           }
         } else {
           set({ user: null });
@@ -417,7 +418,7 @@ const useUserStore = create<UserState>((set, get) => ({
 
       return true;
     } catch (error) {
-      console.error("Error al actualizar usuario:", error);
+      Sentry.captureException(error);
       throw error;
     }
   },

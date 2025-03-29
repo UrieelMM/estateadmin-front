@@ -1,5 +1,5 @@
-import { create } from 'zustand';
-import { getAuth, getIdTokenResult } from 'firebase/auth';
+import { create } from "zustand";
+import { getAuth, getIdTokenResult } from "firebase/auth";
 import {
   getFirestore,
   doc,
@@ -9,13 +9,9 @@ import {
   deleteField,
   collection,
   getDocs,
-} from 'firebase/firestore';
-import {
-  getStorage,
-  ref,
-  uploadBytes,
-  getDownloadURL,
-} from 'firebase/storage';
+} from "firebase/firestore";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import * as Sentry from "@sentry/react";
 
 /** Config general en clients/{clientId}. (Sin incluir darkMode) */
 export type Config = {
@@ -27,7 +23,7 @@ export type Config = {
   country: string;
   logoUrl?: string;
   signatureUrl?: string;
-  logo?: string;        // Derivado de logoUrl para la UI
+  logo?: string; // Derivado de logoUrl para la UI
   logoReports?: string;
 };
 
@@ -95,17 +91,20 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
         "users"
       );
       const allDocs = await getDocs(userCollRef);
-      const userDoc = allDocs.docs.find(doc => 
-        doc.data().email.toLowerCase() === user.email?.toLowerCase()
+      const userDoc = allDocs.docs.find(
+        (doc) => doc.data().email.toLowerCase() === user.email?.toLowerCase()
       );
 
       if (!userDoc) {
-        throw new Error("No existe un usuario en la subcolección con ese email.");
+        throw new Error(
+          "No existe un usuario en la subcolección con ese email."
+        );
       }
 
       // Actualizamos el state
       set({ config: data, loading: false });
     } catch (err: any) {
+      Sentry.captureException(err);
       set({ error: err.message, loading: false });
     }
   },
@@ -156,7 +155,9 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
       if (signatureFile) {
         const signatureRef = ref(
           storage,
-          `clients/${clientId}/clientAssets/signature_${Date.now()}_${signatureFile.name}`
+          `clients/${clientId}/clientAssets/signature_${Date.now()}_${
+            signatureFile.name
+          }`
         );
         await uploadBytes(signatureRef, signatureFile);
         signatureUrl = await getDownloadURL(signatureRef);
@@ -164,7 +165,9 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
       if (logoReportsFile) {
         const logoReportsRef = ref(
           storage,
-          `clients/${clientId}/clientAssets/logoReports_${Date.now()}_${logoReportsFile.name}`
+          `clients/${clientId}/clientAssets/logoReports_${Date.now()}_${
+            logoReportsFile.name
+          }`
         );
         await uploadBytes(logoReportsRef, logoReportsFile);
         logoReportsUrl = await getDownloadURL(logoReportsRef);
@@ -175,8 +178,10 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
         ...generalData,
         ...(logoUrl !== undefined ? { logoUrl } : {}),
         ...(signatureUrl !== undefined ? { signatureUrl } : {}),
-        ...(logoReportsUrl !== undefined ? { logoReports: logoReportsUrl } : {}),
-        darkMode: deleteField(), 
+        ...(logoReportsUrl !== undefined
+          ? { logoReports: logoReportsUrl }
+          : {}),
+        darkMode: deleteField(),
         // Elimina darkMode del doc principal si existía
       };
 
@@ -197,12 +202,14 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
           "users"
         );
         const allDocs = await getDocs(userCollRef);
-        const userDoc = allDocs.docs.find(doc => 
-          doc.data().email.toLowerCase() === user.email?.toLowerCase()
+        const userDoc = allDocs.docs.find(
+          (doc) => doc.data().email.toLowerCase() === user.email?.toLowerCase()
         );
 
         if (!userDoc) {
-          throw new Error("No existe un usuario en la subcolección con ese email.");
+          throw new Error(
+            "No existe un usuario en la subcolección con ese email."
+          );
         }
 
         // 2) Actualizamos el darkMode en ese doc
@@ -214,6 +221,7 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
       await get().fetchConfig();
     } catch (err: any) {
       set({ error: err.message, loading: false });
+      Sentry.captureException(err);
       throw err;
     }
   },

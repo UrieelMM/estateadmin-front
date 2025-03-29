@@ -10,6 +10,7 @@ import {
   getDocs,
 } from "firebase/firestore";
 import axios from "axios";
+import * as Sentry from "@sentry/react";
 
 export type Charge = {
   id: string;
@@ -143,7 +144,7 @@ export const usePaymentStore = create<MaintenancePaymentState>((set, get) => ({
 
       set({ financialAccounts: accounts, loading: false, error: null });
     } catch (error: any) {
-      console.error("Error al obtener cuentas financieras:", error);
+      Sentry.captureException(error);
       set({
         error: error.message || "Error al obtener cuentas financieras",
         loading: false,
@@ -230,7 +231,7 @@ export const usePaymentStore = create<MaintenancePaymentState>((set, get) => ({
 
       set({ charges: newCharges, loading: false, error: null });
     } catch (error: any) {
-      console.error("Error al obtener cargos:", error);
+      Sentry.captureException(error);
       set({
         error: error.message || "Error al obtener cargos",
         loading: false,
@@ -273,7 +274,7 @@ export const usePaymentStore = create<MaintenancePaymentState>((set, get) => ({
         { headers: { "Content-Type": "multipart/form-data" } }
       );
     } catch (error: any) {
-      console.error("Error updating unidentified payment:", error);
+      Sentry.captureException(error);
       throw error;
     }
   },
@@ -486,7 +487,7 @@ export const usePaymentStore = create<MaintenancePaymentState>((set, get) => ({
 
       set({ loading: false, error: null });
     } catch (error: any) {
-      console.error("Error al registrar el pago/cargo:", error);
+      Sentry.captureException(error);
       set({
         loading: false,
         error: error.message || "Error al registrar el pago/cargo",
@@ -523,7 +524,7 @@ export const usePaymentStore = create<MaintenancePaymentState>((set, get) => ({
       // Listo. Si deseas, podrías refrescar algo aquí, pero no es obligatorio
       set({ loading: false, error: null });
     } catch (error: any) {
-      console.error("Error al editar pago no identificado:", error);
+      Sentry.captureException(error);
       set({
         loading: false,
         error: error.message || "Error al editar el pago no identificado",

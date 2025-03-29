@@ -14,6 +14,7 @@ import {
   doc,
   updateDoc,
 } from "firebase/firestore";
+import * as Sentry from "@sentry/react";
 
 // Se elimina el campo 'password' de la interfaz para evitar almacenar datos sensibles
 interface User {
@@ -108,7 +109,6 @@ const useAuthStore = create<AuthStore>((set, get) => {
         localStorage.setItem("dataUserActive", JSON.stringify(loggedUser));
         return loggedUser;
       } catch (error: any) {
-        console.error("Error en login:", error);
         let errorMessage = "";
         switch (error.code) {
           case "auth/user-not-found":
@@ -127,7 +127,8 @@ const useAuthStore = create<AuthStore>((set, get) => {
             errorMessage = "Usuario o contraseña incorrectos";
         }
         set({ authError: errorMessage });
-        throw error;
+        Sentry.captureException(error);
+        throw new Error(errorMessage);
       }
     },
 
@@ -143,9 +144,9 @@ const useAuthStore = create<AuthStore>((set, get) => {
           inactivityTimeout = null;
         }
       } catch (error: any) {
-        console.error("Error al cerrar sesión:", error);
+        Sentry.captureException(error);
         set({ authError: error.message || "Error al cerrar sesión" });
-        throw error;
+        throw new Error(error.message || "Error al cerrar sesión");
       }
     },
 
@@ -189,9 +190,9 @@ const useAuthStore = create<AuthStore>((set, get) => {
         );
         await updateDoc(docRef, { fcmToken: token });
       } catch (error: any) {
-        console.error("Error al actualizar el token de notificación:", error);
+        Sentry.captureException(error);
         set({ authError: error.message || "Error al actualizar token" });
-        throw error;
+        throw new Error(error.message || "Error al actualizar token");
       }
     },
 

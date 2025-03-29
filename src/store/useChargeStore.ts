@@ -3,7 +3,7 @@
 import { create } from "zustand";
 import { getAuth, getIdTokenResult } from "firebase/auth";
 import { getFirestore, collection, addDoc, getDocs } from "firebase/firestore";
-
+import * as Sentry from "@sentry/react";
 /**
  * Interfaz para la creación de cargos.
  * startAt y dueDate: "YYYY-MM-DD HH:mm"
@@ -73,7 +73,7 @@ export const useChargeStore = create<ChargeState>((set) => ({
 
       set({ loading: false, error: null });
     } catch (error: any) {
-      console.error("Error al crear cargo para un usuario:", error);
+      Sentry.captureException(error);
       set({
         loading: false,
         error: error.message || "Error al crear el cargo",
@@ -147,7 +147,7 @@ export const useChargeStore = create<ChargeState>((set) => ({
       await Promise.all(batchPromises);
       set({ loading: false, error: null });
     } catch (error: any) {
-      console.error("Error al crear cargo para todos los usuarios:", error);
+      Sentry.captureException(error);
       set({
         loading: false,
         error: error.message || "Error al crear los cargos",
