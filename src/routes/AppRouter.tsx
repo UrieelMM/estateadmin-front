@@ -13,6 +13,7 @@ import { routesApp } from "./routes";
 import NotFoundPage from "../presentation/screens/NotFoundPage/NotFoundPage";
 import ProtectedRoute from "./ProtectedRoute";
 import ResetPasswordScreen from "../presentation/screens/login/ResetPasswordScreen";
+import UnidentifiedPaymentsPublic from "../presentation/screens/public/UnidentifiedPaymentsPublic";
 
 export const AppRouterPage = () => {
   return (
@@ -22,6 +23,10 @@ export const AppRouterPage = () => {
         <Route path="/login" element={<LoginScreen />} />
         <Route path="/reset-password" element={<ResetPasswordScreen />} />
         <Route path="/presentation" element={<Hero />} />
+        <Route
+          path="/unidentified-payments/:qrId"
+          element={<UnidentifiedPaymentsPublic />}
+        />
 
         {/* Rutas protegidas */}
         <Route element={<ProtectedRoute />}>

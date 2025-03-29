@@ -7,6 +7,8 @@ import {
 } from "@heroicons/react/20/solid";
 import ApplyPaymentModal from "./ApplyPaymentModal"; // Asegúrate de tener este componente implementado
 import { useUnidentifiedPaymentsStore } from "../../../../../store/useUnidentifiedPaymentsStore";
+import UnidentifiedPaymentsPDF from "./UnidentifiedPaymentsPDF";
+import UnidentifiedPaymentsQR from "./UnidentifiedPaymentsQR";
 
 const UnidentifiedPaymentsTable = () => {
   const {
@@ -158,54 +160,60 @@ const UnidentifiedPaymentsTable = () => {
 
   return (
     <div className="p-4 bg-white dark:bg-gray-900 rounded-lg">
-      {/* Filtros */}
-      <div className="mb-4 flex space-x-4">
-        <select
-          className="border border-gray-300 dark:border-gray-700 rounded-md p-2 text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800"
-          value={filterMonth || ""}
-          onChange={handleMonthChange}
-        >
-          <option value="">Todos los meses</option>
-          {[
-            { value: 1, label: "Enero" },
-            { value: 2, label: "Febrero" },
-            { value: 3, label: "Marzo" },
-            { value: 4, label: "Abril" },
-            { value: 5, label: "Mayo" },
-            { value: 6, label: "Junio" },
-            { value: 7, label: "Julio" },
-            { value: 8, label: "Agosto" },
-            { value: 9, label: "Septiembre" },
-            { value: 10, label: "Octubre" },
-            { value: 11, label: "Noviembre" },
-            { value: 12, label: "Diciembre" },
-          ].map((month) => (
-            <option key={month.value} value={month.value}>
-              {month.label}
-            </option>
-          ))}
-        </select>
-        <select
-          className="border border-gray-300 dark:border-gray-700 rounded-md p-2 text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800"
-          value={filterYear || ""}
-          onChange={handleYearChange}
-        >
-          <option value="">Año</option>
-          {Array.from({ length: 11 }, (_, i) => 2022 + i).map((year) => (
-            <option key={year} value={year}>
-              {year}
-            </option>
-          ))}
-        </select>
-        <select
-          className="border border-gray-300 dark:border-gray-700 rounded-md p-2 text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800"
-          value={filterApplied}
-          onChange={(e) => setFilterApplied(e.target.value)}
-        >
-          <option value="todos">Todos</option>
-          <option value="aplicado">Aplicados</option>
-          <option value="no_aplicado">No Aplicados</option>
-        </select>
+      {/* Filtros y botones */}
+      <div className="mb-4 flex justify-between items-center">
+        <div className="flex space-x-4">
+          <select
+            className="border border-gray-300 dark:border-gray-700 rounded-md p-2 text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800"
+            value={filterMonth || ""}
+            onChange={handleMonthChange}
+          >
+            <option value="">Todos los meses</option>
+            {[
+              { value: 1, label: "Enero" },
+              { value: 2, label: "Febrero" },
+              { value: 3, label: "Marzo" },
+              { value: 4, label: "Abril" },
+              { value: 5, label: "Mayo" },
+              { value: 6, label: "Junio" },
+              { value: 7, label: "Julio" },
+              { value: 8, label: "Agosto" },
+              { value: 9, label: "Septiembre" },
+              { value: 10, label: "Octubre" },
+              { value: 11, label: "Noviembre" },
+              { value: 12, label: "Diciembre" },
+            ].map((month) => (
+              <option key={month.value} value={month.value}>
+                {month.label}
+              </option>
+            ))}
+          </select>
+          <select
+            className="border border-gray-300 dark:border-gray-700 rounded-md p-2 text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800"
+            value={filterYear || ""}
+            onChange={handleYearChange}
+          >
+            <option value="">Año</option>
+            {Array.from({ length: 11 }, (_, i) => 2022 + i).map((year) => (
+              <option key={year} value={year}>
+                {year}
+              </option>
+            ))}
+          </select>
+          <select
+            className="border border-gray-300 dark:border-gray-700 rounded-md p-2 text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800"
+            value={filterApplied}
+            onChange={(e) => setFilterApplied(e.target.value)}
+          >
+            <option value="todos">Todos</option>
+            <option value="aplicado">Aplicados</option>
+            <option value="no_aplicado">No Aplicados</option>
+          </select>
+        </div>
+        <div className="flex space-x-2">
+          <UnidentifiedPaymentsPDF payments={filteredPayments} />
+          <UnidentifiedPaymentsQR />
+        </div>
       </div>
 
       {/* Tabla de pagos */}
