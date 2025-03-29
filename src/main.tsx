@@ -1,3 +1,9 @@
+import * as Sentry from "@sentry/react";
+
+Sentry.init({
+  dsn: import.meta.env.VITE_SENTRY_DSN,
+});
+
 import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App.tsx";
@@ -10,9 +16,8 @@ if ("serviceWorker" in navigator) {
       .then(() => {
         // Service Worker registrado exitosamente
       })
-      .catch((_err) => {
-        // Aquí podrías usar un servicio de logging como Sentry, LogRocket, etc.
-        // Por ejemplo: Sentry.captureException(err);
+      .catch((err) => {
+        Sentry.captureException(err);
       });
   });
 }
