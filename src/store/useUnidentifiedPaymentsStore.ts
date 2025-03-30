@@ -398,6 +398,7 @@ export const useUnidentifiedPaymentsStore = create<UnidentifiedPaymentsState>(
           payments: recentPayments,
           createdAt: Timestamp.now(),
           clientId,
+          qrId: "",
         });
 
         return docRef.id;
@@ -410,10 +411,10 @@ export const useUnidentifiedPaymentsStore = create<UnidentifiedPaymentsState>(
     getQRData: async (qrId: string) => {
       try {
         const db = getFirestore();
-        // Se crea una query para buscar el documento en cualquier subcolección "publicQRs" con ese id
+        // Consultamos el campo 'qrId' en lugar de __name__
         const q = query(
           collectionGroup(db, "publicQRs"),
-          where("__name__", "==", qrId)
+          where("qrId", "==", qrId)
         );
         const snapshot = await getDocs(q);
         if (snapshot.empty) {
