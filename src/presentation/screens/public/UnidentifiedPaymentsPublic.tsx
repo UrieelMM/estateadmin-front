@@ -37,8 +37,14 @@ const UnidentifiedPaymentsPublic = () => {
     loadPayments();
   }, [getQRData, qrId]);
 
-  const formatDate = (date: Date) => {
-    return new Date(date).toLocaleDateString("es-MX");
+  const formatDate = (timestamp: any): string => {
+    let date: Date;
+    if (timestamp && typeof timestamp === "object" && "seconds" in timestamp) {
+      date = new Date(timestamp.seconds * 1000);
+    } else {
+      date = new Date(timestamp);
+    }
+    return date.toLocaleDateString("es-MX");
   };
 
   if (loading) {

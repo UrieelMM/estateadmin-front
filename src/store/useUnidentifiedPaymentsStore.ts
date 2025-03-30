@@ -11,7 +11,7 @@ import {
   startAfter as firestoreStartAfter,
   Timestamp,
   addDoc,
-  collectionGroup,
+  updateDoc,
 } from "firebase/firestore";
 import axios from "axios";
 
@@ -381,25 +381,37 @@ export const useUnidentifiedPaymentsStore = create<UnidentifiedPaymentsState>(
         await get().fetchPayments(100);
         const currentPayments = get().payments;
 
-        // Filtrar los pagos de los últimos 30 días
+        // Filtrar los pagos: últimos 30 días y no aplicados
         const thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
         const recentPayments = currentPayments.filter(
-          (payment) => new Date(payment.paymentDate) > thirtyDaysAgo
+          (payment) =>
+            new Date(payment.paymentDate) > thirtyDaysAgo &&
+            payment.appliedToUser === false
         );
 
-        // Guardar los datos en la colección pública en la ruta correcta
         const db = getFirestore();
         const publicQRsRef = collection(
           db,
           `clients/${clientId}/condominiums/${condominiumId}/publicQRs`
         );
+
+        // Calcular fecha de expiración: 1 semana a partir de ahora
+        const expiresAt = Timestamp.fromDate(
+          new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+        );
+
+        // Crear el documento inicialmente sin el qrId definido
         const docRef = await addDoc(publicQRsRef, {
           payments: recentPayments,
           createdAt: Timestamp.now(),
+          expiresAt,
           clientId,
-          qrId: "",
+          qrId: "", // Inicialmente vacío
         });
+
+        // Actualizar el documento para establecer el campo qrId
+        await updateDoc(docRef, { qrId: docRef.id });
 
         return docRef.id;
       } catch (error: any) {
@@ -410,18 +422,18 @@ export const useUnidentifiedPaymentsStore = create<UnidentifiedPaymentsState>(
 
     getQRData: async (qrId: string) => {
       try {
-        const db = getFirestore();
-        // Consultamos el campo 'qrId' en lugar de __name__
-        const q = query(
-          collectionGroup(db, "publicQRs"),
-          where("qrId", "==", qrId)
-        );
-        const snapshot = await getDocs(q);
-        if (snapshot.empty) {
-          throw new Error("QR no encontrado");
+        const url = `${
+          import.meta.env.VITE_GET_QR_DATA_URL
+        }=${encodeURIComponent(qrId)}`;
+        const response = await axios.get(url);
+        if (response.status !== 200) {
+          throw new Error(
+            `Error HTTP: ${response.status} - ${response.statusText}`
+          );
         }
-        const qrData = snapshot.docs[0].data();
-        return qrData.payments as UnidentifiedPayment[];
+        // Se espera que el endpoint retorne un array de pagos
+        const payments = response.data;
+        return payments as UnidentifiedPayment[];
       } catch (error: any) {
         console.error("Error al obtener datos del QR:", error);
         throw error;
