@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "lint": "eslint ./src --ext .js,.jsx,.ts,.tsx",
+    "lint:fix": "eslint ./src --ext .js,.jsx,.ts,.tsx --fix",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -20,6 +21,7 @@
     "@types/uuid": "^10.0.0",
     "antd": "^5.24.1",
     "axios": "^1.7.9",
+    "eslint-plugin-unused-imports": "^4.1.4",
     "file-saver": "^2.0.5",
     "firebase": "^11.4.0",
     "jspdf": "^2.5.2",
