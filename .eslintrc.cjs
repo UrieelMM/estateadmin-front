@@ -17,6 +17,15 @@ module.exports = {
     "no-console": "error",
     "@typescript-eslint/no-explicit-any": "warn",
     "no-unused-vars": "warn",
+    "no-restricted-syntax": [
+      "error",
+      {
+        selector:
+          "CallExpression[callee.object.name='console'][callee.property.name='log']",
+        message:
+          "Uso de console.log no permitido. Usa console.error si es necesario.",
+      },
+    ],
     "@typescript-eslint/no-unused-vars": "warn",
   },
 };
