@@ -1,10 +1,11 @@
 // src/components/PaymentSummary.tsx
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { shallow } from "zustand/shallow";
 import { usePaymentSummaryStore } from "../../../../../store/paymentSummaryStore";
 import useUserStore from "../../../../../store/UserDataStore";
 
 import PDFReportGenerator from "./PDFReportGenerator";
+import ExcelReportGenerator from "./ExcelReportGenerator";
 import PDFReportMaintenance from "./PDFReportMaintenance";
 import SummaryCards from "../Summary/SummaryCards";
 import AnnualGeneralStats from "../Summary/AnnualGeneralStats";
@@ -13,12 +14,16 @@ import MonthComparisonTable from "../Summary/MonthComparisonTable";
 import DetailedConceptsTable from "../Summary/DetailedConceptsTable";
 import ConceptGrowthSection from "../Summary/ConceptGrowthSection.";
 import {
+  ArrowDownTrayIcon,
   DocumentTextIcon,
+  TableCellsIcon,
   WrenchScrewdriverIcon,
 } from "@heroicons/react/24/solid";
 import SkeletonLoading from "../../../../components/shared/loaders/SkeletonLoading";
 
 const PaymentSummary: React.FC = () => {
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
   const {
     loading,
     error,
@@ -54,10 +59,90 @@ const PaymentSummary: React.FC = () => {
     setSelectedYear(e.target.value);
   };
 
+  const toggleDropdown = () => {
+    setIsDropdownOpen(!isDropdownOpen);
+  };
+
+  // Cerrar el dropdown al hacer clic fuera de él
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const dropdownElement = document.getElementById("export-dropdown");
+      if (
+        dropdownElement &&
+        !dropdownElement.contains(event.target as Node) &&
+        isDropdownOpen
+      ) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isDropdownOpen]);
+
   const showSpinner = loading && (!monthlyStats || monthlyStats.length === 0);
 
   return (
-    <div className="p-4">
+    <div className="p-4 w-full">
+      <div className="flex justify-end w-full items-center mb-4">
+        <div className="relative" id="export-dropdown">
+          <button
+            onClick={toggleDropdown}
+            className="flex items-center gap-2 bg-indigo-600 text-white py-2 px-4 rounded font-medium hover:bg-indigo-700"
+          >
+            <ArrowDownTrayIcon className="h-5 w-5" />
+            Exportar
+          </button>
+
+          {isDropdownOpen && (
+            <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-md shadow-lg z-10 border border-gray-200 dark:border-gray-700">
+              <div className="py-1">
+                <PDFReportGenerator
+                  year={selectedYear}
+                  renderButton={(onClick) => (
+                    <button
+                      onClick={onClick}
+                      className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                    >
+                      <DocumentTextIcon className="h-5 w-5 text-indigo-600" />
+                      Reporte General PDF
+                    </button>
+                  )}
+                />
+
+                <ExcelReportGenerator
+                  year={selectedYear}
+                  renderButton={(onClick) => (
+                    <button
+                      onClick={onClick}
+                      className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                    >
+                      <TableCellsIcon className="h-5 w-5 text-green-600" />
+                      Reporte General Excel
+                    </button>
+                  )}
+                />
+
+                <PDFReportMaintenance
+                  year={selectedYear}
+                  renderButton={(onClick) => (
+                    <button
+                      onClick={onClick}
+                      className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                    >
+                      <WrenchScrewdriverIcon className="h-5 w-5 text-indigo-600" />
+                      Cuotas de Mantenimiento
+                    </button>
+                  )}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
       <div className="flex flex-col md:flex-row gap-4 mb-4">
         <div>
           <label className="block font-medium mb-1">Año:</label>
@@ -87,34 +172,6 @@ const PaymentSummary: React.FC = () => {
           <MonthComparisonTable />
           <ConceptGrowthSection />
           <DetailedConceptsTable />
-
-          <h2 className="text-xl font-bold mt-8 mb-4">Reportes</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Tarjeta para Reporte de Ingresos */}
-            <div className="p-4 shadow-md rounded-md flex flex-col justify-between">
-              <div className="flex items-center gap-3 mb-4">
-                <DocumentTextIcon className="text-indigo-600 h-8 w-8" />
-                <h3 className="font-bold text-lg">Reporte de Ingresos</h3>
-              </div>
-              <p className="text-sm text-gray-600 mb-4 dark:text-gray-100">
-                Genera el reporte de ingresos por concepto de cuota de
-                mantenimiento.
-              </p>
-              <PDFReportGenerator year={selectedYear} />
-            </div>
-            {/* Tarjeta para Reporte de Mantenimiento */}
-            <div className="p-4 shadow-md rounded-md flex flex-col justify-between">
-              <div className="flex items-center gap-3 mb-4">
-                <WrenchScrewdriverIcon className="text-indigo-600 h-8 w-8" />
-                <h3 className="font-bold text-lg">Reporte de Mantenimiento</h3>
-              </div>
-              <p className="text-sm text-gray-600 mb-4 dark:text-gray-100">
-                Reporte detallado de los egresos de mantenimiento.
-              </p>
-              <PDFReportMaintenance year={selectedYear} />
-            </div>
-            {/* Aquí podrías agregar más tarjetas conforme se añadan más reportes */}
-          </div>
         </>
       )}
     </div>

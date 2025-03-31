@@ -31,6 +31,7 @@ export interface PDFReportGeneratorProps {
   conceptRecords?: Record<string, PaymentRecord[]>;
   allCondominiums?: Condominium[];
   conceptData?: PaymentRecord[];
+  renderButton?: (onClick: () => void) => React.ReactNode;
 }
 
 const monthNames: Record<string, string> = {
@@ -51,10 +52,10 @@ const monthNames: Record<string, string> = {
 const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({
   year,
   concept,
+  renderButton,
 }) => {
   // Obtener datos del store
   const {
-    totalPending,
     monthlyStats,
     detailed,
     logoBase64,
@@ -186,12 +187,39 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({
         50
       );
 
+      // Calcular el saldo total
+      let totalBalance = 0;
+      monthlyStats.forEach((stat) => {
+        const totalCharges = stat.charges;
+        const monthRecords = Object.values(detailed)
+          .flat()
+          .filter((rec) => rec.month === stat.month);
+        const totalPaid = monthRecords.reduce(
+          (sum, rec) => sum + rec.amountPaid,
+          0
+        );
+        const totalCreditUsed = monthRecords.reduce(
+          (sum, rec) => sum + (rec.creditUsed || 0),
+          0
+        );
+        const totalCreditBalance = monthRecords.reduce(
+          (sum, rec) => sum + rec.creditBalance,
+          0
+        );
+        const totalCredit = totalCreditBalance - totalCreditUsed;
+        const totalPaidWithCredit =
+          totalPaid + (totalCredit > 0 ? totalCredit : 0) - totalCreditUsed;
+
+        // Acumular el saldo de cada mes
+        totalBalance += totalCharges - totalPaidWithCredit;
+      });
+
       doc.setFont("helvetica", "bold");
-      doc.text("Total Pendiente:", 14, 60);
+      doc.text("Saldo:", 14, 60);
       doc.setFont("helvetica", "normal");
       doc.text(
-        formatCurrency(totalPending),
-        14 + doc.getTextWidth("Total Pendiente:") + 4,
+        formatCurrency(totalBalance),
+        14 + doc.getTextWidth("Saldo:") + 4,
         60
       );
 
@@ -777,15 +805,15 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({
     }
   };
 
-  return (
-    <div className="w-full flex">
+  return renderButton ? (
+    renderButton(generatePDF)
+  ) : (
+    <div className="flex">
       <button
         onClick={generatePDF}
-        className="bg-indigo-600 text-white text-sm py-2 px-1 rounded w-[220px] font-medium hover:bg-indigo-700"
+        className="bg-indigo-600 text-white text-sm py-2 px-3 rounded font-medium hover:bg-indigo-700"
       >
-        {concept
-          ? `Generar reporte para ${concept}`
-          : "Generar reporte General"}
+        {concept ? `${concept}` : "Reporte General"}
       </button>
     </div>
   );

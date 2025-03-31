@@ -58,6 +58,16 @@ const MonthComparisonTable: React.FC = React.memo(() => {
     );
   }, [sortedMonthlyStats]);
 
+  // Calcular el saldo total - corrección
+  const totalBalance = useMemo(() => {
+    return sortedMonthlyStats.reduce((acc, curr) => {
+      const monthPaid =
+        curr.paid + (curr.saldo > 0 ? curr.saldo : 0) - curr.creditUsed;
+      const balance = curr.charges - monthPaid;
+      return acc + balance;
+    }, 0);
+  }, [sortedMonthlyStats]);
+
   // Calcular promedios
   const averages = useMemo(
     () => ({
@@ -158,13 +168,12 @@ const MonthComparisonTable: React.FC = React.memo(() => {
               </td>
               <td
                 className={`border p-2 font-semibold ${
-                  totals.saldo < 0
+                  totalBalance < 0
                     ? "text-green-500 dark:text-green-400"
                     : "text-red-600 dark:text-red-400"
                 }`}
               >
-                {totals.saldo < 0 ? "+" : ""}
-                {formatCurrency(Math.abs(totals.saldo))}
+                {formatCurrency(totalBalance)}
               </td>
               <td className="border p-2 font-semibold">
                 {formatCurrency(totals.unidentifiedPayments)}

@@ -2,7 +2,10 @@
 import React from "react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { PaymentRecord, usePaymentSummaryStore } from "../../../../../store/paymentSummaryStore";
+import {
+  PaymentRecord,
+  usePaymentSummaryStore,
+} from "../../../../../store/paymentSummaryStore";
 import useUserStore from "../../../../../store/UserDataStore";
 
 interface Condominium {
@@ -13,10 +16,15 @@ interface Condominium {
 export interface PDFReportGeneratorProps {
   year: string;
   concept?: string;
+  renderButton?: (onClick: () => void) => React.ReactNode;
 }
 
 // Si no se pasa un concepto se asume "Cuota de mantenimiento"
-const PDFReportGeneratorMaintenance: React.FC<PDFReportGeneratorProps> = ({ year, concept }) => {
+const PDFReportGeneratorMaintenance: React.FC<PDFReportGeneratorProps> = ({
+  year,
+  concept,
+  renderButton,
+}) => {
   // Se obtienen datos del store de pagos
   const {
     detailed,
@@ -54,28 +62,40 @@ const PDFReportGeneratorMaintenance: React.FC<PDFReportGeneratorProps> = ({ year
     }).format(value);
 
   // Definir encabezado de la tabla global
-  const tableHead = [[
-    "Nombre y Número de Condomino",
-    "Enero",
-    "Febrero",
-    "Marzo",
-    "Abril",
-    "Mayo",
-    "Junio",
-    "Julio",
-    "Agosto",
-    "Septiembre",
-    "Octubre",
-    "Noviembre",
-    "Diciembre",
-    "Monto pendiente",
-  ]];
+  const tableHead = [
+    [
+      "Nombre y Número de Condomino",
+      "Enero",
+      "Febrero",
+      "Marzo",
+      "Abril",
+      "Mayo",
+      "Junio",
+      "Julio",
+      "Agosto",
+      "Septiembre",
+      "Octubre",
+      "Noviembre",
+      "Diciembre",
+      "Monto pendiente",
+    ],
+  ];
 
   // Armar el cuerpo de la tabla global
   const tableBody: any[][] = [];
   const totals: { [month: string]: number } = {
-    "01": 0, "02": 0, "03": 0, "04": 0, "05": 0, "06": 0,
-    "07": 0, "08": 0, "09": 0, "10": 0, "11": 0, "12": 0,
+    "01": 0,
+    "02": 0,
+    "03": 0,
+    "04": 0,
+    "05": 0,
+    "06": 0,
+    "07": 0,
+    "08": 0,
+    "09": 0,
+    "10": 0,
+    "11": 0,
+    "12": 0,
   };
   let totalPendingGlobal = 0;
 
@@ -88,14 +108,25 @@ const PDFReportGeneratorMaintenance: React.FC<PDFReportGeneratorProps> = ({ year
     );
     const row = [];
     // Columna A: Nombre y Número de Condomino
-    row.push({ content: `${cond.number}${cond.name ? " - " + cond.name : ""}`, styles: { fontStyle: "bold" } });
+    row.push({
+      content: `${cond.number}${cond.name ? " - " + cond.name : ""}`,
+      styles: { fontStyle: "bold" },
+    });
     let totalPendingForCondo = 0;
     // Para cada mes, se suma el monto abonado (amountPaid + creditBalance) y se acumula el pendiente
     for (let m = 1; m <= 12; m++) {
       const monthKey = m.toString().padStart(2, "0");
-      const monthRecords = filteredRecords.filter((rec) => rec.month === monthKey);
-      const paidSum = monthRecords.reduce((sum, rec) => sum + rec.amountPaid + (rec.creditBalance || 0), 0);
-      const pendingSum = monthRecords.reduce((sum, rec) => sum + rec.amountPending, 0);
+      const monthRecords = filteredRecords.filter(
+        (rec) => rec.month === monthKey
+      );
+      const paidSum = monthRecords.reduce(
+        (sum, rec) => sum + rec.amountPaid + (rec.creditBalance || 0),
+        0
+      );
+      const pendingSum = monthRecords.reduce(
+        (sum, rec) => sum + rec.amountPending,
+        0
+      );
       row.push(formatCurrency(paidSum));
       totals[monthKey] += paidSum;
       totalPendingForCondo += pendingSum;
@@ -110,7 +141,9 @@ const PDFReportGeneratorMaintenance: React.FC<PDFReportGeneratorProps> = ({ year
     dateRow.push({ content: "Fecha", styles: { fontStyle: "normal" } });
     for (let m = 1; m <= 12; m++) {
       const monthKey = m.toString().padStart(2, "0");
-      const monthRecords = filteredRecords.filter((rec) => rec.month === monthKey);
+      const monthRecords = filteredRecords.filter(
+        (rec) => rec.month === monthKey
+      );
       const dates = monthRecords
         .map((rec) => rec.paymentDate)
         .filter((d): d is string => !!d)
@@ -163,7 +196,11 @@ const PDFReportGeneratorMaintenance: React.FC<PDFReportGeneratorProps> = ({ year
       startY: 50,
       head: tableHead,
       body: tableBody,
-      headStyles: { fillColor: [75, 68, 224], textColor: 255, fontStyle: "bold" },
+      headStyles: {
+        fillColor: [75, 68, 224],
+        textColor: 255,
+        fontStyle: "bold",
+      },
       styles: { fontSize: 10 },
       theme: "grid",
       margin: { left: 14, right: 14 },
@@ -206,16 +243,20 @@ const PDFReportGeneratorMaintenance: React.FC<PDFReportGeneratorProps> = ({ year
     doc.text("Un servicio de Omnipixel.", margin, footerY - 10);
     doc.text("Correo: administracion@estate-admin.com", margin, footerY - 5);
 
-    doc.save(`reporte_ingresos_${year}_${reportConcept.replace(/\s+/g, "_")}.pdf`);
+    doc.save(
+      `reporte_ingresos_${year}_${reportConcept.replace(/\s+/g, "_")}.pdf`
+    );
   };
 
-  return (
-    <div className="w-full flex">
+  return renderButton ? (
+    renderButton(generatePDF)
+  ) : (
+    <div className="flex">
       <button
         onClick={generatePDF}
-        className="bg-indigo-600 text-white text-sm py-2 px-1 rounded w-[220px] font-medium hover:bg-indigo-700"
+        className="bg-indigo-600 text-white text-sm py-2 px-3 rounded font-medium hover:bg-indigo-700"
       >
-        {`Generar reporte`}
+        {`Cuotas de Mantenimiento`}
       </button>
     </div>
   );

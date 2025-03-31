@@ -248,28 +248,33 @@ const DetailedConceptsTable: React.FC<DetailedConceptsTableProps> = React.memo(
                         </table>
                       </div>
 
-                      <PDFReportGenerator
-                        year={year}
-                        totalIncome={totalIncome}
-                        totalPending={totalPending}
-                        maxMonth={maxMonth}
-                        minMonth={minMonth}
-                        monthlyStats={sortedMonthlyStats}
-                        detailed={
-                          detailed as unknown as Record<string, PaymentRecord[]>
-                        }
-                        allCondominiums={condominiumsUsers.map((user) => ({
-                          number: String(user.number),
-                          name: user.name,
-                        }))}
-                        logoBase64={logoBase64}
-                        signatureBase64={signatureBase64}
-                        adminCompany={adminCompany}
-                        adminPhone={adminPhone}
-                        adminEmail={adminEmail}
-                        concept={concept}
-                        conceptData={records}
-                      />
+                      <div className="flex gap-2">
+                        <PDFReportGenerator
+                          year={year}
+                          totalIncome={totalIncome}
+                          totalPending={totalPending}
+                          maxMonth={maxMonth}
+                          minMonth={minMonth}
+                          monthlyStats={sortedMonthlyStats}
+                          detailed={
+                            detailed as unknown as Record<
+                              string,
+                              PaymentRecord[]
+                            >
+                          }
+                          allCondominiums={condominiumsUsers.map((user) => ({
+                            number: String(user.number),
+                            name: user.name,
+                          }))}
+                          logoBase64={logoBase64}
+                          signatureBase64={signatureBase64}
+                          adminCompany={adminCompany}
+                          adminPhone={adminPhone}
+                          adminEmail={adminEmail}
+                          concept={concept}
+                          conceptData={records}
+                        />
+                      </div>
                     </>
                   );
                 })()}

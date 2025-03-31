@@ -12,7 +12,6 @@ import Publications from "../presentation/screens/dashboard/publications/Publica
 import UsersRegistration from "../presentation/screens/dashboard/users/UsersRegistration";
 import UsersScreen from "../presentation/screens/dashboard/users/UsersScreen";
 
-
 export const routesApp = [
   {
     to: "/dashboard/home",
@@ -61,21 +60,21 @@ export const routesApp = [
     icon: "fa-solid fa-spell-check",
     title: "Publicaciones",
     description: "Gestión de publicaciones en el condominio",
-    component: <Publications  />,
+    component: <Publications />,
   },
   {
     to: "/dashborad/income",
     icon: "fa-solid fa-spell-check",
     title: "Cuotas",
     description: "Gestión de cuotas de mantenimiento",
-    component: <Income  />,
+    component: <Income />,
   },
   {
     to: "/dashborad/charges",
     icon: "fa-solid fa-spell-check",
     title: "Cargos",
     description: "Gestión de cargos",
-    component: <Charges  />,
+    component: <Charges />,
   },
   {
     to: "/dashborad/client-config",
