@@ -24,9 +24,22 @@ const LoginScreen = () => {
   //validar si hay un usuario logeado
   useEffect(() => {
     setLoadingSession(true);
-    const unsubscribe = auth.onAuthStateChanged((user) => {
+    const unsubscribe = auth.onAuthStateChanged(async (user) => {
       if (user) {
-        navigate("/dashboard/home");
+        // Verificar el rol del usuario
+        try {
+          const tokenResult = await user.getIdTokenResult();
+          const role = tokenResult.claims.role;
+
+          if (role === "super-provider-admin") {
+            navigate("/super-admin/dashboard");
+          } else {
+            navigate("/dashboard/home");
+          }
+        } catch (error) {
+          console.error("Error al verificar rol:", error);
+          navigate("/dashboard/home");
+        }
       }
     });
     setTimeout(() => {
@@ -45,7 +58,23 @@ const LoginScreen = () => {
         password,
       });
       if (successLogingUser) {
-        navigate("/dashboard/home");
+        // Verificar el rol del usuario
+        try {
+          const user = auth.currentUser;
+          if (user) {
+            const tokenResult = await user.getIdTokenResult();
+            const role = tokenResult.claims.role;
+
+            if (role === "super-provider-admin") {
+              navigate("/super-admin/dashboard");
+            } else {
+              navigate("/dashboard/home");
+            }
+          }
+        } catch (error) {
+          console.error("Error al verificar rol:", error);
+          navigate("/dashboard/home");
+        }
       }
     } catch (error) {
       if (authError) {

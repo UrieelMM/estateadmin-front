@@ -4,6 +4,7 @@ import {
   signInWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
+  getIdTokenResult,
 } from "firebase/auth";
 import { auth } from "../firebase/firebase";
 import { create } from "zustand";
@@ -13,6 +14,8 @@ import {
   getDocs,
   doc,
   updateDoc,
+  query,
+  where,
 } from "firebase/firestore";
 import * as Sentry from "@sentry/react";
 
@@ -152,31 +155,38 @@ const useAuthStore = create<AuthStore>((set, get) => {
 
     updateNotificationToken: async (token: string) => {
       try {
-        const currentUser = get().user;
-        if (!currentUser) {
+        const user = auth.currentUser;
+        if (!user) {
           throw new Error("No hay usuario autenticado");
         }
 
-        // Obtener el clientId de los claims del token
-        const tokenResult = await auth.currentUser?.getIdTokenResult();
-        const clientId = tokenResult?.claims["clientId"] as string;
-        if (!clientId) throw new Error("No se encontró clientId en los claims");
+        // Obtener los claims del usuario
+        const tokenResult = await getIdTokenResult(user);
+        const role = tokenResult.claims.role as string;
 
-        // Obtener el condominiumId desde el localStorage
-        const condominiumId = localStorage.getItem("condominiumId");
-        if (!condominiumId)
-          throw new Error("No se encontró condominiumId en el localStorage");
+        // Si es Super Admin, no necesitamos actualizar el token
+        if (role === "super-provider-admin") {
+          return;
+        }
 
-        // Buscar el usuario en la colección mediante su email
+        // Para otros roles, verificar clientId y condominiumId
+        const clientId = tokenResult.claims.clientId as string;
+        const condominiumId = tokenResult.claims.condominiumId as string;
+
+        if (!clientId || !condominiumId) {
+          throw new Error(
+            "No se encontró clientId o condominiumId en los claims"
+          );
+        }
+
+        // Buscar el documento del usuario
         const usersRef = collection(
           db,
           `clients/${clientId}/condominiums/${condominiumId}/users`
         );
-        const allDocs = await getDocs(usersRef);
-        const userDoc = allDocs.docs.find(
-          (doc) =>
-            doc.data().email.toLowerCase() === currentUser.email.toLowerCase()
-        );
+        const q = query(usersRef, where("uid", "==", user.uid));
+        const querySnapshot = await getDocs(q);
+        const userDoc = querySnapshot.docs[0];
 
         if (!userDoc) {
           throw new Error("No se encontró el usuario en la colección");
