@@ -18,11 +18,12 @@ const BalanceGeneral: React.FC = () => {
     selectedYear: selectedYearIncomes,
     fetchSummary: fetchIncomes,
     setSelectedYear: setSelectedYearIncomes,
-    totalIncome,
+    // totalIncome,
     monthlyStats: monthlyStatsIncomes,
     shouldFetchData: shouldFetchDataIncomes,
     setupRealtimeListeners: setupRealtimeListenersIncomes,
     cleanupListeners: cleanupListenersIncomes,
+    payments,
   } = usePaymentSummaryStore(
     (state) => ({
       loading: state.loading,
@@ -35,29 +36,37 @@ const BalanceGeneral: React.FC = () => {
       shouldFetchData: state.shouldFetchData,
       setupRealtimeListeners: state.setupRealtimeListeners,
       cleanupListeners: state.cleanupListeners,
+      payments: state.payments,
     }),
     shallow
   );
 
   // Calcular el saldo a favor global a partir de monthlyStats
-  const totalCreditGlobal = useMemo(
-    () => monthlyStatsIncomes.reduce((acc, stat) => acc + stat.saldo, 0),
-    [monthlyStatsIncomes]
-  );
+  // const totalCreditGlobal = useMemo(
+  //   () => monthlyStatsIncomes.reduce((acc, stat) => acc + stat.saldo, 0),
+  //   [monthlyStatsIncomes]
+  // );
 
   // Calcular el total de ingresos incluyendo el saldo a favor y créditos utilizados
   const totalIncomeWithCredit = useMemo(() => {
-    const totalCreditUsed = monthlyStatsIncomes.reduce((acc, stat) => {
-      return acc + (stat.creditUsed || 0);
-    }, 0);
-
-    // Usamos totalIncome del store y totalCreditGlobal para el saldo a favor
+    const totalPaid = payments.reduce(
+      (acc, payment) => acc + payment.amountPaid,
+      0
+    );
+    const totalCreditUsed = payments.reduce(
+      (acc, payment) => acc + (payment.creditUsed || 0),
+      0
+    );
+    const totalCreditBalance = payments.reduce(
+      (acc, payment) => acc + payment.creditBalance,
+      0
+    );
     return (
-      totalIncome +
-      (totalCreditGlobal > 0 ? totalCreditGlobal : 0) -
+      totalPaid +
+      (totalCreditBalance > 0 ? totalCreditBalance : 0) -
       totalCreditUsed
     );
-  }, [monthlyStatsIncomes, totalIncome, totalCreditGlobal]);
+  }, [payments]);
 
   // Datos de egresos
   const {

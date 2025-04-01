@@ -35,7 +35,11 @@ const MonthComparisonTable: React.FC = React.memo(() => {
   const totals = useMemo(() => {
     return sortedMonthlyStats.reduce(
       (acc, curr) => ({
-        paid: acc.paid + curr.paid,
+        paid:
+          acc.paid +
+          curr.paid +
+          (curr.saldo > 0 ? curr.saldo : 0) -
+          curr.creditUsed,
         pending: acc.pending + curr.pending,
         saldo: acc.saldo + curr.saldo,
         unidentifiedPayments:

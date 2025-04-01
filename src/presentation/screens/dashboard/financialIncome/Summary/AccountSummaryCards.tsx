@@ -24,6 +24,12 @@ const AccountSummaryCards: React.FC<{
     0
   );
 
+  // Calcular saldo a favor disponible (creditBalance)
+  const totalCreditBalance = payments.reduce(
+    (acc, pr) => acc + pr.creditBalance,
+    0
+  );
+
   // Calcular saldo a favor disponible
   const accountMonthlyStats = monthlyStats.filter((stat) =>
     payments.some((p) => p.month === stat.month)
@@ -33,11 +39,11 @@ const AccountSummaryCards: React.FC<{
     0
   );
 
-  // Total de ingresos = pagos regulares + saldo inicial + saldo disponible - crédito usado
+  // Total de ingresos con la misma lógica que SummaryCards.tsx, adaptado para la cuenta
   const realTotalIncome =
     totalPayments +
     initialBalance +
-    (totalSaldo > 0 ? totalSaldo : 0) -
+    (totalCreditBalance > 0 ? totalCreditBalance : 0) -
     totalCreditUsed;
 
   const formatCurrency = (value: number): string =>
@@ -65,7 +71,7 @@ const AccountSummaryCards: React.FC<{
       <div className="p-4 shadow-xl rounded-md bg-white dark:bg-gray-800">
         <div className="flex flex-col gap-y-1">
           <span className="text-sm font-medium text-gray-600 dark:text-gray-100">
-            Saldo
+            Saldo a favor
           </span>
           <span className="text-2xl font-semibold text-gray-800 dark:text-gray-100">
             {formatCurrency(totalSaldo)}

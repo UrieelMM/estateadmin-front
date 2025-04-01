@@ -3,7 +3,10 @@ import React from "react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { useExpenseSummaryStore } from "../../../../../../store/expenseSummaryStore";
-import { usePaymentSummaryStore } from "../../../../../../store/paymentSummaryStore";
+import {
+  usePaymentSummaryStore,
+  PaymentRecord,
+} from "../../../../../../store/paymentSummaryStore";
 import { DocumentChartBarIcon } from "@heroicons/react/16/solid";
 
 interface PDFBalanceGeneralReportProps {
@@ -45,7 +48,7 @@ const PDFBalanceGeneralReport: React.FC<PDFBalanceGeneralReportProps> = ({
 }) => {
   // Datos de ingresos
   const {
-    totalIncome,
+    // totalIncome,
     monthlyStats: incomesMonthlyStats,
     logoBase64: logoIncome,
     signatureBase64: signatureIncome,
@@ -54,6 +57,7 @@ const PDFBalanceGeneralReport: React.FC<PDFBalanceGeneralReportProps> = ({
     adminEmail,
     financialAccountsMap,
     payments,
+    detailed,
   } = usePaymentSummaryStore((state) => ({
     totalIncome: state.totalIncome,
     monthlyStats: state.monthlyStats,
@@ -64,6 +68,7 @@ const PDFBalanceGeneralReport: React.FC<PDFBalanceGeneralReportProps> = ({
     adminEmail: state.adminEmail,
     financialAccountsMap: state.financialAccountsMap,
     payments: state.payments,
+    detailed: state.detailed,
   }));
 
   // Datos de egresos
@@ -92,15 +97,81 @@ const PDFBalanceGeneralReport: React.FC<PDFBalanceGeneralReportProps> = ({
   );
 
   // Calcular el total de ingresos incluyendo el saldo a favor
-  const totalIncomeWithCredit = totalIncome + totalCreditGlobal;
-  const netBalance = totalIncomeWithCredit - totalSpent;
+  const totalIncomeWithCredit = React.useMemo(() => {
+    // Calculamos la suma de pagos, crédito usado y saldo de cada mes
+    let computedTotalIncome = 0;
+    incomesMonthlyStats.forEach((stat) => {
+      computedTotalIncome += stat.paid + stat.creditUsed + stat.saldo;
+    });
+
+    // Añadimos los saldos iniciales de las cuentas financieras
+    let totalInitialBalance = 0;
+    for (const key in financialAccountsMap) {
+      totalInitialBalance += financialAccountsMap[key].initialBalance;
+    }
+    computedTotalIncome += totalInitialBalance;
+
+    return computedTotalIncome;
+  }, [incomesMonthlyStats, financialAccountsMap]);
+
+  // const netBalance = totalIncomeWithCredit - totalSpent;
 
   // Calcular estadísticas adicionales y análisis
   const analisisAvanzado = React.useMemo(() => {
+    // Función para calcular el total de ingresos de un mes usando el método correcto
+    const calcularIngresosMes = (mes: string) => {
+      // Obtener todos los registros del mes
+      const monthRecords = Object.values(detailed)
+        .flat()
+        .filter((rec: PaymentRecord) => rec.month === mes);
+
+      // Calcular los totales para este mes
+      const totalPaid = monthRecords.reduce(
+        (sum, rec: PaymentRecord) => sum + rec.amountPaid,
+        0
+      );
+      const totalCreditUsed = monthRecords.reduce(
+        (sum, rec: PaymentRecord) => sum + (rec.creditUsed || 0),
+        0
+      );
+      const totalCreditBalance = monthRecords.reduce(
+        (sum, rec: PaymentRecord) => sum + rec.creditBalance,
+        0
+      );
+      const totalCredit = totalCreditBalance - totalCreditUsed;
+      const totalPaidWithCredit =
+        totalPaid + (totalCredit > 0 ? totalCredit : 0) - totalCreditUsed;
+
+      // Añadir saldos iniciales si corresponde
+      const monthlyInitialBalance = Object.values(
+        financialAccountsMap as Record<string, FinancialAccount>
+      ).reduce((acc, account) => {
+        if (account.creationMonth === mes && mes !== "01") {
+          return acc + account.initialBalance;
+        }
+        return acc;
+      }, 0);
+
+      const initialBalances = Object.values(
+        financialAccountsMap as Record<string, FinancialAccount>
+      ).reduce((acc, account) => {
+        if (account.creationMonth === "01" && mes === "01") {
+          return acc + account.initialBalance;
+        }
+        return acc;
+      }, 0);
+
+      return (
+        totalPaidWithCredit +
+        (mes === "01" ? initialBalances : monthlyInitialBalance)
+      );
+    };
+
     // Encontrar el mes con mayor ingreso
     const mesMaxIngreso = incomesMonthlyStats.reduce((max, stat) => {
-      const total = stat.paid + stat.saldo;
-      return total > (max?.paid + max?.saldo || 0) ? stat : max;
+      const ingresoActual = calcularIngresosMes(stat.month);
+      const ingresoMax = max ? calcularIngresosMes(max.month) : 0;
+      return ingresoActual > ingresoMax ? stat : max;
     }, incomesMonthlyStats[0]);
 
     // Encontrar el mes con mayor egreso
@@ -135,8 +206,8 @@ const PDFBalanceGeneralReport: React.FC<PDFBalanceGeneralReportProps> = ({
 
     const analisisTrimestral = trimestres.map((trimestre) => {
       const ingresosTrimestre = trimestre.meses.reduce((acc, mes) => {
-        const stat = incomesMonthlyStats.find((s) => s.month === mes);
-        return acc + (stat ? stat.paid + stat.saldo + stat.creditUsed : 0);
+        // Usamos la misma función de cálculo para mantener consistencia
+        return acc + calcularIngresosMes(mes);
       }, 0);
 
       const egresosTrimestre = trimestre.meses.reduce((acc, mes) => {
@@ -175,8 +246,13 @@ const PDFBalanceGeneralReport: React.FC<PDFBalanceGeneralReportProps> = ({
 
     // Análisis de Estacionalidad
     const estacionalidad = incomesMonthlyStats.map((stat) => {
-      const ingresoMes = stat.paid + stat.saldo;
-      const proporcionDelTotal = (ingresoMes / totalIncomeWithCredit) * 100;
+      const ingresoMes = calcularIngresosMes(stat.month);
+      // Para calcular la proporción, sumamos todos los ingresos mensuales
+      const totalIngresos = incomesMonthlyStats.reduce(
+        (sum, s) => sum + calcularIngresosMes(s.month),
+        0
+      );
+      const proporcionDelTotal = (ingresoMes / totalIngresos) * 100;
       return {
         mes: stat.month,
         proporcion: proporcionDelTotal,
@@ -205,7 +281,8 @@ const PDFBalanceGeneralReport: React.FC<PDFBalanceGeneralReportProps> = ({
   }, [
     incomesMonthlyStats,
     expensesMonthlyStats,
-    totalIncomeWithCredit,
+    detailed,
+    financialAccountsMap,
     totalSpent,
   ]);
 
@@ -261,10 +338,11 @@ const PDFBalanceGeneralReport: React.FC<PDFBalanceGeneralReportProps> = ({
 
     // Helper para formatear números como moneda
     const formatCurrency = (value: number): string =>
-      new Intl.NumberFormat("en-US", {
-        style: "currency",
-        currency: "USD",
-      }).format(value);
+      "$" +
+      value.toLocaleString("en-US", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
 
     // Helper para manejar valores indefinidos
     const formatValue = (value: number | undefined): string => {
@@ -295,32 +373,6 @@ const PDFBalanceGeneralReport: React.FC<PDFBalanceGeneralReportProps> = ({
     doc.setFont("helvetica", "normal");
     doc.text(year, 14 + doc.getTextWidth("Año:") + 2, 40);
 
-    // --- Indicadores Clave ---
-    doc.setFont("helvetica", "bold");
-    doc.text("Total Ingresos:", 14, 50);
-    doc.setFont("helvetica", "normal");
-    doc.text(
-      formatCurrency(totalIncomeWithCredit),
-      14 + doc.getTextWidth("Total Ingresos:") + 5,
-      50
-    );
-    doc.setFont("helvetica", "bold");
-    doc.text("Total Egresos:", 14, 60);
-    doc.setFont("helvetica", "normal");
-    doc.text(
-      formatCurrency(totalSpent),
-      14 + doc.getTextWidth("Total Egresos:") + 5,
-      60
-    );
-    doc.setFont("helvetica", "bold");
-    doc.text("Balance Neto:", 14, 70);
-    doc.setFont("helvetica", "normal");
-    doc.text(
-      formatCurrency(netBalance),
-      14 + doc.getTextWidth("Balance Neto:") + 5,
-      70
-    );
-
     // --- Tabla Mensual Original ---
     doc.setFontSize(14);
     doc.setFont("helvetica", "bold");
@@ -341,11 +393,47 @@ const PDFBalanceGeneralReport: React.FC<PDFBalanceGeneralReportProps> = ({
       return acc;
     }, 0);
 
-    for (let i = 1; i <= 12; i++) {
-      const m = i.toString().padStart(2, "0");
+    // Iterar por todos los meses, usando la misma lógica que PDFReportGenerator.tsx
+    const monthKeys = [
+      "01",
+      "02",
+      "03",
+      "04",
+      "05",
+      "06",
+      "07",
+      "08",
+      "09",
+      "10",
+      "11",
+      "12",
+    ];
+    monthKeys.forEach((m) => {
       const monthLabel = monthNames[m] || m;
-      const incomeStat = incomesMonthlyStats.find((stat) => stat.month === m);
+      // const incomeStat = incomesMonthlyStats.find((stat) => stat.month === m);
       const expenseStat = expensesMonthlyStats.find((stat) => stat.month === m);
+
+      // Obtener todos los registros del mes
+      const monthRecords = Object.values(detailed)
+        .flat()
+        .filter((rec: PaymentRecord) => rec.month === m);
+
+      // Calcular los totales para este mes usando la misma lógica que PDFReportGenerator.tsx
+      const totalPaid = monthRecords.reduce(
+        (sum, rec: PaymentRecord) => sum + rec.amountPaid,
+        0
+      );
+      const totalCreditUsed = monthRecords.reduce(
+        (sum, rec: PaymentRecord) => sum + (rec.creditUsed || 0),
+        0
+      );
+      const totalCreditBalance = monthRecords.reduce(
+        (sum, rec: PaymentRecord) => sum + rec.creditBalance,
+        0
+      );
+      const totalCredit = totalCreditBalance - totalCreditUsed;
+      const totalPaidWithCredit =
+        totalPaid + (totalCredit > 0 ? totalCredit : 0) - totalCreditUsed;
 
       // Añadir saldos iniciales de las cuentas creadas en este mes
       const monthlyInitialBalance = Object.values(
@@ -357,19 +445,21 @@ const PDFBalanceGeneralReport: React.FC<PDFBalanceGeneralReportProps> = ({
         return acc;
       }, 0);
 
+      // Calcular ingresos, egresos y balance
       const ingresos =
-        (incomeStat
-          ? incomeStat.paid + incomeStat.creditUsed + incomeStat.saldo
-          : 0) + (m === "01" ? initialBalances : monthlyInitialBalance);
+        totalPaidWithCredit +
+        (m === "01" ? initialBalances : monthlyInitialBalance);
       const egresos = expenseStat ? expenseStat.spent : 0;
       const balance = ingresos - egresos;
       const porcentajeMensual =
         ingresos > 0 ? ((ingresos - egresos) / ingresos) * 100 : 0;
 
+      // Acumular totales
       totalIngresos += ingresos;
       totalEgresos += egresos;
       totalBalance += balance;
 
+      // Agregar a la tabla
       tableData.push([
         monthLabel,
         formatValue(ingresos),
@@ -377,7 +467,7 @@ const PDFBalanceGeneralReport: React.FC<PDFBalanceGeneralReportProps> = ({
         formatValue(balance),
         formatPercentage(porcentajeMensual),
       ]);
-    }
+    });
 
     // Añadir fila de totales
     const porcentajeTotal =
@@ -389,6 +479,32 @@ const PDFBalanceGeneralReport: React.FC<PDFBalanceGeneralReportProps> = ({
       formatValue(totalBalance),
       formatPercentage(porcentajeTotal),
     ]);
+
+    // --- Indicadores Clave ---
+    doc.setFont("helvetica", "bold");
+    doc.text("Total Ingresos:", 14, 50);
+    doc.setFont("helvetica", "normal");
+    doc.text(
+      formatCurrency(totalIngresos),
+      14 + doc.getTextWidth("Total Ingresos:") + 5,
+      50
+    );
+    doc.setFont("helvetica", "bold");
+    doc.text("Total Egresos:", 14, 60);
+    doc.setFont("helvetica", "normal");
+    doc.text(
+      formatCurrency(totalEgresos),
+      14 + doc.getTextWidth("Total Egresos:") + 5,
+      60
+    );
+    doc.setFont("helvetica", "bold");
+    doc.text("Balance Neto:", 14, 70);
+    doc.setFont("helvetica", "normal");
+    doc.text(
+      formatCurrency(totalBalance),
+      14 + doc.getTextWidth("Balance Neto:") + 5,
+      70
+    );
 
     autoTable(doc, {
       startY: 90,

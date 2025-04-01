@@ -245,8 +245,7 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
         }
         if (
           useCreditBalance &&
-          (!selectedUser?.totalCreditBalance ||
-            Number(selectedUser.totalCreditBalance) / 100 <= 0)
+          (!userCreditBalance || Number(userCreditBalance) / 100 <= 0)
         ) {
           throw new Error("No tienes saldo a favor disponible.");
         }

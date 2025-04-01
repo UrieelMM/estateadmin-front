@@ -8,27 +8,35 @@ interface BalanceGeneralCardsProps {
   totalSpent: number;
   netBalance: number;
   creditUsed?: number;
+  availableCredit?: number;
 }
 
 const BalanceGeneralCards: React.FC<BalanceGeneralCardsProps> = ({
   totalIncome,
   totalSpent,
   netBalance,
+  creditUsed = 0,
+  availableCredit = 0,
 }) => {
   const { isDarkMode } = useTheme();
 
   // Función para formatear números como moneda
   const formatCurrency = (value: number): string =>
-    new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-    }).format(value);
+    "$" +
+    value.toLocaleString("en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+
+  // Calculamos el total de ingresos incluyendo el saldo a favor y restando el crédito usado
+  const totalIncomeWithCredit =
+    totalIncome + (availableCredit > 0 ? availableCredit : 0) - creditUsed;
 
   // Datos de ejemplo para las tendencias
   const incomeTrend = [
-    { value: totalIncome * 0.8 },
-    { value: totalIncome * 0.9 },
-    { value: totalIncome },
+    { value: totalIncomeWithCredit * 0.8 },
+    { value: totalIncomeWithCredit * 0.9 },
+    { value: totalIncomeWithCredit },
   ];
 
   const spentTrend = [
@@ -49,7 +57,15 @@ const BalanceGeneralCards: React.FC<BalanceGeneralCardsProps> = ({
         <h3 className="text-md font-bold text-indigo-600 dark:text-indigo-400">
           Total Ingresos
         </h3>
-        <p className="text-xl">{formatCurrency(totalIncome)}</p>
+        <p className="text-xl">{formatCurrency(totalIncomeWithCredit)}</p>
+        {(availableCredit > 0 || creditUsed > 0) && (
+          <p className="text-sm text-green-600 dark:text-green-400">
+            {availableCredit > 0 &&
+              `Saldo a favor: ${formatCurrency(availableCredit)}`}
+            {creditUsed > 0 &&
+              ` | Crédito usado: ${formatCurrency(creditUsed)}`}
+          </p>
+        )}
         <div className="h-12 mt-2">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={incomeTrend}>
