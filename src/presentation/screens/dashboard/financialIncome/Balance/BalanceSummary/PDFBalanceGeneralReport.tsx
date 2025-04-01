@@ -328,7 +328,6 @@ const PDFBalanceGeneralReport: React.FC<PDFBalanceGeneralReportProps> = ({
 
     const tableData = [];
     let totalIngresos = 0;
-    let totalSaldoAFavor = 0;
     let totalEgresos = 0;
     let totalBalance = 0;
 
@@ -362,21 +361,18 @@ const PDFBalanceGeneralReport: React.FC<PDFBalanceGeneralReportProps> = ({
         (incomeStat
           ? incomeStat.paid + incomeStat.creditUsed + incomeStat.saldo
           : 0) + (m === "01" ? initialBalances : monthlyInitialBalance);
-      const saldoAFavor = incomeStat ? incomeStat.saldo : 0;
       const egresos = expenseStat ? expenseStat.spent : 0;
       const balance = ingresos - egresos;
       const porcentajeMensual =
         ingresos > 0 ? ((ingresos - egresos) / ingresos) * 100 : 0;
 
       totalIngresos += ingresos;
-      totalSaldoAFavor += saldoAFavor;
       totalEgresos += egresos;
       totalBalance += balance;
 
       tableData.push([
         monthLabel,
         formatValue(ingresos),
-        formatValue(saldoAFavor),
         formatValue(egresos),
         formatValue(balance),
         formatPercentage(porcentajeMensual),
@@ -389,7 +385,6 @@ const PDFBalanceGeneralReport: React.FC<PDFBalanceGeneralReportProps> = ({
     tableData.push([
       "TOTAL",
       formatValue(totalIngresos),
-      formatValue(totalSaldoAFavor),
       formatValue(totalEgresos),
       formatValue(totalBalance),
       formatPercentage(porcentajeTotal),
@@ -397,9 +392,7 @@ const PDFBalanceGeneralReport: React.FC<PDFBalanceGeneralReportProps> = ({
 
     autoTable(doc, {
       startY: 90,
-      head: [
-        ["Mes", "Ingresos", "Saldo a Favor", "Egresos", "Balance", "% Balance"],
-      ],
+      head: [["Mes", "Ingresos", "Egresos", "Balance", "% Balance"]],
       body: tableData,
       headStyles: {
         fillColor: [75, 68, 224],
@@ -418,7 +411,6 @@ const PDFBalanceGeneralReport: React.FC<PDFBalanceGeneralReportProps> = ({
         2: { cellWidth: "auto", halign: "center" },
         3: { cellWidth: "auto", halign: "center" },
         4: { cellWidth: "auto", halign: "center" },
-        5: { cellWidth: "auto", halign: "center" },
       },
       didParseCell: function (data) {
         // Dar formato especial a la fila de totales

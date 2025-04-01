@@ -78,6 +78,7 @@ type MaintenancePaymentState = {
   charges: Charge[];
   loading: boolean;
   error: string | null;
+  userCreditBalance: number | null;
 
   financialAccounts: FinancialAccount[];
   fetchFinancialAccounts: () => Promise<void>;
@@ -117,6 +118,7 @@ export const usePaymentStore = create<MaintenancePaymentState>((set, get) => ({
   charges: [],
   loading: false,
   error: null,
+  userCreditBalance: null,
 
   financialAccounts: [],
   fetchFinancialAccounts: async () => {
@@ -179,6 +181,10 @@ export const usePaymentStore = create<MaintenancePaymentState>((set, get) => ({
         );
       }
       const userDoc = userSnap.docs[0];
+      const userData = userDoc.data();
+
+      // Actualizar el saldo a favor
+      set({ userCreditBalance: userData.totalCreditBalance || null });
 
       // Obtener los cargos no pagados
       const chargesRef = collection(
