@@ -8,6 +8,20 @@ import {
 } from "../../../../../store/paymentSummaryStore";
 import useUserStore from "../../../../../store/UserDataStore";
 
+// Función auxiliar para convertir una URL de imagen a base64
+async function getBase64FromUrl(url: string): Promise<string> {
+  const response = await fetch(url);
+  const blob = await response.blob();
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = reject;
+    reader.onloadend = () => {
+      resolve(reader.result as string);
+    };
+    reader.readAsDataURL(blob);
+  });
+}
+
 interface Condominium {
   number: string;
   name?: string;
@@ -29,14 +43,14 @@ const PDFReportGeneratorMaintenance: React.FC<PDFReportGeneratorProps> = ({
   const {
     detailed,
     logoBase64,
-    signatureBase64,
+    signatureUrl,
     adminCompany,
     adminPhone,
     adminEmail,
   } = usePaymentSummaryStore((state) => ({
     detailed: state.detailed,
     logoBase64: state.logoBase64,
-    signatureBase64: state.signatureBase64,
+    signatureUrl: state.signatureUrl,
     adminCompany: state.adminCompany,
     adminPhone: state.adminPhone,
     adminEmail: state.adminEmail,
@@ -163,7 +177,7 @@ const PDFReportGeneratorMaintenance: React.FC<PDFReportGeneratorProps> = ({
   totalsRow.push(formatCurrency(totalPendingGlobal));
   tableBody.push(totalsRow);
 
-  const generatePDF = () => {
+  const generatePDF = async () => {
     // Se crea el PDF en orientación horizontal
     const doc = new jsPDF({ orientation: "landscape" });
 
@@ -221,8 +235,13 @@ const PDFReportGeneratorMaintenance: React.FC<PDFReportGeneratorProps> = ({
     const pageHeight = doc.internal.pageSize.height;
     const margin = 14;
     const adminSectionY = pageHeight - 80;
-    if (signatureBase64) {
-      doc.addImage(signatureBase64, "PNG", margin, adminSectionY - 20, 50, 20);
+    if (signatureUrl) {
+      try {
+        const signatureImage = await getBase64FromUrl(signatureUrl);
+        doc.addImage(signatureImage, "PNG", margin, adminSectionY - 20, 50, 20);
+      } catch (error) {
+        console.error("Error al cargar la firma:", error);
+      }
     }
     doc.setFontSize(12);
     doc.text("Firma del Administrador", margin, adminSectionY);
@@ -249,11 +268,11 @@ const PDFReportGeneratorMaintenance: React.FC<PDFReportGeneratorProps> = ({
   };
 
   return renderButton ? (
-    renderButton(generatePDF)
+    renderButton(() => generatePDF())
   ) : (
     <div className="flex">
       <button
-        onClick={generatePDF}
+        onClick={() => generatePDF()}
         className="bg-indigo-600 text-white text-sm py-2 px-3 rounded font-medium hover:bg-indigo-700"
       >
         {`Cuotas de Mantenimiento`}

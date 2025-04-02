@@ -9,6 +9,20 @@ import {
 } from "../../../../../../store/paymentSummaryStore";
 import { DocumentChartBarIcon } from "@heroicons/react/16/solid";
 
+// Función auxiliar para convertir una URL de imagen a base64
+async function getBase64FromUrl(url: string): Promise<string> {
+  const response = await fetch(url);
+  const blob = await response.blob();
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = reject;
+    reader.onloadend = () => {
+      resolve(reader.result as string);
+    };
+    reader.readAsDataURL(blob);
+  });
+}
+
 interface PDFBalanceGeneralReportProps {
   year: string;
 }
@@ -51,7 +65,7 @@ const PDFBalanceGeneralReport: React.FC<PDFBalanceGeneralReportProps> = ({
     // totalIncome,
     monthlyStats: incomesMonthlyStats,
     logoBase64: logoIncome,
-    signatureBase64: signatureIncome,
+    signatureUrl: signatureUrl,
     adminCompany,
     adminPhone,
     adminEmail,
@@ -62,7 +76,7 @@ const PDFBalanceGeneralReport: React.FC<PDFBalanceGeneralReportProps> = ({
     totalIncome: state.totalIncome,
     monthlyStats: state.monthlyStats,
     logoBase64: state.logoBase64,
-    signatureBase64: state.signatureBase64,
+    signatureUrl: state.signatureUrl,
     adminCompany: state.adminCompany,
     adminPhone: state.adminPhone,
     adminEmail: state.adminEmail,
@@ -76,19 +90,16 @@ const PDFBalanceGeneralReport: React.FC<PDFBalanceGeneralReportProps> = ({
     totalSpent,
     monthlyStats: expensesMonthlyStats,
     logoBase64: logoExpense,
-    signatureBase64: signatureExpense,
     expenses,
   } = useExpenseSummaryStore((state) => ({
     totalSpent: state.totalSpent,
     monthlyStats: state.monthlyStats,
     logoBase64: state.logoBase64,
-    signatureBase64: state.signatureBase64,
     expenses: state.expenses,
   }));
 
   // Utilizar uno de los logos (se prioriza el de ingresos)
   const logoBase64 = logoIncome || logoExpense;
-  const signatureBase64 = signatureIncome || signatureExpense;
 
   // Calcular el saldo a favor total
   const totalCreditGlobal = React.useMemo(
@@ -333,7 +344,7 @@ const PDFBalanceGeneralReport: React.FC<PDFBalanceGeneralReportProps> = ({
     );
   };
 
-  const generatePDF = () => {
+  const generatePDF = async () => {
     const doc = new jsPDF();
 
     // Helper para formatear números como moneda
@@ -870,8 +881,13 @@ const PDFBalanceGeneralReport: React.FC<PDFBalanceGeneralReportProps> = ({
     const margin = 14;
     const adminSectionY = pageHeight - 80;
 
-    if (signatureBase64) {
-      doc.addImage(signatureBase64, "PNG", margin, adminSectionY - 20, 50, 20);
+    if (signatureUrl) {
+      try {
+        const signatureImage = await getBase64FromUrl(signatureUrl);
+        doc.addImage(signatureImage, "PNG", margin, adminSectionY - 20, 50, 20);
+      } catch (error) {
+        console.error("Error al cargar la firma:", error);
+      }
     }
     doc.setFontSize(12);
     doc.text("Firma del Administrador", margin, adminSectionY);
@@ -899,7 +915,7 @@ const PDFBalanceGeneralReport: React.FC<PDFBalanceGeneralReportProps> = ({
   return (
     <div className="w-full flex justify-end mb-4">
       <button
-        onClick={generatePDF}
+        onClick={() => generatePDF()}
         className="bg-indigo-600 text-white text-sm py-2 px-1 rounded flex justify-center items-center w-[270px] font-medium hover:bg-indigo-700"
       >
         <DocumentChartBarIcon className="w-5 h-5 text-white mr-1" />

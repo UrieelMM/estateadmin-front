@@ -3,6 +3,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { useExpenseSummaryStore } from "../../../../../../store/expenseSummaryStore";
 import { DocumentChartBarIcon } from "@heroicons/react/20/solid";
+import { usePaymentSummaryStore } from "../../../../../../store/paymentSummaryStore";
 
 interface PDFExpenseByProviderReportProps {
   year: string;
@@ -16,20 +17,38 @@ interface PDFExpenseByProviderReportProps {
   }[];
 }
 
+// Función auxiliar para convertir una URL de imagen a base64
+async function getBase64FromUrl(url: string): Promise<string> {
+  const response = await fetch(url);
+  const blob = await response.blob();
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = reject;
+    reader.onloadend = () => {
+      resolve(reader.result as string);
+    };
+    reader.readAsDataURL(blob);
+  });
+}
+
 const PDFExpenseByProviderReport: React.FC<PDFExpenseByProviderReportProps> = ({
   year,
   providerSummaries,
 }) => {
-  const { logoBase64, signatureBase64, adminCompany, adminPhone, adminEmail } =
+  const { logoBase64, adminCompany, adminPhone, adminEmail } =
     useExpenseSummaryStore((state) => ({
       logoBase64: state.logoBase64,
-      signatureBase64: state.signatureBase64,
       adminCompany: state.adminCompany || "Administradora S.A.",
       adminPhone: state.adminPhone || "Teléfono no disponible",
       adminEmail: state.adminEmail || "Email no disponible",
     }));
 
-  const generatePDF = () => {
+  // Obtener la URL de la firma desde el store de ingresos
+  const { signatureUrl } = usePaymentSummaryStore((state) => ({
+    signatureUrl: state.signatureUrl,
+  }));
+
+  const generatePDF = async () => {
     const doc = new jsPDF();
 
     // Función para formatear números como moneda
@@ -132,8 +151,13 @@ const PDFExpenseByProviderReport: React.FC<PDFExpenseByProviderReportProps> = ({
     const margin = 14;
     const adminSectionY = pageHeight - 80;
 
-    if (signatureBase64) {
-      doc.addImage(signatureBase64, "PNG", margin, adminSectionY - 20, 50, 20);
+    if (signatureUrl) {
+      try {
+        const signatureImage = await getBase64FromUrl(signatureUrl);
+        doc.addImage(signatureImage, "PNG", margin, adminSectionY - 20, 50, 20);
+      } catch (error) {
+        console.error("Error al cargar la firma:", error);
+      }
     }
     doc.setFontSize(12);
     doc.text("Firma del Administrador", margin, adminSectionY);
@@ -164,7 +188,7 @@ const PDFExpenseByProviderReport: React.FC<PDFExpenseByProviderReportProps> = ({
   return (
     <div className="w-full flex justify-end items-center">
       <button
-        onClick={generatePDF}
+        onClick={() => generatePDF()}
         className="bg-indigo-600 justify-center text-white text-sm py-2 px-1 flex items-center rounded w-[240px] font-medium hover:bg-indigo-700"
       >
         <DocumentChartBarIcon className="w-5 h-5 text-white mr-1" />

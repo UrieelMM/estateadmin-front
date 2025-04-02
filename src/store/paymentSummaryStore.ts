@@ -101,6 +101,7 @@ export type PaymentSummaryState = {
   adminPhone: string;
   adminEmail: string;
   logoBase64: string;
+  signatureUrl: string;
   signatureBase64: string;
   loading: boolean;
   error: string | null;
@@ -155,6 +156,7 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>(
     adminPhone: "",
     adminEmail: "",
     logoBase64: "",
+    signatureUrl: "",
     signatureBase64: "",
     loading: false,
     error: null,
@@ -209,19 +211,22 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>(
         let adminPhone = "";
         let adminEmail = "";
         let logoBase64 = "";
+        let signatureUrl = "";
         let signatureBase64 = "";
         if (clientDocSnap.exists()) {
           const clientData = clientDocSnap.data();
           adminCompany = clientData.companyName || "";
           adminPhone = clientData.phoneNumber || "";
           adminEmail = clientData.email || "";
+          signatureUrl = clientData.signatureUrl || "";
 
           try {
             const logoUrl = clientData.logoReports;
-            const signUrl = clientData.signReports;
             const [logoRes, signRes] = await Promise.all([
               logoUrl ? getBase64FromUrl(logoUrl) : Promise.resolve(""),
-              signUrl ? getBase64FromUrl(signUrl) : Promise.resolve(""),
+              signatureUrl
+                ? getBase64FromUrl(signatureUrl)
+                : Promise.resolve(""),
             ]);
             logoBase64 = logoRes || "";
             signatureBase64 = signRes || "";
@@ -639,6 +644,7 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>(
           adminPhone,
           adminEmail,
           logoBase64,
+          signatureUrl,
           signatureBase64,
           loading: false,
           byFinancialAccount,

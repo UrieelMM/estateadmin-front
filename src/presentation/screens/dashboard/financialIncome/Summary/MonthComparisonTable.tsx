@@ -23,6 +23,7 @@ const monthNames: Record<string, string> = {
 const MonthComparisonTable: React.FC = React.memo(() => {
   // Consumimos monthlyStats del nuevo store
   const monthlyStats = usePaymentSummaryStore((state) => state.monthlyStats);
+  const detailed = usePaymentSummaryStore((state) => state.detailed);
 
   // Ordenamos usando parseInt con base 10
   const sortedMonthlyStats: MonthlyStat[] = useMemo(() => {
@@ -44,8 +45,6 @@ const MonthComparisonTable: React.FC = React.memo(() => {
         saldo: acc.saldo + curr.saldo,
         unidentifiedPayments:
           acc.unidentifiedPayments + curr.unidentifiedPayments,
-        complianceRate: acc.complianceRate + curr.complianceRate,
-        delinquencyRate: acc.delinquencyRate + curr.delinquencyRate,
         creditUsed: acc.creditUsed + curr.creditUsed,
         charges: acc.charges + curr.charges,
       }),
@@ -54,8 +53,6 @@ const MonthComparisonTable: React.FC = React.memo(() => {
         pending: 0,
         saldo: 0,
         unidentifiedPayments: 0,
-        complianceRate: 0,
-        delinquencyRate: 0,
         creditUsed: 0,
         charges: 0,
       }
@@ -72,14 +69,22 @@ const MonthComparisonTable: React.FC = React.memo(() => {
     }, 0);
   }, [sortedMonthlyStats]);
 
-  // Calcular promedios
-  const averages = useMemo(
-    () => ({
-      complianceRate: totals.complianceRate / sortedMonthlyStats.length,
-      delinquencyRate: totals.delinquencyRate / sortedMonthlyStats.length,
-    }),
-    [totals, sortedMonthlyStats.length]
+  // Calcular porcentajes globales
+  const allRecords = useMemo(() => {
+    return Object.values(detailed).flat();
+  }, [detailed]);
+
+  // Calcular totales de cargos y pagos completos
+  const totalCharges = allRecords.reduce(
+    (sum, rec) => sum + rec.referenceAmount,
+    0
   );
+  const totalPaidInFull = allRecords
+    .filter((rec) => rec.amountPending === 0)
+    .reduce((sum, rec) => sum + rec.referenceAmount, 0);
+  const totalCompliance =
+    totalCharges > 0 ? (totalPaidInFull / totalCharges) * 100 : 0;
+  const totalDelinquency = 100 - totalCompliance;
 
   // Función de formateo de moneda (con dos decimales)
   const formatCurrency = (value: number): string =>
@@ -120,47 +125,72 @@ const MonthComparisonTable: React.FC = React.memo(() => {
             </tr>
           </thead>
           <tbody>
-            {sortedMonthlyStats.map((row) => (
-              <tr
-                key={row.month}
-                className="hover:bg-gray-50 transition-colors dark:hover:bg-gray-700 cursor-pointer"
-              >
-                <td className="border p-2">
-                  {monthNames[row.month] || row.month}
-                </td>
-                <td className="border p-2">
-                  {formatCurrency(
-                    row.paid + (row.saldo > 0 ? row.saldo : 0) - row.creditUsed
-                  )}
-                </td>
-                <td className="border p-2">{formatCurrency(row.charges)}</td>
-                <td
-                  className={`border p-2 ${
-                    row.charges -
-                      (row.paid +
-                        (row.saldo > 0 ? row.saldo : 0) -
-                        row.creditUsed) <
-                    0
-                      ? "text-green-500 dark:text-green-400"
-                      : "text-red-600 dark:text-red-400"
-                  }`}
+            {sortedMonthlyStats.map((row) => {
+              // Calcular porcentajes mensuales
+              const monthRecords = Object.values(detailed)
+                .flat()
+                .filter((rec) => rec.month === row.month);
+
+              // Calcular total de cargos del mes
+              const monthCharges = monthRecords.reduce(
+                (sum, rec) => sum + rec.referenceAmount,
+                0
+              );
+              // Calcular total de cargos pagados en su totalidad
+              const monthPaidInFull = monthRecords
+                .filter((rec) => rec.amountPending === 0)
+                .reduce((sum, rec) => sum + rec.referenceAmount, 0);
+
+              const monthComplianceRate =
+                monthCharges > 0 ? (monthPaidInFull / monthCharges) * 100 : 0;
+              const monthDelinquencyRate = 100 - monthComplianceRate;
+
+              return (
+                <tr
+                  key={row.month}
+                  className="hover:bg-gray-50 transition-colors dark:hover:bg-gray-700 cursor-pointer"
                 >
-                  {formatCurrency(
-                    row.charges -
-                      (row.paid +
+                  <td className="border p-2">
+                    {monthNames[row.month] || row.month}
+                  </td>
+                  <td className="border p-2">
+                    {formatCurrency(
+                      row.paid +
                         (row.saldo > 0 ? row.saldo : 0) -
-                        row.creditUsed)
-                  )}
-                </td>
-                <td className="border p-2">
-                  {formatCurrency(row.unidentifiedPayments || 0)}
-                </td>
-                <td className="border p-2">{row.complianceRate.toFixed(2)}%</td>
-                <td className="border p-2">
-                  {row.delinquencyRate.toFixed(2)}%
-                </td>
-              </tr>
-            ))}
+                        row.creditUsed
+                    )}
+                  </td>
+                  <td className="border p-2">{formatCurrency(row.charges)}</td>
+                  <td
+                    className={`border p-2 ${
+                      row.charges -
+                        (row.paid +
+                          (row.saldo > 0 ? row.saldo : 0) -
+                          row.creditUsed) <
+                      0
+                        ? "text-green-500 dark:text-green-400"
+                        : "text-red-600 dark:text-red-400"
+                    }`}
+                  >
+                    {formatCurrency(
+                      row.charges -
+                        (row.paid +
+                          (row.saldo > 0 ? row.saldo : 0) -
+                          row.creditUsed)
+                    )}
+                  </td>
+                  <td className="border p-2">
+                    {formatCurrency(row.unidentifiedPayments || 0)}
+                  </td>
+                  <td className="border p-2">
+                    {monthComplianceRate.toFixed(2)}%
+                  </td>
+                  <td className="border p-2">
+                    {monthDelinquencyRate.toFixed(2)}%
+                  </td>
+                </tr>
+              );
+            })}
             {/* Fila de totales */}
             <tr>
               <td className="border p-2 font-semibold">Totales</td>
@@ -183,10 +213,10 @@ const MonthComparisonTable: React.FC = React.memo(() => {
                 {formatCurrency(totals.unidentifiedPayments)}
               </td>
               <td className="border p-2 font-semibold">
-                {averages.complianceRate.toFixed(2)}%
+                {totalCompliance.toFixed(2)}%
               </td>
               <td className="border p-2 font-semibold">
-                {averages.delinquencyRate.toFixed(2)}%
+                {totalDelinquency.toFixed(2)}%
               </td>
             </tr>
           </tbody>

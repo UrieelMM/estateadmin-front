@@ -32,6 +32,21 @@ export interface PDFReportGeneratorProps {
   allCondominiums?: Condominium[];
   conceptData?: PaymentRecord[];
   renderButton?: (onClick: () => void) => React.ReactNode;
+  signatureUrl?: string;
+}
+
+// Función auxiliar para convertir una URL de imagen a base64
+async function getBase64FromUrl(url: string): Promise<string> {
+  const response = await fetch(url);
+  const blob = await response.blob();
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = reject;
+    reader.onloadend = () => {
+      resolve(reader.result as string);
+    };
+    reader.readAsDataURL(blob);
+  });
 }
 
 const monthNames: Record<string, string> = {
@@ -58,24 +73,14 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({
   const {
     monthlyStats,
     detailed,
-    logoBase64,
-    signatureBase64,
     adminCompany,
     adminPhone,
     adminEmail,
+    logoBase64,
+    signatureUrl,
+    financialAccountsMap,
     conceptRecords,
-  } = usePaymentSummaryStore((state) => ({
-    totalIncome: state.totalIncome,
-    totalPending: state.totalPending,
-    monthlyStats: state.monthlyStats,
-    detailed: state.detailed,
-    logoBase64: state.logoBase64,
-    signatureBase64: state.signatureBase64,
-    adminCompany: state.adminCompany,
-    adminPhone: state.adminPhone,
-    adminEmail: state.adminEmail,
-    conceptRecords: state.conceptRecords,
-  }));
+  } = usePaymentSummaryStore();
 
   // Obtener los condominios desde el store de usuarios
   const condominiumsUsers = useUserStore((state) => state.condominiumsUsers);
@@ -97,7 +102,7 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({
       maximumFractionDigits: 2,
     });
 
-  const generatePDF = () => {
+  const generatePDF = async () => {
     const doc = new jsPDF();
 
     // --- Cálculo de mes con mayor y menor ingresos ---
@@ -170,8 +175,6 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({
       monthlyStats.forEach((stat) => {
         computedTotalIncome += stat.paid + stat.creditUsed + stat.saldo;
       });
-      const financialAccountsMap =
-        usePaymentSummaryStore.getState().financialAccountsMap;
       let totalInitialBalance = 0;
       for (const key in financialAccountsMap) {
         totalInitialBalance += financialAccountsMap[key].initialBalance;
@@ -497,14 +500,26 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({
         // 3. Saldo: Diferencia entre cargos y monto abonado
         const balance = totalCharges - totalPaidWithCredit;
 
+        // Calcular porcentajes de cumplimiento y morosidad
+        const monthCharges = monthRecords.reduce(
+          (sum, rec) => sum + rec.referenceAmount,
+          0
+        );
+        const monthPaidInFull = monthRecords
+          .filter((rec) => rec.amountPending === 0)
+          .reduce((sum, rec) => sum + rec.referenceAmount, 0);
+        const complianceRate =
+          monthCharges > 0 ? (monthPaidInFull / monthCharges) * 100 : 0;
+        const delinquencyRate = 100 - complianceRate;
+
         return [
           monthNames[stat.month] || stat.month,
           formatCurrency(totalPaidWithCredit),
           formatCurrency(totalCharges),
           formatCurrency(balance),
           formatCurrency(stat.unidentifiedPayments),
-          stat.complianceRate.toFixed(2) + "%",
-          stat.delinquencyRate.toFixed(2) + "%",
+          complianceRate.toFixed(2) + "%",
+          delinquencyRate.toFixed(2) + "%",
         ];
       });
 
@@ -513,14 +528,13 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({
         totalBalanceGlobal = 0,
         totalUnidentifiedGlobal = 0;
 
+      // Calcular totales globales
       monthlyStats.forEach((stat) => {
-        // 1. Cargos: Usar el valor de charges del monthlyStats
-        const totalCharges = stat.charges;
-
-        // 2. Monto Abonado: Pagos + crédito usado + saldo disponible
         const monthRecords = Object.values(detailed)
           .flat()
           .filter((rec) => rec.month === stat.month);
+
+        const totalCharges = stat.charges;
         const totalPaid = monthRecords.reduce(
           (sum, rec) => sum + rec.amountPaid,
           0
@@ -537,7 +551,6 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({
         const totalPaidWithCredit =
           totalPaid + (totalCredit > 0 ? totalCredit : 0) - totalCreditUsed;
 
-        // 3. Saldo: Diferencia entre cargos y monto abonado
         const balance = totalCharges - totalPaidWithCredit;
 
         totalPaidGlobal += totalPaidWithCredit;
@@ -546,32 +559,33 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({
         totalUnidentifiedGlobal += stat.unidentifiedPayments;
       });
 
-      const financialAccountsMap =
-        usePaymentSummaryStore.getState().financialAccountsMap;
       let totalInitialBalance = 0;
       for (const key in financialAccountsMap) {
         totalInitialBalance += financialAccountsMap[key].initialBalance;
       }
       totalPaidGlobal += totalInitialBalance;
 
-      const avgCompliance =
-        monthlyStats.length > 0
-          ? monthlyStats.reduce((sum, stat) => sum + stat.complianceRate, 0) /
-            monthlyStats.length
-          : 0;
-      const avgDelinquency =
-        monthlyStats.length > 0
-          ? monthlyStats.reduce((sum, stat) => sum + stat.delinquencyRate, 0) /
-            monthlyStats.length
-          : 0;
+      // Calcular porcentajes globales
+      const allRecords = Object.values(detailed).flat();
+      const totalCharges = allRecords.reduce(
+        (sum, rec) => sum + rec.referenceAmount,
+        0
+      );
+      const totalPaidInFull = allRecords
+        .filter((rec) => rec.amountPending === 0)
+        .reduce((sum, rec) => sum + rec.referenceAmount, 0);
+      const totalCompliance =
+        totalCharges > 0 ? (totalPaidInFull / totalCharges) * 100 : 0;
+      const totalDelinquency = 100 - totalCompliance;
+
       compRows.push([
         "Total",
         formatCurrency(totalPaidGlobal),
         formatCurrency(totalChargesGlobal),
         formatCurrency(totalBalanceGlobal),
         formatCurrency(totalUnidentifiedGlobal),
-        avgCompliance.toFixed(2) + "%",
-        avgDelinquency.toFixed(2) + "%",
+        totalCompliance.toFixed(2) + "%",
+        totalDelinquency.toFixed(2) + "%",
       ]);
 
       doc.setFont("helvetica", "bold");
@@ -773,8 +787,13 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({
     const margin = 14;
     const adminSectionY = pageHeight - 80;
 
-    if (signatureBase64) {
-      doc.addImage(signatureBase64, "PNG", margin, adminSectionY - 20, 50, 20);
+    if (signatureUrl) {
+      try {
+        const signatureImage = await getBase64FromUrl(signatureUrl);
+        doc.addImage(signatureImage, "PNG", margin, adminSectionY - 20, 50, 20);
+      } catch (error) {
+        console.error("Error al cargar la firma:", error);
+      }
     }
     doc.setFontSize(12);
     doc.text("Firma del Administrador", margin, adminSectionY);

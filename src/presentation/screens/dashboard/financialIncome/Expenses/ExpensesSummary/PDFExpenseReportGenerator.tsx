@@ -2,8 +2,27 @@
 import React from "react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { useExpenseSummaryStore, ExpenseRecord } from "../../../../../../store/expenseSummaryStore";
-import { DocumentChartBarIcon } from '@heroicons/react/20/solid'
+import {
+  useExpenseSummaryStore,
+  ExpenseRecord,
+} from "../../../../../../store/expenseSummaryStore";
+import { DocumentChartBarIcon } from "@heroicons/react/20/solid";
+import { usePaymentSummaryStore } from "../../../../../../store/paymentSummaryStore";
+
+// Función auxiliar para convertir una URL de imagen a base64
+async function getBase64FromUrl(url: string): Promise<string> {
+  const response = await fetch(url);
+  const blob = await response.blob();
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = reject;
+    reader.onloadend = () => {
+      resolve(reader.result as string);
+    };
+    reader.readAsDataURL(blob);
+  });
+}
+
 export interface PDFExpenseReportGeneratorProps {
   year: string;
 }
@@ -32,7 +51,6 @@ const PDFExpenseReportGenerator: React.FC<PDFExpenseReportGeneratorProps> = ({
     totalSpent,
     monthlyStats,
     logoBase64,
-    signatureBase64,
     adminCompany,
     adminPhone,
     adminEmail,
@@ -41,13 +59,17 @@ const PDFExpenseReportGenerator: React.FC<PDFExpenseReportGeneratorProps> = ({
     totalSpent: state.totalSpent,
     monthlyStats: state.monthlyStats,
     logoBase64: state.logoBase64,
-    signatureBase64: state.signatureBase64,
     adminCompany: state.adminCompany || "Administradora S.A.",
     adminPhone: state.adminPhone || "Teléfono no disponible",
     adminEmail: state.adminEmail || "Email no disponible",
   }));
 
-  const generatePDF = () => {
+  // Obtener la URL de la firma desde el store de ingresos
+  const { signatureUrl } = usePaymentSummaryStore((state) => ({
+    signatureUrl: state.signatureUrl,
+  }));
+
+  const generatePDF = async () => {
     const doc = new jsPDF();
 
     // Función para formatear números como moneda
@@ -59,7 +81,7 @@ const PDFExpenseReportGenerator: React.FC<PDFExpenseReportGeneratorProps> = ({
         maximumFractionDigits: 2,
       }).format(value);
 
-    // --- Encabezado: Logo, Título, Fecha, Año y Total Egresos --- 
+    // --- Encabezado: Logo, Título, Fecha, Año y Total Egresos ---
     if (logoBase64) {
       doc.addImage(logoBase64, "PNG", 160, 10, 30, 30);
     }
@@ -80,9 +102,13 @@ const PDFExpenseReportGenerator: React.FC<PDFExpenseReportGeneratorProps> = ({
     doc.text("Total Egresos:", 14, 50);
     // Se incrementa el margen para separar mejor el valor
     doc.setFont("helvetica", "normal");
-    doc.text(formatCurrency(totalSpent), 14 + doc.getTextWidth("Total Egresos:") + 5, 50);
+    doc.text(
+      formatCurrency(totalSpent),
+      14 + doc.getTextWidth("Total Egresos:") + 5,
+      50
+    );
 
-    // --- Texto adicional antes de la primera tabla --- 
+    // --- Texto adicional antes de la primera tabla ---
     doc.setFontSize(14);
     doc.text("Resumen anual", 14, 58);
 
@@ -115,10 +141,9 @@ const PDFExpenseReportGenerator: React.FC<PDFExpenseReportGeneratorProps> = ({
       theme: "grid",
     });
 
-    let currentY =
-      (doc as any).lastAutoTable
-        ? (doc as any).lastAutoTable.finalY + 10
-        : 80;
+    let currentY = (doc as any).lastAutoTable
+      ? (doc as any).lastAutoTable.finalY + 10
+      : 80;
 
     // --- Nueva tabla de totales por concepto ---
     const expensesForYear = expenses.filter((exp: ExpenseRecord) =>
@@ -217,10 +242,9 @@ const PDFExpenseReportGenerator: React.FC<PDFExpenseReportGeneratorProps> = ({
         },
       });
 
-      currentY =
-        (doc as any).lastAutoTable
-          ? (doc as any).lastAutoTable.finalY + 10
-          : currentY + 20;
+      currentY = (doc as any).lastAutoTable
+        ? (doc as any).lastAutoTable.finalY + 10
+        : currentY + 20;
     });
 
     // --- Nueva página para firma y datos de la administradora ---
@@ -229,8 +253,13 @@ const PDFExpenseReportGenerator: React.FC<PDFExpenseReportGeneratorProps> = ({
     const margin = 14;
     const adminSectionY = pageHeight - 80;
 
-    if (signatureBase64) {
-      doc.addImage(signatureBase64, "PNG", margin, adminSectionY - 20, 50, 20);
+    if (signatureUrl) {
+      try {
+        const signatureImage = await getBase64FromUrl(signatureUrl);
+        doc.addImage(signatureImage, "PNG", margin, adminSectionY - 20, 50, 20);
+      } catch (error) {
+        console.error("Error al cargar la firma:", error);
+      }
     }
     doc.setFontSize(12);
     doc.text("Firma del Administrador", margin, adminSectionY);
@@ -261,7 +290,7 @@ const PDFExpenseReportGenerator: React.FC<PDFExpenseReportGeneratorProps> = ({
   return (
     <div className="w-full flex justify-end items-center">
       <button
-        onClick={generatePDF}
+        onClick={() => generatePDF()}
         className="bg-indigo-600  justify-center text-white text-sm py-2 px-1 flex items-center rounded w-[240px] font-medium hover:bg-indigo-700"
       >
         <DocumentChartBarIcon className="w-5 h-5 text-white mr-1" />
