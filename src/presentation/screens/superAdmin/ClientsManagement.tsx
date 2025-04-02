@@ -9,7 +9,7 @@ import {
 } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 import { executeSuperAdminOperation } from "../../../services/superAdminService";
-import useSuperAdminStore from "../../../store/SuperAdminStore";
+import useSuperAdminStore from "../../../store/superAdmin/SuperAdminStore";
 import NewClientForm from "../../components/shared/forms/NewClientForm";
 
 const statusColors = {

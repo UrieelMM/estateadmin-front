@@ -11,7 +11,7 @@ import {
 import {
   getSuperAdminSessionToken,
   // executeSuperAdminOperation,
-} from "../services/superAdminService";
+} from "../../services/superAdminService";
 
 interface Client {
   id: string;

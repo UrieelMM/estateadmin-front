@@ -9,6 +9,7 @@ import {
   ArrowPathIcon,
 } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
+import InvoiceCreationModal from "../../components/superAdmin/invoices/InvoiceCreationModal";
 
 interface BillingRecord {
   id: string;
@@ -57,6 +58,7 @@ const BillingManagement: React.FC = () => {
   });
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchBillingData = async () => {
@@ -389,7 +391,10 @@ const BillingManagement: React.FC = () => {
           </div>
         </div>
         <div className="flex space-x-2">
-          <button className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600">
+          <button
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600"
+            onClick={() => setIsInvoiceModalOpen(true)}
+          >
             <PlusIcon className="h-5 w-5 mr-2" />
             Nueva Factura
           </button>
@@ -543,6 +548,30 @@ const BillingManagement: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Modal de creación de facturas */}
+      <InvoiceCreationModal
+        open={isInvoiceModalOpen}
+        setOpen={setIsInvoiceModalOpen}
+        onSuccess={() => {
+          // Recargar los datos de facturación después de crear una nueva factura
+          const fetchBillingData = async () => {
+            try {
+              setLoading(true);
+              // En una implementación real, esta función cargaría datos nuevos de Firestore
+              // Por ahora, simplemente simulamos un retraso
+              setTimeout(() => {
+                setLoading(false);
+              }, 1000);
+            } catch (error) {
+              console.error("Error al recargar datos de facturación:", error);
+              toast.error("Error al recargar los datos de facturación");
+              setLoading(false);
+            }
+          };
+          fetchBillingData();
+        }}
+      />
     </div>
   );
 };
