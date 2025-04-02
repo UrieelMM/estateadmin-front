@@ -1,12 +1,5 @@
 import React, { useEffect, useState } from "react";
 import {
-  getFirestore,
-  collection,
-  getDocs,
-  query,
-  where,
-} from "firebase/firestore";
-import {
   UsersIcon,
   BuildingOffice2Icon,
   CreditCardIcon,

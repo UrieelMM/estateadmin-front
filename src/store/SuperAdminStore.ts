@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import * as Sentry from "@sentry/react";
 import {
   getFirestore,
   collection,
@@ -7,7 +8,10 @@ import {
   orderBy,
   limit,
 } from "firebase/firestore";
-import { getSuperAdminSessionToken } from "../services/superAdminService";
+import {
+  getSuperAdminSessionToken,
+  // executeSuperAdminOperation,
+} from "../services/superAdminService";
 
 interface Client {
   id: string;
@@ -21,6 +25,32 @@ interface Client {
   condominiumsCount?: number;
 }
 
+interface NewClientData {
+  email: string;
+  name: string;
+  lastName: string;
+  password: string;
+  phoneNumber: string;
+  currentPlan: string;
+  companyName: string;
+  address: string;
+  RFC: string;
+  country: string;
+  businessName: string;
+  taxResidence: string;
+  taxRegime: string;
+  condominiumName: string;
+  condominiumInfo: {
+    name: string;
+    address: string;
+  };
+}
+
+interface ClientCredentials {
+  email: string;
+  password: string;
+}
+
 interface SuperAdminStore {
   clients: Client[];
   recentAudits: any[];
@@ -30,6 +60,9 @@ interface SuperAdminStore {
 
   fetchClients: () => Promise<void>;
   fetchRecentAudits: () => Promise<void>;
+  createClient: (
+    clientData: NewClientData
+  ) => Promise<{ success: boolean; credentials?: ClientCredentials }>;
 }
 
 const db = getFirestore();
@@ -114,6 +147,39 @@ const useSuperAdminStore = create<SuperAdminStore>((set, _get) => ({
         error: error.message || "Error al cargar datos de auditoría",
         loadingAudits: false,
       });
+    }
+  },
+
+  // Crear nuevo cliente
+  createClient: async (clientData: NewClientData) => {
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_URL_SERVER}/users-auth/register-client`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(clientData),
+        }
+      );
+
+      if (response.ok) {
+        // Recargar la lista de clientes después de crear uno nuevo
+        await _get().fetchClients();
+        return {
+          success: true,
+          credentials: {
+            email: clientData.email,
+            password: clientData.password,
+          },
+        };
+      }
+      return { success: false };
+    } catch (error: any) {
+      Sentry.captureException(error);
+      set({ error: error.message || "Error al crear el cliente" });
+      return { success: false };
     }
   },
 }));

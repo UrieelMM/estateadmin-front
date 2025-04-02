@@ -3,7 +3,7 @@ import { create } from "zustand";
 import { getAuth, getIdTokenResult } from "firebase/auth";
 
 interface CondominiumState {
-  sendExcel: (file: File, condominiumId: string) => Promise<void>;
+  sendExcel: (file: File) => Promise<void>;
 }
 
 // Constantes para la validación del archivo
@@ -11,7 +11,7 @@ const ALLOWED_EXTENSIONS_REGEX = /\.(xls|xlsx)$/i;
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
 export const useCondominiumStore = create<CondominiumState>(() => ({
-  sendExcel: async (file: File, condominiumId: string) => {
+  sendExcel: async (file: File) => {
     // Validación del archivo: extensión y tamaño
     if (!ALLOWED_EXTENSIONS_REGEX.test(file.name)) {
       alert("El archivo debe ser un Excel (.xls, .xlsx)");
@@ -45,12 +45,21 @@ export const useCondominiumStore = create<CondominiumState>(() => ({
       return;
     }
 
+    const condominiumId = localStorage.getItem("condominiumId");
+    if (!condominiumId) {
+      alert("No se encontró el ID del condominio");
+      return;
+    }
+
     try {
       // Preparar los datos a enviar en el FormData
       const formData = new FormData();
       formData.append("file", file);
       formData.append("condominiumId", condominiumId);
       formData.append("clientId", String(clientId));
+
+      console.log("Valor de condominiumId que se envía:", condominiumId);
+      console.log("formData completo:", Object.fromEntries(formData));
 
       const response = await fetch(
         `${import.meta.env.VITE_URL_SERVER}/users-auth/register-condominiums`,

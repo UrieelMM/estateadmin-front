@@ -22,25 +22,20 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
           // Obtener datos necesarios
           const tokenResult = await getIdTokenResult(user);
           const clientId = tokenResult.claims["clientId"];
-          const condominiumId = localStorage.getItem("condominiumId");
-          const userId = user.uid;
 
-          if (!clientId || !condominiumId) {
+          if (!clientId) {
             setIsThemeLoaded(true);
             return;
           }
 
-          // Referencia al documento del usuario en Firestore
+          // Referencia al documento del cliente en Firestore
           const db = getFirestore();
-          const userDocRef = doc(
-            db,
-            `clients/${clientId}/condominiums/${condominiumId}/users/${userId}`
-          );
-          const userDoc = await getDoc(userDocRef);
+          const clientDocRef = doc(db, "clients", clientId as string);
+          const clientDoc = await getDoc(clientDocRef);
 
-          if (userDoc.exists()) {
-            const userData = userDoc.data();
-            const darkModePreference = userData.darkMode ?? false;
+          if (clientDoc.exists()) {
+            const clientData = clientDoc.data();
+            const darkModePreference = clientData.darkMode ?? false;
 
             // Aplicar el tema inmediatamente
             setIsDarkMode(darkModePreference);
@@ -88,17 +83,12 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
     try {
       const tokenResult = await getIdTokenResult(user);
       const clientId = tokenResult.claims["clientId"];
-      const condominiumId = localStorage.getItem("condominiumId");
-      const userId = user.uid;
 
-      if (!clientId || !condominiumId) return;
+      if (!clientId) return;
 
       const db = getFirestore();
-      const userDocRef = doc(
-        db,
-        `clients/${clientId}/condominiums/${condominiumId}/users/${userId}`
-      );
-      await updateDoc(userDocRef, { darkMode: newTheme });
+      const clientDocRef = doc(db, "clients", clientId as string);
+      await updateDoc(clientDocRef, { darkMode: newTheme });
     } catch (error: any) {
       // Capturar el error y reportarlo a Sentry
       Sentry.captureException(error, {

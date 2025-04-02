@@ -1,32 +1,14 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { useCondominiumStore } from "../../../../store/useRegisterUserStore";
 import { DocumentPlusIcon } from "@heroicons/react/24/solid";
 import toast from "react-hot-toast";
 import LoadingRegister from "../loaders/LoadingRegister";
-import useUserStore from "../../../../store/UserDataStore";
-
-interface Condominium {
-  name: string;
-  uid: string;
-}
 
 const UsersRegistrationForm = () => {
-  const fetchCondominiums = useUserStore((state) => state.fetchCondominiums);
-  const condominiums = useUserStore((state) => state.condominiums);
-
   const [file, setFile] = useState<File | null>(null);
   const [fileName, setFileName] = useState("");
-  const [condominiumsList, setCondominiumsList] = useState([]);
-  const [condominiumId, setCondominiumId] = useState("");
   const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    fetchCondominiums();
-    if (condominiums) {
-      setCondominiumsList(condominiums as []);
-    }
-  }, [fetchCondominiums, condominiums]);
 
   const sendExcel = useCondominiumStore((state) => state.sendExcel);
 
@@ -34,19 +16,23 @@ const UsersRegistrationForm = () => {
     event.preventDefault();
     setLoading(true);
 
-    if (!file || !condominiumId) {
+    if (!file) {
       toast.error(
-        "Por favor, llena todos los campos para poder registrar los usuarios"
+        "Por favor, selecciona un archivo para registrar los usuarios"
       );
       setLoading(false);
       return;
     }
 
     try {
-      await sendExcel(file, condominiumId);
+      const condominiumId = localStorage.getItem("condominiumId");
+      if (!condominiumId) {
+        toast.error("No se encontró el ID del condominio");
+        return;
+      }
+      await sendExcel(file);
       toast.success("Usuarios registrados correctamente");
       setFile(null);
-      setCondominiumId("");
       setFileName("");
     } catch (error) {
       toast.error("Error al registrar los usuarios");
@@ -80,25 +66,6 @@ const UsersRegistrationForm = () => {
               <p className="text-md font-bold mt-2 mb-2">
                 Registra a los usuarios del condominio
               </p>
-              <label className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100">
-                Selecciona el condominio
-              </label>
-              <div className="mt-2">
-                <select
-                  onChange={(e) => setCondominiumId(e.target.value)}
-                  className="px-2 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm  ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-50"
-                >
-                  <option key="default" value="">
-                    {" "}
-                    Selecciona una opcion{" "}
-                  </option>
-                  {condominiumsList.map((condominium: Condominium) => (
-                    <option key={condominium.uid} value={condominium.uid}>
-                      {condominium.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
             </div>
             <div className="mt-2 mb-4">
               <span className="bg-yellow-50 mt-4 text-xs font-bold text-yellow-900 px-2 py-1 rounded-sm ">

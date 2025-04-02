@@ -1,9 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { getFirestore, doc, getDoc, updateDoc } from "firebase/firestore";
 import {
   Cog6ToothIcon,
-  ShieldCheckIcon,
-  ClockIcon,
   EnvelopeIcon,
   ServerIcon,
   CurrencyDollarIcon,

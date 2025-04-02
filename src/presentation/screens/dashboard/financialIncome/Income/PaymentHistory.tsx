@@ -60,7 +60,7 @@ const PaymentHistory = () => {
     adminEmail,
     logoBase64,
     signatureBase64,
-    currentCreditBalance, // NUEVO: saldo actual (en centavos)
+    // currentCreditBalance, // NUEVO: saldo actual (en centavos)
     pendingAmount, // NUEVO: monto pendiente (suma de cargos no pagados)
   } = usePaymentHistoryStore();
 
@@ -242,7 +242,7 @@ const PaymentHistory = () => {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
         <div className="p-4 shadow-md rounded-md">
           <p className="text-sm text-gray-600 dark:text-gray-100">
-            Total Monto Abonado en el Año
+            Total Monto Abonado
           </p>
           <p className="text-xl font-semibold">
             {formatCurrency(totalPaidYear)}
@@ -259,7 +259,7 @@ const PaymentHistory = () => {
         <div className="p-4 shadow-md rounded-md">
           <p className="text-sm text-gray-600 dark:text-gray-100">Saldo</p>
           <p className="text-xl font-semibold">
-            {formatCurrency(currentCreditBalance / 100)}
+            {formatCurrency(pendingAmount - totalPaidYear)}
           </p>
         </div>
         <div className="p-4 shadow-md rounded-md">

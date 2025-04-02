@@ -5,15 +5,13 @@ import {
   doc,
   getDoc,
   updateDoc,
-  setDoc,
-  deleteField,
   collection,
   getDocs,
 } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import * as Sentry from "@sentry/react";
 
-/** Config general en clients/{clientId}. (Sin incluir darkMode) */
+/** Config general en clients/{clientId}. (Incluyendo darkMode) */
 export type Config = {
   companyName: string;
   email: string;
@@ -25,6 +23,7 @@ export type Config = {
   signatureUrl?: string;
   logo?: string; // Derivado de logoUrl para la UI
   logoReports?: string;
+  darkMode?: boolean;
 };
 
 type ConfigState = {
@@ -136,13 +135,10 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
       const db = getFirestore();
       const storage = getStorage();
 
-      // Separamos darkMode
-      const { darkMode, ...generalData } = data;
-
       // Manejamos posibles uploads
-      let logoUrl = generalData.logoUrl;
-      let signatureUrl = generalData.signatureUrl;
-      let logoReportsUrl = generalData.logoReports;
+      let logoUrl = data.logoUrl;
+      let signatureUrl = data.signatureUrl;
+      let logoReportsUrl = data.logoReports;
 
       if (logoFile) {
         const logoRef = ref(
@@ -174,47 +170,18 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
       }
 
       // Preparamos update para `clients/{clientId}`
-      const updateData: Partial<Config> & { darkMode?: any } = {
-        ...generalData,
+      const updateData: Partial<Config> = {
+        ...data,
         ...(logoUrl !== undefined ? { logoUrl } : {}),
         ...(signatureUrl !== undefined ? { signatureUrl } : {}),
         ...(logoReportsUrl !== undefined
           ? { logoReports: logoReportsUrl }
           : {}),
-        darkMode: deleteField(),
-        // Elimina darkMode del doc principal si existía
       };
 
-      // (A) Actualizamos config
+      // Actualizamos config
       const configDocRef = doc(db, "clients", clientId);
       await updateDoc(configDocRef, updateData);
-
-      // (B) Actualizar darkMode en el doc del usuario en la subcolección,
-      // SI Y SOLO SI 'darkMode' es boolean
-      if (typeof darkMode === "boolean") {
-        // 1) Localizar el doc del usuario por email
-        const userCollRef = collection(
-          db,
-          "clients",
-          clientId,
-          "condominiums",
-          condominiumId,
-          "users"
-        );
-        const allDocs = await getDocs(userCollRef);
-        const userDoc = allDocs.docs.find(
-          (doc) => doc.data().email.toLowerCase() === user.email?.toLowerCase()
-        );
-
-        if (!userDoc) {
-          throw new Error(
-            "No existe un usuario en la subcolección con ese email."
-          );
-        }
-
-        // 2) Actualizamos el darkMode en ese doc
-        await setDoc(userDoc.ref, { darkMode }, { merge: true });
-      }
 
       // Éxito: recargar config general
       set({ loading: false });

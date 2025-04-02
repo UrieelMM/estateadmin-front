@@ -1,13 +1,5 @@
 import React, { useEffect, useState } from "react";
 import {
-  getFirestore,
-  collection,
-  getDocs,
-  query,
-  where,
-  orderBy,
-} from "firebase/firestore";
-import {
   PlusIcon,
   ArrowDownTrayIcon,
   EyeIcon,

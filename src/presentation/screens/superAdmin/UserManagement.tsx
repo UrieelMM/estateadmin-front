@@ -1,15 +1,5 @@
 import React, { useEffect, useState } from "react";
 import {
-  getFirestore,
-  collection,
-  getDocs,
-  query,
-  where,
-  doc,
-  updateDoc,
-  deleteDoc,
-} from "firebase/firestore";
-import {
   PencilIcon,
   TrashIcon,
   PlusIcon,
@@ -134,24 +124,6 @@ const UserManagement: React.FC = () => {
       user.clientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       user.role.toLowerCase().includes(searchQuery.toLowerCase())
   );
-
-  const handleStatusChange = async (
-    userId: string,
-    newStatus: "active" | "inactive" | "suspended"
-  ) => {
-    try {
-      // En una implementación real, actualizarías el estado en Firestore
-      setUsers(
-        users.map((user) =>
-          user.id === userId ? { ...user, status: newStatus } : user
-        )
-      );
-      toast.success(`Estado actualizado con éxito`);
-    } catch (error) {
-      console.error("Error al actualizar estado:", error);
-      toast.error("Error al actualizar el estado del usuario");
-    }
-  };
 
   const formatRole = (role: string) => {
     switch (role) {

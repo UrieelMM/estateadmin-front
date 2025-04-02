@@ -10,6 +10,7 @@ import {
 import toast from "react-hot-toast";
 import { executeSuperAdminOperation } from "../../../services/superAdminService";
 import useSuperAdminStore from "../../../store/SuperAdminStore";
+import NewClientForm from "../../components/shared/forms/NewClientForm";
 
 const statusColors = {
   active: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
@@ -29,12 +30,23 @@ interface ClientFormData {
   plan: string;
 }
 
+interface ClientCredentials {
+  email: string;
+  password: string;
+}
+
 const ClientsManagement: React.FC = () => {
-  const { clients, loadingClients, error, fetchClients } = useSuperAdminStore();
+  const { clients, loadingClients, error, fetchClients, createClient } =
+    useSuperAdminStore();
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [currentClient, setCurrentClient] = useState<ClientFormData | null>(
+    null
+  );
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [showCredentials, setShowCredentials] = useState(false);
+  const [credentials, setCredentials] = useState<ClientCredentials | null>(
     null
   );
 
@@ -149,6 +161,29 @@ const ClientsManagement: React.FC = () => {
     } catch (error) {
       console.error("Error al actualizar cliente:", error);
       toast.error("Error al actualizar la información del cliente");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCreateClient = async (clientData: any) => {
+    try {
+      setLoading(true);
+      const result = await createClient(clientData);
+      if (result.success) {
+        toast.success("Cliente creado exitosamente");
+        setIsCreateModalOpen(false);
+        // Mostrar las credenciales en el modal
+        if (result.credentials) {
+          setCredentials(result.credentials);
+          setShowCredentials(true);
+        }
+      } else {
+        toast.error("No se pudo crear el cliente");
+      }
+    } catch (error) {
+      console.error("Error al crear cliente:", error);
+      toast.error("Error al crear el cliente");
     } finally {
       setLoading(false);
     }
@@ -320,7 +355,10 @@ const ClientsManagement: React.FC = () => {
             Administra los clientes de la plataforma
           </p>
         </div>
-        <button className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600">
+        <button
+          onClick={() => setIsCreateModalOpen(true)}
+          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600"
+        >
           <PlusIcon className="h-5 w-5 mr-2" />
           Nuevo Cliente
         </button>
@@ -483,6 +521,79 @@ const ClientsManagement: React.FC = () => {
 
       {/* Modal de Edición */}
       {isEditModalOpen && <ClientEditModal />}
+
+      {/* Modal para crear nuevo cliente */}
+      <NewClientForm
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSubmit={handleCreateClient}
+      />
+
+      {/* Modal de Credenciales */}
+      {showCredentials && credentials && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">
+              Credenciales del Cliente
+            </h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Email
+                </label>
+                <div className="mt-1 flex rounded-md shadow-sm">
+                  <input
+                    type="text"
+                    readOnly
+                    value={credentials.email}
+                    className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  />
+                  <button
+                    onClick={() =>
+                      navigator.clipboard.writeText(credentials.email)
+                    }
+                    className="ml-2 px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
+                  >
+                    Copiar
+                  </button>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Contraseña
+                </label>
+                <div className="mt-1 flex rounded-md shadow-sm">
+                  <input
+                    type="text"
+                    readOnly
+                    value={credentials.password}
+                    className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  />
+                  <button
+                    onClick={() =>
+                      navigator.clipboard.writeText(credentials.password)
+                    }
+                    className="ml-2 px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
+                  >
+                    Copiar
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div className="mt-6 flex justify-end">
+              <button
+                onClick={() => {
+                  setShowCredentials(false);
+                  setCredentials(null);
+                }}
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
