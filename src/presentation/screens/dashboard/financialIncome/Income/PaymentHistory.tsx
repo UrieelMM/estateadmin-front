@@ -59,7 +59,6 @@ const PaymentHistory = () => {
     adminPhone,
     adminEmail,
     logoBase64,
-    signatureBase64,
     // currentCreditBalance, // NUEVO: saldo actual (en centavos)
     pendingAmount, // NUEVO: monto pendiente (suma de cargos no pagados)
   } = usePaymentHistoryStore();
@@ -335,7 +334,6 @@ const PaymentHistory = () => {
           adminPhone={adminPhone}
           adminEmail={adminEmail}
           logoBase64={logoBase64}
-          signatureBase64={signatureBase64}
         />
       )}
     </div>
