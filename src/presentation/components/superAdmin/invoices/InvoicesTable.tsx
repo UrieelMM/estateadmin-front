@@ -311,7 +311,7 @@ const InvoicesTable: React.FC<InvoicesTableProps> = ({
                           </div>
                         </td>
                         <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 dark:text-gray-200">
-                          {invoice.clientName}
+                          {invoice.companyName || "Cliente sin nombre"}
                         </td>
                         <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 dark:text-gray-200">
                           {formatCurrency(invoice.amount)}
@@ -536,7 +536,8 @@ const InvoicesTable: React.FC<InvoicesTableProps> = ({
                                     </div>
                                   </td>
                                   <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 dark:text-gray-200">
-                                    {invoice.clientName}
+                                    {invoice.companyName ||
+                                      "Cliente sin nombre"}
                                   </td>
                                   <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 dark:text-gray-200">
                                     {formatCurrency(invoice.amount)}

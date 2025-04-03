@@ -13,6 +13,8 @@ import {
   startAfter as firestoreStartAfter,
   DocumentData,
   QueryDocumentSnapshot,
+  getDoc,
+  doc,
 } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import toast from "react-hot-toast";
@@ -40,6 +42,7 @@ export interface InvoiceRecord {
   id: string;
   clientId: string;
   clientName: string;
+  companyName: string;
   condominiumId: string;
   condominiumName?: string;
   amount: number;
@@ -115,6 +118,11 @@ const useBillingStore = create<BillingStore>((set, _get) => ({
   ) => {
     set({ loading: true, error: null });
     try {
+      // Obtener el companyName del cliente
+      const clientDoc = await getDoc(doc(db, "clients", clientId));
+      const clientData = clientDoc.data();
+      const companyName = clientData?.companyName || "Empresa sin nombre";
+
       // 1. Subir el archivo de factura a Storage
       const invoiceFileName = `invoice_${Date.now()}_${file.name}`;
       const storagePath = `clients/${clientId}/condominiums/${condominiumId}/invoicesGenerated/${invoiceFileName}`;
@@ -142,6 +150,13 @@ const useBillingStore = create<BillingStore>((set, _get) => ({
 
       const now = new Date();
 
+      // Generar un folio de 10 caracteres
+      const randomSuffix = Math.random()
+        .toString(36)
+        .substring(2, 10)
+        .toUpperCase();
+      const invoiceNumber = `INV-${randomSuffix}`;
+
       await addDoc(invoicesRef, {
         ...invoiceData,
         invoiceURL,
@@ -152,6 +167,8 @@ const useBillingStore = create<BillingStore>((set, _get) => ({
         paymentStatus: "pending",
         clientId,
         condominiumId,
+        invoiceNumber,
+        companyName,
       });
 
       set({ loading: false });
@@ -232,6 +249,7 @@ const useBillingStore = create<BillingStore>((set, _get) => ({
           id: doc.id,
           clientId: data.clientId || "",
           clientName: data.clientName || "Cliente sin nombre",
+          companyName: data.companyName || "Empresa sin nombre",
           condominiumId: data.condominiumId || "",
           condominiumName: data.condominiumName,
           amount: data.amount || 0,
@@ -302,6 +320,7 @@ const useBillingStore = create<BillingStore>((set, _get) => ({
           id: doc.id,
           clientId: data.clientId || "",
           clientName: data.clientName || "Cliente sin nombre",
+          companyName: data.companyName || "Empresa sin nombre",
           condominiumId: data.condominiumId || "",
           condominiumName: data.condominiumName,
           amount: data.amount || 0,

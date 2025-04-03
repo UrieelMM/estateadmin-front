@@ -235,6 +235,9 @@ const InvoiceCreationModal: React.FC<InvoiceCreationModalProps> = ({
         handleResetForm();
         setOpen(false);
         if (onSuccess) onSuccess();
+        // Actualizar la tabla de facturas
+        const { fetchInvoices } = useBillingStore.getState();
+        await fetchInvoices(20, null, {});
       }
     } catch (error) {
       console.error("Error al crear factura:", error);
@@ -317,7 +320,7 @@ const InvoiceCreationModal: React.FC<InvoiceCreationModalProps> = ({
                               <select
                                 id="client"
                                 name="client"
-                                className="mt-2 block w-full rounded-md border-0 py-1.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-700 dark:text-white dark:ring-gray-600"
+                                className="w-full px-2 mt-2 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
                                 value={clientId}
                                 onChange={(e) => setClientId(e.target.value)}
                                 disabled={loading}
@@ -343,7 +346,7 @@ const InvoiceCreationModal: React.FC<InvoiceCreationModalProps> = ({
                               <select
                                 id="condominium"
                                 name="condominium"
-                                className="mt-2 block w-full rounded-md border-0 py-1.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-700 dark:text-white dark:ring-gray-600"
+                                className="w-full px-2 mt-2 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
                                 value={condominiumId}
                                 onChange={(e) =>
                                   setCondominiumId(e.target.value)
@@ -380,7 +383,7 @@ const InvoiceCreationModal: React.FC<InvoiceCreationModalProps> = ({
                               <select
                                 id="adminUser"
                                 name="adminUser"
-                                className="mt-2 block w-full rounded-md border-0 py-1.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-700 dark:text-white dark:ring-gray-600"
+                                className="w-full px-2 mt-2 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
                                 value={userId}
                                 onChange={(e) => setUserId(e.target.value)}
                                 disabled={
@@ -416,7 +419,7 @@ const InvoiceCreationModal: React.FC<InvoiceCreationModalProps> = ({
                                   id="amount"
                                   step="0.01"
                                   min="0"
-                                  className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-700 dark:text-white dark:ring-gray-600 dark:placeholder-gray-400"
+                                  className="w-full px-2 mt-2 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
                                   value={amount}
                                   onChange={(e) => setAmount(e.target.value)}
                                   disabled={loading}
@@ -438,7 +441,7 @@ const InvoiceCreationModal: React.FC<InvoiceCreationModalProps> = ({
                                   type="date"
                                   name="dueDate"
                                   id="dueDate"
-                                  className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-700 dark:text-white dark:ring-gray-600"
+                                  className="w-full px-2 mt-2 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
                                   value={dueDate}
                                   onChange={(e) => setDueDate(e.target.value)}
                                   disabled={loading}
@@ -534,7 +537,7 @@ const InvoiceCreationModal: React.FC<InvoiceCreationModalProps> = ({
                                   id="optionalMessage"
                                   name="optionalMessage"
                                   rows={3}
-                                  className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-700 dark:text-white dark:ring-gray-600 dark:placeholder-gray-400"
+                                  className="w-full px-2 mt-2 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
                                   placeholder="Información adicional para el cliente..."
                                   value={optionalMessage}
                                   onChange={(e) =>
