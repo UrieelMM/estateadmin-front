@@ -36,13 +36,13 @@ const PaymentCancel: React.FC = () => {
   }, [location.search, searchInvoiceByNumber]);
 
   const handleGoBack = () => {
-    navigate("/dashboard/config", { state: { activeTab: "payments" } });
+    navigate("/dashboard/client-config", { state: { activeTab: "payments" } });
   };
 
   const handleRetryPayment = () => {
     if (invoiceData) {
       // Redirigir a la página de facturas, manteniendo la información para facilitar un nuevo intento
-      navigate("/dashboard/config", {
+      navigate("/dashboard/client-config", {
         state: {
           activeTab: "payments",
           retryInvoiceId: invoiceData.id,

@@ -63,7 +63,7 @@ const PaymentSuccess: React.FC = () => {
   }, [location.search, checkPaymentStatus, searchInvoiceByNumber]);
 
   const handleGoBack = () => {
-    navigate("/dashboard/config", { state: { activeTab: "payments" } });
+    navigate("/dashboard/client-config", { state: { activeTab: "payments" } });
   };
 
   const formatCurrency = (amount: number) => {

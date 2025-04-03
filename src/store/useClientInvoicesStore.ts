@@ -23,6 +23,9 @@ export interface ClientInvoice {
   concept: string;
   amount: number;
   status: "pending" | "paid" | "overdue" | "canceled";
+  paymentStatus: "pending" | "paid" | "overdue" | "canceled";
+  paymentMethod?: string;
+  paymentIntentId?: string;
   createdAt: any;
   dueDate: any;
   paidDate?: any;
@@ -138,7 +141,7 @@ const useClientInvoicesStore = create<ClientInvoicesState>((set, get) => ({
       if (filters.status) {
         invoicesQuery = query(
           invoicesQuery,
-          where("status", "==", filters.status)
+          where("paymentStatus", "==", filters.status)
         );
       }
 
@@ -166,6 +169,9 @@ const useClientInvoicesStore = create<ClientInvoicesState>((set, get) => ({
           concept: data.concept || "Suscripción Mensual",
           amount: data.amount || 0,
           status: data.status || "pending",
+          paymentStatus: data.paymentStatus || data.status || "pending",
+          paymentMethod: data.paymentMethod,
+          paymentIntentId: data.paymentIntentId,
           createdAt: data.createdAt,
           dueDate: data.dueDate,
           paidDate: data.paidDate,
@@ -250,6 +256,9 @@ const useClientInvoicesStore = create<ClientInvoicesState>((set, get) => ({
           concept: data.concept || "Suscripción Mensual",
           amount: data.amount || 0,
           status: data.status || "pending",
+          paymentStatus: data.paymentStatus || data.status || "pending",
+          paymentMethod: data.paymentMethod,
+          paymentIntentId: data.paymentIntentId,
           createdAt: data.createdAt,
           dueDate: data.dueDate,
           paidDate: data.paidDate,
@@ -313,10 +322,11 @@ const useClientInvoicesStore = create<ClientInvoicesState>((set, get) => ({
       // Actualizar estado de la factura
       await updateDoc(invoiceRef, {
         status: "paid" as const,
+        paymentStatus: "paid" as const,
         isPaid: true,
         paidDate: new Date(),
         paymentMethod,
-        paymentReference,
+        paymentIntentId: paymentReference,
       });
 
       // Actualizar el estado local
@@ -325,8 +335,11 @@ const useClientInvoicesStore = create<ClientInvoicesState>((set, get) => ({
           ? {
               ...invoice,
               status: "paid" as const,
+              paymentStatus: "paid" as const,
               isPaid: true,
               paidDate: new Date(),
+              paymentMethod,
+              paymentIntentId: paymentReference,
             }
           : invoice
       );
@@ -462,8 +475,11 @@ const useClientInvoicesStore = create<ClientInvoicesState>((set, get) => ({
             ? {
                 ...invoice,
                 status: "paid" as const,
+                paymentStatus: "paid" as const,
                 isPaid: true,
                 paidDate: new Date(),
+                paymentMethod: "stripe",
+                paymentIntentId: data.paymentIntent,
               }
             : invoice
         );

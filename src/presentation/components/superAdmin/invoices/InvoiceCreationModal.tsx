@@ -45,6 +45,8 @@ const InvoiceCreationModal: React.FC<InvoiceCreationModalProps> = ({
   const [optionalMessage, setOptionalMessage] = useState<string>("");
   const [file, setFile] = useState<File | null>(null);
   const [fileName, setFileName] = useState<string>("");
+  const [xmlFile, setXmlFile] = useState<File | null>(null);
+  const [xmlFileName, setXmlFileName] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [condominiums, setCondominiums] = useState<Condominium[]>([]);
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
@@ -130,6 +132,8 @@ const InvoiceCreationModal: React.FC<InvoiceCreationModalProps> = ({
     setOptionalMessage("");
     setFile(null);
     setFileName("");
+    setXmlFile(null);
+    setXmlFileName("");
   };
 
   const dropzoneOptions = {
@@ -146,8 +150,27 @@ const InvoiceCreationModal: React.FC<InvoiceCreationModalProps> = ({
     },
   };
 
+  const xmlDropzoneOptions = {
+    accept: {
+      "application/xml": [".xml"],
+      "text/xml": [".xml"],
+    },
+    onDrop: (acceptedFiles: File[]) => {
+      if (acceptedFiles.length > 0) {
+        setXmlFile(acceptedFiles[0]);
+        setXmlFileName(acceptedFiles[0].name);
+      }
+    },
+  };
+
   const { getRootProps, getInputProps, isDragActive } =
     useDropzone(dropzoneOptions);
+
+  const {
+    getRootProps: getXmlRootProps,
+    getInputProps: getXmlInputProps,
+    isDragActive: isXmlDragActive,
+  } = useDropzone(xmlDropzoneOptions);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -163,7 +186,7 @@ const InvoiceCreationModal: React.FC<InvoiceCreationModalProps> = ({
       !file
     ) {
       toast.error(
-        "Todos los campos son obligatorios excepto el mensaje opcional"
+        "Todos los campos son obligatorios excepto el XML y el mensaje opcional"
       );
       setLoading(false);
       return;
@@ -178,7 +201,12 @@ const InvoiceCreationModal: React.FC<InvoiceCreationModalProps> = ({
         return;
       }
 
-      const invoiceNumber = `INV-${Date.now().toString().slice(-6)}`;
+      // Generar un folio de 10 caracteres
+      const randomSuffix = Math.random()
+        .toString(36)
+        .substring(2, 8)
+        .toUpperCase();
+      const invoiceNumber = `INV-${randomSuffix}`;
 
       const invoiceData: InvoiceData = {
         amount: parseFloat(amount),
@@ -186,7 +214,7 @@ const InvoiceCreationModal: React.FC<InvoiceCreationModalProps> = ({
         optionalMessage: optionalMessage || "",
         userEmail: selectedUser.email,
         userUID: selectedUser.id,
-        status: "pending",
+        paymentStatus: "pending",
         createdAt: new Date(),
         concept: "Suscripción Mensual",
         invoiceNumber,
@@ -199,7 +227,8 @@ const InvoiceCreationModal: React.FC<InvoiceCreationModalProps> = ({
         clientId,
         condominiumId,
         invoiceData,
-        file
+        file,
+        xmlFile
       );
 
       if (success) {
@@ -418,10 +447,10 @@ const InvoiceCreationModal: React.FC<InvoiceCreationModalProps> = ({
                               </div>
                             </div>
 
-                            {/* Archivo de Factura */}
+                            {/* Archivo de Factura PDF */}
                             <div>
                               <label className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-200">
-                                Archivo de Factura
+                                Archivo de Factura (PDF)
                               </label>
                               <div
                                 {...getRootProps()}
@@ -444,12 +473,49 @@ const InvoiceCreationModal: React.FC<InvoiceCreationModalProps> = ({
                                       <p className="pl-1">
                                         {isDragActive
                                           ? "Suelta el archivo aquí..."
-                                          : "Arrastra y suelta el archivo aquí o haz clic para seleccionarlo"}
+                                          : "Arrastra y suelta el PDF aquí o haz clic para seleccionarlo"}
                                       </p>
                                     )}
                                   </div>
                                   <p className="text-xs leading-5 text-gray-600 dark:text-gray-400">
                                     PDF, PNG o JPG hasta 10MB
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Archivo XML */}
+                            <div>
+                              <label className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-200">
+                                Archivo XML (Opcional)
+                              </label>
+                              <div
+                                {...getXmlRootProps()}
+                                className="mt-2 flex justify-center rounded-lg border border-dashed border-gray-900/25 px-6 py-10 dark:border-gray-500"
+                              >
+                                <div className="text-center">
+                                  <DocumentPlusIcon
+                                    className="mx-auto h-12 w-12 text-gray-300"
+                                    aria-hidden="true"
+                                  />
+                                  <div className="mt-4 flex text-sm leading-6 text-gray-600 dark:text-gray-300">
+                                    <input
+                                      {...getXmlInputProps()}
+                                      id="xml-upload"
+                                      disabled={loading}
+                                    />
+                                    {xmlFileName ? (
+                                      <p className="pl-1">{xmlFileName}</p>
+                                    ) : (
+                                      <p className="pl-1">
+                                        {isXmlDragActive
+                                          ? "Suelta el archivo XML aquí..."
+                                          : "Arrastra y suelta el XML aquí o haz clic para seleccionarlo"}
+                                      </p>
+                                    )}
+                                  </div>
+                                  <p className="text-xs leading-5 text-gray-600 dark:text-gray-400">
+                                    Archivo XML hasta 5MB
                                   </p>
                                 </div>
                               </div>

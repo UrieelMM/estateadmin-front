@@ -24,7 +24,9 @@ export interface InvoiceData {
   userEmail: string;
   userUID: string;
   invoiceURL?: string;
-  status: "pending" | "paid" | "overdue" | "canceled";
+  xmlURL?: string;
+  status?: "pending" | "paid" | "overdue" | "canceled";
+  paymentStatus: "pending" | "paid" | "overdue" | "canceled";
   createdAt: Date;
   concept: string;
   invoiceNumber: string;
@@ -41,7 +43,8 @@ export interface InvoiceRecord {
   condominiumId: string;
   condominiumName?: string;
   amount: number;
-  status: "pending" | "paid" | "overdue" | "canceled";
+  status?: "pending" | "paid" | "overdue" | "canceled";
+  paymentStatus: "pending" | "paid" | "overdue" | "canceled";
   invoiceNumber: string;
   concept: string;
   createdAt: any;
@@ -50,6 +53,7 @@ export interface InvoiceRecord {
   plan?: string;
   isPaid: boolean;
   invoiceURL?: string;
+  xmlURL?: string;
   userEmail: string;
   userUID: string;
   optionalMessage: string;
@@ -67,7 +71,8 @@ interface BillingStore {
     clientId: string,
     condominiumId: string,
     invoiceData: InvoiceData,
-    file: File
+    file: File,
+    xmlFile?: File | null
   ) => Promise<boolean>;
 
   fetchInvoices: (
@@ -101,10 +106,16 @@ const useBillingStore = create<BillingStore>((set, _get) => ({
   totalInvoices: 0,
   loadingInvoices: false,
 
-  createInvoice: async (clientId, condominiumId, invoiceData, file) => {
+  createInvoice: async (
+    clientId,
+    condominiumId,
+    invoiceData,
+    file,
+    xmlFile
+  ) => {
     set({ loading: true, error: null });
     try {
-      // 1. Subir el archivo a Storage
+      // 1. Subir el archivo de factura a Storage
       const invoiceFileName = `invoice_${Date.now()}_${file.name}`;
       const storagePath = `clients/${clientId}/condominiums/${condominiumId}/invoicesGenerated/${invoiceFileName}`;
       const storageRef = ref(storage, storagePath);
@@ -112,7 +123,18 @@ const useBillingStore = create<BillingStore>((set, _get) => ({
       await uploadBytes(storageRef, file);
       const invoiceURL = await getDownloadURL(storageRef);
 
-      // 2. Crear documento en Firestore con la URL del archivo
+      // 2. Subir el archivo XML a Storage (si existe)
+      let xmlURL = null;
+      if (xmlFile) {
+        const xmlFileName = `xml_${Date.now()}_${xmlFile.name}`;
+        const xmlStoragePath = `clients/${clientId}/condominiums/${condominiumId}/invoicesGenerated/${xmlFileName}`;
+        const xmlStorageRef = ref(storage, xmlStoragePath);
+
+        await uploadBytes(xmlStorageRef, xmlFile);
+        xmlURL = await getDownloadURL(xmlStorageRef);
+      }
+
+      // 3. Crear documento en Firestore con las URLs de los archivos
       const invoicesRef = collection(
         db,
         `clients/${clientId}/condominiums/${condominiumId}/invoicesGenerated`
@@ -123,10 +145,11 @@ const useBillingStore = create<BillingStore>((set, _get) => ({
       await addDoc(invoicesRef, {
         ...invoiceData,
         invoiceURL,
+        xmlURL,
         createdAt: now,
         generatedAt: Timestamp.fromDate(now),
         isPaid: false,
-        status: "pending",
+        paymentStatus: "pending",
         clientId,
         condominiumId,
       });
@@ -176,7 +199,7 @@ const useBillingStore = create<BillingStore>((set, _get) => ({
       if (filters.status) {
         invoicesQuery = query(
           invoicesQuery,
-          where("status", "==", filters.status)
+          where("paymentStatus", "==", filters.status)
         );
       }
 
@@ -212,7 +235,8 @@ const useBillingStore = create<BillingStore>((set, _get) => ({
           condominiumId: data.condominiumId || "",
           condominiumName: data.condominiumName,
           amount: data.amount || 0,
-          status: data.status || "pending",
+          status: data.status,
+          paymentStatus: data.paymentStatus || data.status || "pending",
           invoiceNumber: data.invoiceNumber || "",
           concept: data.concept || "Suscripción Mensual",
           createdAt: data.createdAt,
@@ -221,6 +245,7 @@ const useBillingStore = create<BillingStore>((set, _get) => ({
           plan: data.plan,
           isPaid: data.isPaid || false,
           invoiceURL: data.invoiceURL,
+          xmlURL: data.xmlURL,
           userEmail: data.userEmail || "",
           userUID: data.userUID || "",
           optionalMessage: data.optionalMessage || "",
@@ -280,7 +305,8 @@ const useBillingStore = create<BillingStore>((set, _get) => ({
           condominiumId: data.condominiumId || "",
           condominiumName: data.condominiumName,
           amount: data.amount || 0,
-          status: data.status || "pending",
+          status: data.status,
+          paymentStatus: data.paymentStatus || data.status || "pending",
           invoiceNumber: data.invoiceNumber || "",
           concept: data.concept || "Suscripción Mensual",
           createdAt: data.createdAt,
@@ -289,6 +315,7 @@ const useBillingStore = create<BillingStore>((set, _get) => ({
           plan: data.plan,
           isPaid: data.isPaid || false,
           invoiceURL: data.invoiceURL,
+          xmlURL: data.xmlURL,
           userEmail: data.userEmail || "",
           userUID: data.userUID || "",
           optionalMessage: data.optionalMessage || "",

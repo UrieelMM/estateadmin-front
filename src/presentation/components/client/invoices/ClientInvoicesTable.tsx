@@ -335,10 +335,10 @@ const ClientInvoicesTable: React.FC<ClientInvoicesTableProps> = ({
                         <td className="whitespace-nowrap px-3 py-4 text-sm">
                           <span
                             className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                              statusColors[invoice.status]
+                              statusColors[invoice.paymentStatus || "pending"]
                             }`}
                           >
-                            {formatStatus(invoice.status)}
+                            {formatStatus(invoice.paymentStatus || "pending")}
                           </span>
                         </td>
                         <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 dark:text-gray-200">
@@ -373,7 +373,8 @@ const ClientInvoicesTable: React.FC<ClientInvoicesTableProps> = ({
                             >
                               <ArrowDownTrayIcon className="h-5 w-5" />
                             </button>
-                            {invoice.status === "pending" && (
+                            {(invoice.paymentStatus || "pending") ===
+                              "pending" && (
                               <button
                                 className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
                                 title="Pagar factura"
@@ -543,10 +544,14 @@ const ClientInvoicesTable: React.FC<ClientInvoicesTableProps> = ({
                                   <td className="whitespace-nowrap px-3 py-4 text-sm">
                                     <span
                                       className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                        statusColors[invoice.status]
+                                        statusColors[
+                                          invoice.paymentStatus || "pending"
+                                        ]
                                       }`}
                                     >
-                                      {formatStatus(invoice.status)}
+                                      {formatStatus(
+                                        invoice.paymentStatus || "pending"
+                                      )}
                                     </span>
                                   </td>
                                   <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 dark:text-gray-200">
@@ -582,7 +587,8 @@ const ClientInvoicesTable: React.FC<ClientInvoicesTableProps> = ({
                                       >
                                         <ArrowDownTrayIcon className="h-5 w-5" />
                                       </button>
-                                      {invoice.status === "pending" && (
+                                      {(invoice.paymentStatus || "pending") ===
+                                        "pending" && (
                                         <button
                                           className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
                                           title="Pagar factura"
