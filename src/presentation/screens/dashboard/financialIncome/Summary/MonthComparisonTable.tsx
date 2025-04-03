@@ -24,6 +24,7 @@ const MonthComparisonTable: React.FC = React.memo(() => {
   // Consumimos monthlyStats del nuevo store
   const monthlyStats = usePaymentSummaryStore((state) => state.monthlyStats);
   const detailed = usePaymentSummaryStore((state) => state.detailed);
+  const payments = usePaymentSummaryStore((state) => state.payments);
 
   // Ordenamos usando parseInt con base 10
   const sortedMonthlyStats: MonthlyStat[] = useMemo(() => {
@@ -36,17 +37,14 @@ const MonthComparisonTable: React.FC = React.memo(() => {
   const totals = useMemo(() => {
     return sortedMonthlyStats.reduce(
       (acc, curr) => ({
-        paid:
-          acc.paid +
-          curr.paid +
-          (curr.saldo > 0 ? curr.saldo : 0) -
-          curr.creditUsed,
+        paid: acc.paid + curr.paid,
         pending: acc.pending + curr.pending,
         saldo: acc.saldo + curr.saldo,
         unidentifiedPayments:
           acc.unidentifiedPayments + curr.unidentifiedPayments,
         creditUsed: acc.creditUsed + curr.creditUsed,
         charges: acc.charges + curr.charges,
+        creditBalance: acc.creditBalance + (curr.saldo > 0 ? curr.saldo : 0),
       }),
       {
         paid: 0,
@@ -55,19 +53,30 @@ const MonthComparisonTable: React.FC = React.memo(() => {
         unidentifiedPayments: 0,
         creditUsed: 0,
         charges: 0,
+        creditBalance: 0,
       }
     );
   }, [sortedMonthlyStats]);
 
-  // Calcular el saldo total - corrección
+  // Calcular el saldo a favor global (igual que en SummaryCards)
+  const totalCreditBalance = useMemo(
+    () => payments.reduce((acc, payment) => acc + payment.creditBalance, 0),
+    [payments]
+  );
+
+  // Calcular el total pagado con crédito (igual que en SummaryCards)
+  const totalPaidWithCredit = useMemo(() => {
+    return (
+      totals.paid +
+      (totalCreditBalance > 0 ? totalCreditBalance : 0) -
+      totals.creditUsed
+    );
+  }, [totals, totalCreditBalance]);
+
+  // Calcular el saldo total
   const totalBalance = useMemo(() => {
-    return sortedMonthlyStats.reduce((acc, curr) => {
-      const monthPaid =
-        curr.paid + (curr.saldo > 0 ? curr.saldo : 0) - curr.creditUsed;
-      const balance = curr.charges - monthPaid;
-      return acc + balance;
-    }, 0);
-  }, [sortedMonthlyStats]);
+    return totals.charges - totalPaidWithCredit;
+  }, [totals.charges, totalPaidWithCredit]);
 
   // Calcular porcentajes globales
   const allRecords = useMemo(() => {
@@ -145,6 +154,12 @@ const MonthComparisonTable: React.FC = React.memo(() => {
                 monthCharges > 0 ? (monthPaidInFull / monthCharges) * 100 : 0;
               const monthDelinquencyRate = 100 - monthComplianceRate;
 
+              // Calcular el saldo a favor generado en este mes
+              const monthCreditBalance = monthRecords.reduce(
+                (sum, rec) => sum + rec.creditBalance,
+                0
+              );
+
               return (
                 <tr
                   key={row.month}
@@ -156,7 +171,7 @@ const MonthComparisonTable: React.FC = React.memo(() => {
                   <td className="border p-2">
                     {formatCurrency(
                       row.paid +
-                        (row.saldo > 0 ? row.saldo : 0) -
+                        (monthCreditBalance > 0 ? monthCreditBalance : 0) -
                         row.creditUsed
                     )}
                   </td>
@@ -165,7 +180,7 @@ const MonthComparisonTable: React.FC = React.memo(() => {
                     className={`border p-2 ${
                       row.charges -
                         (row.paid +
-                          (row.saldo > 0 ? row.saldo : 0) -
+                          (monthCreditBalance > 0 ? monthCreditBalance : 0) -
                           row.creditUsed) <
                       0
                         ? "text-green-500 dark:text-green-400"
@@ -175,7 +190,7 @@ const MonthComparisonTable: React.FC = React.memo(() => {
                     {formatCurrency(
                       row.charges -
                         (row.paid +
-                          (row.saldo > 0 ? row.saldo : 0) -
+                          (monthCreditBalance > 0 ? monthCreditBalance : 0) -
                           row.creditUsed)
                     )}
                   </td>
@@ -195,7 +210,7 @@ const MonthComparisonTable: React.FC = React.memo(() => {
             <tr>
               <td className="border p-2 font-semibold">Totales</td>
               <td className="border p-2 font-semibold">
-                {formatCurrency(totals.paid)}
+                {formatCurrency(totalPaidWithCredit)}
               </td>
               <td className="border p-2 font-semibold">
                 {formatCurrency(totals.charges)}

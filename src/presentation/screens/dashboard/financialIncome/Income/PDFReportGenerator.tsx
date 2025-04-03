@@ -480,7 +480,7 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({
         // 1. Cargos: Usar el valor de charges del monthlyStats
         const totalCharges = stat.charges;
 
-        // 2. Monto Abonado: Pagos + crédito usado + saldo disponible
+        // 2. Monto Abonado: Calcular el saldo a favor generado en este mes específico
         const totalPaid = monthRecords.reduce(
           (sum, rec) => sum + rec.amountPaid,
           0
@@ -489,13 +489,16 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({
           (sum, rec) => sum + (rec.creditUsed || 0),
           0
         );
-        const totalCreditBalance = monthRecords.reduce(
+        // Calcular el saldo a favor generado en este mes específico
+        const monthCreditBalance = monthRecords.reduce(
           (sum, rec) => sum + rec.creditBalance,
           0
         );
-        const totalCredit = totalCreditBalance - totalCreditUsed;
+
         const totalPaidWithCredit =
-          totalPaid + (totalCredit > 0 ? totalCredit : 0) - totalCreditUsed;
+          totalPaid +
+          (monthCreditBalance > 0 ? monthCreditBalance : 0) -
+          totalCreditUsed;
 
         // 3. Saldo: Diferencia entre cargos y monto abonado
         const balance = totalCharges - totalPaidWithCredit;
@@ -543,13 +546,15 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({
           (sum, rec) => sum + (rec.creditUsed || 0),
           0
         );
-        const totalCreditBalance = monthRecords.reduce(
+        const monthCreditBalance = monthRecords.reduce(
           (sum, rec) => sum + rec.creditBalance,
           0
         );
-        const totalCredit = totalCreditBalance - totalCreditUsed;
+
         const totalPaidWithCredit =
-          totalPaid + (totalCredit > 0 ? totalCredit : 0) - totalCreditUsed;
+          totalPaid +
+          (monthCreditBalance > 0 ? monthCreditBalance : 0) -
+          totalCreditUsed;
 
         const balance = totalCharges - totalPaidWithCredit;
 
