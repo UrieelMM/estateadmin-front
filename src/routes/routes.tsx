@@ -79,7 +79,7 @@ export const routesApp = [
     component: <Charges />,
   },
   {
-    to: "/dashborad/client-config",
+    to: "/dashboard/client-config",
     icon: "fa-solid fa-spell-check",
     title: "Configuración",
     description: "Configuración del cliente",

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { useConfigStore } from "../../../../../store/useConfigStore";
 import { countriesList } from "../../../../../utils/countriesList";
-import { useDropzone } from "react-dropzone";
+// import { useDropzone } from "react-dropzone";
 import {
   CheckIcon,
   PhotoIcon,
@@ -45,17 +45,10 @@ const ConfigForm = () => {
   const [activeTab, setActiveTab] = useState("config");
 
   // Estados para la pestaña de pagos y facturas
-  const [selectedInvoice, setSelectedInvoice] = useState("");
-  const [paymentProof, setPaymentProof] = useState<File | null>(null);
+  // const [selectedInvoice, setSelectedInvoice] = useState("");
+  // const [paymentProof, setPaymentProof] = useState<File | null>(null);
   const [_viewInvoiceDetail, setViewInvoiceDetail] =
     useState<ClientInvoice | null>(null);
-
-  // Opciones de facturas para el formulario manual
-  const invoiceOptions = [
-    { id: "inv1", concept: "Factura Enero" },
-    { id: "inv2", concept: "Factura Febrero" },
-    { id: "inv3", concept: "Factura Marzo" },
-  ];
 
   const { initiateStripePayment } = useClientInvoicesStore();
 
@@ -127,30 +120,30 @@ const ConfigForm = () => {
   };
 
   // Manejador para el formulario de pago
-  const handlePaymentSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (!selectedInvoice) {
-      toast.error("Seleccione una factura");
-      return;
-    }
-    if (!paymentProof) {
-      toast.error("Suba el comprobante de pago");
-      return;
-    }
-    // Simulación
-    toast.success("Pago enviado correctamente");
-    setSelectedInvoice("");
-    setPaymentProof(null);
-  };
+  // const handlePaymentSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  //   e.preventDefault();
+  //   if (!selectedInvoice) {
+  //     toast.error("Seleccione una factura");
+  //     return;
+  //   }
+  //   if (!paymentProof) {
+  //     toast.error("Suba el comprobante de pago");
+  //     return;
+  //   }
+  //   // Simulación
+  //   toast.success("Pago enviado correctamente");
+  //   setSelectedInvoice("");
+  //   setPaymentProof(null);
+  // };
 
   // Configuración de react-dropzone
-  const { getRootProps, getInputProps } = useDropzone({
-    onDrop: (files) => {
-      if (files && files.length > 0) {
-        setPaymentProof(files[0]);
-      }
-    },
-  });
+  // const { getRootProps, getInputProps } = useDropzone({
+  //   onDrop: (files) => {
+  //     if (files && files.length > 0) {
+  //       setPaymentProof(files[0]);
+  //     }
+  //   },
+  // });
 
   return (
     <div className="p-6 min-h-screen bg-white dark:bg-gray-900 rounded-lg">
@@ -505,7 +498,7 @@ const ConfigForm = () => {
           </h2>
 
           {/* Formulario de pago (se mantiene temporalmente) */}
-          <div className="mb-6">
+          {/* <div className="mb-6">
             <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">
               Subir comprobante de pago manual
             </h3>
@@ -559,7 +552,7 @@ const ConfigForm = () => {
                 Enviar comprobante
               </button>
             </form>
-          </div>
+          </div> */}
 
           {/* Tabla de facturas reales */}
           <div className="my-6">

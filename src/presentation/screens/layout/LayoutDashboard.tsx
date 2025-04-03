@@ -245,7 +245,7 @@ const LayoutDashboard = ({ children }: Props) => {
               </li>
               <li>
                 <Link
-                  to="/dashborad/client-config"
+                  to="/dashboard/client-config"
                   className="group flex items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md"
                 >
                   <Cog6ToothIcon
@@ -380,7 +380,7 @@ const LayoutDashboard = ({ children }: Props) => {
               </li>
               <li>
                 <Link
-                  to="/dashborad/client-config"
+                  to="/dashboard/client-config"
                   onClick={() => setIsMobileMenuOpen(false)}
                   className="group flex items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md"
                 >
