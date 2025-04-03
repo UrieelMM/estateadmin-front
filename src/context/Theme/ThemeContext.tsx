@@ -17,50 +17,63 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
   useEffect(() => {
     const auth = getAuth();
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        try {
-          // Obtener datos necesarios
-          const tokenResult = await getIdTokenResult(user);
-          const clientId = tokenResult.claims["clientId"];
+      // Si no hay usuario, establecer tema claro por defecto
+      if (!user) {
+        setIsDarkMode(false);
+        document.documentElement.classList.remove("dark");
+        setIsThemeLoaded(true);
+        return;
+      }
 
-          if (!clientId) {
-            setIsThemeLoaded(true);
-            return;
+      try {
+        // Obtener datos necesarios
+        const tokenResult = await getIdTokenResult(user);
+        const clientId = tokenResult.claims["clientId"];
+
+        if (!clientId) {
+          // Si no hay clientId, usar tema claro por defecto
+          setIsDarkMode(false);
+          document.documentElement.classList.remove("dark");
+          setIsThemeLoaded(true);
+          return;
+        }
+
+        // Referencia al documento del cliente en Firestore
+        const db = getFirestore();
+        const clientDocRef = doc(db, "clients", clientId as string);
+        const clientDoc = await getDoc(clientDocRef);
+
+        if (clientDoc.exists()) {
+          const clientData = clientDoc.data();
+          const darkModePreference = clientData.darkMode ?? false;
+
+          // Aplicar el tema inmediatamente
+          setIsDarkMode(darkModePreference);
+          if (darkModePreference) {
+            document.documentElement.classList.add("dark");
+          } else {
+            document.documentElement.classList.remove("dark");
           }
-
-          // Referencia al documento del cliente en Firestore
-          const db = getFirestore();
-          const clientDocRef = doc(db, "clients", clientId as string);
-          const clientDoc = await getDoc(clientDocRef);
-
-          if (clientDoc.exists()) {
-            const clientData = clientDoc.data();
-            const darkModePreference = clientData.darkMode ?? false;
-
-            // Aplicar el tema inmediatamente
-            setIsDarkMode(darkModePreference);
-            if (darkModePreference) {
-              document.documentElement.classList.add("dark");
-            } else {
-              document.documentElement.classList.remove("dark");
-            }
-          }
-
-          // Pequeño delay para asegurar que el tema se aplique
-          await new Promise((resolve) => setTimeout(resolve, 100));
-        } catch (error: any) {
-          // Capturar el error y reportarlo a Sentry
-          Sentry.captureException(error, {
-            tags: {
-              location: "theme-loading",
-              userId: user.uid,
-            },
-          });
-
-          // Establecer tema por defecto
+        } else {
+          // Si no existe el documento del cliente, usar tema claro
           setIsDarkMode(false);
           document.documentElement.classList.remove("dark");
         }
+
+        // Pequeño delay para asegurar que el tema se aplique
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      } catch (error: any) {
+        // Capturar el error y reportarlo a Sentry
+        Sentry.captureException(error, {
+          tags: {
+            location: "theme-loading",
+            userId: user.uid,
+          },
+        });
+
+        // Establecer tema por defecto
+        setIsDarkMode(false);
+        document.documentElement.classList.remove("dark");
       }
 
       // Marcar como cargado después del timeout

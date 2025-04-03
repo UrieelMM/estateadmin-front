@@ -4,6 +4,15 @@ import {
   collection,
   addDoc,
   Timestamp,
+  collectionGroup,
+  query,
+  where,
+  orderBy,
+  limit,
+  getDocs,
+  startAfter as firestoreStartAfter,
+  DocumentData,
+  QueryDocumentSnapshot,
 } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import toast from "react-hot-toast";
@@ -25,23 +34,72 @@ export interface InvoiceData {
   condominiumId: string;
 }
 
+export interface InvoiceRecord {
+  id: string;
+  clientId: string;
+  clientName: string;
+  condominiumId: string;
+  condominiumName?: string;
+  amount: number;
+  status: "pending" | "paid" | "overdue" | "canceled";
+  invoiceNumber: string;
+  concept: string;
+  createdAt: any;
+  dueDate: any;
+  paidDate?: any;
+  plan?: string;
+  isPaid: boolean;
+  invoiceURL?: string;
+  userEmail: string;
+  userUID: string;
+  optionalMessage: string;
+}
+
 interface BillingStore {
   loading: boolean;
   error: string | null;
+  invoices: InvoiceRecord[];
+  lastInvoiceDoc: QueryDocumentSnapshot<DocumentData> | null;
+  totalInvoices: number;
+  loadingInvoices: boolean;
+
   createInvoice: (
     clientId: string,
     condominiumId: string,
     invoiceData: InvoiceData,
     file: File
   ) => Promise<boolean>;
+
+  fetchInvoices: (
+    pageSize?: number,
+    startAfter?: QueryDocumentSnapshot<DocumentData> | null,
+    filters?: { status?: string; clientId?: string }
+  ) => Promise<number>;
+
+  searchInvoiceByFolio: (folio: string) => Promise<InvoiceRecord[]>;
+
+  resetInvoicesState: () => void;
 }
 
 const db = getFirestore();
 const storage = getStorage();
 
-const useBillingStore = create<BillingStore>((set) => ({
+// Cache para resultados de paginación
+const invoiceCache: Record<
+  string,
+  {
+    invoices: InvoiceRecord[];
+    lastDoc: QueryDocumentSnapshot<DocumentData> | null;
+  }
+> = {};
+
+const useBillingStore = create<BillingStore>((set, _get) => ({
   loading: false,
   error: null,
+  invoices: [],
+  lastInvoiceDoc: null,
+  totalInvoices: 0,
+  loadingInvoices: false,
 
   createInvoice: async (clientId, condominiumId, invoiceData, file) => {
     set({ loading: true, error: null });
@@ -85,6 +143,190 @@ const useBillingStore = create<BillingStore>((set) => ({
       toast.error("Error al crear la factura");
       return false;
     }
+  },
+
+  fetchInvoices: async (pageSize = 20, startAfter = null, filters = {}) => {
+    set({ loadingInvoices: true });
+    try {
+      // Generar clave para caché basada en filtros y cursor
+      const cacheKey = JSON.stringify({
+        filters,
+        startAfter: startAfter ? startAfter.id : "first",
+      });
+
+      // Usar caché si está disponible y no hay filtros específicos
+      if (!filters.status && !filters.clientId && invoiceCache[cacheKey]) {
+        const cached = invoiceCache[cacheKey];
+        set({
+          invoices: cached.invoices,
+          lastInvoiceDoc: cached.lastDoc,
+          loadingInvoices: false,
+          totalInvoices: cached.invoices.length,
+        });
+        return cached.invoices.length;
+      }
+
+      // Consulta de facturas usando collectionGroup para obtener de todos los clientes
+      let invoicesQuery = query(
+        collectionGroup(db, "invoicesGenerated"),
+        orderBy("createdAt", "desc")
+      );
+
+      // Aplicar filtros si existen
+      if (filters.status) {
+        invoicesQuery = query(
+          invoicesQuery,
+          where("status", "==", filters.status)
+        );
+      }
+
+      if (filters.clientId) {
+        invoicesQuery = query(
+          invoicesQuery,
+          where("clientId", "==", filters.clientId)
+        );
+      }
+
+      // Aplicar paginación
+      if (startAfter) {
+        invoicesQuery = query(invoicesQuery, firestoreStartAfter(startAfter));
+      }
+
+      // Aplicar límite de página
+      invoicesQuery = query(invoicesQuery, limit(pageSize));
+
+      const invoicesSnapshot = await getDocs(invoicesQuery);
+
+      // Procesar resultados
+      const invoiceRecords: InvoiceRecord[] = [];
+      let lastDoc: QueryDocumentSnapshot<DocumentData> | null = null;
+
+      for (const doc of invoicesSnapshot.docs) {
+        const data = doc.data();
+
+        // Construir objeto de factura
+        const invoice: InvoiceRecord = {
+          id: doc.id,
+          clientId: data.clientId || "",
+          clientName: data.clientName || "Cliente sin nombre",
+          condominiumId: data.condominiumId || "",
+          condominiumName: data.condominiumName,
+          amount: data.amount || 0,
+          status: data.status || "pending",
+          invoiceNumber: data.invoiceNumber || "",
+          concept: data.concept || "Suscripción Mensual",
+          createdAt: data.createdAt,
+          dueDate: data.dueDate,
+          paidDate: data.paidDate,
+          plan: data.plan,
+          isPaid: data.isPaid || false,
+          invoiceURL: data.invoiceURL,
+          userEmail: data.userEmail || "",
+          userUID: data.userUID || "",
+          optionalMessage: data.optionalMessage || "",
+        };
+
+        invoiceRecords.push(invoice);
+        lastDoc = doc;
+      }
+
+      // Almacenar en caché si no hay filtros específicos
+      if (!filters.status && !filters.clientId) {
+        invoiceCache[cacheKey] = {
+          invoices: invoiceRecords,
+          lastDoc,
+        };
+      }
+
+      // Actualizar estado
+      set({
+        invoices: invoiceRecords,
+        lastInvoiceDoc: lastDoc,
+        loadingInvoices: false,
+        totalInvoices: invoiceRecords.length,
+      });
+
+      return invoiceRecords.length;
+    } catch (error: any) {
+      console.error("Error al obtener facturas:", error);
+      set({
+        error: error.message || "Error al obtener las facturas",
+        loadingInvoices: false,
+      });
+      return 0;
+    }
+  },
+
+  searchInvoiceByFolio: async (folio: string) => {
+    set({ loadingInvoices: true, invoices: [] });
+    try {
+      // Buscar facturas por número de factura (folio)
+      const invoicesQuery = query(
+        collectionGroup(db, "invoicesGenerated"),
+        where("invoiceNumber", "==", folio)
+      );
+
+      const invoicesSnapshot = await getDocs(invoicesQuery);
+
+      const invoiceRecords: InvoiceRecord[] = [];
+
+      invoicesSnapshot.forEach((doc) => {
+        const data = doc.data();
+
+        const invoice: InvoiceRecord = {
+          id: doc.id,
+          clientId: data.clientId || "",
+          clientName: data.clientName || "Cliente sin nombre",
+          condominiumId: data.condominiumId || "",
+          condominiumName: data.condominiumName,
+          amount: data.amount || 0,
+          status: data.status || "pending",
+          invoiceNumber: data.invoiceNumber || "",
+          concept: data.concept || "Suscripción Mensual",
+          createdAt: data.createdAt,
+          dueDate: data.dueDate,
+          paidDate: data.paidDate,
+          plan: data.plan,
+          isPaid: data.isPaid || false,
+          invoiceURL: data.invoiceURL,
+          userEmail: data.userEmail || "",
+          userUID: data.userUID || "",
+          optionalMessage: data.optionalMessage || "",
+        };
+
+        invoiceRecords.push(invoice);
+      });
+
+      set({
+        invoices: invoiceRecords,
+        loadingInvoices: false,
+        totalInvoices: invoiceRecords.length,
+        lastInvoiceDoc: null,
+        error: null,
+      });
+
+      return invoiceRecords;
+    } catch (error: any) {
+      console.error("Error al buscar factura por folio:", error);
+      set({
+        error: error.message || "Error al buscar factura",
+        loadingInvoices: false,
+        invoices: [],
+        totalInvoices: 0,
+        lastInvoiceDoc: null,
+      });
+      return [];
+    }
+  },
+
+  resetInvoicesState: () => {
+    set({
+      invoices: [],
+      lastInvoiceDoc: null,
+      totalInvoices: 0,
+      loadingInvoices: false,
+      error: null,
+    });
   },
 }));
 

@@ -11,6 +11,8 @@ import ProviderList from "../presentation/screens/dashboard/providers/ProvidersL
 import Publications from "../presentation/screens/dashboard/publications/Publications";
 import UsersRegistration from "../presentation/screens/dashboard/users/UsersRegistration";
 import UsersScreen from "../presentation/screens/dashboard/users/UsersScreen";
+import PaymentSuccess from "../presentation/screens/dashboard/payment/PaymentSuccess";
+import PaymentCancel from "../presentation/screens/dashboard/payment/PaymentCancel";
 
 export const routesApp = [
   {
@@ -103,5 +105,19 @@ export const routesApp = [
     title: "Balance general",
     description: "Balance general de ingresos y egresos",
     component: <Balance />,
+  },
+  {
+    to: "/dashboard/payment-success",
+    icon: "fa-solid fa-check-circle",
+    title: "Pago Exitoso",
+    description: "Pago procesado exitosamente",
+    component: <PaymentSuccess />,
+  },
+  {
+    to: "/dashboard/payment-cancel",
+    icon: "fa-solid fa-times-circle",
+    title: "Pago Cancelado",
+    description: "Pago cancelado",
+    component: <PaymentCancel />,
   },
 ];

@@ -138,6 +138,8 @@ const useAuthStore = create<AuthStore>((set, get) => {
     logoutUser: async () => {
       try {
         await signOut(auth);
+        // Limpieza explícita del tema dark al cerrar sesión
+        document.documentElement.classList.remove("dark");
         localStorage.removeItem("dataUserActive");
         localStorage.removeItem("condominiumId");
         set({ user: null, authError: null });

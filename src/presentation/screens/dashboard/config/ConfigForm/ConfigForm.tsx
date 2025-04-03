@@ -19,6 +19,9 @@ import FinancialAccounts from "../FinancialAccounts";
 import { useTheme } from "../../../../../context/Theme/ThemeContext";
 import AdminUsers from "../AdminUsers/AdminUsers";
 import { getAuth } from "firebase/auth";
+import ClientInvoicesTable from "../../../../components/client/invoices/ClientInvoicesTable";
+import { ClientInvoice } from "../../../../../store/useClientInvoicesStore";
+import useClientInvoicesStore from "../../../../../store/useClientInvoicesStore";
 
 const ConfigForm = () => {
   const { config, loading, error, fetchConfig, updateConfig } =
@@ -41,30 +44,20 @@ const ConfigForm = () => {
   // Tab actual
   const [activeTab, setActiveTab] = useState("config");
 
-  // Estados para la pestaña de pagos y facturas (ejemplo)
+  // Estados para la pestaña de pagos y facturas
+  const [selectedInvoice, setSelectedInvoice] = useState("");
+  const [paymentProof, setPaymentProof] = useState<File | null>(null);
+  const [_viewInvoiceDetail, setViewInvoiceDetail] =
+    useState<ClientInvoice | null>(null);
+
+  // Opciones de facturas para el formulario manual
   const invoiceOptions = [
     { id: "inv1", concept: "Factura Enero" },
     { id: "inv2", concept: "Factura Febrero" },
     { id: "inv3", concept: "Factura Marzo" },
   ];
-  const [selectedInvoice, setSelectedInvoice] = useState("");
-  const [paymentProof, setPaymentProof] = useState<File | null>(null);
 
-  // Datos dummy para la tabla de facturas
-  const [invoices, _setInvoices] = useState([
-    {
-      id: "inv1",
-      date: "2025-01-10",
-      concept: "Factura Enero",
-      downloadUrl: "#",
-    },
-    {
-      id: "inv2",
-      date: "2025-02-10",
-      concept: "Factura Febrero",
-      downloadUrl: "#",
-    },
-  ]);
+  const { initiateStripePayment } = useClientInvoicesStore();
 
   useEffect(() => {
     fetchConfig();
@@ -510,94 +503,87 @@ const ConfigForm = () => {
           <h2 className="text-2xl font-semibold text-black mb-4 dark:text-gray-100">
             Pagos y Facturas
           </h2>
-          {/* Formulario para subir comprobante de pago */}
-          <form onSubmit={handlePaymentSubmit} className="mb-8">
-            <div className="flex flex-row md:flex-col gap-4 mb-8">
-              <div>
-                <label
-                  htmlFor="invoiceSelect"
-                  className="block text-gray-900 dark:text-gray-100 text-sm font-bold mb-2"
-                >
-                  Seleccione la factura a pagar
-                </label>
-                <select
-                  id="invoiceSelect"
-                  value={selectedInvoice}
-                  onChange={(e) => setSelectedInvoice(e.target.value)}
-                  className="w-full pl-2 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
-                >
-                  <option value="">Seleccione una factura</option>
-                  {invoiceOptions.map((inv) => (
-                    <option key={inv.id} value={inv.id}>
-                      {inv.concept}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-gray-900 dark:text-gray-100 text-sm font-bold mb-2">
-                  Subir comprobante de pago
-                </label>
-                <div
-                  {...getRootProps()}
-                  className="flex items-center justify-center p-4 border-dashed dark:text-gray-100 border-2 border-indigo-300 rounded-lg text-center cursor-pointer dark:border-indigo-600"
-                >
-                  <input {...getInputProps()} />
-                  {paymentProof ? (
-                    <CheckIcon className="h-5 w-5 mr-2 text-green-300" />
-                  ) : (
-                    <PhotoIcon className="h-5 w-5 mr-2 text-gray-200" />
-                  )}
-                  {paymentProof
-                    ? paymentProof.name
-                    : "Arrastra y suelta el archivo, o haz clic para seleccionar"}
+
+          {/* Formulario de pago (se mantiene temporalmente) */}
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">
+              Subir comprobante de pago manual
+            </h3>
+            <form onSubmit={handlePaymentSubmit} className="mb-8">
+              <div className="flex flex-row md:flex-col gap-4 mb-8">
+                <div>
+                  <label
+                    htmlFor="invoiceSelect"
+                    className="block text-gray-900 dark:text-gray-100 text-sm font-bold mb-2"
+                  >
+                    Seleccione la factura a pagar
+                  </label>
+                  <select
+                    id="invoiceSelect"
+                    value={selectedInvoice}
+                    onChange={(e) => setSelectedInvoice(e.target.value)}
+                    className="w-full pl-2 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
+                  >
+                    <option value="">Seleccione una factura</option>
+                    {invoiceOptions.map((inv) => (
+                      <option key={inv.id} value={inv.id}>
+                        {inv.concept}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-gray-900 dark:text-gray-100 text-sm font-bold mb-2">
+                    Subir comprobante de pago
+                  </label>
+                  <div
+                    {...getRootProps()}
+                    className="flex items-center justify-center p-4 border-dashed dark:text-gray-100 border-2 border-indigo-300 rounded-lg text-center cursor-pointer dark:border-indigo-600"
+                  >
+                    <input {...getInputProps()} />
+                    {paymentProof ? (
+                      <CheckIcon className="h-5 w-5 mr-2 text-green-300" />
+                    ) : (
+                      <PhotoIcon className="h-5 w-5 mr-2 text-gray-200" />
+                    )}
+                    {paymentProof
+                      ? paymentProof.name
+                      : "Arrastra y suelta el archivo, o haz clic para seleccionar"}
+                  </div>
                 </div>
               </div>
-            </div>
-            <button
-              type="submit"
-              className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-            >
-              Enviar comprobante
-            </button>
-          </form>
-          {/* Tabla de facturas */}
-          <div className="overflow-x-auto">
-            <table className="min-w-full bg-white dark:bg-gray-800">
-              <thead>
-                <tr>
-                  <th className="py-2 px-4 border-b border-gray-200 dark:border-gray-600 dark:text-gray-100">
-                    Fecha
-                  </th>
-                  <th className="py-2 px-4 border-b border-gray-200 dark:border-gray-600 dark:text-gray-100">
-                    Concepto
-                  </th>
-                  <th className="py-2 px-4 border-b border-gray-200 dark:border-gray-600 dark:text-gray-100">
-                    Acciones
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {invoices.map((inv) => (
-                  <tr key={inv.id}>
-                    <td className="py-2 px-4 border-b border-gray-200 dark:border-gray-600 dark:text-gray-100">
-                      {inv.date}
-                    </td>
-                    <td className="py-2 px-4 border-b border-gray-200 dark:border-gray-600 dark:text-gray-100">
-                      {inv.concept}
-                    </td>
-                    <td className="py-2 px-4 border-b border-gray-200 dark:border-gray-600 dark:text-gray-100">
-                      <button
-                        onClick={() => window.open(inv.downloadUrl, "_blank")}
-                        className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-1 px-3 rounded"
-                      >
-                        Descargar
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+              <button
+                type="submit"
+                className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline dark:bg-indigo-700 dark:hover:bg-indigo-600"
+              >
+                Enviar comprobante
+              </button>
+            </form>
+          </div>
+
+          {/* Tabla de facturas reales */}
+          <div className="my-6">
+            <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">
+              Historial de facturas
+            </h3>
+            <ClientInvoicesTable
+              onViewInvoice={(invoice: ClientInvoice) =>
+                setViewInvoiceDetail(invoice)
+              }
+              onPayInvoice={async (invoice: ClientInvoice) => {
+                try {
+                  const { url } = await initiateStripePayment(invoice);
+                  if (url) {
+                    window.location.href = url;
+                  } else {
+                    toast.error("No se pudo iniciar el pago");
+                  }
+                } catch (error) {
+                  console.error("Error al iniciar el pago:", error);
+                  toast.error("Error al iniciar el pago");
+                }
+              }}
+            />
           </div>
         </div>
       )}
