@@ -27,13 +27,10 @@ const NotificationBell: React.FC = () => {
 
   // Obtiene las notificaciones al montar el componente
   useEffect(() => {
-    console.log("NotificationBell: Montando componente");
     const loadNotifications = async () => {
       setLoading(true);
       try {
-        console.log("NotificationBell: Iniciando carga de notificaciones");
         await fetchNotifications();
-        console.log("NotificationBell: Notificaciones cargadas");
       } catch (error) {
         Sentry.captureException(error);
         console.error("Error al cargar notificaciones:", error);
@@ -51,11 +48,6 @@ const NotificationBell: React.FC = () => {
   useEffect(() => {
     const markAllAsRead = async () => {
       if (dropdownOpen && notifications.length > 0) {
-        console.log(
-          "Marcando notificaciones como leídas:",
-          notifications.filter((n) => !n.read).length
-        );
-
         // Marcamos notificaciones una por una
         for (const notif of notifications) {
           if (!notif.read) {
@@ -93,14 +85,6 @@ const NotificationBell: React.FC = () => {
     }
     return body;
   };
-
-  // Debug para ver el estado de notificaciones en cada renderizado
-  console.log("NotificationBell render:", {
-    notificationsCount: notifications.length,
-    unreadCount,
-    isDropdownOpen: dropdownOpen,
-    isLoading: loading,
-  });
 
   return (
     <div className="relative">

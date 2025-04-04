@@ -60,18 +60,15 @@ const useNotificationStore = create<NotificationStore>((set, get) => ({
     try {
       // Si ya estamos inicializados y tenemos una suscripción, no hacemos nada
       if (get().isInitialized && globalUnsubscribe) {
-        console.log("Ya existe una suscripción activa a notificaciones");
         return;
       }
 
       // Primero cancelamos cualquier suscripción existente
       if (globalUnsubscribe) {
-        console.log("Cancelando suscripción anterior");
         globalUnsubscribe();
         globalUnsubscribe = null;
       }
 
-      console.log("Iniciando fetchNotifications...");
       const currentUser = await waitForAuthUser();
       if (!currentUser) {
         console.error("No hay usuario autenticado");
@@ -91,13 +88,8 @@ const useNotificationStore = create<NotificationStore>((set, get) => ({
         return;
       }
 
-      console.log(
-        `Configurando listener para: Cliente ${clientId}, Condominio ${condominiumId}, Usuario ${currentUser.uid}`
-      );
-
       // Referencia a la subcolección de notificaciones
       const notifPath = `clients/${clientId}/condominiums/${condominiumId}/users/${currentUser.uid}/notifications`;
-      console.log("Ruta de notificaciones:", notifPath);
 
       const notifRef = collection(db, notifPath);
       const q = query(notifRef, orderBy("createdAt", "desc"));
@@ -106,11 +98,9 @@ const useNotificationStore = create<NotificationStore>((set, get) => ({
       const unsubscribeListener = onSnapshot(
         q,
         (snapshot) => {
-          console.log(`Snapshot recibido con ${snapshot.size} documentos`);
           const notifs: UserNotification[] = [];
           snapshot.forEach((docSnap) => {
             const data = docSnap.data();
-            console.log("Notificación recibida:", { id: docSnap.id, ...data });
             notifs.push({ id: docSnap.id, ...data } as UserNotification);
           });
           set({

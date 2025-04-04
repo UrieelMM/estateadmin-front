@@ -58,9 +58,6 @@ export const useCondominiumStore = create<CondominiumState>(() => ({
       formData.append("condominiumId", condominiumId);
       formData.append("clientId", String(clientId));
 
-      console.log("Valor de condominiumId que se envía:", condominiumId);
-      console.log("formData completo:", Object.fromEntries(formData));
-
       const response = await fetch(
         `${import.meta.env.VITE_URL_SERVER}/users-auth/register-condominiums`,
         {

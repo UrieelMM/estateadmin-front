@@ -137,9 +137,8 @@ const BillingManagement: React.FC = () => {
     console.log("Ver detalles de factura:", invoice);
   };
 
-  const handleMarkAsPaid = (invoice: InvoiceRecord) => {
+  const handleMarkAsPaid = (_invoice: InvoiceRecord) => {
     // Implementar marcar como pagado
-    console.log("Marcar como pagado:", invoice);
     toast.success("Esta funcionalidad será implementada próximamente");
   };
 

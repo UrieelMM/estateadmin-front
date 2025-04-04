@@ -390,8 +390,6 @@ const useClientInvoicesStore = create<ClientInvoicesState>((set, get) => ({
       const successUrl = `${currentDomain}/dashboard/payment-success?invoice_id=${invoice.id}`;
       const cancelUrl = `${currentDomain}/dashboard/payment-cancel?invoice_id=${invoice.id}`;
 
-      console.log("URLs de redirección:", { successUrl, cancelUrl });
-
       // Llamar al endpoint del backend para crear la sesión de checkout
       const response = await fetch(
         `${
