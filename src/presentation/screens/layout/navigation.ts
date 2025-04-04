@@ -6,7 +6,7 @@ import {
   WrenchIcon,
   TruckIcon,
   BuildingStorefrontIcon,
-} from "@heroicons/react/24/outline";
+} from "@heroicons/react/24/solid";
 
 export const navigation = [
   { name: "Inicio", href: "/dashboard/home", icon: HomeIcon, current: false },

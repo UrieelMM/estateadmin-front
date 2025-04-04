@@ -4,9 +4,9 @@ import toast from "react-hot-toast";
 import { Disclosure } from "@headlessui/react";
 import {
   XMarkIcon,
-  ArrowRightEndOnRectangleIcon,
+  ArrowLeftEndOnRectangleIcon,
   Cog6ToothIcon,
-} from "@heroicons/react/24/outline";
+} from "@heroicons/react/24/solid";
 import {
   ChevronRightIcon,
   Bars3Icon,
@@ -150,7 +150,7 @@ const LayoutDashboard = ({ children }: Props) => {
       <div className="hidden xl:block">
         <aside
           className={classNames(
-            "fixed inset-y-0 left-0 w-52 md:w-56 border-r border-gray-200 dark:border-gray-700 dark:bg-gray-800",
+            "fixed inset-y-0 left-0 w-52 md:w-56 border-r bg-gray-50 border-gray-200 dark:border-gray-700 dark:bg-gray-800",
             "h-screen flex flex-col"
           )}
         >
@@ -261,7 +261,7 @@ const LayoutDashboard = ({ children }: Props) => {
                   onClick={handleLogout}
                   className="group flex items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md"
                 >
-                  <ArrowRightEndOnRectangleIcon className="mr-3 h-6 w-6 text-gray-400 dark:text-gray-300" />
+                  <ArrowLeftEndOnRectangleIcon className="mr-3 h-6 w-6 text-gray-400 dark:text-gray-300" />
                   Cerrar sesión
                 </button>
               </li>
@@ -400,7 +400,7 @@ const LayoutDashboard = ({ children }: Props) => {
                   }}
                   className="group flex items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md"
                 >
-                  <ArrowRightEndOnRectangleIcon className="mr-3 h-6 w-6 text-gray-400 dark:text-gray-300" />
+                  <ArrowLeftEndOnRectangleIcon className="mr-3 h-6 w-6 text-gray-400 dark:text-gray-300" />
                   Cerrar sesión
                 </button>
               </li>
@@ -416,7 +416,7 @@ const LayoutDashboard = ({ children }: Props) => {
       */}
       <div className="xl:ml-52">
         <Navbar />
-        <main className="p-4 bg-white dark:bg-gray-800 min-h-screen">
+        <main className="p-4 bg-gray-50 dark:bg-gray-800 min-h-screen">
           {children}
         </main>
       </div>

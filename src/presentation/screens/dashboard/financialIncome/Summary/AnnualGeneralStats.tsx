@@ -316,7 +316,7 @@ const AnnualGeneralStats: React.FC = () => {
       {/* Contenedor superior: Cards + Gráfica de pastel */}
       <div className="grid grid-cols-1 lg:grid-cols-6 gap-8 mb-8">
         {/* Gráfica de barras horizontales - 40% del espacio */}
-        <div className="lg:col-span-3">
+        <div className="lg:col-span-3 shadow-md rounded-md p-2">
           <h3 className="text-lg font-bold mb-2 text-center">
             Distribución de recaudación anual por concepto
           </h3>
@@ -469,13 +469,16 @@ const AnnualGeneralStats: React.FC = () => {
       </div>
 
       {/* Gráfica de áreas apiladas */}
-      <h3 className="text-lg font-bold mb-2">
+      <h3 className="text-lg font-bold mb-3">
         Evolución mensual{" "}
         <span className="text-xs font-medium text-gray-500 dark:text-gray-100">
           (5 principales conceptos + otros)
         </span>
       </h3>
-      <div style={{ width: "100%", height: 400 }}>
+      <div
+        style={{ width: "100%", height: 400 }}
+        className="shadow-md rounded-md p-2"
+      >
         <ResponsiveContainer>
           <AreaChart
             data={areaStackData.data}

@@ -207,10 +207,10 @@ const InvoiceCreationModal: React.FC<InvoiceCreationModalProps> = ({
         .substring(2, 8)
         .toUpperCase();
       const invoiceNumber = `INV-${randomSuffix}`;
-
+      //TODO: REVISAR COMO SE ENVIA LA HORA
       const invoiceData: InvoiceData = {
         amount: parseFloat(amount),
-        dueDate: new Date(dueDate),
+        dueDate: new Date(dueDate + "T00:00:00"),
         optionalMessage: optionalMessage || "",
         userEmail: selectedUser.email,
         userUID: selectedUser.id,

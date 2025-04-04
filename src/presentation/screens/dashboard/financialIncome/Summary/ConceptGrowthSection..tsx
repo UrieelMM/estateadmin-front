@@ -131,7 +131,7 @@ const ConceptGrowthSection: React.FC = React.memo(() => {
           <p className="text-sm text-gray-600 dark:text-gray-100">
             Monto Abonado promedio por concepto
           </p>
-          <p className="text-2xl font-semibold">
+          <p className="text-xl font-semibold">
             {formatCurrency(totalCurrent / (dataArr.length || 1))}
           </p>
         </div>

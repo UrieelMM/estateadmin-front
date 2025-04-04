@@ -109,26 +109,22 @@ const MonthComparisonTable: React.FC = React.memo(() => {
         <h3 className="text-xl font-bold mb-2">
           Comparativa mes a mes (totales)
         </h3>
-        <table className="min-w-full border-collapse border border-indigo-200 dark:border-gray-800">
-          <thead>
-            <tr className="bg-indigo-500 dark:bg-gray-900">
-              <th className="border p-2 text-white dark:text-gray-100">Mes</th>
-              <th className="border p-2 text-white dark:text-gray-100">
+        <table className="min-w-full border-collapse">
+          <thead className="text-md">
+            <tr className="bg-gray-100 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
+              <th className="p-2 text-gray-800 dark:text-gray-100">Mes</th>
+              <th className="p-2 text-gray-800 dark:text-gray-100">
                 Monto Abonado
               </th>
-              <th className="border p-2 text-white dark:text-gray-100">
-                Cargos
-              </th>
-              <th className="border p-2 text-white dark:text-gray-100">
-                Saldo
-              </th>
-              <th className="border p-2 text-white dark:text-gray-100">
+              <th className="p-2 text-gray-800 dark:text-gray-100">Cargos</th>
+              <th className="p-2 text-gray-800 dark:text-gray-100">Saldo</th>
+              <th className="p-2 text-gray-800 dark:text-gray-100">
                 Pagos no identificados
               </th>
-              <th className="border p-2 text-white dark:text-gray-100">
+              <th className="p-2 text-gray-800 dark:text-gray-100">
                 % Cumplimiento
               </th>
-              <th className="border p-2 text-white dark:text-gray-100">
+              <th className="p-2 text-gray-800 dark:text-gray-100">
                 % Morosidad
               </th>
             </tr>
@@ -163,21 +159,19 @@ const MonthComparisonTable: React.FC = React.memo(() => {
               return (
                 <tr
                   key={row.month}
-                  className="hover:bg-gray-50 transition-colors dark:hover:bg-gray-700 cursor-pointer"
+                  className="hover:bg-gray-50 transition-colors text-md dark:hover:bg-gray-700 cursor-pointer border-b border-gray-200 dark:border-gray-800"
                 >
-                  <td className="border p-2">
-                    {monthNames[row.month] || row.month}
-                  </td>
-                  <td className="border p-2">
+                  <td className="p-2">{monthNames[row.month] || row.month}</td>
+                  <td className="p-2">
                     {formatCurrency(
                       row.paid +
                         (monthCreditBalance > 0 ? monthCreditBalance : 0) -
                         row.creditUsed
                     )}
                   </td>
-                  <td className="border p-2">{formatCurrency(row.charges)}</td>
+                  <td className="p-2">{formatCurrency(row.charges)}</td>
                   <td
-                    className={`border p-2 ${
+                    className={`p-2 ${
                       row.charges -
                         (row.paid +
                           (monthCreditBalance > 0 ? monthCreditBalance : 0) -
@@ -194,29 +188,25 @@ const MonthComparisonTable: React.FC = React.memo(() => {
                           row.creditUsed)
                     )}
                   </td>
-                  <td className="border p-2">
+                  <td className="p-2">
                     {formatCurrency(row.unidentifiedPayments || 0)}
                   </td>
-                  <td className="border p-2">
-                    {monthComplianceRate.toFixed(2)}%
-                  </td>
-                  <td className="border p-2">
-                    {monthDelinquencyRate.toFixed(2)}%
-                  </td>
+                  <td className="p-2">{monthComplianceRate.toFixed(2)}%</td>
+                  <td className="p-2">{monthDelinquencyRate.toFixed(2)}%</td>
                 </tr>
               );
             })}
             {/* Fila de totales */}
-            <tr>
-              <td className="border p-2 font-semibold">Totales</td>
-              <td className="border p-2 font-semibold">
+            <tr className="border-b border-gray-200 text-md dark:border-gray-800">
+              <td className="p-2 font-semibold">Totales</td>
+              <td className="p-2 font-semibold">
                 {formatCurrency(totalPaidWithCredit)}
               </td>
-              <td className="border p-2 font-semibold">
+              <td className="p-2 font-semibold">
                 {formatCurrency(totals.charges)}
               </td>
               <td
-                className={`border p-2 font-semibold ${
+                className={`p-2 font-semibold ${
                   totalBalance < 0
                     ? "text-green-500 dark:text-green-400"
                     : "text-red-600 dark:text-red-400"
@@ -224,13 +214,13 @@ const MonthComparisonTable: React.FC = React.memo(() => {
               >
                 {formatCurrency(totalBalance)}
               </td>
-              <td className="border p-2 font-semibold">
+              <td className="p-2 font-semibold">
                 {formatCurrency(totals.unidentifiedPayments)}
               </td>
-              <td className="border p-2 font-semibold">
+              <td className="p-2 font-semibold">
                 {totalCompliance.toFixed(2)}%
               </td>
-              <td className="border p-2 font-semibold">
+              <td className="p-2 font-semibold">
                 {totalDelinquency.toFixed(2)}%
               </td>
             </tr>

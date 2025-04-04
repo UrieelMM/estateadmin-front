@@ -297,6 +297,8 @@ export const usePaymentStore = create<MaintenancePaymentState>((set, get) => ({
       if (payment.paymentDate) {
         const date = new Date(payment.paymentDate);
         if (!isNaN(date.getTime())) {
+          // Asegurar que la hora sea 00:00:00
+          date.setHours(0, 0, 0, 0);
           formattedPaymentDate = date
             .toISOString()
             .slice(0, 16)

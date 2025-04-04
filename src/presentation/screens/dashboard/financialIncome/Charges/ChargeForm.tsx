@@ -1,5 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { UserIcon, CurrencyDollarIcon, CalendarIcon, CheckCircleIcon, ClipboardIcon } from "@heroicons/react/16/solid";
+import {
+  UserIcon,
+  CurrencyDollarIcon,
+  CalendarIcon,
+  CheckCircleIcon,
+  ClipboardIcon,
+} from "@heroicons/react/16/solid";
 import { useChargeStore } from "../../../../../store/useChargeStore";
 import useUserStore from "../../../../../store/UserDataStore";
 import { usePaymentSummaryStore } from "../../../../../store/paymentSummaryStore";
@@ -29,12 +35,17 @@ const commonConcepts = [
 ];
 
 const ChargeForm = () => {
-  const { createChargeForOne, createChargeForAll, loading, error } = useChargeStore();
-  const fetchCondominiumsUsers = useUserStore((state) => state.fetchCondominiumsUsers);
+  const { createChargeForOne, createChargeForAll, loading, error } =
+    useChargeStore();
+  const fetchCondominiumsUsers = useUserStore(
+    (state) => state.fetchCondominiumsUsers
+  );
   const fetchSummary = usePaymentSummaryStore((state) => state.fetchSummary);
   const condominiumsUsers = useUserStore((state) => state.condominiumsUsers);
 
-  const [chargeType, setChargeType] = useState<"individual" | "all">("individual");
+  const [chargeType, setChargeType] = useState<"individual" | "all">(
+    "individual"
+  );
   const [selectedUser, setSelectedUser] = useState<string>("");
   const [concept, setConcept] = useState<string>("Cuota de mantenimiento");
   const [amount, setAmount] = useState<number>(0);
@@ -47,8 +58,8 @@ const ChargeForm = () => {
     const dd = String(now.getDate()).padStart(2, "0");
     return `${year}-${mm}-${dd}`;
   });
-  const [startAt, setStartAt] = useState<string>("2025-02-01T00:00");
-  const [dueDate, setDueDate] = useState<string>("2025-02-28T23:59");
+  const [startAt, setStartAt] = useState<string>("2025-02-01");
+  const [dueDate, setDueDate] = useState<string>("2025-02-28");
   const [paid, setPaid] = useState<boolean>(false);
 
   useEffect(() => {
@@ -102,8 +113,8 @@ const ChargeForm = () => {
       return;
     }
 
-    const formatDateTime = (dateTimeString: string): string => {
-      return dateTimeString.replace("T", " ");
+    const formatDateTime = (dateString: string): string => {
+      return `${dateString} 00:00`;
     };
 
     const formattedStartAt = formatDateTime(startAt);
@@ -132,8 +143,8 @@ const ChargeForm = () => {
       setConcept("Cuota de mantenimiento");
       setAmount(0);
       setAmountDisplay("");
-      setStartAt("2025-02-01T00:00");
-      setDueDate("2025-02-28T23:59");
+      setStartAt("2025-02-01");
+      setDueDate("2025-02-28");
       setPaid(false);
       setSelectedUser("");
     } catch (err) {
@@ -180,7 +191,9 @@ const ChargeForm = () => {
 
         {chargeType === "individual" && (
           <div className="mb-4">
-            <label className="font-semibold block mb-1">Usuario (condómino):</label>
+            <label className="font-semibold block mb-1">
+              Usuario (condómino):
+            </label>
             <div className="relative">
               <div className="absolute left-2 top-1/2 flex items-center transform -translate-y-1/2">
                 <UserIcon className="h-5 w-5 text-gray-400" />
@@ -254,13 +267,15 @@ const ChargeForm = () => {
         </div>
 
         <div className="mb-4">
-          <label className="font-semibold block mb-1">Fecha y hora de inicio del cargo:</label>
+          <label className="font-semibold block mb-1">
+            Fecha de inicio del cargo:
+          </label>
           <div className="relative">
             <div className="absolute left-2 top-1/2 flex items-center transform -translate-y-1/2">
               <CalendarIcon className="h-5 w-5 text-gray-400" />
             </div>
             <input
-              type="datetime-local"
+              type="date"
               className="w-full pl-10 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
               value={startAt}
               onChange={(e) => setStartAt(e.target.value)}
@@ -269,13 +284,15 @@ const ChargeForm = () => {
         </div>
 
         <div className="mb-4">
-          <label className="font-semibold block mb-1">Fecha y hora límite de pago:</label>
+          <label className="font-semibold block mb-1">
+            Fecha límite de pago:
+          </label>
           <div className="relative">
             <div className="absolute left-2 top-1/2 flex items-center transform -translate-y-1/2">
               <CalendarIcon className="h-5 w-5 text-gray-400" />
             </div>
             <input
-              type="datetime-local"
+              type="date"
               className="w-full pl-10 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
               value={dueDate}
               onChange={(e) => setDueDate(e.target.value)}

@@ -357,18 +357,6 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
     }
   };
 
-  // Función auxiliar para ajustar la zona horaria
-  const adjustTimezone = (date: Date): Date => {
-    return new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-  };
-
-  // Función para formatear la fecha para el input
-  const formatDateForInput = (date: Date | null): string => {
-    if (!date) return "";
-    const adjustedDate = adjustTimezone(date);
-    return adjustedDate.toISOString().slice(0, 16);
-  };
-
   return (
     <Transition.Root show={open} as={Fragment}>
       <Dialog as="div" className="relative z-10" onClose={setOpen}>
@@ -505,15 +493,19 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                                 <input
                                   onChange={(e) => {
                                     const selectedDate = new Date(
-                                      e.target.value
+                                      e.target.value + "T00:00:00"
                                     );
                                     setPaymentDate(selectedDate);
                                   }}
-                                  type="datetime-local"
+                                  type="date"
                                   name="paymentDate"
                                   id="paymentDate"
                                   className="px-8 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-50"
-                                  value={formatDateForInput(paymentDate)}
+                                  value={
+                                    paymentDate
+                                      ? paymentDate.toISOString().split("T")[0]
+                                      : ""
+                                  }
                                 />
                               </div>
                             </div>
