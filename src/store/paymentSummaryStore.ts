@@ -134,6 +134,7 @@ export type PaymentSummaryState = {
     filters?: { month?: string; year?: string }
   ) => Promise<number>;
   searchPaymentByFolio: (folio: string) => Promise<PaymentRecord[]>;
+  setLoading: (isLoading: boolean) => void;
 };
 
 // Variable de caché para resultados de paginación (clave basada en filtros y cursor)
@@ -200,8 +201,17 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>(
         const tokenResult = await getIdTokenResult(user);
         const clientId = tokenResult.claims["clientId"] as string;
         const condominiumId = localStorage.getItem("condominiumId");
+
+        // Si no hay condominiumId, no lanzar error pero mostrar un mensaje de log
+        // Esto permite que el componente siga intentando hasta que el ID esté disponible
         if (!condominiumId) {
-          throw new Error("Condominio no seleccionado");
+          console.log("Esperando selección de condominio...");
+          set({
+            loading: false,
+            error: null,
+            monthlyStats: [], // Limpiar datos para evitar mostrar datos incorrectos
+          });
+          return;
         }
 
         // Obtener datos de la administradora
@@ -1328,6 +1338,10 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>(
         });
         return [];
       }
+    },
+
+    setLoading: (isLoading: boolean) => {
+      set({ loading: isLoading });
     },
   })
 );

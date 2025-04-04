@@ -1,17 +1,19 @@
-import React, { useState, useEffect, useRef, FormEvent } from 'react';
-import ReactMarkdown from 'react-markdown';
-import { model } from '../../../firebase/firebase';
+import React, { useState, useEffect, useRef, FormEvent } from "react";
+import ReactMarkdown from "react-markdown";
+import { model } from "../../../firebase/firebase";
 import {
   PaperClipIcon,
   ChatBubbleOvalLeftEllipsisIcon,
-} from '@heroicons/react/24/outline';
-import { usePaymentSummaryStore } from '../../../store/paymentSummaryStore';
+} from "@heroicons/react/24/outline";
+import { usePaymentSummaryStore } from "../../../store/paymentSummaryStore";
+import { withProFeature } from "../../components/shared/withProFeature";
+import { getAuth } from "firebase/auth";
 
 /**
  * Tipo para cada mensaje en la UI.
  */
 type LocalMessage = {
-  sender: 'user' | 'bot';
+  sender: "user" | "bot";
   text: string;
 };
 
@@ -20,7 +22,7 @@ type LocalMessage = {
  * { role: "user" | "model" | "function", parts: { text: string }[] }
  */
 interface VertexAIMsg {
-  role: 'user' | 'model' | 'function';
+  role: "user" | "model" | "function";
   parts: { text: string }[];
 }
 
@@ -56,7 +58,7 @@ async function fileToGenerativePart(file: File) {
     const reader = new FileReader();
     reader.onloadend = () => {
       const result = reader.result as string;
-      const base64Data = result.split(',')[1];
+      const base64Data = result.split(",")[1];
       resolve(base64Data);
     };
     reader.readAsDataURL(file);
@@ -76,18 +78,36 @@ async function fileToGenerativePart(file: File) {
 const ChatBot: React.FC = () => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [messages, setMessages] = useState<LocalMessage[]>([]);
-  const [input, setInput] = useState<string>('');
+  const [input, setInput] = useState<string>("");
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // 1) Obtenemos la data del store
   const payments = usePaymentSummaryStore((s) => s.payments);
 
+  // Detectar cambios de usuario para limpiar el historial de mensajes
+  useEffect(() => {
+    const auth = getAuth();
+    const userId = auth.currentUser?.uid || null;
+
+    if (userId !== currentUserId) {
+      console.log(
+        "Cambio de usuario detectado en ChatBot, limpiando historial"
+      );
+      setMessages([]);
+      setInput("");
+      setFile(null);
+      setIsOpen(false);
+      setCurrentUserId(userId);
+    }
+  }, [currentUserId]);
+
   // Auto-scroll cuando cambian los mensajes
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   // Abre/cierra el chat
@@ -106,19 +126,25 @@ const ChatBot: React.FC = () => {
 
   // 2) Función para generar un resumen con los últimos 5 pagos
   function generateLast5PaymentsContext(): string {
-    const last5 = payments.slice(0, 5); // o .slice(-5) si quieres los más recientes
-    if (last5.length === 0) {
-      return 'No hay pagos registrados en el store.';
+    // Asegurarse de que tenemos pagos y un usuario autenticado
+    const auth = getAuth();
+    if (!auth.currentUser || !payments || payments.length === 0) {
+      return "No hay pagos registrados o disponibles.";
     }
+
+    const last5 = payments.slice(0, 5); // o .slice(-5) si quieres los más recientes
+
     // Crea una pequeña lista tipo:
     // - Pago #1: Condo 101, Monto pagado 500
     // - Pago #2: ...
     return `Estos son los últimos 5 pagos registrados:
 ${last5
   .map((p, index) => {
-    return `Pago #${index + 1}: Condo ${p.numberCondominium}, Pagado: ${p.amountPaid}, Pendiente: ${p.amountPending}`;
+    return `Pago #${index + 1}: Condo ${
+      p.numberCondominium || "N/A"
+    }, Pagado: ${p.amountPaid || 0}, Pendiente: ${p.amountPending || 0}`;
   })
-  .join('\n')}
+  .join("\n")}
 ---
 `;
   }
@@ -128,15 +154,15 @@ ${last5
     e.preventDefault();
     if (!input.trim() && !file) return;
 
-    const userMessage: LocalMessage = { sender: 'user', text: input };
+    const userMessage: LocalMessage = { sender: "user", text: input };
     setMessages((prev) => [...prev, userMessage]);
-    setInput('');
+    setInput("");
     setLoading(true);
 
     try {
       // Convertimos nuestro historial local a la forma VertexAIMsg
       let conversationHistory: VertexAIMsg[] = messages.map((msg) => {
-        const role: 'user' | 'model' = msg.sender === 'user' ? 'user' : 'model';
+        const role: "user" | "model" = msg.sender === "user" ? "user" : "model";
         return {
           role,
           parts: [{ text: msg.text }],
@@ -148,7 +174,7 @@ ${last5
       if (conversationHistory.length === 0) {
         const last5Context = generateLast5PaymentsContext();
         const firstUserMsg: VertexAIMsg = {
-          role: 'user',
+          role: "user",
           parts: [
             {
               text: `${BASE_PROMPT}\n\n${last5Context}\n${userMessage.text}`,
@@ -159,7 +185,7 @@ ${last5
       } else {
         // Agregamos este turno normal
         conversationHistory.push({
-          role: 'user',
+          role: "user",
           parts: [{ text: userMessage.text }],
         });
       }
@@ -183,7 +209,7 @@ ${last5
       const result = await chat.sendMessageStream(nextUserParts);
 
       // Mensaje vacío del bot
-      let streamingMessage: LocalMessage = { sender: 'bot', text: '' };
+      let streamingMessage: LocalMessage = { sender: "bot", text: "" };
       setMessages((prev) => [...prev, streamingMessage]);
 
       // Leer chunks
@@ -197,10 +223,10 @@ ${last5
         });
       }
     } catch (error) {
-      console.error('Error generando contenido:', error);
+      console.error("Error generando contenido:", error);
       setMessages((prev) => [
         ...prev,
-        { sender: 'bot', text: 'Ocurrió un error al procesar tu solicitud.' },
+        { sender: "bot", text: "Ocurrió un error al procesar tu solicitud." },
       ]);
     } finally {
       setLoading(false);
@@ -214,7 +240,9 @@ ${last5
         <div className="flex flex-col w-80 h-[530px] bg-gray-800 text-gray-100 rounded-lg shadow-xl overflow-hidden border border-gray-600">
           {/* Header del chat */}
           <div className="flex items-center justify-between px-4 py-3 bg-indigo-500 dark:bg-gray-900">
-            <h3 className="text-lg font-semibold text-white dark:text-gray-100">EstateAdmin IA</h3>
+            <h3 className="text-lg font-semibold text-white dark:text-gray-100">
+              EstateAdmin IA
+            </h3>
             <button
               onClick={toggleChat}
               className="text-gray-100 text-2xl leading-none focus:outline-none"
@@ -226,24 +254,26 @@ ${last5
           {/* Área de mensajes */}
           <div className="flex-1 p-4 overflow-y-auto border-indigo-300 ring-indigo-300 bg-white dark:bg-gray-800 text-gray-100 chat-container">
             {messages.length === 0 ? (
-              <p className="text-gray-400 text-center">Inicia una conversación</p>
+              <p className="text-gray-400 text-center">
+                Inicia una conversación
+              </p>
             ) : (
               messages.map((msg, index) => (
                 <div
                   key={index}
                   className={`mb-2 flex ${
-                    msg.sender === 'user' ? 'justify-end' : 'justify-start'
+                    msg.sender === "user" ? "justify-end" : "justify-start"
                   }`}
                 >
                   <div
                     className={`rounded-lg p-2 max-w-xs ${
-                      msg.sender === 'user'
-                        ? 'bg-gray-700 text-gray-100'
-                        : 'bg-gray-600 text-gray-100'
+                      msg.sender === "user"
+                        ? "bg-gray-700 text-gray-100"
+                        : "bg-gray-600 text-gray-100"
                     }`}
                   >
                     {/* Usuario: plain text, Bot: Markdown */}
-                    {msg.sender === 'user' ? (
+                    {msg.sender === "user" ? (
                       msg.text
                     ) : (
                       <ReactMarkdown>{msg.text}</ReactMarkdown>
@@ -256,7 +286,10 @@ ${last5
           </div>
 
           {/* Formulario */}
-          <form onSubmit={handleSend} className="flex flex-col border-t  border-indigo-300 dark:border-gray-600">
+          <form
+            onSubmit={handleSend}
+            className="flex flex-col border-t  border-indigo-300 dark:border-gray-600"
+          >
             <div className="flex items-center pl-2 bg-indigo-500 dark:bg-gray-700 gap-2">
               <input
                 type="file"
@@ -279,7 +312,7 @@ ${last5
                 disabled={loading}
                 className="px-2.5 py-2.5 bg-indigo-600 text-sm text-white font-semibold hover:bg-indigo-700 focus:outline-none"
               >
-                {loading ? 'Enviando...' : 'Enviar'}
+                {loading ? "Enviando..." : "Enviar"}
               </button>
             </div>
           </form>
@@ -297,4 +330,20 @@ ${last5
   );
 };
 
-export default ChatBot;
+// Componente básico que muestra un mensaje limitado para usuarios con plan basic
+const BasicChatBot: React.FC = () => {
+  return (
+    <div className="fixed bottom-4 right-4 z-[9]">
+      <button
+        onClick={() => {}}
+        className="bg-gray-400 text-white p-3 shadow-xl rounded-full cursor-not-allowed opacity-70"
+        style={{ zIndex: 999999 }}
+      >
+        <ChatBubbleOvalLeftEllipsisIcon className="h-6 w-6 text-white" />
+      </button>
+    </div>
+  );
+};
+
+// Exportamos el componente protegido como default
+export default withProFeature(ChatBot, "chatBot", BasicChatBot);

@@ -18,6 +18,7 @@ import {
   where,
 } from "firebase/firestore";
 import * as Sentry from "@sentry/react";
+import { usePlanStore } from "./usePlanStore";
 
 // Se elimina el campo 'password' de la interfaz para evitar almacenar datos sensibles
 interface User {
@@ -110,6 +111,22 @@ const useAuthStore = create<AuthStore>((set, get) => {
 
         set({ user: loggedUser, authError: null });
         localStorage.setItem("dataUserActive", JSON.stringify(loggedUser));
+
+        // Asegurarnos de que los claims estén disponibles antes de cargar el plan
+        try {
+          const tokenResult = await getIdTokenResult(response.user, true); // Forzar refresco
+          if (tokenResult.claims["clientId"]) {
+            await usePlanStore.getState().fetchPlanDetails();
+          } else {
+            console.warn(
+              "No se encontró clientId en los claims para cargar el plan"
+            );
+          }
+        } catch (planError) {
+          console.error("Error al cargar detalles del plan:", planError);
+          // No bloqueamos el login si falla la carga del plan
+        }
+
         return loggedUser;
       } catch (error: any) {
         let errorMessage = "";
@@ -137,11 +154,18 @@ const useAuthStore = create<AuthStore>((set, get) => {
 
     logoutUser: async () => {
       try {
+        // Limpiar estado y caché
+        usePlanStore.getState().resetPlanState();
+
+        // Forzar limpieza inmediata de todas las stores y localStorage
+        localStorage.clear(); // Limpiar todo localStorage, no solo entradas específicas
+        sessionStorage.clear(); // Limpiar sessionStorage también
+
+        // Recargar la aplicación para forzar limpieza completa
+        window.location.href = "/"; // Esto es más seguro que reload() para limpiar estados
+
         await signOut(auth);
-        // Limpieza explícita del tema dark al cerrar sesión
         document.documentElement.classList.remove("dark");
-        localStorage.removeItem("dataUserActive");
-        localStorage.removeItem("condominiumId");
         set({ user: null, authError: null });
         removeActivityListeners();
         if (inactivityTimeout) {
@@ -211,8 +235,24 @@ const useAuthStore = create<AuthStore>((set, get) => {
     // Integración de hook de Firebase: escucha de cambios en la autenticación
     // Además, configura la detección de inactividad para cerrar sesión automáticamente tras 48 horas sin actividad
     initializeAuthListener: () => {
-      onAuthStateChanged(auth, (user) => {
+      // Limpiar cualquier estado residual al inicializar
+      usePlanStore.getState().resetPlanState();
+
+      onAuthStateChanged(auth, async (user) => {
         if (user) {
+          // Si detectamos cambio de usuario (diferente al actual en localStorage)
+          const storedUser = loadUserFromLocalStorage();
+          if (storedUser && storedUser.uid !== user.uid) {
+            console.log(
+              "Cambio de usuario detectado, limpiando datos anteriores"
+            );
+            // Limpiar todo excepto auth
+            sessionStorage.clear();
+
+            // Reiniciar stores explícitamente
+            usePlanStore.getState().resetPlanState();
+          }
+
           const loggedUser: User = {
             email: user.email || "",
             name: user.displayName || "",
@@ -220,12 +260,36 @@ const useAuthStore = create<AuthStore>((set, get) => {
           };
           set({ user: loggedUser, authError: null });
           localStorage.setItem("dataUserActive", JSON.stringify(loggedUser));
+
           // Configurar detección de actividad y reiniciar el timer de inactividad
           attachActivityListeners();
           resetInactivityTimer();
+
+          // Cargar información del plan del usuario después de verificar claims
+          try {
+            // Primero limpiar cualquier dato residual
+            usePlanStore.getState().resetPlanState();
+
+            const tokenResult = await getIdTokenResult(user, true); // Forzar refresco
+            if (tokenResult.claims["clientId"]) {
+              await usePlanStore.getState().fetchPlanDetails();
+            } else {
+              console.warn(
+                "No se encontró clientId en los claims para cargar el plan"
+              );
+            }
+          } catch (error) {
+            console.error("Error al cargar detalles del plan:", error);
+          }
         } else {
-          set({ user: null });
+          // Resetear el estado del plan antes de limpiar datos del usuario
+          usePlanStore.getState().resetPlanState();
+
+          // Limpiar datos de usuario
           localStorage.removeItem("dataUserActive");
+          localStorage.removeItem("condominiumId");
+
+          set({ user: null });
           removeActivityListeners();
           if (inactivityTimeout) {
             clearTimeout(inactivityTimeout);
