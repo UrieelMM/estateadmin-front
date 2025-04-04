@@ -1,23 +1,23 @@
-import { create } from 'zustand';
-import { getAuth, getIdTokenResult } from 'firebase/auth';
-import { 
-  getFirestore, 
-  collection, 
-  getDocs, 
-  query, 
+import { create } from "./createStore";
+import { getAuth, getIdTokenResult } from "firebase/auth";
+import {
+  getFirestore,
+  collection,
+  getDocs,
+  query,
   where,
   doc,
   updateDoc,
-} from 'firebase/firestore';
-import toast from 'react-hot-toast';
-import axios from 'axios';
+} from "firebase/firestore";
+import toast from "react-hot-toast";
+import axios from "axios";
 
 interface AdminUser {
   id?: string;
   name: string;
   lastName: string;
   email: string;
-  role: 'admin' | 'admin-assistant';
+  role: "admin" | "admin-assistant";
   condominiumUids: string[];
   photoURL?: string;
   createdDate: any;
@@ -43,31 +43,37 @@ interface AdminUsersState {
   error: string | null;
   fetchUsers: (condominiumId: string) => Promise<void>;
   fetchCondominiums: () => Promise<void>;
-  createUser: (userData: Omit<AdminUser, 'id' | 'createdDate'>) => Promise<CreateUserResponse>;
+  createUser: (
+    userData: Omit<AdminUser, "id" | "createdDate">
+  ) => Promise<CreateUserResponse>;
   updateUser: (userId: string, userData: Partial<AdminUser>) => Promise<void>;
   toggleUserActive: (userId: string, active: boolean) => Promise<void>;
 }
 
 function generatePassword(): string {
   const length = 8;
-  const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  const charset =
+    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
   let password = "";
-  
+
   // Asegurar al menos una mayúscula, una minúscula y un número
   password += "ABCDEFGHIJKLMNOPQRSTUVWXYZ"[Math.floor(Math.random() * 26)];
   password += "abcdefghijklmnopqrstuvwxyz"[Math.floor(Math.random() * 26)];
   password += "0123456789"[Math.floor(Math.random() * 10)];
-  
+
   // Llenar el resto con caracteres aleatorios
   for (let i = 3; i < length; i++) {
     password += charset[Math.floor(Math.random() * charset.length)];
   }
 
   // Mezclar la contraseña
-  return password.split('').sort(() => Math.random() - 0.5).join('');
+  return password
+    .split("")
+    .sort(() => Math.random() - 0.5)
+    .join("");
 }
 
-export const useAdminUsersStore = create<AdminUsersState>((set, get) => ({
+export const useAdminUsersStore = create<AdminUsersState>()((set, get) => ({
   users: [],
   condominiums: [],
   loading: false,
@@ -85,8 +91,14 @@ export const useAdminUsersStore = create<AdminUsersState>((set, get) => ({
       if (!clientId) throw new Error("clientId no disponible");
 
       const db = getFirestore();
-      const usersRef = collection(db, `clients/${clientId}/condominiums/${condominiumId}/users`);
-      const q = query(usersRef, where("role", "in", ["admin", "admin-assistant"]));
+      const usersRef = collection(
+        db,
+        `clients/${clientId}/condominiums/${condominiumId}/users`
+      );
+      const q = query(
+        usersRef,
+        where("role", "in", ["admin", "admin-assistant"])
+      );
       const snapshot = await getDocs(q);
 
       const users: AdminUser[] = [];
@@ -102,7 +114,7 @@ export const useAdminUsersStore = create<AdminUsersState>((set, get) => ({
           photoURL: data.photoURL,
           createdDate: data.createdDate,
           uid: data.uid,
-          active: data.active
+          active: data.active,
         });
       });
 
@@ -126,14 +138,17 @@ export const useAdminUsersStore = create<AdminUsersState>((set, get) => ({
       if (!clientId) throw new Error("clientId no disponible");
 
       const db = getFirestore();
-      const condominiumsRef = collection(db, `clients/${clientId}/condominiums`);
+      const condominiumsRef = collection(
+        db,
+        `clients/${clientId}/condominiums`
+      );
       const snapshot = await getDocs(condominiumsRef);
 
       const condominiums: Condominium[] = [];
       snapshot.forEach((doc) => {
         condominiums.push({
           id: doc.id,
-          name: doc.data().name
+          name: doc.data().name,
         });
       });
 
@@ -160,26 +175,29 @@ export const useAdminUsersStore = create<AdminUsersState>((set, get) => ({
       const password = generatePassword();
 
       // Crear usuario usando el endpoint
-      const response = await axios.post(`${import.meta.env.VITE_URL_SERVER}/users-auth/register-administrators`, {
-        email: userData.email,
-        password,
-        clientId,
-        name: userData.name,
-        lastName: userData.lastName,
-        condominiumUids: userData.condominiumUids,
-        photoURL: userData.photoURL || null,
-        role: userData.role,
-        active: userData.active
-      });
+      const response = await axios.post(
+        `${import.meta.env.VITE_URL_SERVER}/users-auth/register-administrators`,
+        {
+          email: userData.email,
+          password,
+          clientId,
+          name: userData.name,
+          lastName: userData.lastName,
+          condominiumUids: userData.condominiumUids,
+          photoURL: userData.photoURL || null,
+          role: userData.role,
+          active: userData.active,
+        }
+      );
 
       // Si la respuesta es exitosa, recargamos la tabla y devolvemos la contraseña
       if (response.data) {
         toast.success("Usuario creado exitosamente");
         // Recargar la tabla de usuarios
         await get().fetchUsers(userData.condominiumUids[0]);
-        return { 
-          success: true, 
-          password // Devolvemos la contraseña generada para mostrarla en el modal
+        return {
+          success: true,
+          password, // Devolvemos la contraseña generada para mostrarla en el modal
         };
       } else {
         throw new Error("Error al crear usuario");
@@ -203,22 +221,28 @@ export const useAdminUsersStore = create<AdminUsersState>((set, get) => ({
       const clientId = tokenResult.claims["clientId"] as string;
       if (!clientId) throw new Error("clientId no disponible");
 
-      const condominiumId = userData.condominiumUids?.[0] || localStorage.getItem("condominiumId");
+      const condominiumId =
+        userData.condominiumUids?.[0] || localStorage.getItem("condominiumId");
       if (!condominiumId) throw new Error("Condominio no seleccionado");
 
       // Buscar el usuario para obtener su uid
-      const userToUpdate = get().users.find(u => u.id === userId);
+      const userToUpdate = get().users.find((u) => u.id === userId);
       if (!userToUpdate) throw new Error("Usuario no encontrado");
 
       // Actualizar usuario usando el endpoint con el uid correcto
-      const response = await axios.put(`${import.meta.env.VITE_URL_SERVER}/users-auth/edit-administrator/${userToUpdate.uid}`, {
-        clientId, // Agregar clientId al body
-        name: userData.name,
-        lastName: userData.lastName,
-        condominiumUids: userData.condominiumUids,
-        role: userData.role,
-        active: userData.active
-      });
+      const response = await axios.put(
+        `${import.meta.env.VITE_URL_SERVER}/users-auth/edit-administrator/${
+          userToUpdate.uid
+        }`,
+        {
+          clientId, // Agregar clientId al body
+          name: userData.name,
+          lastName: userData.lastName,
+          condominiumUids: userData.condominiumUids,
+          role: userData.role,
+          active: userData.active,
+        }
+      );
 
       if (response.data) {
         toast.success("Usuario actualizado exitosamente");
@@ -229,7 +253,9 @@ export const useAdminUsersStore = create<AdminUsersState>((set, get) => ({
     } catch (error: any) {
       console.error("Error al actualizar usuario:", error);
       set({ error: error.message, loading: false });
-      toast.error(error.response?.data?.message || "Error al actualizar usuario");
+      toast.error(
+        error.response?.data?.message || "Error al actualizar usuario"
+      );
     } finally {
       set({ loading: false });
     }
@@ -250,15 +276,20 @@ export const useAdminUsersStore = create<AdminUsersState>((set, get) => ({
       if (!condominiumId) throw new Error("Condominio no seleccionado");
 
       const db = getFirestore();
-      const userRef = doc(db, `clients/${clientId}/condominiums/${condominiumId}/users/${userId}`);
+      const userRef = doc(
+        db,
+        `clients/${clientId}/condominiums/${condominiumId}/users/${userId}`
+      );
       await updateDoc(userRef, { active });
 
-      toast.success(`Usuario ${active ? 'activado' : 'desactivado'} exitosamente`);
+      toast.success(
+        `Usuario ${active ? "activado" : "desactivado"} exitosamente`
+      );
       await get().fetchUsers(condominiumId);
     } catch (error: any) {
       console.error("Error al actualizar estado del usuario:", error);
       set({ error: error.message, loading: false });
       toast.error("Error al actualizar estado del usuario");
     }
-  }
-})); 
+  },
+}));

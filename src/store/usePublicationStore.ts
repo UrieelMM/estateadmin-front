@@ -1,9 +1,16 @@
 // publicationsStore.ts
-import { create } from "zustand";
-import { getFirestore, query, collection, orderBy, limit, startAfter, getDocs } from "firebase/firestore";
+import { create } from "./createStore";
+import {
+  getFirestore,
+  query,
+  collection,
+  orderBy,
+  limit,
+  startAfter,
+  getDocs,
+} from "firebase/firestore";
 import axios from "axios";
 import { getAuth, getIdTokenResult } from "firebase/auth";
-
 
 type Publication = {
   title: string;
@@ -26,7 +33,7 @@ type PublicationsState = {
   loadPublications: (loadMore?: boolean) => Promise<void>;
 };
 
-export const usePublicationStore = create<PublicationsState>((set, get) => ({
+export const usePublicationStore = create<PublicationsState>()((set, get) => ({
   publications: [],
   loadedCount: 0,
   hasMore: true,
@@ -86,18 +93,24 @@ export const usePublicationStore = create<PublicationsState>((set, get) => ({
     const condominiumId = localStorage.getItem("condominiumId");
 
     let publicationsQuery = query(
-      collection(db, `clients/${clientId}/condominiums/${condominiumId}/publications`),
+      collection(
+        db,
+        `clients/${clientId}/condominiums/${condominiumId}/publications`
+      ),
       orderBy("createdAt", "desc"),
       limit(4)
     );
 
     if (loadMore && get().lastVisible) {
-      publicationsQuery = query(publicationsQuery, startAfter(get().lastVisible));
+      publicationsQuery = query(
+        publicationsQuery,
+        startAfter(get().lastVisible)
+      );
     }
 
     try {
       const documentSnapshots = await getDocs(publicationsQuery);
-      const newPublications = documentSnapshots.docs.map(doc => {
+      const newPublications = documentSnapshots.docs.map((doc) => {
         const data = doc.data();
         const createdAt = data.createdAt?.toDate();
         return {
@@ -106,10 +119,13 @@ export const usePublicationStore = create<PublicationsState>((set, get) => ({
           id: doc.id,
         } as unknown as Publication;
       });
-      const newLastVisible = documentSnapshots.docs[documentSnapshots.docs.length - 1];
+      const newLastVisible =
+        documentSnapshots.docs[documentSnapshots.docs.length - 1];
 
       set((state: PublicationsState) => ({
-        publications: loadMore ? [...state.publications, ...newPublications] : newPublications,
+        publications: loadMore
+          ? [...state.publications, ...newPublications]
+          : newPublications,
         loadedCount: state.loadedCount + newPublications.length,
         hasMore: documentSnapshots.docs.length === 4,
         lastVisible: newLastVisible,
@@ -120,5 +136,4 @@ export const usePublicationStore = create<PublicationsState>((set, get) => ({
       set((state: PublicationsState) => ({ ...state, loading: false }));
     }
   },
-
 }));

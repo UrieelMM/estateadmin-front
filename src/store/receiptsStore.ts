@@ -1,5 +1,5 @@
 // receiptsStore.ts
-import { create } from "zustand";
+import { create } from "./createStore";
 import { getAuth, getIdTokenResult } from "firebase/auth";
 import axios from "axios";
 
@@ -9,7 +9,7 @@ type ReceiptStoreState = {
   sendReceipts: (year: string, month: string, docType: string) => Promise<void>;
 };
 
-export const useReceiptStore = create<ReceiptStoreState>((set) => ({
+export const useReceiptStore = create<ReceiptStoreState>()((set) => ({
   loading: false,
   error: null,
 

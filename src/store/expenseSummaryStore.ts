@@ -1,5 +1,5 @@
 // src/store/expenseSummaryStore.ts
-import { create } from "zustand";
+import { create } from "./createStore";
 import {
   getFirestore,
   collection,
@@ -109,7 +109,7 @@ const expenseHistoryCache: Record<
   { expenses: ExpenseRecord[]; lastDoc: any }
 > = {};
 
-export const useExpenseSummaryStore = create<ExpenseSummaryState>(
+export const useExpenseSummaryStore = create<ExpenseSummaryState>()(
   (set, get) => {
     // Función auxiliar para procesar los datos
     const processExpenseData = async (

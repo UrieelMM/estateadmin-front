@@ -1,5 +1,5 @@
 // src/stores/condominiumStore.ts
-import { create } from "zustand";
+import { create } from "./createStore";
 import { getAuth, getIdTokenResult } from "firebase/auth";
 
 interface CondominiumState {
@@ -10,7 +10,7 @@ interface CondominiumState {
 const ALLOWED_EXTENSIONS_REGEX = /\.(xls|xlsx)$/i;
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
-export const useCondominiumStore = create<CondominiumState>(() => ({
+export const useCondominiumStore = create<CondominiumState>()(() => ({
   sendExcel: async (file: File) => {
     // Validación del archivo: extensión y tamaño
     if (!ALLOWED_EXTENSIONS_REGEX.test(file.name)) {

@@ -1,5 +1,5 @@
 // publicationsStore.ts
-import { create } from "zustand";
+import { create } from "./createStore";
 import axios from "axios";
 import { getAuth, getIdTokenResult } from "firebase/auth";
 
@@ -17,7 +17,7 @@ type ParcelState = {
   addParcelReception: (parcelReception: ParcelReception) => Promise<void>;
 };
 
-export const useParcelReceptionStore = create<ParcelState>(() => ({
+export const useParcelReceptionStore = create<ParcelState>()(() => ({
   addParcelReception: async (parcelReception) => {
     const auth = getAuth();
     const user = auth.currentUser;
@@ -43,11 +43,15 @@ export const useParcelReceptionStore = create<ParcelState>(() => ({
     formData.append("attachments", parcelReception.file as Blob);
 
     try {
-      await axios.post(`${import.meta.env.VITE_URL_SERVER}/parcel/create`, formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
+      await axios.post(
+        `${import.meta.env.VITE_URL_SERVER}/parcel/create`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
     } catch (error) {
       throw new Error("Error al enviar la publicación");
     }

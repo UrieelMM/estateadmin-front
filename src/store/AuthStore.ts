@@ -7,7 +7,7 @@ import {
   getIdTokenResult,
 } from "firebase/auth";
 import { auth } from "../firebase/firebase";
-import { create } from "zustand";
+import { create, resetAllStores } from "./createStore";
 import {
   getFirestore,
   collection,
@@ -59,7 +59,7 @@ const loadUserFromLocalStorage = (): User | null => {
   return null;
 };
 
-const useAuthStore = create<AuthStore>((set, get) => {
+const useAuthStore = create<AuthStore>()((set, get) => {
   // Timer de inactividad
   let inactivityTimeout: ReturnType<typeof setTimeout> | null = null;
   // Duración de inactividad permitida: 48 horas en milisegundos
@@ -140,8 +140,9 @@ const useAuthStore = create<AuthStore>((set, get) => {
         await signOut(auth);
         // Limpieza explícita del tema dark al cerrar sesión
         document.documentElement.classList.remove("dark");
-        localStorage.removeItem("dataUserActive");
-        localStorage.removeItem("condominiumId");
+        localStorage.clear();
+        sessionStorage.clear();
+        resetAllStores();
         set({ user: null, authError: null });
         removeActivityListeners();
         if (inactivityTimeout) {

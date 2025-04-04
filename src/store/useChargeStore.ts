@@ -1,6 +1,6 @@
 // useChargeStore.ts
 
-import { create } from "zustand";
+import { create } from "./createStore";
 import { getAuth, getIdTokenResult } from "firebase/auth";
 import { getFirestore, collection, addDoc, getDocs } from "firebase/firestore";
 import * as Sentry from "@sentry/react";
@@ -26,7 +26,7 @@ interface ChargeState {
   createChargeForAll: (options: CreateChargeOptions) => Promise<void>;
 }
 
-export const useChargeStore = create<ChargeState>((set) => ({
+export const useChargeStore = create<ChargeState>()((set) => ({
   loading: false,
   error: null,
 

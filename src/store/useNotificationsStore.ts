@@ -1,5 +1,5 @@
 // notificationsStore.ts
-import { create } from "zustand";
+import { create } from "./createStore";
 import {
   getFirestore,
   collection,
@@ -51,7 +51,7 @@ const waitForAuthUser = async (): Promise<any> => {
   });
 };
 
-const useNotificationStore = create<NotificationStore>((set, get) => ({
+const useNotificationStore = create<NotificationStore>()((set, get) => ({
   notifications: [],
   isInitialized: false,
   unsubscribe: null,

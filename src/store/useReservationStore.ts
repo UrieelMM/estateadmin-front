@@ -1,6 +1,6 @@
 // calendarEventsStore.ts
 
-import { create } from "zustand";
+import { create } from "./createStore";
 import {
   getFirestore,
   collection,
@@ -85,7 +85,7 @@ type CalendarEventsState = {
   filterEvents: (filters: FilterCriteria) => CalendarEvent[];
 };
 
-export const useCalendarEventsStore = create<CalendarEventsState>(
+export const useCalendarEventsStore = create<CalendarEventsState>()(
   (set, get) => ({
     events: [],
     residents: [],

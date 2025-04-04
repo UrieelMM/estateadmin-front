@@ -1,4 +1,4 @@
-import { create } from "zustand";
+import { create } from "./createStore";
 import { getAuth, getIdTokenResult } from "firebase/auth";
 import {
   getFirestore,
@@ -39,7 +39,7 @@ type ConfigState = {
   ) => Promise<void>;
 };
 
-export const useConfigStore = create<ConfigState>((set, get) => ({
+export const useConfigStore = create<ConfigState>()((set, get) => ({
   config: null,
   loading: false,
   error: null,

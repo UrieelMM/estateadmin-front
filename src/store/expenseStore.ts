@@ -1,6 +1,6 @@
 // src/store/expenseStore.ts
 
-import { create } from "zustand";
+import { create } from "./createStore";
 import { getAuth, getIdTokenResult } from "firebase/auth";
 import {
   getFirestore,
@@ -77,7 +77,7 @@ async function generateUniqueFolio(): Promise<string> {
   return `EA-${randomNumbers}`;
 }
 
-export const useExpenseStore = create<ExpenseState>((set, get) => ({
+export const useExpenseStore = create<ExpenseState>()((set, get) => ({
   expenses: [],
   loading: false,
   error: null,

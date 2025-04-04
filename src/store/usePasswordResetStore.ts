@@ -1,4 +1,4 @@
-import { create } from "zustand";
+import { create } from "./createStore";
 import axios from "axios";
 import toast from "react-hot-toast";
 
@@ -9,7 +9,7 @@ interface PasswordResetState {
   resetPassword: (oobCode: string, newPassword: string) => Promise<boolean>;
 }
 
-export const usePasswordResetStore = create<PasswordResetState>((set) => ({
+export const usePasswordResetStore = create<PasswordResetState>()((set) => ({
   loading: false,
   error: null,
 

@@ -1,5 +1,5 @@
 // src/stores/userStore.ts
-import { create } from "zustand";
+import { create } from "./createStore";
 import {
   getFirestore,
   collection,
@@ -49,7 +49,7 @@ interface Condominium {
   name: string;
 }
 
-const useUserStore = create<UserState>((set, get) => ({
+const useUserStore = create<UserState>()((set, get) => ({
   user: null,
   authListenerSet: false,
   condominiumsFetched: false,

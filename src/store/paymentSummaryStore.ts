@@ -1,5 +1,5 @@
 // src/store/paymentSummaryStore.ts
-import { create } from "zustand";
+import { create } from "./createStore";
 import {
   getFirestore,
   collection,
@@ -142,7 +142,7 @@ const paymentHistoryCache: Record<
   { payments: PaymentRecord[]; lastDoc: any }
 > = {};
 
-export const usePaymentSummaryStore = create<PaymentSummaryState>(
+export const usePaymentSummaryStore = create<PaymentSummaryState>()(
   (set, get) => ({
     payments: [],
     totalIncome: 0,

@@ -1,6 +1,6 @@
 // paymentHistoryStore.ts
 
-import { create } from "zustand";
+import { create } from "./createStore";
 import {
   getFirestore,
   collection,
@@ -80,7 +80,7 @@ function timestampToSpanishString(ts: Timestamp): string {
   return `${day} de ${monthName} de ${year}`;
 }
 
-export const usePaymentHistoryStore = create<PaymentHistoryState>((set) => ({
+export const usePaymentHistoryStore = create<PaymentHistoryState>()((set) => ({
   payments: [],
   detailed: {},
   detailedByConcept: {},

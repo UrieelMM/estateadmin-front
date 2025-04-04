@@ -1,4 +1,4 @@
-import { create } from "zustand";
+import { create } from "./createStore";
 import {
   collection,
   addDoc,
@@ -39,7 +39,7 @@ interface ProviderStore {
   searchProviders: (term: string) => void;
 }
 
-const useProviderStore = create<ProviderStore>((set, get) => ({
+const useProviderStore = create<ProviderStore>()((set, get) => ({
   providers: [],
   filteredProviders: [],
   loading: false,

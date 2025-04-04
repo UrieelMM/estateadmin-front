@@ -1,4 +1,4 @@
-import { create } from "zustand";
+import { create } from "./createStore";
 import { getAuth, getIdTokenResult } from "firebase/auth";
 
 interface MorosityState {
@@ -15,7 +15,7 @@ interface MorosityState {
   initialize: () => Promise<void>;
 }
 
-export const useMorosityStore = create<MorosityState>((set, get) => ({
+export const useMorosityStore = create<MorosityState>()((set, get) => ({
   clientId: null,
   condominiumId: null,
   isLoading: false,

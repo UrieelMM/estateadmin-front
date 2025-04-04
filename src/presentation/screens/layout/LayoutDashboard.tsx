@@ -278,7 +278,7 @@ const LayoutDashboard = ({ children }: Props) => {
       <div className="xl:hidden">
         <aside
           className={classNames(
-            "fixed inset-y-0 left-0 w-52 md:w-56 border-r border-gray-200 dark:border-gray-700 dark:bg-gray-800 transform transition-transform duration-300 ease-in-out",
+            "fixed inset-y-0 bg-gray-50 left-0 w-52 md:w-56 border-r border-gray-200 dark:border-gray-700 dark:bg-gray-800 transform transition-transform duration-300 ease-in-out",
             "h-screen z-50 flex flex-col",
             isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
           )}

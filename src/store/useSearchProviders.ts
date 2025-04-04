@@ -1,4 +1,4 @@
-import create from "zustand";
+import { create } from "./createStore";
 
 export interface Place {
   place_id: string;
@@ -103,7 +103,7 @@ interface PlacesStore {
   getPlaceDetails: (placeId: string) => Promise<PlaceDetails>;
 }
 
-const usePlacesStore = create<PlacesStore>((set, _get) => ({
+const usePlacesStore = create<PlacesStore>()((set, _get) => ({
   places: [],
   loading: false,
   error: null,

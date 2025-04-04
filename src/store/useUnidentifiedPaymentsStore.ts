@@ -1,5 +1,5 @@
 // src/store/useUnidentifiedPaymentsStore.ts
-import { create } from "zustand";
+import { create } from "./createStore";
 import { getAuth, getIdTokenResult } from "firebase/auth";
 import {
   getFirestore,
@@ -75,7 +75,7 @@ const unidentifiedPaymentsCache: Record<
   { payments: UnidentifiedPayment[]; lastVisible: any }
 > = {};
 
-export const useUnidentifiedPaymentsStore = create<UnidentifiedPaymentsState>(
+export const useUnidentifiedPaymentsStore = create<UnidentifiedPaymentsState>()(
   (set, get) => ({
     payments: [],
     loading: false,
