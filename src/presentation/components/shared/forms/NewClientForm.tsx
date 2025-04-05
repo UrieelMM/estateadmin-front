@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 import { countriesList } from "../../../../utils/countriesList";
@@ -19,7 +19,8 @@ const NewClientForm: React.FC<NewClientFormProps> = ({
     name: "",
     lastName: "",
     phoneNumber: "",
-    currentPlan: "basic-01",
+    plan: "Basic",
+    proFunctions: [] as string[],
     companyName: "",
     address: "",
     RFC: "",
@@ -34,11 +35,47 @@ const NewClientForm: React.FC<NewClientFormProps> = ({
     },
   });
 
+  const proFunctionOptions = [
+    "chatbot",
+    "proReports",
+    "smartAnalytics",
+    "predictiveMaintenanceAlerts",
+    "documentAI",
+    "voiceAssistant",
+    "energyOptimization",
+  ];
+
+  const [selectAll, setSelectAll] = useState(false);
   const [showCredentials, setShowCredentials] = useState(false);
   const [credentials, setCredentials] = useState({
     email: "",
     password: "",
   });
+
+  useEffect(() => {
+    if (selectAll) {
+      setFormData((prev) => ({
+        ...prev,
+        proFunctions: [...proFunctionOptions],
+      }));
+    } else if (formData.proFunctions.length === proFunctionOptions.length) {
+      setFormData((prev) => ({
+        ...prev,
+        proFunctions: [],
+      }));
+    }
+  }, [selectAll]);
+
+  useEffect(() => {
+    if (formData.proFunctions.length === proFunctionOptions.length) {
+      setSelectAll(true);
+    } else if (
+      selectAll &&
+      formData.proFunctions.length < proFunctionOptions.length
+    ) {
+      setSelectAll(false);
+    }
+  }, [formData.proFunctions]);
 
   const generatePassword = () => {
     const chars =
@@ -78,6 +115,12 @@ const NewClientForm: React.FC<NewClientFormProps> = ({
       return;
     }
 
+    // Validar que se seleccione al menos una función Pro si el plan es Pro
+    if (formData.plan === "Pro" && formData.proFunctions.length === 0) {
+      toast.error("Debe seleccionar al menos una función Pro");
+      return;
+    }
+
     const password = generatePassword();
     const submitData = {
       ...formData,
@@ -110,12 +153,43 @@ const NewClientForm: React.FC<NewClientFormProps> = ({
           [field]: value,
         },
       }));
+    } else if (name === "plan" && value !== "Pro") {
+      // Si cambia de plan y no es Pro, resetear proFunctions
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value,
+        proFunctions: [],
+      }));
+      setSelectAll(false);
     } else {
       setFormData((prev) => ({
         ...prev,
         [name]: value,
       }));
     }
+  };
+
+  const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, checked } = e.target;
+
+    if (name === "selectAll") {
+      setSelectAll(checked);
+      return;
+    }
+
+    setFormData((prev) => {
+      if (checked) {
+        return {
+          ...prev,
+          proFunctions: [...prev.proFunctions, name],
+        };
+      } else {
+        return {
+          ...prev,
+          proFunctions: prev.proFunctions.filter((fn) => fn !== name),
+        };
+      }
+    });
   };
 
   if (!isOpen) return null;
@@ -198,15 +272,15 @@ const NewClientForm: React.FC<NewClientFormProps> = ({
                 Plan
               </label>
               <select
-                name="currentPlan"
-                value={formData.currentPlan}
+                name="plan"
+                value={formData.plan}
                 onChange={handleInputChange}
                 required
                 className="w-full px-2 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
               >
-                <option value="basic-01">Basic</option>
-                <option value="pro-01">Pro</option>
-                <option value="enterprise-01">Enterprise</option>
+                <option value="Basic">Basic</option>
+                <option value="Pro">Pro</option>
+                <option value="Enterprise">Enterprise</option>
               </select>
             </div>
 
@@ -223,6 +297,53 @@ const NewClientForm: React.FC<NewClientFormProps> = ({
                 className="w-full px-2 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
               />
             </div>
+
+            {/* Pro Functions */}
+            {formData.plan === "Pro" && (
+              <div className="col-span-2 mt-2 mb-4">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Funciones Pro (IA)
+                </label>
+                <div className="pl-2">
+                  <div className="flex items-center mb-3">
+                    <input
+                      type="checkbox"
+                      id="selectAll"
+                      name="selectAll"
+                      checked={selectAll}
+                      onChange={handleCheckboxChange}
+                      className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                    />
+                    <label
+                      htmlFor="selectAll"
+                      className="ml-2 block text-sm text-gray-900 dark:text-gray-100"
+                    >
+                      Seleccionar todos
+                    </label>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    {proFunctionOptions.map((option) => (
+                      <div key={option} className="flex items-center">
+                        <input
+                          type="checkbox"
+                          id={option}
+                          name={option}
+                          checked={formData.proFunctions.includes(option)}
+                          onChange={handleCheckboxChange}
+                          className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                        />
+                        <label
+                          htmlFor={option}
+                          className="ml-2 block text-sm text-gray-900 dark:text-gray-100"
+                        >
+                          {option}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">

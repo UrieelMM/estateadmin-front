@@ -31,7 +31,8 @@ interface NewClientData {
   lastName: string;
   password: string;
   phoneNumber: string;
-  currentPlan: string;
+  plan: string;
+  proFunctions: string[];
   companyName: string;
   address: string;
   RFC: string;
