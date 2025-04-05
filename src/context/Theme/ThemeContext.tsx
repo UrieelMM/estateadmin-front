@@ -61,7 +61,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
         }
 
         // Pequeño delay para asegurar que el tema se aplique
-        await new Promise((resolve) => setTimeout(resolve, 100));
+        await new Promise((resolve) => setTimeout(resolve, 200));
       } catch (error: any) {
         // Capturar el error y reportarlo a Sentry
         Sentry.captureException(error, {

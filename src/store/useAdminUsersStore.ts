@@ -28,6 +28,7 @@ interface AdminUser {
 interface Condominium {
   id: string;
   name: string;
+  clientId: string;
 }
 
 interface CreateUserResponse {
@@ -149,9 +150,11 @@ export const useAdminUsersStore = create<AdminUsersState>()((set, get) => ({
         condominiums.push({
           id: doc.id,
           name: doc.data().name,
+          clientId: clientId,
         });
       });
 
+      console.log("Condominios cargados con clientId:", condominiums);
       set({ condominiums, loading: false });
     } catch (error: any) {
       console.error("Error al cargar condominios:", error);
@@ -245,7 +248,6 @@ export const useAdminUsersStore = create<AdminUsersState>()((set, get) => ({
       );
 
       if (response.data) {
-        toast.success("Usuario actualizado exitosamente");
         await get().fetchUsers(condominiumId);
       } else {
         throw new Error("Error al actualizar usuario");

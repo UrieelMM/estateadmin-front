@@ -11,12 +11,29 @@ import {
   ClipboardDocumentIcon,
 } from "@heroicons/react/24/solid";
 import { toast } from "react-hot-toast";
+import {
+  getFirestore,
+  collection,
+  query,
+  where,
+  getDocs,
+  doc,
+  setDoc,
+} from "firebase/firestore";
+
+// Agregamos las interfaces necesarias
+interface Condominium {
+  id: string;
+  name: string;
+  clientId: string;
+  [key: string]: any;
+}
 
 interface EditUserModalProps {
   isOpen: boolean;
   onClose: () => void;
   user: any;
-  condominiums: any[];
+  condominiums: Condominium[];
 }
 
 const EditUserModal = ({
@@ -35,6 +52,7 @@ const EditUserModal = ({
     active: user?.active || true,
     photoURL: user?.photoURL || "",
   });
+  const [processingChange, setProcessingChange] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -52,10 +70,243 @@ const EditUserModal = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (user?.id) {
+    if (!user?.id) return;
+
+    setProcessingChange(true);
+    const db = getFirestore();
+
+    try {
+      console.log("Formulario de usuario:", formData);
+      console.log("Usuario original:", user);
+
+      // Antes de procesar los nuevos condominios, primero actualizar los existentes si han cambiado
+      const originalCondominiums = user.condominiumUids || [];
+      const newCondominiums = formData.condominiumUids.filter(
+        (condoId: string) => !originalCondominiums.includes(condoId)
+      );
+      const removedCondominiums = originalCondominiums.filter(
+        (condoId: string) => !formData.condominiumUids.includes(condoId)
+      );
+
+      console.log("Condominios originales:", originalCondominiums);
+      console.log("Nuevos condominios:", newCondominiums);
+      console.log("Condominios eliminados:", removedCondominiums);
+
+      // Variables para llevar un conteo de las operaciones
+      let createdUsers = 0;
+      let existingUsers = 0;
+      let updatedUsers = 0;
+      let failedOperations = 0;
+
+      // Primero, actualizar los condominiumUids en los usuarios existentes en los condominios originales
+      // (que no han sido removidos)
+      for (const condominiumId of originalCondominiums) {
+        // Omitir los condominios que han sido eliminados de la selección
+        if (removedCondominiums.includes(condominiumId)) {
+          console.log(
+            `Condominio ${condominiumId} fue removido, omitiendo actualización`
+          );
+          continue;
+        }
+
+        try {
+          // Buscar el condominio en la lista para obtener su clientId
+          const condominio = condominiums.find((c) => c.id === condominiumId);
+          if (!condominio) {
+            console.error(
+              "No se encontró el condominio original con ID:",
+              condominiumId
+            );
+            failedOperations++;
+            continue;
+          }
+
+          const clientId = condominio.clientId;
+          console.log(
+            "Actualizando usuario en condominio existente:",
+            condominiumId
+          );
+
+          // La ruta para buscar al usuario en este condominio
+          const usersRef = collection(
+            db,
+            `clients/${clientId}/condominiums/${condominiumId}/users`
+          );
+          const userDocRef = doc(usersRef, user.id);
+
+          // Actualizar el array de condominiumUids en este documento
+          await setDoc(
+            userDocRef,
+            {
+              condominiumUids: formData.condominiumUids,
+              updatedDate: new Date(),
+            },
+            { merge: true } // Usar merge para no sobrescribir otros campos
+          );
+
+          console.log(
+            "Usuario actualizado en condominio existente:",
+            condominiumId
+          );
+          updatedUsers++;
+        } catch (error) {
+          console.error(
+            "Error actualizando condominiumUids en condominio existente:",
+            condominiumId,
+            error
+          );
+          failedOperations++;
+        }
+      }
+
+      // Si hay nuevos condominios, debemos crear copias del usuario en cada uno
+      if (newCondominiums.length > 0) {
+        // Procesar cada nuevo condominio
+        for (const condominiumId of newCondominiums) {
+          console.log("Procesando condominio:", condominiumId);
+
+          try {
+            // Buscar el condominio en la lista para obtener su clientId
+            const condominio = condominiums.find((c) => c.id === condominiumId);
+            if (!condominio) {
+              console.error(
+                "No se encontró el condominio con ID:",
+                condominiumId
+              );
+              failedOperations++;
+              continue; // Pasar al siguiente condominio
+            }
+
+            const clientId = condominio.clientId;
+            console.log(
+              "ClientId encontrado:",
+              clientId,
+              "para condominio:",
+              condominiumId
+            );
+
+            // La estructura correcta de Firestore es:
+            // clients/clientId/condominiums/condominiumId/users
+            const usersRef = collection(
+              db,
+              `clients/${clientId}/condominiums/${condominiumId}/users`
+            );
+
+            // Verificar si el usuario ya existe en el condominio basado en email
+            const q = query(usersRef, where("email", "==", formData.email));
+            console.log(
+              "Buscando usuario con email:",
+              formData.email,
+              "en la ruta:",
+              `clients/${clientId}/condominiums/${condominiumId}/users`
+            );
+
+            const querySnapshot = await getDocs(q);
+            console.log("¿Usuario encontrado?", !querySnapshot.empty);
+
+            // Si el usuario no existe (no hay documentos con ese email), crearlo
+            if (querySnapshot.empty) {
+              // Creamos un objeto con todos los campos que debe tener el usuario
+              const userData = {
+                name: formData.name,
+                lastName: formData.lastName,
+                email: formData.email,
+                role: formData.role,
+                active: formData.active,
+                photoURL: formData.photoURL,
+                darkMode: user.darkMode || false,
+                fcmToken: user.fcmToken || "",
+                uid: user.uid, // Mantenemos el mismo uid para consistencia
+                createdDate: new Date(),
+                updatedDate: new Date(),
+                condominiumUids: formData.condominiumUids, // Usar todos los condominios seleccionados
+              };
+
+              console.log("Creando usuario con datos:", userData);
+
+              // Crear un nuevo documento para el usuario en el condominio
+              // Usamos el mismo ID del usuario original para mantener consistencia
+              const userDocRef = doc(usersRef, user.id);
+              await setDoc(userDocRef, userData);
+
+              console.log("Usuario creado exitosamente en:", condominiumId);
+              createdUsers++;
+            } else {
+              console.log("El usuario ya existe en este condominio");
+              existingUsers++;
+            }
+          } catch (error) {
+            console.error("Error procesando condominio:", condominiumId, error);
+            failedOperations++;
+          }
+        }
+      }
+
+      // Actualizar el usuario en la base de datos principal
       await updateUser(user.id, formData);
       await fetchUsers(user.condominiumUids[0]);
+
+      // Mostrar un solo mensaje resumiendo todas las operaciones
+      if (newCondominiums.length > 0 || updatedUsers > 0) {
+        // Mensaje principal
+        let results = [];
+
+        if (createdUsers > 0) {
+          results.push(
+            `Creado en ${createdUsers} ${
+              createdUsers === 1 ? "nuevo condominio" : "nuevos condominios"
+            }`
+          );
+        }
+
+        if (updatedUsers > 0) {
+          results.push(
+            `Actualizado en ${updatedUsers} ${
+              updatedUsers === 1
+                ? "condominio existente"
+                : "condominios existentes"
+            }`
+          );
+        }
+
+        if (existingUsers > 0) {
+          results.push(
+            `${existingUsers} ${
+              existingUsers === 1
+                ? "condominio ya tenía"
+                : "condominios ya tenían"
+            } este usuario`
+          );
+        }
+
+        if (failedOperations > 0) {
+          results.push(
+            `${failedOperations} ${
+              failedOperations === 1
+                ? "operación falló"
+                : "operaciones fallaron"
+            }`
+          );
+        }
+
+        let message = "Usuario actualizado";
+        if (results.length > 0) {
+          message += `: ${results.join(", ")}.`;
+        } else {
+          message += ".";
+        }
+
+        toast.success(message);
+      } else {
+        toast.success("Usuario actualizado correctamente");
+      }
+
       onClose();
+    } catch (error) {
+      console.error("Error al actualizar usuario:", error);
+      toast.error("Error al actualizar el usuario");
+    } finally {
+      setProcessingChange(false);
     }
   };
 
@@ -168,7 +419,7 @@ const EditUserModal = ({
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Condominios Asignados
                     </label>
-                    <div className="space-y-2">
+                    <div className="space-y-2 max-h-40 overflow-y-auto p-2 border border-gray-200 dark:border-gray-700 rounded">
                       {condominiums.map((condo) => (
                         <label
                           key={condo.id}
@@ -188,20 +439,29 @@ const EditUserModal = ({
                         </label>
                       ))}
                     </div>
+                    {formData.condominiumUids.length >
+                      user.condominiumUids?.length && (
+                      <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">
+                        Al agregar nuevos condominios, se copiará el usuario en
+                        cada uno de los condiminios seleccionados.
+                      </p>
+                    )}
                   </div>
                   <div className="mt-4 flex justify-end space-x-2">
                     <button
                       type="button"
                       onClick={onClose}
                       className="inline-flex justify-center rounded-md border border-transparent bg-gray-100 px-4 py-2 text-sm font-medium text-gray-900 hover:bg-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 focus-visible:ring-offset-2"
+                      disabled={processingChange}
                     >
                       Cancelar
                     </button>
                     <button
                       type="submit"
-                      className="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
+                      className="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 disabled:opacity-50"
+                      disabled={processingChange}
                     >
-                      Guardar Cambios
+                      {processingChange ? "Procesando..." : "Guardar Cambios"}
                     </button>
                   </div>
                 </form>
@@ -327,7 +587,20 @@ const AdminUsers = () => {
   const [showPasswordModal, setShowPasswordModal] = useState(false);
 
   useEffect(() => {
-    fetchCondominiums();
+    const loadCondominiums = async () => {
+      await fetchCondominiums();
+
+      // Asegurarnos de que los condominios tengan la propiedad clientId
+      // Esto es crítico para poder crear usuarios en los condominios correctamente
+      if (condominiums.length > 0 && !condominiums[0].clientId) {
+        console.error("Los condominios no tienen clientId asignado");
+        toast.error("Error: Información de condominios incompleta");
+      } else {
+        console.log("Condominios cargados:", condominiums);
+      }
+    };
+
+    loadCondominiums();
   }, [fetchCondominiums]);
 
   useEffect(() => {
