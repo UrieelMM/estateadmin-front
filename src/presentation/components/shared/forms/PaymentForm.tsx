@@ -16,6 +16,7 @@ import { useDropzone } from "react-dropzone";
 import toast from "react-hot-toast";
 import { usePaymentSummaryStore } from "../../../../store/paymentSummaryStore";
 import { useUnidentifiedPaymentsStore } from "../../../../store/useUnidentifiedPaymentsStore";
+import { useCondominiumStore } from "../../../../store/useCondominiumStore";
 
 interface FormParcelReceptionProps {
   open: boolean;
@@ -31,6 +32,9 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
   // Estados generales
   const [users, setUsers] = useState<UserData[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
+  const currentCondominiumId = useCondominiumStore(
+    (state) => state.selectedCondominium?.id
+  );
 
   // Campos del formulario
   const [email, setEmail] = useState<string>("");
@@ -104,12 +108,16 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
   const { fetchPayments } = useUnidentifiedPaymentsStore();
 
   useEffect(() => {
-    fetchCondominiumsUsers();
-    if (condominiumsUsers) {
-      setUsers(condominiumsUsers);
+    if (open) {
+      fetchCondominiumsUsers();
+      fetchFinancialAccounts();
     }
-    fetchFinancialAccounts();
-  }, [fetchCondominiumsUsers, fetchFinancialAccounts, condominiumsUsers]);
+  }, [
+    fetchCondominiumsUsers,
+    fetchFinancialAccounts,
+    open,
+    currentCondominiumId,
+  ]);
 
   // Efecto para mantener actualizado el selectedUser
   useEffect(() => {
@@ -119,8 +127,16 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
       );
       if (updatedUser) {
         setSelectedUser(updatedUser);
+      } else {
+        // Resetear el usuario seleccionado si ya no está disponible en el nuevo condominio
+        setSelectedUser(null);
+        setEmail("");
+        setNumberCondominium("");
       }
     }
+
+    // Actualizar la lista de usuarios cuando cambie condominiumsUsers
+    setUsers(condominiumsUsers);
   }, [condominiumsUsers, selectedUser?.uid]);
 
   // Helper para formatear a pesos mexicanos

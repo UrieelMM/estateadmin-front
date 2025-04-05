@@ -1,7 +1,16 @@
-import { create } from "./createStore";
+import { create, resetAllStores } from "./createStore";
 import { getAuth, getIdTokenResult } from "firebase/auth";
-import { collection, getDocs, getFirestore } from "firebase/firestore";
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  getFirestore,
+  query,
+  where,
+} from "firebase/firestore";
 import { toast } from "react-hot-toast";
+import useUserStore from "./UserDataStore";
 
 interface Condominium {
   id: string;
@@ -42,34 +51,95 @@ export const useCondominiumStore = create<CondominiumStore>()((set, get) => ({
 
       const tokenResult = await getIdTokenResult(user);
       const clientId = tokenResult.claims["clientId"] as string;
+      const role = tokenResult.claims["role"] as string;
+
       if (!clientId) {
         throw new Error("clientId no disponible");
       }
 
-      // Obtener todos los condominios del cliente
       const db = getFirestore();
-      const condominiumsRef = collection(
-        db,
-        `clients/${clientId}/condominiums`
-      );
-      const snapshot = await getDocs(condominiumsRef);
+      let availableCondominiums: Condominium[] = [];
 
-      if (snapshot.empty) {
-        throw new Error("No hay condominios disponibles");
+      // Obtener los condominios asignados al usuario desde el documento del usuario
+      const condominiumId = tokenResult.claims["condominiumId"] as string;
+
+      // Si el usuario tiene rol super-provider-admin, mostrar todos los condominios
+      if (role === "super-provider-admin") {
+        const condominiumsRef = collection(
+          db,
+          `clients/${clientId}/condominiums`
+        );
+        const snapshot = await getDocs(condominiumsRef);
+
+        if (snapshot.empty) {
+          throw new Error("No hay condominios disponibles");
+        }
+
+        // Procesar cada condominio
+        for (const doc of snapshot.docs) {
+          const data = doc.data();
+          const condominiumData = {
+            id: doc.id,
+            name: data.name || "Sin nombre",
+            address: data.address,
+            createdAt: data.createdAt?.toDate(),
+          };
+          availableCondominiums.push(condominiumData);
+        }
+      } else {
+        // Para otros roles, buscar el documento del usuario para obtener condominiumUids
+        const usersRef = collection(
+          db,
+          `clients/${clientId}/condominiums/${condominiumId}/users`
+        );
+
+        const q = query(usersRef, where("uid", "==", user.uid));
+        const userSnapshot = await getDocs(q);
+
+        if (userSnapshot.empty) {
+          throw new Error("No se encontró el usuario en la base de datos");
+        }
+
+        const userData = userSnapshot.docs[0].data();
+        const assignedCondominiums = userData.condominiumUids || [];
+
+        if (assignedCondominiums.length === 0) {
+          // Si no hay condominios asignados, usar solo el condominio actual
+          const currentCondominiumDoc = await getDoc(
+            doc(db, `clients/${clientId}/condominiums/${condominiumId}`)
+          );
+
+          if (currentCondominiumDoc.exists()) {
+            const data = currentCondominiumDoc.data();
+            availableCondominiums.push({
+              id: condominiumId,
+              name: data.name || "Sin nombre",
+              address: data.address,
+              createdAt: data.createdAt?.toDate(),
+            });
+          }
+        } else {
+          // Obtener información de cada condominio asignado
+          for (const condId of assignedCondominiums) {
+            const condDoc = await getDoc(
+              doc(db, `clients/${clientId}/condominiums/${condId}`)
+            );
+
+            if (condDoc.exists()) {
+              const data = condDoc.data();
+              availableCondominiums.push({
+                id: condId,
+                name: data.name || "Sin nombre",
+                address: data.address,
+                createdAt: data.createdAt?.toDate(),
+              });
+            }
+          }
+        }
       }
 
-      const availableCondominiums: Condominium[] = [];
-
-      // Procesar cada condominio
-      for (const doc of snapshot.docs) {
-        const data = doc.data();
-        const condominiumData = {
-          id: doc.id,
-          name: data.name || "Sin nombre",
-          address: data.address,
-          createdAt: data.createdAt?.toDate(),
-        };
-        availableCondominiums.push(condominiumData);
+      if (availableCondominiums.length === 0) {
+        throw new Error("No hay condominios disponibles para este usuario");
       }
 
       // Intentar restaurar el condominio seleccionado
@@ -117,9 +187,27 @@ export const useCondominiumStore = create<CondominiumStore>()((set, get) => ({
     }
 
     try {
-      localStorage.setItem("condominiumId", condominium.id);
+      console.log(
+        `Cambiando condominio de ${selectedCondominium?.id} a ${condominium.id}`
+      );
+
+      // 1. Primero limpiar los datos de usuarios
+      useUserStore.getState().resetCondominiumUserData();
+
+      // 2. Preservar datos de sesión importantes
+      preserveSessionData(condominium.id);
+
+      // 3. Actualizar el store de condominios
       set({ selectedCondominium: condominium });
-      window.location.reload();
+
+      // 4. Reiniciar los demás stores
+      resetAllStores();
+
+      // 5. Pequeña pausa para asegurar que todo se limpia antes de recargar
+      setTimeout(() => {
+        // Recargar la página para aplicar los cambios
+        window.location.reload();
+      }, 100);
     } catch (error: any) {
       console.error("Error al cambiar de condominio:", error);
       const errorMessage = error.message || "Error al cambiar de condominio";
@@ -128,3 +216,28 @@ export const useCondominiumStore = create<CondominiumStore>()((set, get) => ({
     }
   },
 }));
+
+// Función auxiliar para preservar datos de sesión importantes
+const preserveSessionData = (newCondominiumId: string) => {
+  // Guardar datos críticos antes de limpiar localStorage
+  const keysToPreserve = ["dataUserActive", "theme"];
+  const savedData: Record<string, string | null> = {};
+
+  // Guardar temporalmente los datos críticos
+  keysToPreserve.forEach((key) => {
+    savedData[key] = localStorage.getItem(key);
+  });
+
+  // Limpiar localStorage
+  localStorage.clear();
+
+  // Restaurar datos críticos
+  Object.entries(savedData).forEach(([key, value]) => {
+    if (value) {
+      localStorage.setItem(key, value);
+    }
+  });
+
+  // Establecer el nuevo ID de condominio
+  localStorage.setItem("condominiumId", newCondominiumId);
+};

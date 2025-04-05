@@ -4,6 +4,7 @@ import { UserData } from "../../../../interfaces/UserData";
 import useUserStore from "../../../../store/UserDataStore";
 import UserDetailsCondominium from "../../../components/shared/userDetails/UserDetailsCondominium";
 import EditUserModal from "../../../components/shared/userDetails/EditUserModal";
+import { useCondominiumStore } from "../../../../store/useCondominiumStore";
 
 const UsersScreen = () => {
   const [open, setOpen] = useState(false);
@@ -12,6 +13,9 @@ const UsersScreen = () => {
   const [userDetails, setUserDetails] = useState<UserData | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
+  const currentCondominiumId = useCondominiumStore(
+    (state) => state.selectedCondominium?.id
+  );
 
   const pageSize = 10; // Cantidad de usuarios por página
 
@@ -62,6 +66,20 @@ const UsersScreen = () => {
   useEffect(() => {
     fetchUsers(currentPage);
   }, [currentPage]);
+
+  // Efecto para detectar cambios en el condominio seleccionado
+  useEffect(() => {
+    if (currentCondominiumId) {
+      console.log(
+        `UsersScreen detectó cambio de condominio a: ${currentCondominiumId}`
+      );
+      // Limpiar la lista de usuarios actual
+      setUsers([]);
+      // Resetear a la primera página y volver a cargar los usuarios
+      setCurrentPage(1);
+      fetchUsers(1);
+    }
+  }, [currentCondominiumId]);
 
   return (
     <>

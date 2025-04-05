@@ -10,6 +10,7 @@ import {
   ClockIcon,
   PencilIcon,
 } from "@heroicons/react/24/solid";
+import { useCondominiumStore } from "../../../../store/useCondominiumStore";
 
 interface CalendarEvent {
   id: string;
@@ -34,6 +35,9 @@ const FormCalendar = ({ isOpen, onClose }: FormCalendarProps) => {
   );
   const condominiumsUsers = useUserStore((state) => state.condominiumsUsers);
   const { createEvent } = useCalendarEventsStore();
+  const currentCondominiumId = useCondominiumStore(
+    (state) => state.selectedCondominium?.id
+  );
 
   // Estados locales para los campos del formulario
   const [selectedResidentId, setSelectedResidentId] = useState("");
@@ -52,8 +56,12 @@ const FormCalendar = ({ isOpen, onClose }: FormCalendarProps) => {
   const [unpaidCharges, setUnpaidCharges] = useState<any[]>([]);
 
   useEffect(() => {
-    fetchCondominiumsUsers();
-  }, [fetchCondominiumsUsers]);
+    if (isOpen) {
+      fetchCondominiumsUsers();
+      // Resetear el residente seleccionado al abrir el formulario o cambiar de condominio
+      setSelectedResidentId("");
+    }
+  }, [fetchCondominiumsUsers, isOpen, currentCondominiumId]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
