@@ -76,9 +76,6 @@ const EditUserModal = ({
     const db = getFirestore();
 
     try {
-      console.log("Formulario de usuario:", formData);
-      console.log("Usuario original:", user);
-
       // Antes de procesar los nuevos condominios, primero actualizar los existentes si han cambiado
       const originalCondominiums = user.condominiumUids || [];
       const newCondominiums = formData.condominiumUids.filter(
@@ -87,10 +84,6 @@ const EditUserModal = ({
       const removedCondominiums = originalCondominiums.filter(
         (condoId: string) => !formData.condominiumUids.includes(condoId)
       );
-
-      console.log("Condominios originales:", originalCondominiums);
-      console.log("Nuevos condominios:", newCondominiums);
-      console.log("Condominios eliminados:", removedCondominiums);
 
       // Variables para llevar un conteo de las operaciones
       let createdUsers = 0;
@@ -103,9 +96,6 @@ const EditUserModal = ({
       for (const condominiumId of originalCondominiums) {
         // Omitir los condominios que han sido eliminados de la selección
         if (removedCondominiums.includes(condominiumId)) {
-          console.log(
-            `Condominio ${condominiumId} fue removido, omitiendo actualización`
-          );
           continue;
         }
 
@@ -122,10 +112,6 @@ const EditUserModal = ({
           }
 
           const clientId = condominio.clientId;
-          console.log(
-            "Actualizando usuario en condominio existente:",
-            condominiumId
-          );
 
           // La ruta para buscar al usuario en este condominio
           const usersRef = collection(
@@ -143,11 +129,6 @@ const EditUserModal = ({
             },
             { merge: true } // Usar merge para no sobrescribir otros campos
           );
-
-          console.log(
-            "Usuario actualizado en condominio existente:",
-            condominiumId
-          );
           updatedUsers++;
         } catch (error) {
           console.error(
@@ -163,8 +144,6 @@ const EditUserModal = ({
       if (newCondominiums.length > 0) {
         // Procesar cada nuevo condominio
         for (const condominiumId of newCondominiums) {
-          console.log("Procesando condominio:", condominiumId);
-
           try {
             // Buscar el condominio en la lista para obtener su clientId
             const condominio = condominiums.find((c) => c.id === condominiumId);
@@ -178,13 +157,6 @@ const EditUserModal = ({
             }
 
             const clientId = condominio.clientId;
-            console.log(
-              "ClientId encontrado:",
-              clientId,
-              "para condominio:",
-              condominiumId
-            );
-
             // La estructura correcta de Firestore es:
             // clients/clientId/condominiums/condominiumId/users
             const usersRef = collection(
@@ -194,15 +166,8 @@ const EditUserModal = ({
 
             // Verificar si el usuario ya existe en el condominio basado en email
             const q = query(usersRef, where("email", "==", formData.email));
-            console.log(
-              "Buscando usuario con email:",
-              formData.email,
-              "en la ruta:",
-              `clients/${clientId}/condominiums/${condominiumId}/users`
-            );
 
             const querySnapshot = await getDocs(q);
-            console.log("¿Usuario encontrado?", !querySnapshot.empty);
 
             // Si el usuario no existe (no hay documentos con ese email), crearlo
             if (querySnapshot.empty) {
@@ -222,17 +187,12 @@ const EditUserModal = ({
                 condominiumUids: formData.condominiumUids, // Usar todos los condominios seleccionados
               };
 
-              console.log("Creando usuario con datos:", userData);
-
               // Crear un nuevo documento para el usuario en el condominio
               // Usamos el mismo ID del usuario original para mantener consistencia
               const userDocRef = doc(usersRef, user.id);
               await setDoc(userDocRef, userData);
-
-              console.log("Usuario creado exitosamente en:", condominiumId);
               createdUsers++;
             } else {
-              console.log("El usuario ya existe en este condominio");
               existingUsers++;
             }
           } catch (error) {
@@ -596,7 +556,7 @@ const AdminUsers = () => {
         console.error("Los condominios no tienen clientId asignado");
         toast.error("Error: Información de condominios incompleta");
       } else {
-        console.log("Condominios cargados:", condominiums);
+        console.log("Condominios cargados:");
       }
     };
 

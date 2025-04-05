@@ -187,10 +187,6 @@ export const useCondominiumStore = create<CondominiumStore>()((set, get) => ({
     }
 
     try {
-      console.log(
-        `Cambiando condominio de ${selectedCondominium?.id} a ${condominium.id}`
-      );
-
       // 1. Primero limpiar los datos de usuarios
       useUserStore.getState().resetCondominiumUserData();
 

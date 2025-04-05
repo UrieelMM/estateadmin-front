@@ -29,6 +29,8 @@ export interface ClientFormData {
 export interface CondominiumFormData {
   name: string;
   address: string;
+  plan?: string;
+  proFunctions?: string[];
 }
 
 export interface ClientCredentials {
@@ -49,7 +51,7 @@ interface ClientsConfigStore {
   fetchClientsWithCondominiums: (clients: Client[]) => Promise<void>;
   setCurrentClient: (client: Client | null) => void;
   updateClientForm: (field: string, value: string) => void;
-  updateCondominiumForm: (field: string, value: string) => void;
+  updateCondominiumForm: (field: string, value: any) => void;
   resetCondominiumForm: () => void;
   submitClientEdit: () => Promise<boolean>;
   createCondominium: () => Promise<boolean>;
@@ -59,6 +61,8 @@ interface ClientsConfigStore {
 const initialCondominiumForm: CondominiumFormData = {
   name: "",
   address: "",
+  plan: "Free",
+  proFunctions: [],
 };
 
 const db = getFirestore();
@@ -140,7 +144,7 @@ const useClientsConfig = create<ClientsConfigStore>((set, get) => ({
   },
 
   // Actualizar campo del formulario de condominio
-  updateCondominiumForm: (field, value) => {
+  updateCondominiumForm: (field: string, value: any) => {
     set({
       condominiumForm: {
         ...get().condominiumForm,
@@ -212,6 +216,8 @@ const useClientsConfig = create<ClientsConfigStore>((set, get) => ({
             name: condominiumForm.name,
             address: condominiumForm.address,
             clientId: currentClient.id,
+            plan: condominiumForm.plan || "Free",
+            proFunctions: condominiumForm.proFunctions || [],
           }),
         }
       );

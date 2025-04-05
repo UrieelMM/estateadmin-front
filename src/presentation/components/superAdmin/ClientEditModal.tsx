@@ -26,6 +26,27 @@ const ClientEditModal: React.FC<ClientEditModalProps> = ({
 
   const [activeTab, setActiveTab] = useState<"edit" | "addCondominium">("edit");
 
+  // Opciones de funciones pro y sus etiquetas en español
+  const proFunctionOptions = [
+    "chatbot",
+    "proReports",
+    "smartAnalytics",
+    "predictiveMaintenanceAlerts",
+    "documentAI",
+    "voiceAssistant",
+    "energyOptimization",
+  ];
+
+  const proFunctionLabels: Record<string, string> = {
+    chatbot: "ChatBot IA",
+    proReports: "Reportes Avanzados",
+    smartAnalytics: "Análisis Inteligente",
+    predictiveMaintenanceAlerts: "Alertas de Mantenimiento Predictivo",
+    documentAI: "IA para Documentos",
+    voiceAssistant: "Asistente de Voz",
+    energyOptimization: "Optimización Energética",
+  };
+
   if (!isOpen || !currentClient) return null;
 
   const handleInputChange = (
@@ -35,9 +56,29 @@ const ClientEditModal: React.FC<ClientEditModalProps> = ({
   };
 
   const handleCondominiumInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
   ) => {
     updateCondominiumForm(e.target.name, e.target.value);
+  };
+
+  const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, checked } = e.target;
+    const currentProFunctions = condominiumForm.proFunctions || [];
+
+    if (checked) {
+      // Añadir la función al array si no está ya
+      if (!currentProFunctions.includes(name)) {
+        updateCondominiumForm("proFunctions", [...currentProFunctions, name]);
+      }
+    } else {
+      // Eliminar la función del array
+      updateCondominiumForm(
+        "proFunctions",
+        currentProFunctions.filter((fn) => fn !== name)
+      );
+    }
   };
 
   const handleSubmitClientEdit = async (e: React.FormEvent) => {
@@ -266,6 +307,59 @@ const ClientEditModal: React.FC<ClientEditModalProps> = ({
                   required
                   className="px-2 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
                 />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="plan"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                >
+                  Plan
+                </label>
+                <select
+                  name="plan"
+                  id="plan"
+                  value={condominiumForm.plan || "Free"}
+                  onChange={handleCondominiumInputChange}
+                  className="px-2 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
+                >
+                  <option value="Free">Free</option>
+                  <option value="Basic">Basic</option>
+                  <option value="Pro">Pro</option>
+                  <option value="Enterprise">Enterprise</option>
+                </select>
+              </div>
+
+              <div>
+                <label
+                  htmlFor="proFunctions"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                >
+                  Funciones Pro
+                </label>
+                <div className="mt-2 space-y-2">
+                  {proFunctionOptions.map((option) => (
+                    <div key={option} className="flex items-center">
+                      <input
+                        type="checkbox"
+                        id={option}
+                        name={option}
+                        checked={
+                          condominiumForm.proFunctions?.includes(option) ||
+                          false
+                        }
+                        onChange={handleCheckboxChange}
+                        className="h-4 w-4 text-indigo-600 focus:ring-indigo-500"
+                      />
+                      <label
+                        htmlFor={option}
+                        className="ml-2 text-sm text-gray-700 dark:text-gray-300"
+                      >
+                        {proFunctionLabels[option]}
+                      </label>
+                    </div>
+                  ))}
+                </div>
               </div>
 
               <div className="pt-2">

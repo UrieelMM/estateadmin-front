@@ -70,9 +70,6 @@ const UsersScreen = () => {
   // Efecto para detectar cambios en el condominio seleccionado
   useEffect(() => {
     if (currentCondominiumId) {
-      console.log(
-        `UsersScreen detectó cambio de condominio a: ${currentCondominiumId}`
-      );
       // Limpiar la lista de usuarios actual
       setUsers([]);
       // Resetear a la primera página y volver a cargar los usuarios

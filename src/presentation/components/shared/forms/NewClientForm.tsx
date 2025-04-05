@@ -45,6 +45,17 @@ const NewClientForm: React.FC<NewClientFormProps> = ({
     "energyOptimization",
   ];
 
+  // Nombres en español para mostrar en la UI
+  const proFunctionLabels: Record<string, string> = {
+    chatbot: "ChatBot IA",
+    proReports: "Reportes Avanzados",
+    smartAnalytics: "Análisis Inteligente",
+    predictiveMaintenanceAlerts: "Alertas de Mantenimiento Predictivo",
+    documentAI: "IA para Documentos",
+    voiceAssistant: "Asistente de Voz",
+    energyOptimization: "Optimización Energética",
+  };
+
   const [selectAll, setSelectAll] = useState(false);
   const [showCredentials, setShowCredentials] = useState(false);
   const [credentials, setCredentials] = useState({
@@ -195,7 +206,7 @@ const NewClientForm: React.FC<NewClientFormProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 m-0">
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center border-b border-gray-200 dark:border-gray-700 px-6 py-4">
           <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
@@ -336,7 +347,7 @@ const NewClientForm: React.FC<NewClientFormProps> = ({
                           htmlFor={option}
                           className="ml-2 block text-sm text-gray-900 dark:text-gray-100"
                         >
-                          {option}
+                          {proFunctionLabels[option]}
                         </label>
                       </div>
                     ))}
@@ -498,7 +509,7 @@ const NewClientForm: React.FC<NewClientFormProps> = ({
 
       {/* Modal de Credenciales */}
       {showCredentials && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 m-0">
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
             <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">
               Credenciales del Cliente

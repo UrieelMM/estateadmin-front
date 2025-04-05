@@ -18,6 +18,8 @@ import {
   where,
 } from "firebase/firestore";
 import * as Sentry from "@sentry/react";
+// Importamos el nuevo store
+import { useClientPlanStore } from "./clientPlanStore";
 
 // Se elimina el campo 'password' de la interfaz para evitar almacenar datos sensibles
 interface User {
@@ -62,8 +64,8 @@ const loadUserFromLocalStorage = (): User | null => {
 const useAuthStore = create<AuthStore>()((set, get) => {
   // Timer de inactividad
   let inactivityTimeout: ReturnType<typeof setTimeout> | null = null;
-  // Duración de inactividad permitida: 48 horas en milisegundos
-  const INACTIVITY_LIMIT = 48 * 60 * 60 * 1000; // 172800000 ms
+  // Duración de inactividad permitida: 24 horas en milisegundos
+  const INACTIVITY_LIMIT = 24 * 60 * 60 * 1000;
 
   const resetInactivityTimer = () => {
     if (inactivityTimeout) {
@@ -88,6 +90,28 @@ const useAuthStore = create<AuthStore>()((set, get) => {
     });
   };
 
+  // Función para cargar el plan del cliente
+  const loadClientPlan = async () => {
+    try {
+      const currentUser = auth.currentUser;
+      if (!currentUser) return;
+
+      const tokenResult = await currentUser.getIdTokenResult();
+      const clientId = tokenResult.claims.clientId as string;
+      const condominiumId = tokenResult.claims.condominiumId as string;
+
+      if (clientId && condominiumId) {
+        // Utilizamos el store del plan del cliente
+        const clientPlanStore = useClientPlanStore.getState();
+        clientPlanStore.setClientData(clientId, condominiumId);
+        await clientPlanStore.fetchClientPlan();
+      }
+    } catch (error) {
+      console.error("Error al cargar el plan del cliente:", error);
+      Sentry.captureException(error);
+    }
+  };
+
   return {
     user: loadUserFromLocalStorage(),
     authError: null,
@@ -110,6 +134,10 @@ const useAuthStore = create<AuthStore>()((set, get) => {
 
         set({ user: loggedUser, authError: null });
         localStorage.setItem("dataUserActive", JSON.stringify(loggedUser));
+
+        // Cargamos el plan del cliente después del login
+        await loadClientPlan();
+
         return loggedUser;
       } catch (error: any) {
         let errorMessage = "";
@@ -212,7 +240,7 @@ const useAuthStore = create<AuthStore>()((set, get) => {
     // Integración de hook de Firebase: escucha de cambios en la autenticación
     // Además, configura la detección de inactividad para cerrar sesión automáticamente tras 48 horas sin actividad
     initializeAuthListener: () => {
-      onAuthStateChanged(auth, (user) => {
+      onAuthStateChanged(auth, async (user) => {
         if (user) {
           const loggedUser: User = {
             email: user.email || "",
@@ -224,6 +252,9 @@ const useAuthStore = create<AuthStore>()((set, get) => {
           // Configurar detección de actividad y reiniciar el timer de inactividad
           attachActivityListeners();
           resetInactivityTimer();
+
+          // Cargamos el plan del cliente cuando se inicializa el listener
+          await loadClientPlan();
         } else {
           set({ user: null });
           localStorage.removeItem("dataUserActive");

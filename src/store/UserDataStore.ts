@@ -62,8 +62,6 @@ const useUserStore = create<UserState>()((set, get) => ({
   setUser: (user) => set({ user }),
   setAuthListenerSet: (value) => set({ authListenerSet: value }),
   resetCondominiumUserData: () => {
-    console.log("Limpiando datos de usuarios de condominio...");
-
     // Vaciamos inmediatamente los arrays para evitar que los datos viejos persistan
     set({
       condominiumsUsersFetched: false,
@@ -277,11 +275,6 @@ const useUserStore = create<UserState>()((set, get) => ({
             console.error("No hay condominio seleccionado");
             return;
           }
-
-          console.log(
-            `Obteniendo usuarios del condominio: ${currentCondominiumId} (fetchCondominiumsUsers)`
-          );
-
           const usersRef = collection(
             db,
             `clients/${clientId}/condominiums/${currentCondominiumId}/users`
@@ -335,11 +328,6 @@ const useUserStore = create<UserState>()((set, get) => ({
           console.error("No hay condominio seleccionado");
           return [];
         }
-
-        console.log(
-          `Obteniendo usuarios del condominio: ${currentCondominiumId}`
-        );
-
         const usersRef = collection(
           db,
           `clients/${clientId}/condominiums/${currentCondominiumId}/users`
@@ -398,11 +386,6 @@ const useUserStore = create<UserState>()((set, get) => ({
           console.error("No hay condominio seleccionado");
           return [];
         }
-
-        console.log(
-          `Buscando usuarios por nombre en el condominio: ${currentCondominiumId}`
-        );
-
         const usersRef = collection(
           db,
           `clients/${clientId}/condominiums/${currentCondominiumId}/users`

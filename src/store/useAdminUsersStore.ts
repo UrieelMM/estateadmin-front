@@ -154,7 +154,6 @@ export const useAdminUsersStore = create<AdminUsersState>()((set, get) => ({
         });
       });
 
-      console.log("Condominios cargados con clientId:", condominiums);
       set({ condominiums, loading: false });
     } catch (error: any) {
       console.error("Error al cargar condominios:", error);

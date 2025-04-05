@@ -23,6 +23,16 @@ import ChatBot from "../IA/ChatBot";
 import InitialSetupSteps from "../dashboard/InitialSetup/InitialSetupSteps";
 import { getAuth, getIdTokenResult } from "firebase/auth";
 import { getFirestore, doc, getDoc } from "firebase/firestore";
+import { useSyncClientPlan } from "../../../hooks/useSyncClientPlan";
+import { useClientPlanStore } from "../../../store/clientPlanStore";
+
+// Función global de diagnóstico (accesible desde la consola del navegador)
+declare global {
+  interface Window {
+    debugClientPlan?: () => void;
+    forceUpdateClientPlan?: () => void;
+  }
+}
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(" ");
@@ -47,6 +57,33 @@ const LayoutDashboard = ({ children }: Props) => {
   const [showInitialSetup, setShowInitialSetup] = useState<boolean | null>(
     null
   );
+
+  useSyncClientPlan();
+
+  // Configuramos las funciones de diagnóstico global
+  useEffect(() => {
+    window.debugClientPlan = () => {
+      const auth = getAuth();
+      const user = auth.currentUser;
+      if (user) {
+        user.getIdTokenResult().then(() => {
+          console.log("[LayoutDashboard] Usuario autenticado correctamente");
+        });
+      } else {
+        console.log("[LayoutDashboard] No hay usuario autenticado");
+      }
+    };
+
+    window.forceUpdateClientPlan = () => {
+      useClientPlanStore.getState().forceUpdate();
+    };
+
+    return () => {
+      // Limpiamos las funciones globales
+      window.debugClientPlan = undefined;
+      window.forceUpdateClientPlan = undefined;
+    };
+  }, []);
 
   // Verificar si el usuario necesita hacer la configuración inicial
   useEffect(() => {
