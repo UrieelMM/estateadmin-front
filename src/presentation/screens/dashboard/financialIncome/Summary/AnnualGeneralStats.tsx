@@ -570,25 +570,45 @@ const AnnualGeneralStats: React.FC = () => {
               trigger: "axis",
               formatter: function (params: any) {
                 if (!params || params.length === 0) return "";
+                
                 const month = params[0].name;
-                let tooltipContent = `Mes: ${formatMonthLabel(month)}<br/>`;
-
+                let tooltipContent = `<div style="font-weight: bold; margin-bottom: 4px;">${formatMonthLabel(month)}</div>`;
+                
+                let total = 0;
                 params.forEach((param: any) => {
-                  if (param.value !== undefined && param.value > 0) {
-                    tooltipContent += `${param.seriesName}: ${formatCurrency(
-                      param.value
-                    )}<br/>`;
+                  const value = param.value || 0;
+                  total += value;
+                  
+                  if (typeof value === "number" && !isNaN(value) && value > 0) {
+                    tooltipContent += `
+                      <div style="display: flex; justify-content: space-between; align-items: center; margin: 2px 0;">
+                        <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; background-color: ${param.color};"></span>
+                        <span style="flex-grow: 1; margin-right: 12px;">${param.seriesName}</span>
+                        <span>${formatCurrency(value)}</span>
+                      </div>
+                    `;
                   }
                 });
-
+                
+                // Agregar la suma total
+                tooltipContent += `
+                  <div style="margin-top: 8px; padding-top: 6px; border-top: 1px solid ${isDarkMode ? "#555" : "#eee"};">
+                    <div style="display: flex; justify-content: space-between; font-weight: bold;">
+                      <span>Total:</span>
+                      <span>${formatCurrency(total)}</span>
+                    </div>
+                  </div>
+                `;
+                
                 return tooltipContent;
               },
               backgroundColor: isDarkMode ? "#1f2937" : "#ffffff",
               borderColor: isDarkMode ? "#414141" : "#d9d9d9",
               textStyle: {
                 color: isDarkMode ? "#ffffff" : "#1f2937",
-                fontSize: 14,
+                fontSize: 12,
               },
+              padding: [8, 12],
             },
             grid: {
               left: "3%",
@@ -665,7 +685,7 @@ const AnnualGeneralStats: React.FC = () => {
               stack: "Total",
               smooth: true,
               lineStyle: {
-                width: 1.5,
+                width: 0, // Quitar el borde estableciendo el ancho a 0
               },
               itemStyle: {},
               showSymbol: false,
@@ -673,7 +693,7 @@ const AnnualGeneralStats: React.FC = () => {
               symbol: "circle",
               showAllSymbol: false,
               areaStyle: {
-                opacity: 0.75,
+                opacity: 0.85, // Aumentar la opacidad para un difuminado más suave
                 color: {
                   type: "linear",
                   x: 0,
@@ -690,18 +710,18 @@ const AnnualGeneralStats: React.FC = () => {
                       color: isDarkMode
                         ? adjustColor(
                             chartColors[idx % chartColors.length],
-                            0.4
+                            0.35 // Aumentar ligeramente el difuminado en modo oscuro
                           )
                         : adjustColor(
                             chartColors[idx % chartColors.length],
-                            0.5
+                            0.45 // Aumentar ligeramente el difuminado en modo claro
                           ),
                     },
                   ],
                   global: false,
                 },
-                shadowColor: "rgba(0, 0, 0, 0.2)",
-                shadowBlur: 5,
+                shadowColor: "rgba(0, 0, 0, 0.25)", // Aumentar ligeramente la intensidad de la sombra
+                shadowBlur: 6, // Aumentar ligeramente el desenfoque de la sombra
               },
               emphasis: {
                 focus: "series",
