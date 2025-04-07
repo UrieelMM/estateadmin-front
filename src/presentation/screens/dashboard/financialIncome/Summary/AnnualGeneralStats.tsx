@@ -1,22 +1,26 @@
 // src/components/Summary/AnnualGeneralStats.tsx
 import React, { useMemo } from "react";
 import { usePaymentSummaryStore } from "../../../../../store/paymentSummaryStore";
-import {
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-  Cell,
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  BarChart,
-  Bar,
-  LineChart,
-  Line,
-} from "recharts";
+import { ResponsiveContainer, LineChart, Line } from "recharts";
 import { useTheme } from "../../../../../context/Theme/ThemeContext";
+import ReactECharts from "echarts-for-react";
+
+// Función para ajustar la opacidad de un color
+const adjustColor = (colorHex: string, opacity: number): string => {
+  // Si el color es un hexadecimal, convertirlo a RGB
+  let r, g, b;
+  if (colorHex.startsWith("#")) {
+    const hex = colorHex.substring(1);
+    r = parseInt(hex.substring(0, 2), 16);
+    g = parseInt(hex.substring(2, 4), 16);
+    b = parseInt(hex.substring(4, 6), 16);
+  } else {
+    // Si ya es otro formato, devolver con la opacidad
+    return colorHex.replace(/[^,]+(?=\))/, String(opacity));
+  }
+
+  return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+};
 
 const MONTH_NAMES: Record<string, string> = {
   "01": "Enero",
@@ -320,51 +324,130 @@ const AnnualGeneralStats: React.FC = () => {
           <h3 className="text-lg font-bold mb-2 text-center">
             Distribución de recaudación anual por concepto
           </h3>
-          <div style={{ width: "100%", height: 420 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={pieData}
-                layout="vertical"
-                margin={{ top: 20, right: 20, left: 0, bottom: 20 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis
-                  type="number"
-                  tickFormatter={(val) => formatCurrency(val)}
-                  tick={{
-                    fill: isDarkMode ? "#f3f4f6" : "#1f2937",
+          <div style={{ width: "100%", height: 400 }}>
+            <ReactECharts
+              option={{
+                backgroundColor: isDarkMode ? "#1f2937" : "transparent",
+                tooltip: {
+                  trigger: "item",
+                  formatter: function (params: any) {
+                    if (!params || !params.data) return "";
+                    return `${params.data.name}: ${formatCurrency(
+                      Number(params.data.value)
+                    )}`;
+                  },
+                  backgroundColor: isDarkMode ? "#1f2937" : "#ffffff",
+                  borderColor: isDarkMode ? "#414141" : "#d9d9d9",
+                  textStyle: {
+                    color: isDarkMode ? "#ffffff" : "#1f2937",
+                    fontSize: 14,
+                  },
+                },
+                grid: {
+                  left: "10%",
+                  right: "5%",
+                  bottom: "12%",
+                  top: "5%",
+                  containLabel: true,
+                },
+                xAxis: {
+                  type: "category",
+                  data: pieData.map((item) => item.name),
+                  axisLabel: {
+                    color: isDarkMode ? "#ffffff" : "#1f2937",
                     fontSize: 13,
-                  }}
-                />
-                <YAxis
-                  type="category"
-                  dataKey="name"
-                  width={150}
-                  tick={{
-                    fill: isDarkMode ? "#f3f4f6" : "#1f2937",
+                    rotate: 45,
+                    interval: 0,
+                    margin: 14,
+                  },
+                  axisLine: {
+                    lineStyle: {
+                      color: isDarkMode ? "#ffffff" : "#d9d9d9",
+                      opacity: isDarkMode ? 0.5 : 1,
+                    },
+                  },
+                },
+                yAxis: {
+                  type: "value",
+                  axisLabel: {
+                    formatter: (value: number) => formatCurrency(value),
+                    color: isDarkMode ? "#ffffff" : "#1f2937",
                     fontSize: 13,
-                  }}
-                />
-                <Tooltip
-                  formatter={(value: number) => formatCurrency(value)}
-                  contentStyle={{
-                    backgroundColor: isDarkMode ? "#1f2937" : "#ffffff",
-                    border: "none",
-                    borderRadius: "0.5rem",
-                    color: isDarkMode ? "#f3f4f6" : "#1f2937",
-                    fontSize: 13,
-                  }}
-                />
-                <Bar dataKey="value" fill="#8093E8">
-                  {pieData.map((_entry, index) => (
-                    <Cell
-                      key={`cell-${index}`}
-                      fill={chartColors[index % chartColors.length]}
-                    />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+                  },
+                  axisLine: {
+                    lineStyle: {
+                      color: isDarkMode ? "#ffffff" : "#d9d9d9",
+                      opacity: isDarkMode ? 0.5 : 1,
+                    },
+                  },
+                  splitLine: {
+                    lineStyle: {
+                      type: "dashed",
+                      color: isDarkMode
+                        ? "rgba(255, 255, 255, 0.15)"
+                        : "#e5e7eb",
+                    },
+                  },
+                },
+                series: [
+                  {
+                    type: "bar",
+                    data: pieData.map((item) => ({
+                      name: item.name,
+                      value: item.value,
+                      itemStyle: {
+                        color:
+                          chartColors[
+                            pieData.findIndex((d) => d.name === item.name) %
+                              chartColors.length
+                          ],
+                      },
+                    })),
+                    itemStyle: {
+                      borderRadius: [4, 4, 0, 0],
+                    },
+                    label: {
+                      show: true,
+                      position: "top",
+                      formatter: function (params: any) {
+                        if (!params || !params.data) return "";
+                        return formatLargeValues(Number(params.data.value));
+                      },
+                      color: isDarkMode ? "#ffffff" : "#1f2937",
+                      fontSize: 13,
+                      distance: 5,
+                      textBorderColor: isDarkMode ? "#1f2937" : "transparent",
+                      textBorderWidth: isDarkMode ? 3 : 0,
+                      textShadowBlur: isDarkMode ? 5 : 0,
+                      textShadowColor: isDarkMode ? "#000000" : "transparent",
+                      backgroundColor: isDarkMode
+                        ? "rgba(0, 0, 0, 0.3)"
+                        : "transparent",
+                      padding: isDarkMode ? 2 : 0,
+                    },
+                    emphasis: {
+                      itemStyle: {
+                        shadowBlur: 10,
+                        shadowOffsetX: 0,
+                        shadowColor: "rgba(0, 0, 0, 0.5)",
+                      },
+                    },
+                    barWidth: "60%",
+                    barGap: "10%",
+                    barCategoryGap: "20%",
+                  },
+                ],
+                animation: true,
+                textStyle: {
+                  color: isDarkMode ? "#ffffff" : "#1f2937",
+                },
+              }}
+              style={{ height: "100%", width: "100%" }}
+              opts={{
+                renderer: "svg",
+                devicePixelRatio: window.devicePixelRatio || 2,
+              }}
+            />
           </div>
         </div>
         {/* Cards - 60% del espacio */}
@@ -479,40 +562,170 @@ const AnnualGeneralStats: React.FC = () => {
         style={{ width: "100%", height: 400 }}
         className="shadow-md rounded-md p-2"
       >
-        <ResponsiveContainer>
-          <AreaChart
-            data={areaStackData.data}
-            margin={{ top: 20, right: 20, left: 0, bottom: 0 }}
-          >
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis
-              dataKey="month"
-              tickFormatter={(val) => formatMonthLabel(String(val))}
-            />
-            <YAxis
-              tickFormatter={(val) => formatLargeValues(val as number)}
-              width={80}
-            />
-            <Tooltip
-              formatter={(val: number) => formatCurrency(val)}
-              labelFormatter={(label) =>
-                `Mes: ${formatMonthLabel(String(label))}`
-              }
-            />
-            <Legend />
-            {areaStackData.areaKeys.map((concept, idx) => (
-              <Area
-                key={concept}
-                type="monotone"
-                dataKey={concept}
-                stackId="1"
-                stroke={chartColors[idx % chartColors.length]}
-                fill={chartColors[idx % chartColors.length]}
-                fillOpacity={0.75}
-              />
-            ))}
-          </AreaChart>
-        </ResponsiveContainer>
+        <ReactECharts
+          option={{
+            backgroundColor: isDarkMode ? "#1f2937" : "transparent",
+            color: chartColors,
+            tooltip: {
+              trigger: "axis",
+              formatter: function (params: any) {
+                if (!params || params.length === 0) return "";
+                const month = params[0].name;
+                let tooltipContent = `Mes: ${formatMonthLabel(month)}<br/>`;
+
+                params.forEach((param: any) => {
+                  if (param.value !== undefined && param.value > 0) {
+                    tooltipContent += `${param.seriesName}: ${formatCurrency(
+                      param.value
+                    )}<br/>`;
+                  }
+                });
+
+                return tooltipContent;
+              },
+              backgroundColor: isDarkMode ? "#1f2937" : "#ffffff",
+              borderColor: isDarkMode ? "#414141" : "#d9d9d9",
+              textStyle: {
+                color: isDarkMode ? "#ffffff" : "#1f2937",
+                fontSize: 14,
+              },
+            },
+            grid: {
+              left: "3%",
+              right: "4%",
+              bottom: "8%",
+              top: "15%",
+              containLabel: true,
+            },
+            legend: {
+              data: areaStackData.areaKeys,
+              textStyle: {
+                color: isDarkMode ? "#ffffff" : "#1f2937",
+              },
+              top: 0,
+              icon: "roundRect",
+            },
+            xAxis: [
+              {
+                type: "category",
+                boundaryGap: false,
+                data: areaStackData.data.map((item) => item.month),
+                axisLabel: {
+                  formatter: (value: string) => formatMonthLabel(value),
+                  color: isDarkMode ? "#ffffff" : "#1f2937",
+                  fontSize: 13,
+                  interval: 0,
+                  rotate: 30,
+                },
+                axisLine: {
+                  lineStyle: {
+                    color: isDarkMode ? "#ffffff" : "#d9d9d9",
+                    opacity: isDarkMode ? 0.5 : 1,
+                  },
+                },
+                axisTick: {
+                  alignWithLabel: true,
+                },
+              },
+            ],
+            yAxis: [
+              {
+                type: "value",
+                name: "Ingresos",
+                nameTextStyle: {
+                  color: isDarkMode ? "#ffffff" : "#1f2937",
+                  padding: [0, 0, 8, 0],
+                },
+                axisLabel: {
+                  formatter: (value: number) => formatLargeValues(value),
+                  color: isDarkMode ? "#ffffff" : "#1f2937",
+                  fontSize: 13,
+                },
+                axisLine: {
+                  lineStyle: {
+                    color: isDarkMode ? "#ffffff" : "#d9d9d9",
+                    opacity: isDarkMode ? 0.5 : 1,
+                  },
+                },
+                splitLine: {
+                  lineStyle: {
+                    type: "dashed",
+                    color: isDarkMode ? "rgba(255, 255, 255, 0.15)" : "#e5e7eb",
+                  },
+                },
+                scale: true,
+                min: 0,
+                minInterval: 1000,
+                splitNumber: 5,
+              },
+            ],
+            series: areaStackData.areaKeys.map((concept, idx) => ({
+              name: concept,
+              type: "line",
+              stack: "Total",
+              smooth: true,
+              lineStyle: {
+                width: 1.5,
+              },
+              itemStyle: {},
+              showSymbol: false,
+              symbolSize: 4,
+              symbol: "circle",
+              showAllSymbol: false,
+              areaStyle: {
+                opacity: 0.75,
+                color: {
+                  type: "linear",
+                  x: 0,
+                  y: 0,
+                  x2: 0,
+                  y2: 1,
+                  colorStops: [
+                    {
+                      offset: 0,
+                      color: chartColors[idx % chartColors.length],
+                    },
+                    {
+                      offset: 0.7,
+                      color: isDarkMode
+                        ? adjustColor(
+                            chartColors[idx % chartColors.length],
+                            0.4
+                          )
+                        : adjustColor(
+                            chartColors[idx % chartColors.length],
+                            0.5
+                          ),
+                    },
+                  ],
+                  global: false,
+                },
+                shadowColor: "rgba(0, 0, 0, 0.2)",
+                shadowBlur: 5,
+              },
+              emphasis: {
+                focus: "series",
+                itemStyle: {
+                  shadowBlur: 10,
+                  shadowColor: "rgba(0, 0, 0, 0.3)",
+                },
+              },
+              data: areaStackData.data.map((item) => item[concept] || 0),
+            })),
+            animation: true,
+            textStyle: {
+              color: isDarkMode ? "#ffffff" : "#1f2937",
+            },
+            hoverLayerThreshold: 3000,
+            progressive: 500,
+            progressiveThreshold: 3000,
+          }}
+          style={{ height: "100%", width: "100%" }}
+          opts={{
+            renderer: "svg",
+            devicePixelRatio: window.devicePixelRatio || 2,
+          }}
+        />
       </div>
     </div>
   );

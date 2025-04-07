@@ -2,14 +2,8 @@
 
 import React, { useMemo } from "react";
 import { useExpenseSummaryStore } from "../../../../../../store/expenseSummaryStore";
-import {
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  Tooltip,
-  Legend,
-} from "recharts";
+import ReactECharts from "echarts-for-react";
+import { useTheme } from "../../../../../../context/Theme/ThemeContext";
 
 const chartColors = ["#8093E8", "#74B9E7", "#A7CFE6", "#B79FE6", "#C2ABE6"];
 
@@ -19,6 +13,7 @@ const chartColors = ["#8093E8", "#74B9E7", "#A7CFE6", "#B79FE6", "#C2ABE6"];
 const ExpenseConceptAnalyticsAdvanced: React.FC = () => {
   const expenses = useExpenseSummaryStore((state) => state.expenses);
   const totalSpent = useExpenseSummaryStore((state) => state.totalSpent);
+  const { isDarkMode } = useTheme();
 
   // Agrupar los egresos por concepto, calculando total y cantidad de transacciones
   const aggregatedData = useMemo(() => {
@@ -38,7 +33,7 @@ const ExpenseConceptAnalyticsAdvanced: React.FC = () => {
     }));
   }, [expenses, totalSpent]);
 
-  // Para la gráfica de pastel, tomar los 5 conceptos con mayor gasto
+  // Para la gráfica, tomar los 5 conceptos con mayor gasto
   const pieData = useMemo(() => {
     const sorted = [...aggregatedData].sort((a, b) => b.total - a.total);
     return sorted.slice(0, 5);
@@ -49,6 +44,13 @@ const ExpenseConceptAnalyticsAdvanced: React.FC = () => {
     const sorted = [...aggregatedData].sort((a, b) => b.count - a.count);
     return sorted.slice(0, 10);
   }, [aggregatedData]);
+
+  // Formateador para moneda
+  const formatCurrency = (value: number): string =>
+    new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+    }).format(value);
 
   return (
     <div className="mb-8 w-full">
@@ -87,57 +89,145 @@ const ExpenseConceptAnalyticsAdvanced: React.FC = () => {
             </table>
           </div>
         </div>
-        {/* Columna 1: Gráfica de pastel (65%) */}
+        {/* Columna 1: Gráfica de Nightingale Chart (65%) */}
         <div className="md:col-span-7">
           <h4 className="text-lg font-semibold mb-2">
             Distribución (%) de los 5 principales
           </h4>
-          <ResponsiveContainer width="100%" height={320}>
-            <PieChart>
-              <Pie
-                data={pieData}
-                dataKey="total"
-                nameKey="concept"
-                cx="50%"
-                cy="50%"
-                outerRadius={100}
-                label={({ name, percent }) => {
-                  // Acortar el texto si es demasiado largo
-                  const shortenedName =
-                    name.length > 15 ? `${name.substring(0, 12)}...` : name;
-                  return `${shortenedName}: ${(percent * 100).toFixed(1)}%`;
-                }}
-                labelLine={false}
-                fontSize={12} // Reducir tamaño de fuente
-              >
-                {pieData.map((_entry, index) => (
-                  <Cell
-                    key={`cell-${index}`}
-                    fill={chartColors[index % chartColors.length]}
-                  />
-                ))}
-              </Pie>
-              <Tooltip
-                formatter={(_value: number, _name: string, props: any) => {
-                  // Mostrar el nombre completo en el tooltip
-                  return [
-                    `${props.payload.percentage.toFixed(1)}%`,
-                    props.payload.concept,
-                  ];
-                }}
-                contentStyle={{ fontSize: "12px" }}
-              />
-              <Legend
-                formatter={(value) => {
-                  // Acortar leyendas si son demasiado largas
-                  return value.length > 26
-                    ? `${value.substring(0, 18)}...`
-                    : value;
-                }}
-                wrapperStyle={{ fontSize: "12px" }}
-              />
-            </PieChart>
-          </ResponsiveContainer>
+          <div style={{ width: "100%", height: 340 }}>
+            <ReactECharts
+              option={{
+                backgroundColor: isDarkMode ? "#1f2937" : "transparent",
+                tooltip: {
+                  trigger: "item",
+                  formatter: function (params: any) {
+                    if (!params || !params.data) return "";
+
+                    const { concept, total, percentage } = params.data;
+
+                    // Verificar que los valores sean números válidos
+                    const formattedTotal =
+                      typeof total === "number" && !isNaN(total)
+                        ? formatCurrency(total)
+                        : "$0.00";
+
+                    const formattedPercentage =
+                      typeof percentage === "number" && !isNaN(percentage)
+                        ? `${percentage.toFixed(1)}%`
+                        : "0.0%";
+
+                    return `
+                      <div>
+                        <div style="font-weight: bold; margin-bottom: 4px;">${
+                          concept || "Sin concepto"
+                        }</div>
+                        <div>Monto: ${formattedTotal}</div>
+                        <div>Porcentaje: ${formattedPercentage}</div>
+                      </div>
+                    `;
+                  },
+                  backgroundColor: isDarkMode ? "#1f2937" : "#ffffff",
+                  borderColor: isDarkMode ? "#414141" : "#d9d9d9",
+                  textStyle: {
+                    color: isDarkMode ? "#ffffff" : "#1f2937",
+                    fontSize: 12,
+                  },
+                },
+                legend: {
+                  type: "scroll",
+                  orient: "horizontal",
+                  bottom: 0,
+                  data: pieData.map((item) => {
+                    const shortenedName =
+                      item.concept.length > 26
+                        ? `${item.concept.substring(0, 18)}...`
+                        : item.concept;
+                    return shortenedName;
+                  }),
+                  textStyle: {
+                    color: isDarkMode ? "#ffffff" : "#1f2937",
+                    fontSize: 12,
+                  },
+                  formatter: function (name: string) {
+                    return name.length > 26
+                      ? `${name.substring(0, 18)}...`
+                      : name;
+                  },
+                  icon: "circle",
+                  itemWidth: 10,
+                  itemHeight: 10,
+                  itemGap: 15,
+                },
+                color: chartColors,
+                series: [
+                  {
+                    name: "Gastos por concepto",
+                    type: "pie",
+                    radius: ["10%", "70%"],
+                    center: ["50%", "45%"],
+                    roseType: "area",
+                    itemStyle: {
+                      borderRadius: 4,
+                      borderColor: isDarkMode ? "#1f2937" : "#ffffff",
+                      borderWidth: 2,
+                      shadowBlur: 10,
+                      shadowColor: "rgba(0, 0, 0, 0.2)",
+                    },
+                    label: {
+                      show: true,
+                      position: "outside",
+                      formatter: function (params: any) {
+                        const shortenedName =
+                          params.data.concept.length > 15
+                            ? `${params.data.concept.substring(0, 12)}...`
+                            : params.data.concept;
+                        return `${shortenedName}: ${params.data.percentage.toFixed(
+                          1
+                        )}%`;
+                      },
+                      color: isDarkMode ? "#ffffff" : "#1f2937",
+                      fontSize: 12,
+                    },
+                    emphasis: {
+                      itemStyle: {
+                        shadowBlur: 20,
+                        shadowColor: "rgba(0, 0, 0, 0.5)",
+                      },
+                      label: {
+                        show: true,
+                        fontSize: 14,
+                        fontWeight: "bold",
+                      },
+                      scale: true,
+                    },
+                    data: pieData.map((item, index) => ({
+                      value: item.total || 0,
+                      concept: item.concept || "Sin concepto",
+                      total: item.total || 0,
+                      percentage: item.percentage || 0,
+                      itemStyle: {
+                        color: chartColors[index % chartColors.length],
+                      },
+                    })),
+                  },
+                ],
+                animation: true,
+                animationDuration: 1000,
+                animationEasing: "cubicOut",
+                hoverLayerThreshold: 3000,
+                progressive: 500,
+                progressiveThreshold: 3000,
+                textStyle: {
+                  color: isDarkMode ? "#ffffff" : "#1f2937",
+                },
+              }}
+              style={{ height: "100%", width: "100%" }}
+              opts={{
+                renderer: "canvas",
+                devicePixelRatio: window.devicePixelRatio || 2,
+              }}
+            />
+          </div>
         </div>
       </div>
     </div>

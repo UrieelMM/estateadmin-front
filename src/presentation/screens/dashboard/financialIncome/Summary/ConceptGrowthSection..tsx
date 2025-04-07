@@ -1,19 +1,14 @@
 // src/components/Summary/ConceptGrowthSection.tsx
 import React, { useState, useMemo } from "react";
 import { usePaymentSummaryStore } from "../../../../../store/paymentSummaryStore";
-import {
-  PieChart,
-  Pie,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-  Cell,
-} from "recharts";
+import { useTheme } from "../../../../../context/Theme/ThemeContext";
+import ReactECharts from "echarts-for-react";
 
 const ConceptGrowthSection: React.FC = React.memo(() => {
   const conceptRecords = usePaymentSummaryStore(
     (state) => state.conceptRecords
   );
+  const { isDarkMode } = useTheme();
   const [showDetails, setShowDetails] = useState(false);
   const currentMonthNumber = new Date().getMonth() + 1;
   const currentMonthString = currentMonthNumber.toString().padStart(2, "0");
@@ -171,31 +166,97 @@ const ConceptGrowthSection: React.FC = React.memo(() => {
         </div>
       </div>
 
-      {/* Gráfica de pastel para distribución de recaudación (mes actual) */}
+      {/* Gráfico Nightingale para distribución de recaudación (mes actual) */}
       <h4 className="text-lg font-bold mb-2">Distribución de Monto Abonado</h4>
       <div style={{ width: "100%", height: 300 }}>
-        <ResponsiveContainer>
-          <PieChart>
-            <Pie
-              data={pieData}
-              dataKey="value"
-              nameKey="name"
-              cx="50%"
-              cy="50%"
-              outerRadius={80}
-              label={({ name, value }) => `${name}: ${formatCurrency(value)}`}
-            >
-              {pieData.map((_entry, index) => (
-                <Cell
-                  key={`cell-${index}`}
-                  fill={pastelColors[index % pastelColors.length]}
-                />
-              ))}
-            </Pie>
-            <Tooltip formatter={(value: number) => formatCurrency(value)} />
-            <Legend />
-          </PieChart>
-        </ResponsiveContainer>
+        <ReactECharts
+          option={{
+            backgroundColor: isDarkMode ? "#1f2937" : "transparent",
+            grid: {
+              containLabel: true,
+              bottom: "20%",
+            },
+            tooltip: {
+              trigger: "item",
+              formatter: (params: any) => {
+                return `${params.name}: ${formatCurrency(params.value)}`;
+              },
+              backgroundColor: isDarkMode ? "#1f2937" : "#ffffff",
+              borderColor: isDarkMode ? "#414141" : "#d9d9d9",
+              textStyle: {
+                color: isDarkMode ? "#ffffff" : "#1f2937",
+                fontSize: 14,
+              },
+            },
+            legend: {
+              top: "bottom",
+              bottom: 10,
+              data: pieData.map((item) => item.name),
+              textStyle: {
+                color: isDarkMode ? "#ffffff" : "#1f2937",
+              },
+              icon: "roundRect",
+            },
+            series: [
+              {
+                name: "Monto Abonado",
+                type: "pie",
+                radius: ["30%", "80%"],
+                center: ["50%", "40%"],
+                roseType: "area",
+                itemStyle: {
+                  borderRadius: 4,
+                  borderWidth: 1,
+                  borderColor: isDarkMode
+                    ? "rgba(255, 255, 255, 0.1)"
+                    : "rgba(0, 0, 0, 0.05)",
+                  shadowBlur: 5,
+                  shadowColor: "rgba(0, 0, 0, 0.2)",
+                },
+                label: {
+                  show: true,
+                  formatter: (params: any) => {
+                    return params.name;
+                  },
+                  color: isDarkMode ? "#ffffff" : "#1f2937",
+                  fontSize: 13,
+                  distance: 5,
+                  textBorderColor: isDarkMode ? "#1f2937" : "transparent",
+                  textBorderWidth: isDarkMode ? 2 : 0,
+                  textShadowBlur: isDarkMode ? 4 : 0,
+                  textShadowColor: isDarkMode ? "#000000" : "transparent",
+                  backgroundColor: isDarkMode
+                    ? "rgba(0, 0, 0, 0.3)"
+                    : "transparent",
+                  padding: isDarkMode ? 2 : 0,
+                },
+                emphasis: {
+                  itemStyle: {
+                    shadowBlur: 10,
+                    shadowOffsetX: 0,
+                    shadowColor: "rgba(0, 0, 0, 0.5)",
+                  },
+                },
+                data: pieData.map((item, index) => ({
+                  value: item.value,
+                  name: item.name,
+                  itemStyle: {
+                    color: pastelColors[index % pastelColors.length],
+                  },
+                })),
+              },
+            ],
+            animation: true,
+            hoverLayerThreshold: 3000,
+            progressive: 500,
+            progressiveThreshold: 3000,
+          }}
+          style={{ height: "100%", width: "100%" }}
+          opts={{
+            renderer: "svg",
+            devicePixelRatio: window.devicePixelRatio || 2,
+          }}
+        />
       </div>
 
       {/* Detalles opcionales: ranking de crecimiento */}
