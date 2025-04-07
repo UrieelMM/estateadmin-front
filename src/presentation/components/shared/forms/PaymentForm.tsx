@@ -44,7 +44,7 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
   const [amountPaid, setAmountPaid] = useState<string>("");
   const [amountPaidDisplay, setAmountPaidDisplay] = useState<string>("");
 
-  // Monto pendiente: valor raw y su versión visual formateada
+  // Monto pendiente: ahora se calcula automáticamente basado en los cargos seleccionados
   const [amountPending, setAmountPending] = useState<string>("");
   const [amountPendingDisplay, setAmountPendingDisplay] = useState<string>("");
 
@@ -196,6 +196,45 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
 
   // Sumar montos asignados
   const totalAssigned = selectedCharges.reduce((sum, sc) => sum + sc.amount, 0);
+  
+  // Calcular el total pendiente sumando todos los cargos seleccionados
+  // Este es el monto total original de los cargos seleccionados
+  // Los montos en charges están en centavos, debemos convertirlos a pesos
+  const totalPendingOriginal = selectedCharges.reduce((sum, sc) => {
+    const charge = charges.find(c => c.id === sc.chargeId);
+    // Convertir de centavos a pesos (dividir por 100)
+    return sum + (charge ? charge.amount / 100 : 0);
+  }, 0);
+  
+  // Actualizar el monto pendiente cuando cambian los cargos seleccionados
+  useEffect(() => {
+    // Solo actualizar si hay cargos seleccionados y no es un pago no identificado
+    if (selectedCharges.length > 0 && !isUnidentifiedPayment) {
+      // El monto pendiente es la suma de los montos originales de los cargos menos lo que pagamos ahora
+      const pending = totalPendingOriginal - totalAssigned;
+      setAmountPending(pending.toString());
+      setAmountPendingDisplay(formatCurrency(pending));
+
+      // Distribuir el saldo pendiente entre cada cargo seleccionado
+      selectedCharges.forEach(sc => {
+        const charge = charges.find(c => c.id === sc.chargeId);
+        if (charge) {
+          // Calcular cuánto se pagó de este cargo
+          const originalAmount = charge.amount / 100; // Convertir de centavos a pesos
+          const amountPaid = sc.amount;
+          
+          // El pendiente de este cargo específico es el monto original menos lo pagado
+          const chargePending = originalAmount - amountPaid;
+          
+          // Aquí podríamos almacenar estos valores si necesitamos mostrarlos en la UI
+          // Por ejemplo, en un state como: setPendingPerCharge({ ...pendingPerCharge, [sc.chargeId]: chargePending })
+        }
+      });
+    } else if (selectedCharges.length === 0) {
+      setAmountPending("");
+      setAmountPendingDisplay("");
+    }
+  }, [selectedCharges, totalAssigned, totalPendingOriginal, isUnidentifiedPayment, charges]);
 
   // Convertir el saldo a favor del usuario (que viene en centavos) a pesos
   const userCreditInPesos = userCreditBalance
@@ -233,9 +272,6 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
 
       // Validaciones para pago identificado
       if (!isUnidentifiedPayment) {
-        if (!amountPending) {
-          throw new Error("El campo 'monto pendiente' es obligatorio.");
-        }
         if (selectedCharges.length === 0) {
           throw new Error(
             "Debes seleccionar al menos un cargo para aplicar el pago."
@@ -333,8 +369,7 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
     setNumberCondominium("");
     setAmountPaid("");
     setAmountPaidDisplay("");
-    setAmountPending("");
-    setAmountPendingDisplay("");
+    // El saldo pendiente ahora se calcula automáticamente basado en los cargos seleccionados
     setComments("");
     setPaymentType("");
     setFile(null);
@@ -621,13 +656,13 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                                 </select>
                               </div>
                             </div>
-                            {/* Monto pendiente */}
+                            {/* Monto pendiente - Ahora calculado automáticamente */}
                             <div>
                               <label
                                 htmlFor="amountPending"
                                 className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100"
                               >
-                                Monto pendiente
+                                Monto pendiente (calculado automáticamente)
                               </label>
                               <div className="mt-2 relative">
                                 <div className="absolute left-2 top-1/2 flex items-center transform -translate-y-1/2">
@@ -637,24 +672,10 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                                   type="text"
                                   name="amountPending"
                                   id="amountPending"
+                                  readOnly
                                   disabled={isUnidentifiedPayment}
-                                  className="px-8 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-50"
+                                  className="px-8 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm ring-gray-300 placeholder:text-gray-400 bg-gray-50 sm:text-sm sm:leading-6 dark:bg-gray-700 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none"
                                   value={amountPendingDisplay}
-                                  onChange={(e) => {
-                                    setAmountPending(e.target.value);
-                                    setAmountPendingDisplay(e.target.value);
-                                  }}
-                                  onFocus={() =>
-                                    setAmountPendingDisplay(amountPending)
-                                  }
-                                  onBlur={() => {
-                                    const num = parseFloat(amountPending);
-                                    if (!isNaN(num)) {
-                                      setAmountPendingDisplay(
-                                        formatCurrency(num)
-                                      );
-                                    }
-                                  }}
                                 />
                               </div>
                             </div>

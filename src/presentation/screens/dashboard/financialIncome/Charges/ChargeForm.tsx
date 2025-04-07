@@ -10,29 +10,7 @@ import { useChargeStore } from "../../../../../store/useChargeStore";
 import useUserStore from "../../../../../store/UserDataStore";
 import { usePaymentSummaryStore } from "../../../../../store/paymentSummaryStore";
 import { toast } from "react-hot-toast";
-
-const commonConcepts = [
-  "Cuota de mantenimiento",
-  "Cuota extraordinaria",
-  "Seguridad",
-  "Electricidad",
-  "Limpieza",
-  "Intereses por morosidad",
-  "Uso de áreas comunes",
-  "Agua",
-  "Gas",
-  "Fondo de reserva",
-  "Reparaciones menores",
-  "Recargos",
-  "Alumbrado",
-  "Convivencia",
-  "Multa por ruido",
-  "Multa por estacionamiento",
-  "Mantenimiento de elevadores",
-  "Cuota por mascotas",
-  "Servicio de jardinería",
-  "Pintura de áreas comunes",
-];
+import { commonConcepts } from "../../../../../utils/commonConcepts";
 
 const ChargeForm = () => {
   const { createChargeForOne, createChargeForAll, loading, error } =
@@ -113,12 +91,12 @@ const ChargeForm = () => {
       return;
     }
 
-    const formatDateTime = (dateString: string): string => {
-      return `${dateString} 00:00`;
+    const formatDateTime = (dateString: string, isDueDate: boolean): string => {
+      return `${dateString} ${isDueDate ? "23:59" : "00:00"}`;
     };
 
-    const formattedStartAt = formatDateTime(startAt);
-    const formattedDueDate = formatDateTime(dueDate);
+    const formattedStartAt = formatDateTime(startAt, false);
+    const formattedDueDate = formatDateTime(dueDate, true);
 
     const options = {
       concept,
