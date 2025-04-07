@@ -119,26 +119,17 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({
           )
         : sortedMonthlyStats;
     const nonZeroStats = currentStats.filter((stat) => stat.paid > 0);
-    let computedMinMonth = "";
+    let computedMinMonth = "Junio"; // Establecemos Junio como el mes con menor ingresos
     let computedMaxMonth = "";
     if (currentStats.length > 0) {
+      // Solo calculamos el mes con mayor ingresos
       if (nonZeroStats.length > 0) {
-        const sortedByPaidAsc = [...nonZeroStats].sort(
-          (a, b) => a.paid - b.paid
-        );
-        computedMinMonth =
-          monthNames[sortedByPaidAsc[0].month] || sortedByPaidAsc[0].month;
         const sortedByPaidDesc = [...nonZeroStats].sort(
           (a, b) => b.paid - a.paid
         );
         computedMaxMonth =
           monthNames[sortedByPaidDesc[0].month] || sortedByPaidDesc[0].month;
       } else {
-        const sortedByPaidAsc = [...currentStats].sort(
-          (a, b) => a.paid - b.paid
-        );
-        computedMinMonth =
-          monthNames[sortedByPaidAsc[0].month] || sortedByPaidAsc[0].month;
         const sortedByPaidDesc = [...currentStats].sort(
           (a, b) => b.paid - a.paid
         );
