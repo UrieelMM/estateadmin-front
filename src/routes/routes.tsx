@@ -7,6 +7,7 @@ import Income from "../presentation/screens/dashboard/financialIncome/Income/Inc
 import DashboardHome from "../presentation/screens/dashboard/home/DashboardHome";
 import Maintenance from "../presentation/screens/dashboard/maintenance/Maintenance";
 import ParcelReception from "../presentation/screens/dashboard/parcel-reception/ParcelReception";
+import Projects from "../presentation/screens/dashboard/projects/Projects";
 import ProviderList from "../presentation/screens/dashboard/providers/ProvidersList";
 import Publications from "../presentation/screens/dashboard/publications/Publications";
 import UsersRegistration from "../presentation/screens/dashboard/users/UsersRegistration";
@@ -119,5 +120,12 @@ export const routesApp = [
     title: "Pago Cancelado",
     description: "Pago cancelado",
     component: <PaymentCancel />,
+  },
+  {
+    to: "/dashboard/projects",
+    icon: "fa-solid fa-diagram-project",
+    title: "Proyectos",
+    description: "Gestión de proyectos de mejoras",
+    component: <Projects />,
   },
 ];

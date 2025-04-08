@@ -28,6 +28,7 @@ export const navigation = [
       { name: "Egresos", href: "/dashboard/expenses" },
       { name: "Balance general", href: "/dashboard/balance" },
       { name: "Cargos", href: "/dashborad/charges" },
+      { name: "Proyectos", href: "/dashboard/projects" },
     ],
   },
   {

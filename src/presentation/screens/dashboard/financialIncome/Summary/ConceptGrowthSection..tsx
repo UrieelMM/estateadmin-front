@@ -27,7 +27,7 @@ const ConceptGrowthSection: React.FC = React.memo(() => {
     );
   };
 
-  const pastelColors = ["#8093E8", "#74B9E7", "#A7CFE6", "#B79FE6", "#C2ABE6"];
+  const pastelColors = ["#818CF8", "#F5A4A4", "#98D7A5", "#8b5cf6", "#ff9770"];
 
   const { totalCurrent, dataArr, growthArr, hasData } = useMemo(() => {
     if (!conceptRecords || Object.keys(conceptRecords).length < 1) {
@@ -237,11 +237,11 @@ const ConceptGrowthSection: React.FC = React.memo(() => {
                     shadowColor: "rgba(0, 0, 0, 0.5)",
                   },
                 },
-                data: pieData.map((item, index) => ({
+                data: pieData.map((item) => ({
                   value: item.value,
                   name: item.name,
                   itemStyle: {
-                    color: pastelColors[index % pastelColors.length],
+                    color: pastelColors[pieData.findIndex((d) => d.name === item.name) % pastelColors.length],
                   },
                 })),
               },

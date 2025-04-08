@@ -69,7 +69,7 @@ const AnnualGeneralStats: React.FC = () => {
   const getMonthName = (m: string | number): string =>
     MONTH_NAMES[String(m)] || "N/A";
 
-  const chartColors = ["#8093E8", "#74B9E7", "#A7CFE6", "#B79FE6", "#C2ABE6"];
+  const chartColors = ["#818CF8", "#F5A4A4", "#98D7A5", "#8b5cf6", "#ff9770"];
 
   const {
     conceptTotals,
@@ -565,41 +565,49 @@ const AnnualGeneralStats: React.FC = () => {
         <ReactECharts
           option={{
             backgroundColor: isDarkMode ? "#1f2937" : "transparent",
-            color: chartColors,
+            // No usamos el array color global para evitar que ECharts asigne colores automáticamente
             tooltip: {
               trigger: "axis",
               formatter: function (params: any) {
                 if (!params || params.length === 0) return "";
-                
+
                 const month = params[0].name;
-                let tooltipContent = `<div style="font-weight: bold; margin-bottom: 4px;">${formatMonthLabel(month)}</div>`;
-                
+                let tooltipContent = `<div style="font-weight: bold; margin-bottom: 4px;">${formatMonthLabel(
+                  month
+                )}</div>`;
+
                 let total = 0;
                 params.forEach((param: any) => {
                   const value = param.value || 0;
                   total += value;
-                  
+
                   if (typeof value === "number" && !isNaN(value) && value > 0) {
+                    // Obtener el índice correcto del concepto para usar el color adecuado
+                    const conceptIndex = areaStackData.areaKeys.findIndex(key => key === param.seriesName);
+                    const conceptColor = chartColors[conceptIndex % chartColors.length];
+                    
                     tooltipContent += `
                       <div style="display: flex; justify-content: space-between; align-items: center; margin: 2px 0;">
-                        <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; background-color: ${param.color};"></span>
+                        <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; background-color: ${conceptColor};"></span>
                         <span style="flex-grow: 1; margin-right: 12px;">${param.seriesName}</span>
                         <span>${formatCurrency(value)}</span>
                       </div>
                     `;
                   }
                 });
-                
+
                 // Agregar la suma total
                 tooltipContent += `
-                  <div style="margin-top: 8px; padding-top: 6px; border-top: 1px solid ${isDarkMode ? "#555" : "#eee"};">
+                  <div style="margin-top: 8px; padding-top: 6px; border-top: 1px solid ${
+                    isDarkMode ? "#555" : "#eee"
+                  };">
                     <div style="display: flex; justify-content: space-between; font-weight: bold;">
                       <span>Total:</span>
                       <span>${formatCurrency(total)}</span>
                     </div>
                   </div>
                 `;
-                
+
                 return tooltipContent;
               },
               backgroundColor: isDarkMode ? "#1f2937" : "#ffffff",
@@ -618,7 +626,12 @@ const AnnualGeneralStats: React.FC = () => {
               containLabel: true,
             },
             legend: {
-              data: areaStackData.areaKeys,
+              data: areaStackData.areaKeys.map((concept, idx) => ({
+                name: concept,
+                itemStyle: {
+                  color: chartColors[idx % chartColors.length]
+                }
+              })),
               textStyle: {
                 color: isDarkMode ? "#ffffff" : "#1f2937",
               },
