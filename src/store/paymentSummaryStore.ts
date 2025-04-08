@@ -134,6 +134,11 @@ export type PaymentSummaryState = {
     filters?: { month?: string; year?: string }
   ) => Promise<number>;
   searchPaymentByFolio: (folio: string) => Promise<PaymentRecord[]>;
+  // Nueva función para procesar datos para reportes individuales
+  prepareSingleReportData: (numberCondominium: string) => {
+    detailed: Record<string, PaymentRecord[]>;
+    detailedByConcept: Record<string, Record<string, PaymentRecord[]>>;
+  };
 };
 
 // Variable de caché para resultados de paginación (clave basada en filtros y cursor)
@@ -1328,6 +1333,63 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>()(
         });
         return [];
       }
+    },
+
+    // Nueva función para procesar correctamente los datos para reportes individuales
+    prepareSingleReportData: (numberCondominium: string) => {
+      const state = get();
+      const detailed: Record<string, PaymentRecord[]> = {};
+      const detailedByConcept: Record<string, Record<string, PaymentRecord[]>> = {};
+      
+      // Obtener los pagos del condominio específico
+      const condominiumPayments = state.payments.filter(
+        (payment) => payment.numberCondominium === numberCondominium
+      );
+      
+      // Organizar pagos por mes (YYYY-MM)
+      condominiumPayments.forEach((payment) => {
+        if (!payment.month) return;
+        
+        const year = state.selectedYear;
+        const month = payment.month;
+        const key = `${year}-${month}`;
+        
+        if (!detailed[key]) {
+          detailed[key] = [];
+        }
+        
+        // Asegurarse de que no duplicamos registros
+        const isDuplicate = detailed[key].some(p => p.id === payment.id);
+        if (!isDuplicate) {
+          detailed[key].push(payment);
+        }
+      });
+      
+      // Organizar pagos por concepto y luego por mes
+      condominiumPayments.forEach((payment) => {
+        if (!payment.month || !payment.concept) return;
+        
+        const concept = payment.concept;
+        const year = state.selectedYear;
+        const month = payment.month;
+        const key = `${year}-${month}`;
+        
+        if (!detailedByConcept[concept]) {
+          detailedByConcept[concept] = {};
+        }
+        
+        if (!detailedByConcept[concept][key]) {
+          detailedByConcept[concept][key] = [];
+        }
+        
+        // Asegurarse de que no duplicamos registros y que solo incluimos los del concepto correcto
+        const isDuplicate = detailedByConcept[concept][key].some(p => p.id === payment.id);
+        if (!isDuplicate && payment.concept === concept) {
+          detailedByConcept[concept][key].push(payment);
+        }
+      });
+      
+      return { detailed, detailedByConcept };
     },
   })
 );

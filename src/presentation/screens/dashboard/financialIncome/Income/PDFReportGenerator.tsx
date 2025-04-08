@@ -671,6 +671,7 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({
             ];
             let totalPaidConcept = 0,
               totalPendingConcept = 0,
+              totalChargesConcept = 0,
               totalCreditConcept = 0;
             let globalTotalRecords = 0,
               globalPaidRecords = 0;
@@ -708,6 +709,7 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({
 
               totalPaidConcept += paid;
               totalPendingConcept += pending;
+              totalChargesConcept += totalCharges;
               totalCreditConcept += credit;
               globalTotalRecords += recordsForMonth.length;
               globalPaidRecords += recordsForMonth.filter((r) => r.paid).length;
@@ -735,8 +737,8 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({
             rows.push([
               "Total",
               formatCurrency(totalPaidConcept),
-              formatCurrency(totalPendingConcept),
-              formatCurrency(totalPendingConcept - totalPaidConcept),
+              formatCurrency(totalChargesConcept),
+              formatCurrency(totalChargesConcept - totalPaidConcept),
               globalTotalRecords > 0
                 ? totalCompliance.toFixed(2) + "%"
                 : "0.00%",

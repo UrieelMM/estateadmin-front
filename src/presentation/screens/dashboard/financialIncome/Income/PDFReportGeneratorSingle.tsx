@@ -127,10 +127,19 @@ const PDFReportGeneratorSingle: React.FC<PDFReportGeneratorSingleProps> = ({
   adminEmail,
   logoBase64,
 }) => {
-  // Obtener la URL de la firma desde el store
-  const { signatureUrl } = usePaymentSummaryStore((state) => ({
+  // Obtener la URL de la firma y la función prepareSingleReportData desde el store
+  const { signatureUrl, prepareSingleReportData } = usePaymentSummaryStore((state) => ({
     signatureUrl: state.signatureUrl,
+    prepareSingleReportData: state.prepareSingleReportData,
   }));
+  
+  // Procesar los datos correctamente para evitar duplicaciones y mostrar solo los cargos correspondientes
+  const processedData = React.useMemo(() => {
+    if (condominium && condominium.number) {
+      return prepareSingleReportData(condominium.number);
+    }
+    return { detailed, detailedByConcept };
+  }, [condominium, prepareSingleReportData, detailed, detailedByConcept]);
 
   const generatePDF = async () => {
     const doc = new jsPDF();
@@ -198,8 +207,12 @@ const PDFReportGeneratorSingle: React.FC<PDFReportGeneratorSingleProps> = ({
     for (let i = 1; i <= 12; i++) {
       const monthNum = i.toString().padStart(2, "0");
       const key = `${year}-${monthNum}`;
-      const records = detailed[key] || [];
+      // Usamos los datos procesados por la función prepareSingleReportData
+      const records = processedData.detailed[key] || [];
+      // Calculamos el total pagado
       const totalPaid = records.reduce((acc, rec) => acc + rec.amountPaid, 0);
+      // Para los cargos, simplemente sumamos el referenceAmount de cada registro
+      // Ya que prepareSingleReportData se asegura de que no haya duplicados
       const totalCharges = records.reduce(
         (acc, rec) => acc + rec.referenceAmount,
         0
@@ -299,8 +312,13 @@ const PDFReportGeneratorSingle: React.FC<PDFReportGeneratorSingleProps> = ({
       for (let i = 1; i <= 12; i++) {
         const monthNum = i.toString().padStart(2, "0");
         const key = `${year}-${monthNum}`;
-        const records = detailedByConcept[concept][key] || [];
+        // Obtenemos solo los registros para este concepto y mes específico
+        // usando los datos procesados por prepareSingleReportData
+        const records = processedData.detailedByConcept[concept]?.[key] || [];
+        // Calculamos el total pagado para este concepto
         const totalPaid = records.reduce((acc, rec) => acc + rec.amountPaid, 0);
+        // Para los cargos, simplemente sumamos el referenceAmount de cada registro
+        // Ya que prepareSingleReportData se asegura de que solo incluya los cargos del concepto correcto
         const totalCharges = records.reduce(
           (acc, rec) => acc + rec.referenceAmount,
           0

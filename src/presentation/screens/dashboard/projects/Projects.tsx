@@ -80,7 +80,7 @@ const Projects: React.FC = () => {
       {selectedProjectId && currentProject ? (
         <ProjectDashboard project={currentProject} />
       ) : (
-        <div className="bg-white p-6 rounded-lg shadow">
+        <div className="bg-white p-6 rounded-lg shadow dark:bg-gray-800 dark:shadow-lg">
           {loading ? (
             <LoadingApp />
           ) : projects.length === 0 ? (
@@ -89,7 +89,7 @@ const Projects: React.FC = () => {
                 No hay proyectos registrados
               </p>
               <button
-                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors dark:bg-blue-500 dark:hover:bg-blue-600"
+                className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition-colors dark:bg-indigo-500 dark:hover:bg-indigo-600"
                 onClick={handleOpenNewProjectModal}
               >
                 Crear primer proyecto

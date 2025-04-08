@@ -103,6 +103,7 @@ const DetailedConceptsTable: React.FC<DetailedConceptsTableProps> = React.memo(
                   ];
                   let totalPaid = 0,
                     totalPend = 0,
+                    totalChargesSum = 0,
                     totalCredit = 0,
                     totalRecords = 0,
                     totalPaidRecords = 0;
@@ -121,6 +122,11 @@ const DetailedConceptsTable: React.FC<DetailedConceptsTableProps> = React.memo(
                       (sum, r) => sum + r.creditBalance,
                       0
                     );
+                    
+                    const monthCharges = recs.reduce(
+                      (sum, r) => sum + r.referenceAmount,
+                      0
+                    );
 
                     // Monto abonado es la suma de pagos regulares + crédito usado + saldo disponible
                     const paid =
@@ -132,10 +138,11 @@ const DetailedConceptsTable: React.FC<DetailedConceptsTableProps> = React.memo(
                       0
                     );
                     // Saldo es la diferencia entre cargos y monto abonado
-                    const balance = pending - paid;
+                    const balance = monthCharges - paid;
 
                     totalPaid += paid;
                     totalPend += pending;
+                    totalChargesSum += monthCharges;
                     totalCredit += balance;
                     totalRecords += recs.length;
                     totalPaidRecords += recs.filter((r) => r.paid).length;
@@ -162,7 +169,7 @@ const DetailedConceptsTable: React.FC<DetailedConceptsTableProps> = React.memo(
                         </td>
                         <td className="border p-2">
                           {"$" +
-                            pending.toLocaleString("en-US", {
+                            monthCharges.toLocaleString("en-US", {
                               minimumFractionDigits: 2,
                               maximumFractionDigits: 2,
                             })}
@@ -219,20 +226,20 @@ const DetailedConceptsTable: React.FC<DetailedConceptsTableProps> = React.memo(
                               </td>
                               <td className="border p-2 font-bold">
                                 {"$" +
-                                  totalPend.toLocaleString("en-US", {
+                                  totalChargesSum.toLocaleString("en-US", {
                                     minimumFractionDigits: 2,
                                     maximumFractionDigits: 2,
                                   })}
                               </td>
                               <td
                                 className={`border p-2 font-bold ${
-                                  totalCredit < 0
+                                  (totalChargesSum - totalPaid) < 0
                                     ? "text-green-600"
                                     : "text-red-600"
                                 }`}
                               >
                                 {"$" +
-                                  totalCredit.toLocaleString("en-US", {
+                                  (totalChargesSum - totalPaid).toLocaleString("en-US", {
                                     minimumFractionDigits: 2,
                                     maximumFractionDigits: 2,
                                   })}
