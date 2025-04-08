@@ -233,7 +233,7 @@ const HistoryPaymentsTable: React.FC = () => {
             <select
               value={filters.year}
               onChange={(e) => handleFilterChange("year", e.target.value)}
-              className="block w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm dark:bg-gray-900 dark:border-gray-900 cursor-pointer"
+              className="block w-full rounded-md bg-gray-50 border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm dark:bg-gray-900 dark:border-gray-900 cursor-pointer"
             >
               {[2022, 2023, 2024, 2025, 2026, 2027, 2028, 2029, 2030].map(
                 (year) => (
@@ -254,7 +254,7 @@ const HistoryPaymentsTable: React.FC = () => {
             <select
               value={filters.month}
               onChange={(e) => handleFilterChange("month", e.target.value)}
-              className="block w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm dark:bg-gray-900 dark:border-gray-900 cursor-pointer"
+              className="block w-full rounded-md bg-gray-50 border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm dark:bg-gray-900 dark:border-gray-900 cursor-pointer"
             >
               {MONTHS.map((month) => (
                 <option key={month.value} value={month.value}>
