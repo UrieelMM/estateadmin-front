@@ -69,7 +69,7 @@ const AnnualGeneralStats: React.FC = () => {
   const getMonthName = (m: string | number): string =>
     MONTH_NAMES[String(m)] || "N/A";
 
-  const chartColors = ["#818CF8", "#F5A4A4", "#98D7A5", "#8b5cf6", "#ff9770"];
+  const chartColors = ["#8093E8", "#74B9E7", "#A7CFE6", "#B79FE6", "#C2ABE6"];
 
   const {
     conceptTotals,
@@ -583,13 +583,18 @@ const AnnualGeneralStats: React.FC = () => {
 
                   if (typeof value === "number" && !isNaN(value) && value > 0) {
                     // Obtener el índice correcto del concepto para usar el color adecuado
-                    const conceptIndex = areaStackData.areaKeys.findIndex(key => key === param.seriesName);
-                    const conceptColor = chartColors[conceptIndex % chartColors.length];
-                    
+                    const conceptIndex = areaStackData.areaKeys.findIndex(
+                      (key) => key === param.seriesName
+                    );
+                    const conceptColor =
+                      chartColors[conceptIndex % chartColors.length];
+
                     tooltipContent += `
                       <div style="display: flex; justify-content: space-between; align-items: center; margin: 2px 0;">
                         <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; background-color: ${conceptColor};"></span>
-                        <span style="flex-grow: 1; margin-right: 12px;">${param.seriesName}</span>
+                        <span style="flex-grow: 1; margin-right: 12px;">${
+                          param.seriesName
+                        }</span>
                         <span>${formatCurrency(value)}</span>
                       </div>
                     `;
@@ -629,8 +634,8 @@ const AnnualGeneralStats: React.FC = () => {
               data: areaStackData.areaKeys.map((concept, idx) => ({
                 name: concept,
                 itemStyle: {
-                  color: chartColors[idx % chartColors.length]
-                }
+                  color: chartColors[idx % chartColors.length],
+                },
               })),
               textStyle: {
                 color: isDarkMode ? "#ffffff" : "#1f2937",

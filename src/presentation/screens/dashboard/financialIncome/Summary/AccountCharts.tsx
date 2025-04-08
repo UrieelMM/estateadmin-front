@@ -200,7 +200,7 @@ const AccountCharts: React.FC<{ payments: PaymentRecord[] }> = ({
   /**
    * Paleta de colores para las áreas/pastel.
    */
-  const chartColors = ["#818CF8", "#F5A4A4", "#98D7A5", "#8b5cf6", "#ff9770"];
+  const chartColors = ["#8093E8", "#74B9E7", "#A7CFE6", "#B79FE6", "#C2ABE6"];
 
   /**
    * Formateador para el eje X (mes)
@@ -336,13 +336,18 @@ const AccountCharts: React.FC<{ payments: PaymentRecord[] }> = ({
                       value > 0
                     ) {
                       // Obtener el índice correcto del concepto para usar el color adecuado
-                      const conceptIndex = areaStackData.areaKeys.findIndex(key => key === param.seriesName);
-                      const conceptColor = chartColors[conceptIndex % chartColors.length];
-                      
+                      const conceptIndex = areaStackData.areaKeys.findIndex(
+                        (key) => key === param.seriesName
+                      );
+                      const conceptColor =
+                        chartColors[conceptIndex % chartColors.length];
+
                       tooltipContent += `
                         <div style="display: flex; justify-content: space-between; align-items: center; margin: 2px 0;">
                           <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; background-color: ${conceptColor};"></span>
-                          <span style="flex-grow: 1; margin-right: 12px;">${param.seriesName}</span>
+                          <span style="flex-grow: 1; margin-right: 12px;">${
+                            param.seriesName
+                          }</span>
                           <span>${formatCurrency(value)}</span>
                         </div>
                       `;
@@ -379,12 +384,14 @@ const AccountCharts: React.FC<{ payments: PaymentRecord[] }> = ({
                 containLabel: true,
               },
               legend: {
-                data: areaStackData.areaKeys.map((key: string, idx: number) => ({
-                  name: key,
-                  itemStyle: {
-                    color: chartColors[idx % chartColors.length]
-                  }
-                })),
+                data: areaStackData.areaKeys.map(
+                  (key: string, idx: number) => ({
+                    name: key,
+                    itemStyle: {
+                      color: chartColors[idx % chartColors.length],
+                    },
+                  })
+                ),
                 textStyle: {
                   color: isDarkMode ? "#ffffff" : "#1f2937",
                 },
