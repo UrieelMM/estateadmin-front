@@ -21,12 +21,14 @@ const Income = () => {
   );
 
   useEffect(() => {
+    let isMounted = true;
     const currentYear = new Date().getFullYear().toString();
 
-    // Configurar
     const loadData = async () => {
       try {
-        await fetchSummary(currentYear, true);
+        if (isMounted) {
+          await fetchSummary(currentYear, true);
+        }
       } catch (error) {
         console.error("Error loading summary:", error);
       }
@@ -34,11 +36,11 @@ const Income = () => {
 
     loadData();
 
-    // Limpiar al desmontar
     return () => {
+      isMounted = false;
       cleanupListeners(currentYear);
     };
-  }, []);
+  }, [fetchSummary, cleanupListeners]);
 
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
