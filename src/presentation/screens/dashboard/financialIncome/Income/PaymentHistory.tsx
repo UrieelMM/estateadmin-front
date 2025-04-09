@@ -110,45 +110,70 @@ const PaymentHistory = () => {
   };
 
   // Preparar datos para la gráfica: agrupar por mes (YYYY-MM) => { paid, pending, saldo }
-  const chartData = payments.reduce(
-    (
-      acc: Record<
-        string,
-        {
-          paid: number;
-          pending: number;
-          saldo: number;
-          creditUsed: number;
-          creditBalance: number;
-        }
-      >,
-      payment: PaymentRecord
-    ) => {
-      let [_yearPart, monthPart] = ["", ""];
-      if (payment.month.includes("-")) {
-        [_yearPart, monthPart] = payment.month.split("-");
+  const chartData = useMemo(() => {
+    // Inicializar el resultado
+    const result: Record<string, {
+      paid: number;
+      pending: number;
+      saldo: number;
+      creditUsed: number;
+      creditBalance: number;
+    }> = {};
+    
+    // Inicializar todos los meses
+    for (let i = 1; i <= 12; i++) {
+      const monthPart = i.toString().padStart(2, "0");
+      result[monthPart] = {
+        paid: 0,
+        pending: 0,
+        saldo: 0,
+        creditUsed: 0,
+        creditBalance: 0
+      };
+    }
+    
+    // Procesar pagos por mes
+    Object.entries(detailed).forEach(([monthKey, monthPayments]) => {
+      // Extraer solo el mes (MM) de la clave YYYY-MM
+      let monthPart = "";
+      if (monthKey.includes("-")) {
+        const [_yearPart, month] = monthKey.split("-");
+        monthPart = month;
       } else {
-        monthPart = payment.month;
+        monthPart = monthKey;
       }
-
-      if (!acc[monthPart]) {
-        acc[monthPart] = {
-          paid: 0,
-          pending: 0,
-          saldo: 0,
-          creditUsed: 0,
-          creditBalance: 0,
-        };
+      
+      if (!result[monthPart]) return;
+      
+      // Acumular pagos
+      let totalPaid = 0;
+      let totalCreditUsed = 0;
+      let totalCreditBalance = 0;
+      
+      // Sumar todos los pagos del mes
+      monthPayments.forEach(payment => {
+        totalPaid += payment.amountPaid;
+        totalCreditUsed += payment.creditUsed || 0;
+        totalCreditBalance += payment.creditBalance;
+      });
+      
+      // Asignar valores
+      result[monthPart].paid = totalPaid;
+      result[monthPart].creditUsed = totalCreditUsed;
+      result[monthPart].creditBalance = totalCreditBalance;
+      
+      // Para los cargos, usar el primer payment que tiene el referenceAmount correcto para el mes
+      if (monthPayments.length > 0) {
+        // Todos los pagos del mismo mes tienen el mismo referenceAmount que es el total de cargos del mes
+        result[monthPart].pending = monthPayments[0].referenceAmount;
       }
-      acc[monthPart].paid += payment.amountPaid;
-      acc[monthPart].pending += payment.referenceAmount;
-      acc[monthPart].creditUsed += payment.creditUsed || 0;
-      acc[monthPart].creditBalance += payment.creditBalance;
-      acc[monthPart].saldo += payment.creditBalance - (payment.creditUsed || 0);
-      return acc;
-    },
-    {}
-  );
+      
+      // Calcular saldo
+      result[monthPart].saldo = result[monthPart].pending - result[monthPart].paid;
+    });
+    
+    return result;
+  }, [detailed]);
 
   // Convertir objeto en array ordenada por mes
   const chartArray = Object.entries(chartData)

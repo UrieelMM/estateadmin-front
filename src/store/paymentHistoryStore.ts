@@ -39,6 +39,7 @@ export interface PaymentRecord {
   concept: string;
   paymentDate?: string;
   referenceAmount: number; // Monto original del cargo que no se modifica con los pagos
+  referenceId?: string; // Identificador de referencia para evitar duplicados
 }
 
 type PaymentHistoryState = {
