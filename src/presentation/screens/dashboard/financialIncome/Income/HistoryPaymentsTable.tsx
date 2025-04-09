@@ -17,7 +17,7 @@ interface FilterState {
   folio?: string;
 }
 
-const ITEMS_PER_PAGE = 20;
+const ITEMS_PER_PAGE = 50;
 const MONTHS = [
   { value: "", label: "Todos los meses" },
   { value: "01", label: "Enero" },

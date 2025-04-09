@@ -32,7 +32,7 @@ const formatDate = (dateStr: string): string => {
   return dayjs(dateStr).format("DD/MM/YYYY");
 };
 
-const ITEMS_PER_PAGE = 20;
+const ITEMS_PER_PAGE = 50;
 
 interface FilterState {
   month: string;

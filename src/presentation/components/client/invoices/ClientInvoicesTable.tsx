@@ -18,7 +18,7 @@ interface ClientInvoicesTableProps {
   onPayInvoice?: (invoice: ClientInvoice) => void;
 }
 
-const ITEMS_PER_PAGE = 10;
+const ITEMS_PER_PAGE = 20;
 
 const formatDate = (timestamp: any): string => {
   if (!timestamp) return "N/A";
