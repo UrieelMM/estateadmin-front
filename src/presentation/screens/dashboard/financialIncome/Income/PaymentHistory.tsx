@@ -1,10 +1,7 @@
 // src/components/PaymentHistory.tsx
 
 import { useState, useEffect, useMemo } from "react";
-import {
-  usePaymentHistoryStore,
-  PaymentRecord,
-} from "../../../../../store/paymentHistoryStore";
+import { usePaymentHistoryStore } from "../../../../../store/paymentHistoryStore";
 import useUserStore from "../../../../../store/UserDataStore";
 import {
   LineChart,
@@ -47,7 +44,6 @@ const PaymentHistory = () => {
 
   // Store de historial individual
   const {
-    payments,
     detailed,
     detailedByConcept,
     loading,
@@ -112,14 +108,17 @@ const PaymentHistory = () => {
   // Preparar datos para la gráfica: agrupar por mes (YYYY-MM) => { paid, pending, saldo }
   const chartData = useMemo(() => {
     // Inicializar el resultado
-    const result: Record<string, {
-      paid: number;
-      pending: number;
-      saldo: number;
-      creditUsed: number;
-      creditBalance: number;
-    }> = {};
-    
+    const result: Record<
+      string,
+      {
+        paid: number;
+        pending: number;
+        saldo: number;
+        creditUsed: number;
+        creditBalance: number;
+      }
+    > = {};
+
     // Inicializar todos los meses
     for (let i = 1; i <= 12; i++) {
       const monthPart = i.toString().padStart(2, "0");
@@ -128,10 +127,10 @@ const PaymentHistory = () => {
         pending: 0,
         saldo: 0,
         creditUsed: 0,
-        creditBalance: 0
+        creditBalance: 0,
       };
     }
-    
+
     // Procesar pagos por mes
     Object.entries(detailed).forEach(([monthKey, monthPayments]) => {
       // Extraer solo el mes (MM) de la clave YYYY-MM
@@ -142,36 +141,37 @@ const PaymentHistory = () => {
       } else {
         monthPart = monthKey;
       }
-      
+
       if (!result[monthPart]) return;
-      
+
       // Acumular pagos
       let totalPaid = 0;
       let totalCreditUsed = 0;
       let totalCreditBalance = 0;
-      
+
       // Sumar todos los pagos del mes
-      monthPayments.forEach(payment => {
+      monthPayments.forEach((payment) => {
         totalPaid += payment.amountPaid;
         totalCreditUsed += payment.creditUsed || 0;
         totalCreditBalance += payment.creditBalance;
       });
-      
+
       // Asignar valores
       result[monthPart].paid = totalPaid;
       result[monthPart].creditUsed = totalCreditUsed;
       result[monthPart].creditBalance = totalCreditBalance;
-      
+
       // Para los cargos, usar el primer payment que tiene el referenceAmount correcto para el mes
       if (monthPayments.length > 0) {
         // Todos los pagos del mismo mes tienen el mismo referenceAmount que es el total de cargos del mes
         result[monthPart].pending = monthPayments[0].referenceAmount;
       }
-      
+
       // Calcular saldo
-      result[monthPart].saldo = result[monthPart].pending - result[monthPart].paid;
+      result[monthPart].saldo =
+        result[monthPart].pending - result[monthPart].paid;
     });
-    
+
     return result;
   }, [detailed]);
 
