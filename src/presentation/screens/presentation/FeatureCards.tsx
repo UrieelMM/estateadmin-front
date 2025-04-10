@@ -1,61 +1,184 @@
-const features = [
-  {
-    name: "Gestión de Pagos",
-    description:
-      "Sistema integral para la gestión de pagos, incluyendo cuotas de mantenimiento, cargos extraordinarios y seguimiento de saldos.",
-    icon: "fa-solid fa-money-bill-wave",
-  },
-  {
-    name: "Comunicación",
-    description:
-      "Plataforma interna para la comunicación entre residentes y administración, incluyendo notificaciones y anuncios.",
-    icon: "fa-solid fa-comments",
-  },
-  {
-    name: "Reservas",
-    description:
-      "Sistema de reservas para áreas comunes, salones de eventos y estacionamientos.",
-    icon: "fa-solid fa-calendar-check",
-  },
-  {
-    name: "Reportes",
-    description:
-      "Generación de reportes detallados sobre pagos, mantenimiento y estado general del condominio.",
-    icon: "fa-solid fa-chart-bar",
-  },
-];
+import { motion } from "framer-motion";
 
 const FeatureCards = () => {
-  return (
-    <section className="py-12 bg-gray-50 sm:py-16 lg:py-20">
-      <div className="px-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
-        <div className="max-w-xl mx-auto text-center xl:max-w-2xl">
-          <h2 className="text-xl font-bold leading-tight text-gray-900 sm:text-2xl xl:text-2xl font-pj">
-            Mejora tu gestión con nuestras herramientas innovadoras
-          </h2>
-        </div>
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.2,
+      },
+    },
+  };
 
-        <div className="grid max-w-4xl grid-cols-1 mx-auto mt-8 text-center gap-y-4 sm:gap-x-8 sm:grid-cols-2 sm:mt-12 lg:mt-20 sm:text-left">
-          {features.map((feature, index) => (
-            <div key={index} className="space-y-4 sm:space-y-8">
-              <div className="overflow-hidden bg-white shadow-md rounded-xl">
-                <div className="p-9">
-                  <i
-                    className={`${feature.icon} w-12 h-12 mx-auto text-gray-400 sm:mx-0`}
-                  ></i>
-                  <h3 className="mt-8 text-2xl font-bold text-gray-900 sm:mt-20 font-pj">
-                    {feature.name}
-                  </h3>
-                  <p className="mt-6 text-base text-gray-600 font-pj">
-                    {feature.description}
-                  </p>
-                </div>
+  const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1,
+      transition: {
+        type: "spring",
+        stiffness: 100,
+        damping: 10,
+      },
+    },
+  };
+
+  const cardVariants = {
+    hidden: { scale: 0.95, opacity: 0 },
+    visible: {
+      scale: 1,
+      opacity: 1,
+      transition: {
+        type: "spring",
+        stiffness: 200,
+        damping: 15,
+      },
+    },
+  };
+
+  return (
+    <motion.section
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: true, margin: "-100px" }}
+      variants={containerVariants}
+      className="py-10 bg-transparent sm:py-16 lg:py-24"
+      id="features"
+    >
+      <div className="px-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
+        <motion.div
+          variants={itemVariants}
+          className="max-w-xl mx-auto text-center"
+        >
+          <p className="text-sm font-semibold tracking-widest text-indigo-500 uppercase">
+            Sistema Integral de Gestión
+          </p>
+
+          <h2 className="mt-6 text-3xl font-bold leading-tight text-black sm:text-4xl lg:text-4xl">
+            Características Principales
+          </h2>
+        </motion.div>
+
+        <div className="grid items-center grid-cols-1 mt-12 gap-y-10 lg:grid-cols-5 sm:mt-20 gap-x-4">
+          <motion.div
+            variants={containerVariants}
+            className="space-y-8 lg:pr-16 xl:pr-24 lg:col-span-2 lg:space-y-12"
+          >
+            <motion.div variants={cardVariants} className="flex items-start">
+              <svg
+                className="flex-shrink-0 text-green-500 w-9 h-9"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="1.5"
+                  d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+              <div className="ml-5">
+                <h3 className="text-xl font-semibold text-black">
+                  Gestión Financiera
+                </h3>
+                <p className="mt-3 text-base text-gray-600">
+                  Control de pagos, cobros, gastos y presupuestos en tiempo
+                  real.
+                </p>
               </div>
-            </div>
-          ))}
+            </motion.div>
+
+            <motion.div variants={cardVariants} className="flex items-start">
+              <svg
+                className="flex-shrink-0 text-blue-600 w-9 h-9"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="1.5"
+                  d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+                />
+              </svg>
+              <div className="ml-5">
+                <h3 className="text-xl font-semibold text-black">
+                  Gestión de Proyectos
+                </h3>
+                <p className="mt-3 text-base text-gray-600">
+                  Planificación y seguimiento de obras y mantenimientos con
+                  control de presupuesto.
+                </p>
+              </div>
+            </motion.div>
+
+            <motion.div variants={cardVariants} className="flex items-start">
+              <svg
+                className="flex-shrink-0 text-red-500 w-9 h-9"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="1.5"
+                  d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
+                />
+              </svg>
+              <div className="ml-5">
+                <h3 className="text-xl font-semibold text-black">
+                  Comunicación Eficiente
+                </h3>
+                <p className="mt-3 text-base text-gray-600">
+                  Sistema de notificaciones por WhatsApp y correo electrónico.
+                </p>
+              </div>
+            </motion.div>
+
+            <motion.div variants={cardVariants} className="flex items-start">
+              <svg
+                className="flex-shrink-0 text-purple-500 w-9 h-9"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="1.5"
+                  d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                />
+              </svg>
+              <div className="ml-5">
+                <h3 className="text-xl font-semibold text-black">
+                  Diseño Moderno y Accesible
+                </h3>
+                <p className="mt-3 text-base text-gray-600">
+                  Interfaz intuitiva con modo oscuro y diseño responsivo para
+                  una mejor experiencia de usuario.
+                </p>
+              </div>
+            </motion.div>
+          </motion.div>
+
+          <motion.div variants={cardVariants} className="lg:col-span-3">
+            <img
+              className="w-full rounded-lg shadow-2xl"
+              src="https://res.cloudinary.com/dz5tntwl1/image/upload/v1744234537/OmniPixel/Captura_de_pantalla_2025-04-09_a_la_s_3.34.11_p.m._ozb7dh.png"
+              alt="Panel de administración del sistema de gestión de condominios"
+            />
+          </motion.div>
         </div>
       </div>
-    </section>
+    </motion.section>
   );
 };
 

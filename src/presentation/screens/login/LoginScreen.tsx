@@ -185,7 +185,7 @@ const LoginScreen = () => {
               ¿No tienes una cuenta?{" "}
             </p>
             <a
-              href="#"
+              href="/contact"
               className="font-semibold leading-6 text-center block text-indigo-600 hover:text-indigo-500"
             >
               Contáctanos para unirte a nuestros servicios

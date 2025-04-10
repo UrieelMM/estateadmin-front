@@ -3,10 +3,12 @@ import { Dialog } from "@headlessui/react";
 import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
 import { Helmet } from "react-helmet-async";
 import logo from "../../../assets/logo.png";
-import VideoPresentation from "./VideoPresentation";
 import Footer from "./Footer";
 import Contact from "./Contact";
 import FeatureCards from "./FeatureCards";
+import FinancialDetails from "./FinancialDetails";
+import ProjectDetails from "./ProjectDetails";
+import AreaReservation from "./AreaReservation";
 
 const navigation = [
   { name: "Características", href: "#features" },
@@ -16,6 +18,18 @@ const navigation = [
 
 const Hero = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const handleScroll = (
+    e: React.MouseEvent<HTMLAnchorElement>,
+    href: string
+  ) => {
+    e.preventDefault();
+    const element = document.querySelector(href);
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth" });
+      setMobileMenuOpen(false);
+    }
+  };
 
   return (
     <div className="bg-white">
@@ -121,6 +135,7 @@ const Hero = () => {
               <a
                 key={item.name}
                 href={item.href}
+                onClick={(e) => handleScroll(e, item.href)}
                 className="text-sm font-semibold leading-6 text-gray-900"
               >
                 {item.name}
@@ -130,7 +145,7 @@ const Hero = () => {
           <div className="hidden lg:flex lg:flex-1 lg:justify-end">
             <a
               href="/login"
-              className="text-sm font-semibold leading-6 text-gray-900"
+              className="text-sm font-semibold leading-6 bg-indigo-600 px-4 py-2 rounded-md text-white hover:bg-indigo-700"
             >
               Inicia sesión <span aria-hidden="true">&rarr;</span>
             </a>
@@ -164,6 +179,7 @@ const Hero = () => {
                     <a
                       key={item.name}
                       href={item.href}
+                      onClick={(e) => handleScroll(e, item.href)}
                       className="-mx-3 block rounded-lg px-3 py-2 text-base font-semibold leading-7 text-gray-900 hover:bg-gray-50"
                     >
                       {item.name}
@@ -185,10 +201,7 @@ const Hero = () => {
       </header>
 
       <div className="relative isolate px-6 pt-14 lg:px-8">
-        <div
-          className="absolute inset-x-0 -top-40 -z-10 transform-gpu overflow-hidden blur-3xl sm:-top-80"
-          aria-hidden="true"
-        >
+        <div className="absolute inset-x-0 -top-40 -z-10 transform-gpu overflow-hidden blur-3xl sm:-top-80">
           <div
             className="relative left-[calc(50%-11rem)] aspect-[1155/678] w-[36.125rem] -translate-x-1/2 rotate-[30deg] bg-gradient-to-tr from-[#9c80ff] to-[#9089fc] opacity-30 sm:left-[calc(50%-30rem)] sm:w-[72.1875rem]"
             style={{
@@ -203,6 +216,7 @@ const Hero = () => {
               Sistema Integral de Gestión de Condominios
               <a
                 href="#features"
+                onClick={(e) => handleScroll(e, "#features")}
                 className="font-semibold text-indigo-600 ml-1"
               >
                 <span className="absolute inset-0" aria-hidden="true" />
@@ -225,13 +239,14 @@ const Hero = () => {
             </p>
             <div className="mt-10 flex items-center justify-center gap-x-6">
               <a
-                href="/login"
+                href="/contact"
                 className="rounded-md bg-indigo-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
               >
                 Comenzar ahora
               </a>
               <a
                 href="#features"
+                onClick={(e) => handleScroll(e, "#features")}
                 className="text-sm font-semibold leading-6 text-gray-900 cursor-pointer"
               >
                 Ver características <span aria-hidden="true">→</span>
@@ -239,10 +254,7 @@ const Hero = () => {
             </div>
           </div>
         </div>
-        <div
-          className="absolute inset-x-0 top-[calc(100%-13rem)] -z-10 transform-gpu overflow-hidden blur-3xl sm:top-[calc(100%-30rem)]"
-          aria-hidden="true"
-        >
+        <div className="absolute inset-x-0 top-[calc(100%-13rem)] -z-10 transform-gpu overflow-hidden blur-3xl sm:top-[calc(100%-30rem)]">
           <div
             className="relative left-[calc(50%+3rem)] aspect-[1155/678] w-[36.125rem] -translate-x-1/2 bg-gradient-to-tr from-[#9c80ff] to-[#9089fc] opacity-30 sm:left-[calc(50%+36rem)] sm:w-[72.1875rem]"
             style={{
@@ -253,7 +265,9 @@ const Hero = () => {
         </div>
       </div>
       <FeatureCards />
-      <VideoPresentation />
+      <FinancialDetails />
+      <ProjectDetails />
+      <AreaReservation />
       <Contact />
       <Footer />
     </div>

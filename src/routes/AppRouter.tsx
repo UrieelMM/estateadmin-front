@@ -17,6 +17,7 @@ import ResetPasswordScreen from "../presentation/screens/login/ResetPasswordScre
 import UnidentifiedPaymentsPublic from "../presentation/screens/public/UnidentifiedPaymentsPublic";
 import SuperAdminProtectedRoute from "./SuperAdminProtectedRoute";
 import SuperAdminLayout from "../presentation/screens/layout/SuperAdminLayout";
+import ContactForm from "../presentation/screens/public/ContactForm";
 
 export const AppRouterPage = () => {
   return (
@@ -26,6 +27,7 @@ export const AppRouterPage = () => {
         <Route path="/login" element={<LoginScreen />} />
         <Route path="/reset-password" element={<ResetPasswordScreen />} />
         <Route path="/presentation" element={<Hero />} />
+        <Route path="/contact" element={<ContactForm />} />
         <Route
           path="/unidentified-payments/:qrId"
           element={<UnidentifiedPaymentsPublic />}

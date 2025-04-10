@@ -21,7 +21,7 @@ const Contact = () => {
               className="w-full h-full mx-auto rotate-180 opacity-30 blur-lg filter"
               style={{
                 background:
-                  "linear-gradient(90deg, #44ff9a -0.55%, #44b0ff 22.86%, #8b44ff 48.36%, #ff6644 73.33%, #ebff70 99.34%)",
+                  "linear-gradient(70deg, #818CF8 0%, #9333ea 25%, #7e22ce 50%, #6b21a8 75%, #915DF4 100%)",
               }}
             ></div>
           </div>
@@ -41,51 +41,11 @@ const Contact = () => {
                 type="submit"
                 className="inline-flex items-center justify-center w-full px-8 py-4 text-base font-bold text-white transition-all duration-200 bg-indigo-600 border border-transparent sm:w-auto sm:py-3 focus:outline-none font-pj hover:bg-indigo-700 rounded-xl"
               >
-                Solicitar demo
+                Solicitar información
               </button>
             </div>
           </form>
         </div>
-
-        <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div className="text-center">
-            <h3 className="text-lg font-semibold text-gray-900">
-              WhatsApp Business
-            </h3>
-            <p className="mt-2 text-gray-600">
-              <a
-                href="https://wa.me/TUNUMERO"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-indigo-600 hover:text-indigo-700"
-              >
-                Chatea con nosotros
-              </a>
-            </p>
-          </div>
-          <div className="text-center">
-            <h3 className="text-lg font-semibold text-gray-900">Email</h3>
-            <p className="mt-2 text-gray-600">
-              <a
-                href="mailto:contacto@estateadmin.com"
-                className="text-indigo-600 hover:text-indigo-700"
-              >
-                administraction@estate-admin.com
-              </a>
-            </p>
-          </div>
-          <div className="text-center">
-            <h3 className="text-lg font-semibold text-gray-900">
-              Horario de atención
-            </h3>
-            <p className="mt-2 text-gray-600">
-              Lunes a Viernes
-              <br />
-              9:00 AM - 6:00 PM
-            </p>
-          </div>
-        </div>
-
         <p className="mt-6 text-sm font-normal text-center text-gray-500 font-pj">
           Sin anuncios. Sin spam. Sin compromisos.
         </p>

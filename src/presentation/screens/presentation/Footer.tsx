@@ -1,3 +1,5 @@
+import logo from "../../../assets/logo.png";
+
 const Footer = () => {
   return (
     <footer
@@ -7,11 +9,11 @@ const Footer = () => {
       <div className="px-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
         <img
           className="w-auto h-16 mx-auto"
-          src="https://firebasestorage.googleapis.com/v0/b/administracioncondominio-93419.appspot.com/o/estateAdminUploads%2Fassets%2FEstateAdminLogoWebp.webp?alt=media&token=28bbc321-b3e6-4dae-b49c-fffd0a5f7bf3"
+          src={logo}
           alt="EstateAdmin Logo"
         />
 
-        <ul className="flex flex-wrap items-center justify-center space-x-12 md:space-x-16 mt-14">
+        <ul className="flex flex-col items-center justify-center space-y-4 mt-8 sm:flex-row sm:space-y-0 sm:space-x-8 md:space-x-12 lg:space-x-16 sm:mt-14">
           <li>
             <a
               href="#features"
@@ -36,7 +38,7 @@ const Footer = () => {
             <a
               href="#contact"
               title="Contacto"
-              className="inline-flex mt-8 -ml-12 text-lg font-medium text-gray-900 transition-all duration-200 transform font-pj hover:-translate-y-1 hover:text-gray-600 sm:ml-0 sm:mt-0"
+              className="inline-flex text-lg font-medium text-gray-900 transition-all duration-200 transform font-pj hover:-translate-y-1 hover:text-gray-600"
             >
               Contacto
             </a>
@@ -46,14 +48,14 @@ const Footer = () => {
             <a
               href="/privacy"
               title="Política de Privacidad"
-              className="inline-flex mt-8 text-lg font-medium text-gray-900 transition-all duration-200 transform font-pj hover:-translate-y-1 hover:text-gray-600 sm:mt-0"
+              className="inline-flex text-lg font-medium text-gray-900 transition-all duration-200 transform font-pj hover:-translate-y-1 hover:text-gray-600"
             >
               Privacidad
             </a>
           </li>
         </ul>
 
-        <div className="mt-12">
+        <div className="mt-8 sm:mt-12">
           <svg
             className="w-auto h-4 mx-auto text-gray-300"
             viewBox="0 0 172 16"
@@ -94,7 +96,46 @@ const Footer = () => {
           </svg>
         </div>
 
-        <ul className="flex items-center justify-center mt-12 space-x-3">
+        <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-3 sm:gap-8 sm:mt-12">
+          <div className="text-center">
+            <h3 className="text-lg font-semibold text-gray-900">
+              WhatsApp Business
+            </h3>
+            <p className="mt-2 text-gray-600">
+              <a
+                href="https://wa.me/+527711953837"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-indigo-600 hover:text-indigo-700"
+              >
+                Chatea con nosotros
+              </a>
+            </p>
+          </div>
+          <div className="text-center">
+            <h3 className="text-lg font-semibold text-gray-900">Email</h3>
+            <p className="mt-2 text-gray-600">
+              <a
+                href="mailto:contacto@estateadmin.com"
+                className="text-indigo-600 hover:text-indigo-700"
+              >
+                administraction@estate-admin.com
+              </a>
+            </p>
+          </div>
+          <div className="text-center">
+            <h3 className="text-lg font-semibold text-gray-900">
+              Horario de atención
+            </h3>
+            <p className="mt-2 text-gray-600">
+              Lunes a Viernes
+              <br />
+              9:00 AM - 6:00 PM
+            </p>
+          </div>
+        </div>
+
+        <ul className="flex items-center justify-center mt-8 space-x-4 sm:space-x-6 sm:mt-12">
           <li>
             <a
               href="https://wa.me/+527711953837"
@@ -178,10 +219,12 @@ const Footer = () => {
           </li>
         </ul>
 
-        <p>Dirección: 43815 Guerreo Tizayuca Hidalgo, México</p>
+        <p className="text-center mt-8 text-gray-600">
+          43815 Guerreo Tizayuca Hidalgo, México
+        </p>
 
         <p className="text-base font-normal text-center text-gray-600 mt-7 font-pj">
-          © Copyright 2024, Todos los derechos reservados
+          © Copyright 2025, Todos los derechos reservados
           <br />
           Un servicio de <span className="font-bold">Omnipixel</span>
         </p>
