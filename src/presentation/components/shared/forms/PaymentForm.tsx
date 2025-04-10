@@ -196,16 +196,16 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
 
   // Sumar montos asignados
   const totalAssigned = selectedCharges.reduce((sum, sc) => sum + sc.amount, 0);
-  
+
   // Calcular el total pendiente sumando todos los cargos seleccionados
   // Este es el monto total original de los cargos seleccionados
   // Los montos en charges están en centavos, debemos convertirlos a pesos
   const totalPendingOriginal = selectedCharges.reduce((sum, sc) => {
-    const charge = charges.find(c => c.id === sc.chargeId);
+    const charge = charges.find((c) => c.id === sc.chargeId);
     // Convertir de centavos a pesos (dividir por 100)
     return sum + (charge ? charge.amount / 100 : 0);
   }, 0);
-  
+
   // Actualizar el monto pendiente cuando cambian los cargos seleccionados
   useEffect(() => {
     // Solo actualizar si hay cargos seleccionados y no es un pago no identificado
@@ -214,27 +214,17 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
       const pending = totalPendingOriginal - totalAssigned;
       setAmountPending(pending.toString());
       setAmountPendingDisplay(formatCurrency(pending));
-
-      // Distribuir el saldo pendiente entre cada cargo seleccionado
-      selectedCharges.forEach(sc => {
-        const charge = charges.find(c => c.id === sc.chargeId);
-        if (charge) {
-          // Calcular cuánto se pagó de este cargo
-          const originalAmount = charge.amount / 100; // Convertir de centavos a pesos
-          const amountPaid = sc.amount;
-          
-          // El pendiente de este cargo específico es el monto original menos lo pagado
-          const chargePending = originalAmount - amountPaid;
-          
-          // Aquí podríamos almacenar estos valores si necesitamos mostrarlos en la UI
-          // Por ejemplo, en un state como: setPendingPerCharge({ ...pendingPerCharge, [sc.chargeId]: chargePending })
-        }
-      });
     } else if (selectedCharges.length === 0) {
       setAmountPending("");
       setAmountPendingDisplay("");
     }
-  }, [selectedCharges, totalAssigned, totalPendingOriginal, isUnidentifiedPayment, charges]);
+  }, [
+    selectedCharges,
+    totalAssigned,
+    totalPendingOriginal,
+    isUnidentifiedPayment,
+    charges,
+  ]);
 
   // Convertir el saldo a favor del usuario (que viene en centavos) a pesos
   const userCreditInPesos = userCreditBalance
