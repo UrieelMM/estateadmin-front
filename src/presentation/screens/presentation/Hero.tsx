@@ -9,6 +9,7 @@ import FeatureCards from "./FeatureCards";
 import FinancialDetails from "./FinancialDetails";
 import ProjectDetails from "./ProjectDetails";
 import AreaReservation from "./AreaReservation";
+import DataControl from "./DataControl";
 
 const navigation = [
   { name: "Características", href: "#features" },
@@ -268,6 +269,7 @@ const Hero = () => {
       <FinancialDetails />
       <ProjectDetails />
       <AreaReservation />
+      <DataControl />
       <Contact />
       <Footer />
     </div>

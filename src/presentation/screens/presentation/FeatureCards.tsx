@@ -67,7 +67,7 @@ const FeatureCards = () => {
           >
             <motion.div variants={cardVariants} className="flex items-start">
               <svg
-                className="flex-shrink-0 text-green-500 w-9 h-9"
+                className="flex-shrink-0 text-indigo-500 w-9 h-9"
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
                 viewBox="0 0 24 24"
@@ -93,7 +93,7 @@ const FeatureCards = () => {
 
             <motion.div variants={cardVariants} className="flex items-start">
               <svg
-                className="flex-shrink-0 text-blue-600 w-9 h-9"
+                className="flex-shrink-0 text-indigo-500 w-9 h-9"
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
                 viewBox="0 0 24 24"
@@ -119,7 +119,7 @@ const FeatureCards = () => {
 
             <motion.div variants={cardVariants} className="flex items-start">
               <svg
-                className="flex-shrink-0 text-red-500 w-9 h-9"
+                className="flex-shrink-0 text-indigo-500 w-9 h-9"
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
                 viewBox="0 0 24 24"
@@ -144,7 +144,7 @@ const FeatureCards = () => {
 
             <motion.div variants={cardVariants} className="flex items-start">
               <svg
-                className="flex-shrink-0 text-purple-500 w-9 h-9"
+                className="flex-shrink-0 text-indigo-500 w-9 h-9"
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
                 viewBox="0 0 24 24"
