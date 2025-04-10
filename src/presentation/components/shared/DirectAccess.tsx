@@ -2,57 +2,57 @@ import {
   HomeIcon,
   UserGroupIcon,
   CurrencyDollarIcon,
-  DocumentTextIcon,
-  ClipboardDocumentListIcon,
+  PresentationChartBarIcon,
   Cog6ToothIcon,
-} from '@heroicons/react/24/outline'
-import { Link } from 'react-router-dom'
+  BanknotesIcon,
+} from "@heroicons/react/24/outline";
+import { Link } from "react-router-dom";
 import { Card } from "@heroui/react";
 
 const items = [
   {
-    title: 'Panel Principal',
-    description: 'Visualiza las estadísticas y resumen general del condominio.',
+    title: "Panel Principal",
+    description: "Visualiza las estadísticas y resumen general del condominio.",
     icon: HomeIcon,
-    background: 'bg-indigo-600 dark:bg-indigo-500',
-    href: '/'
+    background: "bg-indigo-600 dark:bg-indigo-500",
+    href: "/dashboard/home",
   },
   {
-    title: 'Gestión de Residentes',
-    description: 'Administra los usuarios, permisos y accesos del condominio.',
+    title: "Gestión de Residentes",
+    description: "Administra los usuarios, permisos y accesos del condominio.",
     icon: UserGroupIcon,
-    background: 'bg-blue-600 dark:bg-blue-500',
-    href: '/users'
+    background: "bg-blue-600 dark:bg-blue-500",
+    href: "/dashboard/users",
   },
   {
-    title: 'Control de Pagos',
-    description: 'Registra y supervisa los pagos de mantenimiento y servicios.',
+    title: "Control de Pagos",
+    description: "Registra y supervisa los pagos de mantenimiento y servicios.",
     icon: CurrencyDollarIcon,
-    background: 'bg-green-600 dark:bg-green-500',
-    href: '/financial-income'
+    background: "bg-green-600 dark:bg-green-500",
+    href: "/dashborad/income",
   },
   {
-    title: 'Documentos',
-    description: 'Accede a documentos importantes y reportes del condominio.',
-    icon: DocumentTextIcon,
-    background: 'bg-yellow-600 dark:bg-yellow-500',
-    href: '/documents'
+    title: "Egresos",
+    description: "Registra y supervisa los egresos del condominio.",
+    icon: BanknotesIcon,
+    background: "bg-yellow-600 dark:bg-yellow-500",
+    href: "/dashboard/expenses",
   },
   {
-    title: 'Tareas y Mantenimiento',
-    description: 'Gestiona las tareas y el mantenimiento del condominio.',
-    icon: ClipboardDocumentListIcon,
-    background: 'bg-red-600 dark:bg-red-500',
-    href: '/tasks'
+    title: "Proyectos",
+    description: "Gestiona los proyectos del condominio.",
+    icon: PresentationChartBarIcon,
+    background: "bg-red-600 dark:bg-red-500",
+    href: "/dashboard/projects",
   },
   {
-    title: 'Configuración',
-    description: 'Personaliza la configuración general del condominio.',
+    title: "Configuración",
+    description: "Personaliza la configuración general del condominio.",
     icon: Cog6ToothIcon,
-    background: 'bg-purple-600 dark:bg-purple-500',
-    href: '/settings'
+    background: "bg-purple-600 dark:bg-purple-500",
+    href: "/dashboard/client-config",
   },
-]
+];
 
 const DirectAccess = () => {
   return (
@@ -63,7 +63,7 @@ const DirectAccess = () => {
       <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
         Accede rápidamente a las funciones principales del sistema.
       </p>
-      <div 
+      <div
         className="mt-6 w-full grid grid-cols-1 gap-4 
                    sm:grid-cols-2 lg:grid-cols-3"
       >
@@ -97,7 +97,7 @@ const DirectAccess = () => {
         ))}
       </div>
     </Card>
-  )
-}
+  );
+};
 
-export default DirectAccess
+export default DirectAccess;

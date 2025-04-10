@@ -11,6 +11,8 @@ import {
   PencilIcon,
 } from "@heroicons/react/24/solid";
 import { useCondominiumStore } from "../../../../store/useCondominiumStore";
+import { commonAreas } from "../../../../utils/commonAreas";
+import { formatCentsToMXN } from "../../../../utils/curreyncy";
 
 interface CalendarEvent {
   id: string;
@@ -221,10 +223,11 @@ const FormCalendar = ({ isOpen, onClose }: FormCalendarProps) => {
                   required
                 >
                   <option value="">Seleccione un área</option>
-                  <option value="Salón de fiestas">Salón de fiestas</option>
-                  <option value="Gimnasio">Gimnasio</option>
-                  <option value="Alberca">Alberca</option>
-                  <option value="Cancha de tenis">Cancha de tenis</option>
+                  {commonAreas.map((area) => (
+                    <option key={area} value={area}>
+                      {area}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -336,7 +339,11 @@ const FormCalendar = ({ isOpen, onClose }: FormCalendarProps) => {
           >
             Cancelar
           </button>,
-          <button key="confirm" onClick={handleConfirm} className="btn-primary">
+          <button
+            key="confirm"
+            onClick={handleConfirm}
+            className="btn-primary ml-2"
+          >
             Guardar
           </button>,
         ]}
@@ -346,7 +353,10 @@ const FormCalendar = ({ isOpen, onClose }: FormCalendarProps) => {
           {unpaidCharges.map((charge) => (
             <li key={charge.id}>
               Concepto: <span className="font-bold">{charge.concept}</span>{" "}
-              Monto: <span className="font-bold">${charge.amount}</span>
+              Monto:{" "}
+              <span className="font-bold">
+                {formatCentsToMXN(charge.amount)}
+              </span>
             </li>
           ))}
         </ul>

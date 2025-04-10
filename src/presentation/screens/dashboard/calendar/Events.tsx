@@ -11,6 +11,7 @@ import "dayjs/locale/es";
 import isBetween from "dayjs/plugin/isBetween";
 import isoWeek from "dayjs/plugin/isoWeek";
 import { useCalendarEventsStore } from "../../../../store/useReservationStore";
+import { commonAreas } from "../../../../utils/commonAreas";
 
 dayjs.extend(isBetween);
 dayjs.extend(isoWeek);
@@ -104,6 +105,92 @@ function getYearMonths(baseDate: string) {
       index: i,
     };
   });
+}
+
+// Función para generar colores únicos para cada área
+function getAreaColor(areaName: string) {
+  // Colores predefinidos para las áreas existentes
+  const predefinedColors: Record<
+    string,
+    { bg: string; border: string; text: string }
+  > = {
+    Gimnasio: {
+      bg: "bg-green-50",
+      border: "border-green-200",
+      text: "text-green-700",
+    },
+    "Salón de fiestas": {
+      bg: "bg-pink-50",
+      border: "border-pink-200",
+      text: "text-pink-700",
+    },
+    Alberca: {
+      bg: "bg-blue-50",
+      border: "border-blue-200",
+      text: "text-blue-700",
+    },
+    "Cancha de tenis": {
+      bg: "bg-yellow-50",
+      border: "border-yellow-200",
+      text: "text-yellow-700",
+    },
+  };
+
+  // Si es una de las áreas predefinidas, devolver su color
+  if (predefinedColors[areaName]) {
+    return predefinedColors[areaName];
+  }
+
+  // Lista de combinaciones de colores Tailwind para asignar a las áreas
+  const tailwindColors = [
+    {
+      bg: "bg-indigo-50",
+      border: "border-indigo-200",
+      text: "text-indigo-700",
+    },
+    {
+      bg: "bg-purple-50",
+      border: "border-purple-200",
+      text: "text-purple-700",
+    },
+    { bg: "bg-red-50", border: "border-red-200", text: "text-red-700" },
+    {
+      bg: "bg-orange-50",
+      border: "border-orange-200",
+      text: "text-orange-700",
+    },
+    { bg: "bg-amber-50", border: "border-amber-200", text: "text-amber-700" },
+    { bg: "bg-lime-50", border: "border-lime-200", text: "text-lime-700" },
+    {
+      bg: "bg-emerald-50",
+      border: "border-emerald-200",
+      text: "text-emerald-700",
+    },
+    { bg: "bg-teal-50", border: "border-teal-200", text: "text-teal-700" },
+    { bg: "bg-cyan-50", border: "border-cyan-200", text: "text-cyan-700" },
+    { bg: "bg-sky-50", border: "border-sky-200", text: "text-sky-700" },
+    {
+      bg: "bg-violet-50",
+      border: "border-violet-200",
+      text: "text-violet-700",
+    },
+    {
+      bg: "bg-fuchsia-50",
+      border: "border-fuchsia-200",
+      text: "text-fuchsia-700",
+    },
+    { bg: "bg-rose-50", border: "border-rose-200", text: "text-rose-700" },
+  ];
+
+  // Generar un índice basado en el nombre del área
+  let hash = 0;
+  for (let i = 0; i < areaName.length; i++) {
+    hash = areaName.charCodeAt(i) + ((hash << 5) - hash);
+  }
+
+  // Usar el hash para seleccionar un color de la lista
+  const index = Math.abs(hash) % tailwindColors.length;
+  return tailwindColors[index];
 }
 
 export default function CalendarReservations() {
@@ -631,14 +718,11 @@ export default function CalendarReservations() {
                           className="w-full pl-2 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
                         >
                           <option value="">Seleccione un área</option>
-                          <option value="Salón de fiestas">
-                            Salón de fiestas
-                          </option>
-                          <option value="Gimnasio">Gimnasio</option>
-                          <option value="Alberca">Alberca</option>
-                          <option value="Cancha de tenis">
-                            Cancha de tenis
-                          </option>
+                          {commonAreas.map((area) => (
+                            <option key={area} value={area}>
+                              {area}
+                            </option>
+                          ))}
                         </select>
                       </div>
                       <div>
@@ -753,36 +837,7 @@ function DayView({
             event.endTime,
             6
           );
-          const areaColors: Record<
-            string,
-            { bg: string; border: string; text: string }
-          > = {
-            Gimnasio: {
-              bg: "bg-green-50",
-              border: "border-green-200",
-              text: "text-green-700",
-            },
-            "Salón de fiestas": {
-              bg: "bg-pink-50",
-              border: "border-pink-200",
-              text: "text-pink-700",
-            },
-            Alberca: {
-              bg: "bg-blue-50",
-              border: "border-blue-200",
-              text: "text-blue-700",
-            },
-            "Cancha de tenis": {
-              bg: "bg-yellow-50",
-              border: "border-yellow-200",
-              text: "text-yellow-700",
-            },
-          };
-          const colors = areaColors[event.commonArea] || {
-            bg: "bg-gray-50",
-            border: "border-gray-200",
-            text: "text-gray-700",
-          };
+          const colors = getAreaColor(event.commonArea);
           return (
             <div
               key={event.id}
@@ -898,36 +953,7 @@ function WeekView({
                 event.endTime,
                 6
               );
-              const areaColors: Record<
-                string,
-                { bg: string; border: string; text: string }
-              > = {
-                Gimnasio: {
-                  bg: "bg-green-50",
-                  border: "border-green-200",
-                  text: "text-green-700",
-                },
-                "Salón de fiestas": {
-                  bg: "bg-pink-50",
-                  border: "border-pink-200",
-                  text: "text-pink-700",
-                },
-                Alberca: {
-                  bg: "bg-blue-50",
-                  border: "border-blue-200",
-                  text: "text-blue-700",
-                },
-                "Cancha de tenis": {
-                  bg: "bg-yellow-50",
-                  border: "border-yellow-200",
-                  text: "text-yellow-700",
-                },
-              };
-              const colors = areaColors[event.commonArea] || {
-                bg: "bg-gray-50",
-                border: "border-gray-200",
-                text: "text-gray-700",
-              };
+              const colors = getAreaColor(event.commonArea);
               return (
                 <div
                   key={event.id}
@@ -1010,14 +1036,23 @@ function MonthView({
                   )}
                 >
                   <span className="text-xs font-semibold">{day.dayNumber}</span>
-                  {dayEvts.map((evt) => (
-                    <div
-                      key={evt.id}
-                      className="mt-1 bg-blue-50 text-blue-700 text-xs rounded px-1"
-                    >
-                      {evt.name} - {evt.startTime}
-                    </div>
-                  ))}
+                  {dayEvts.length > 0 &&
+                    dayEvts.map((evt) => {
+                      const colors = getAreaColor(evt.commonArea);
+                      return (
+                        <div
+                          key={evt.id}
+                          className={classNames(
+                            "mt-1 text-xs rounded px-1",
+                            colors.bg,
+                            colors.border,
+                            colors.text
+                          )}
+                        >
+                          {evt.name} - {evt.startTime}
+                        </div>
+                      );
+                    })}
                 </div>
               );
             })}
