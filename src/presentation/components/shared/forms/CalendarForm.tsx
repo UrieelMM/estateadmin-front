@@ -24,6 +24,7 @@ interface CalendarEvent {
   startTime: string;
   endTime: string;
   comments?: string;
+  email: string;
 }
 
 interface FormCalendarProps {
@@ -98,6 +99,7 @@ const FormCalendar = ({ isOpen, onClose }: FormCalendarProps) => {
       commonArea,
       startTime,
       endTime,
+      email: resident.email,
     };
     if (comments.trim() !== "") {
       eventData.comments = comments;
@@ -309,7 +311,7 @@ const FormCalendar = ({ isOpen, onClose }: FormCalendarProps) => {
                   id="comments"
                   value={comments}
                   onChange={(e) => setComments(e.target.value)}
-                  className="w-full pl-10 h-20 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
+                  className="w-full pl-10 h-20 border border-gray-300 py-1 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
                   placeholder="Comentarios sobre el evento (opcional)"
                 ></textarea>
               </div>

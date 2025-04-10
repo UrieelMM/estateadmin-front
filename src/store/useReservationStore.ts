@@ -78,7 +78,7 @@ type CalendarEventsState = {
    * En caso de tener adeudos, se lanza un error que incluye la propiedad "unpaidCharges".
    */
   createEvent: (
-    data: Omit<CalendarEvent, "id" | "email">,
+    data: Omit<CalendarEvent, "id">,
     options?: { force?: boolean }
   ) => Promise<void>;
   fetchResidents: () => Promise<void>;
@@ -133,7 +133,7 @@ export const useCalendarEventsStore = create<CalendarEventsState>()(
     },
 
     createEvent: async (
-      data: Omit<CalendarEvent, "id" | "email">,
+      data: Omit<CalendarEvent, "id">,
       options?: { force?: boolean }
     ) => {
       set({ loading: true, error: null });
@@ -145,7 +145,8 @@ export const useCalendarEventsStore = create<CalendarEventsState>()(
           !data.eventDay ||
           !data.commonArea ||
           !data.startTime ||
-          !data.endTime
+          !data.endTime ||
+          !data.email
         ) {
           throw new Error(
             "Todos los campos, excepto comentarios, son obligatorios."
@@ -164,9 +165,6 @@ export const useCalendarEventsStore = create<CalendarEventsState>()(
         if (!user) {
           set({ error: "Usuario no autenticado", loading: false });
           return;
-        }
-        if (!user.email) {
-          throw new Error("El usuario no tiene un email válido.");
         }
         const tokenResult = await getIdTokenResult(user);
         const clientId = tokenResult.claims["clientId"] as string;
@@ -231,15 +229,12 @@ export const useCalendarEventsStore = create<CalendarEventsState>()(
           throw errorObj;
         }
 
-        // Se arma el objeto a guardar, agregando el email del usuario autenticado
-        const eventData = { ...data, email: user.email };
-
-        // Si pasa todas las validaciones, se crea el evento
+        // Si pasa todas las validaciones, se crea el evento usando el email proporcionado desde el formulario
         const eventsRef = collection(
           db,
           `clients/${clientId}/condominiums/${condominiumId}/calendarEvents`
         );
-        await addDoc(eventsRef, eventData);
+        await addDoc(eventsRef, data);
 
         // Refrescar la lista de eventos
         await get().fetchEvents();
