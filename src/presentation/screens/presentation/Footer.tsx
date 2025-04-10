@@ -36,7 +36,7 @@ const Footer = () => {
 
           <li>
             <a
-              href="#contact"
+              href="/contact"
               title="Contacto"
               className="inline-flex text-lg font-medium text-gray-900 transition-all duration-200 transform font-pj hover:-translate-y-1 hover:text-gray-600"
             >
@@ -119,7 +119,7 @@ const Footer = () => {
                 href="mailto:contacto@estateadmin.com"
                 className="text-indigo-600 hover:text-indigo-700"
               >
-                administraction@estate-admin.com
+                administracion@estate-admin.com
               </a>
             </p>
           </div>

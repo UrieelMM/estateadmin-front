@@ -13,7 +13,7 @@ import AreaReservation from "./AreaReservation";
 const navigation = [
   { name: "Características", href: "#features" },
   { name: "Sobre nosotros", href: "#about" },
-  { name: "Contacto", href: "#contact" },
+  { name: "Contacto", href: "/contact" },
 ];
 
 const Hero = () => {

@@ -81,9 +81,9 @@ const ProjectDetails = () => {
                 Control
               </p>
               <p className="ml-5 text-sm text-gray-900 font-pj">
-                Total de
+                De
                 <br />
-                Proyectos
+                Gastos
               </p>
             </motion.div>
 
