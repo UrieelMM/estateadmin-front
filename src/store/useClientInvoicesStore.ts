@@ -30,10 +30,12 @@ export interface ClientInvoice {
   dueDate: any;
   paidDate?: any;
   invoiceURL?: string;
+  xmlURL?: string;
   isPaid: boolean;
   optionalMessage: string;
   clientId: string;
   condominiumId: string;
+  condominiumName?: string;
 }
 
 interface ClientInvoicesState {
@@ -176,10 +178,12 @@ const useClientInvoicesStore = create<ClientInvoicesState>()((set, get) => ({
           dueDate: data.dueDate,
           paidDate: data.paidDate,
           invoiceURL: data.invoiceURL,
+          xmlURL: data.xmlURL,
           isPaid: data.isPaid || false,
           optionalMessage: data.optionalMessage || "",
           clientId,
           condominiumId,
+          condominiumName: data.condominiumName,
         };
 
         invoiceRecords.push(invoice);
@@ -263,10 +267,12 @@ const useClientInvoicesStore = create<ClientInvoicesState>()((set, get) => ({
           dueDate: data.dueDate,
           paidDate: data.paidDate,
           invoiceURL: data.invoiceURL,
+          xmlURL: data.xmlURL,
           isPaid: data.isPaid || false,
           optionalMessage: data.optionalMessage || "",
           clientId,
           condominiumId,
+          condominiumName: data.condominiumName,
         };
 
         invoiceRecords.push(invoice);
@@ -431,7 +437,7 @@ const useClientInvoicesStore = create<ClientInvoicesState>()((set, get) => ({
         loading: false,
       });
       toast.error("Error al iniciar el pago");
-      throw error;
+      return { id: "", url: "" };
     }
   },
 

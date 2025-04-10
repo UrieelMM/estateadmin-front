@@ -4,8 +4,8 @@ import {
   MagnifyingGlassIcon,
   XMarkIcon,
   ArrowDownTrayIcon,
-  EyeIcon,
   CreditCardIcon,
+  DocumentTextIcon,
 } from "@heroicons/react/24/outline";
 import useClientInvoicesStore, {
   ClientInvoice,
@@ -37,6 +37,11 @@ const formatCurrency = (amount: number) => {
   }).format(amount);
 };
 
+const truncateText = (text: string | undefined, maxLength: number = 25) => {
+  if (!text) return "N/A";
+  return text.length > maxLength ? `${text.substring(0, maxLength)}...` : text;
+};
+
 const statusColors = {
   paid: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
   pending:
@@ -61,7 +66,6 @@ const formatStatus = (status: string) => {
 };
 
 const ClientInvoicesTable: React.FC<ClientInvoicesTableProps> = ({
-  onViewInvoice,
   onPayInvoice,
 }) => {
   const {
@@ -249,7 +253,7 @@ const ClientInvoicesTable: React.FC<ClientInvoicesTableProps> = ({
                 id="status-filter"
                 value={filters.status || ""}
                 onChange={(e) => handleFilterChange("status", e.target.value)}
-                className="block w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm dark:bg-gray-900 dark:border-gray-600 dark:text-white cursor-pointer"
+                className="block w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm dark:bg-gray-800 dark:border-gray-600 dark:text-white cursor-pointer"
               >
                 <option value="">Todos los estados</option>
                 <option value="paid">Pagado</option>
@@ -286,6 +290,12 @@ const ClientInvoicesTable: React.FC<ClientInvoicesTableProps> = ({
                         className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white"
                       >
                         Monto
+                      </th>
+                      <th
+                        scope="col"
+                        className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white"
+                      >
+                        Condominio
                       </th>
                       <th
                         scope="col"
@@ -332,6 +342,9 @@ const ClientInvoicesTable: React.FC<ClientInvoicesTableProps> = ({
                         <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 dark:text-gray-200">
                           {formatCurrency(invoice.amount)}
                         </td>
+                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 dark:text-gray-200">
+                          {truncateText(invoice.condominiumName)}
+                        </td>
                         <td className="whitespace-nowrap px-3 py-4 text-sm">
                           <span
                             className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
@@ -350,17 +363,22 @@ const ClientInvoicesTable: React.FC<ClientInvoicesTableProps> = ({
                         <td className="whitespace-nowrap px-3 py-4 text-sm text-right font-medium">
                           <div className="flex justify-end space-x-2">
                             <button
-                              className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300"
-                              title="Ver detalles"
-                              onClick={() =>
-                                onViewInvoice && onViewInvoice(invoice)
-                              }
+                              className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 group relative"
+                              onClick={() => {
+                                if (invoice.xmlURL) {
+                                  window.open(invoice.xmlURL, "_blank");
+                                } else {
+                                  toast.error("No hay XML disponible para ver");
+                                }
+                              }}
                             >
-                              <EyeIcon className="h-5 w-5" />
+                              <DocumentTextIcon className="h-5 w-5" />
+                              <span className="absolute bottom-full left-[-20px] transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-gray-900 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                                Descargar XML
+                              </span>
                             </button>
                             <button
-                              className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300"
-                              title="Descargar PDF"
+                              className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300 group relative"
                               onClick={() => {
                                 if (invoice.invoiceURL) {
                                   window.open(invoice.invoiceURL, "_blank");
@@ -372,15 +390,20 @@ const ClientInvoicesTable: React.FC<ClientInvoicesTableProps> = ({
                               }}
                             >
                               <ArrowDownTrayIcon className="h-5 w-5" />
+                              <span className="absolute bottom-full left-[-20px] transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-gray-900 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                                Descargar PDF
+                              </span>
                             </button>
                             {(invoice.paymentStatus || "pending") ===
                               "pending" && (
                               <button
-                                className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
-                                title="Pagar factura"
+                                className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 group relative"
                                 onClick={() => handlePayWithStripe(invoice)}
                               >
                                 <CreditCardIcon className="h-5 w-5" />
+                                <span className="absolute bottom-full left-[-20px] transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-gray-900 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                                  Pagar factura
+                                </span>
                               </button>
                             )}
                           </div>
@@ -506,6 +529,12 @@ const ClientInvoicesTable: React.FC<ClientInvoicesTableProps> = ({
                                   scope="col"
                                   className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white"
                                 >
+                                  Condominio
+                                </th>
+                                <th
+                                  scope="col"
+                                  className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white"
+                                >
                                   Estado
                                 </th>
                                 <th
@@ -541,6 +570,9 @@ const ClientInvoicesTable: React.FC<ClientInvoicesTableProps> = ({
                                   <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 dark:text-gray-200">
                                     {formatCurrency(invoice.amount)}
                                   </td>
+                                  <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 dark:text-gray-200">
+                                    {truncateText(invoice.condominiumName)}
+                                  </td>
                                   <td className="whitespace-nowrap px-3 py-4 text-sm">
                                     <span
                                       className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
@@ -560,18 +592,27 @@ const ClientInvoicesTable: React.FC<ClientInvoicesTableProps> = ({
                                   <td className="whitespace-nowrap px-3 py-4 text-sm text-right font-medium">
                                     <div className="flex justify-end space-x-2">
                                       <button
-                                        className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300"
-                                        title="Ver detalles"
-                                        onClick={() =>
-                                          onViewInvoice &&
-                                          onViewInvoice(invoice)
-                                        }
+                                        className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 group relative"
+                                        onClick={() => {
+                                          if (invoice.xmlURL) {
+                                            window.open(
+                                              invoice.xmlURL,
+                                              "_blank"
+                                            );
+                                          } else {
+                                            toast.error(
+                                              "No hay XML disponible para ver"
+                                            );
+                                          }
+                                        }}
                                       >
-                                        <EyeIcon className="h-5 w-5" />
+                                        <DocumentTextIcon className="h-5 w-5" />
+                                        <span className="absolute bottom-full left-[-20px] transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-gray-900 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                                          Ver XML
+                                        </span>
                                       </button>
                                       <button
-                                        className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300"
-                                        title="Descargar PDF"
+                                        className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300 group relative"
                                         onClick={() => {
                                           if (invoice.invoiceURL) {
                                             window.open(
@@ -586,17 +627,22 @@ const ClientInvoicesTable: React.FC<ClientInvoicesTableProps> = ({
                                         }}
                                       >
                                         <ArrowDownTrayIcon className="h-5 w-5" />
+                                        <span className="absolute bottom-full left-[-20px] transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-gray-900 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                                          Descargar PDF
+                                        </span>
                                       </button>
                                       {(invoice.paymentStatus || "pending") ===
                                         "pending" && (
                                         <button
-                                          className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
-                                          title="Pagar factura"
+                                          className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 group relative"
                                           onClick={() =>
                                             handlePayWithStripe(invoice)
                                           }
                                         >
                                           <CreditCardIcon className="h-5 w-5" />
+                                          <span className="absolute bottom-full left-[-20px] transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-gray-900 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                                            Pagar factura
+                                          </span>
                                         </button>
                                       )}
                                     </div>

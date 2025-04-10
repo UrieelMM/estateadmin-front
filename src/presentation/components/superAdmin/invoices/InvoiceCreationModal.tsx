@@ -52,7 +52,8 @@ const InvoiceCreationModal: React.FC<InvoiceCreationModalProps> = ({
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
 
   const { clients, fetchClients } = useSuperAdminStore();
-  const { createInvoice } = useBillingStore();
+  const { createInvoice, fetchInvoices, resetInvoicesState } =
+    useBillingStore();
   const db = getFirestore();
 
   useEffect(() => {
@@ -194,9 +195,18 @@ const InvoiceCreationModal: React.FC<InvoiceCreationModalProps> = ({
 
     try {
       const selectedUser = adminUsers.find((user) => user.id === userId);
+      const selectedCondominium = condominiums.find(
+        (condo) => condo.id === condominiumId
+      );
 
       if (!selectedUser) {
         toast.error("Usuario no encontrado");
+        setLoading(false);
+        return;
+      }
+
+      if (!selectedCondominium) {
+        toast.error("Condominio no encontrado");
         setLoading(false);
         return;
       }
@@ -221,6 +231,7 @@ const InvoiceCreationModal: React.FC<InvoiceCreationModalProps> = ({
         isPaid: false,
         clientId,
         condominiumId,
+        condominiumName: selectedCondominium.name,
       };
 
       const success = await createInvoice(
@@ -236,8 +247,9 @@ const InvoiceCreationModal: React.FC<InvoiceCreationModalProps> = ({
         setOpen(false);
         if (onSuccess) onSuccess();
         // Actualizar la tabla de facturas
-        const { fetchInvoices } = useBillingStore.getState();
+        await resetInvoicesState();
         await fetchInvoices(20, null, {});
+        toast.success("Factura creada exitosamente");
       }
     } catch (error) {
       console.error("Error al crear factura:", error);
@@ -378,7 +390,7 @@ const InvoiceCreationModal: React.FC<InvoiceCreationModalProps> = ({
                                 htmlFor="adminUser"
                                 className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-200"
                               >
-                                Usuario Administrador
+                                Usuario Administrador a notificar
                               </label>
                               <select
                                 id="adminUser"

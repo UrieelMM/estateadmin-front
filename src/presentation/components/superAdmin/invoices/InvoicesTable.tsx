@@ -38,6 +38,11 @@ const formatCurrency = (amount: number) => {
   }).format(amount);
 };
 
+const truncateText = (text: string | undefined, maxLength: number = 15) => {
+  if (!text) return "N/A";
+  return text.length > maxLength ? `${text.substring(0, maxLength)}...` : text;
+};
+
 const statusColors = {
   paid: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
   pending:
@@ -266,6 +271,12 @@ const InvoicesTable: React.FC<InvoicesTableProps> = ({
                         scope="col"
                         className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white"
                       >
+                        Condominio
+                      </th>
+                      <th
+                        scope="col"
+                        className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white"
+                      >
                         Monto
                       </th>
                       <th
@@ -312,6 +323,9 @@ const InvoicesTable: React.FC<InvoicesTableProps> = ({
                         </td>
                         <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 dark:text-gray-200">
                           {invoice.companyName || "Cliente sin nombre"}
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 dark:text-gray-200">
+                          {truncateText(invoice.condominiumName)}
                         </td>
                         <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 dark:text-gray-200">
                           {formatCurrency(invoice.amount)}
@@ -497,6 +511,12 @@ const InvoicesTable: React.FC<InvoicesTableProps> = ({
                                   scope="col"
                                   className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white"
                                 >
+                                  Condominio
+                                </th>
+                                <th
+                                  scope="col"
+                                  className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white"
+                                >
                                   Monto
                                 </th>
                                 <th
@@ -538,6 +558,9 @@ const InvoicesTable: React.FC<InvoicesTableProps> = ({
                                   <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 dark:text-gray-200">
                                     {invoice.companyName ||
                                       "Cliente sin nombre"}
+                                  </td>
+                                  <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 dark:text-gray-200">
+                                    {truncateText(invoice.condominiumName)}
                                   </td>
                                   <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 dark:text-gray-200">
                                     {formatCurrency(invoice.amount)}

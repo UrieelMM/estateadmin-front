@@ -109,7 +109,7 @@ const ProjectDetails = () => {
         >
           <img
             className="w-full rounded-lg shadow-xl"
-            src="https://res.cloudinary.com/dz5tntwl1/image/upload/v1744246295/OmniPixel/proyectos_wpnz78.png"
+            src="https://res.cloudinary.com/dz5tntwl1/image/upload/v1744309604/OmniPixel/Captura_de_pantalla_2025-04-10_a_la_s_12.26.29_p.m._a4ib43.png"
             alt="Panel de gestión de proyectos"
           />
         </motion.div>

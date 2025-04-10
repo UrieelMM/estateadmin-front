@@ -36,6 +36,7 @@ export interface InvoiceData {
   isPaid: boolean;
   clientId: string;
   condominiumId: string;
+  condominiumName: string;
 }
 
 export interface InvoiceRecord {
@@ -123,6 +124,13 @@ const useBillingStore = create<BillingStore>((set, _get) => ({
       const clientData = clientDoc.data();
       const companyName = clientData?.companyName || "Empresa sin nombre";
 
+      // Obtener el nombre del condominio
+      const condominiumDoc = await getDoc(
+        doc(db, `clients/${clientId}/condominiums`, condominiumId)
+      );
+      const condominiumData = condominiumDoc.data();
+      const condominiumName = condominiumData?.name || "Condominio sin nombre";
+
       // 1. Subir el archivo de factura a Storage
       const invoiceFileName = `invoice_${Date.now()}_${file.name}`;
       const storagePath = `clients/${clientId}/condominiums/${condominiumId}/invoicesGenerated/${invoiceFileName}`;
@@ -167,6 +175,7 @@ const useBillingStore = create<BillingStore>((set, _get) => ({
         paymentStatus: "pending",
         clientId,
         condominiumId,
+        condominiumName,
         invoiceNumber,
         companyName,
       });
