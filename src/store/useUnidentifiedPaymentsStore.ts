@@ -27,6 +27,10 @@ export interface UnidentifiedPayment {
   attachmentPayment?: string; // URL o referencia del archivo, si existe
   appliedToUser: boolean; // se maneja como booleano
   financialAccountId?: string;
+  expiresAt?: {
+    seconds: number;
+    nanoseconds: number;
+  };
 }
 
 interface ChargeAssignment {
@@ -181,6 +185,7 @@ export const useUnidentifiedPaymentsStore = create<UnidentifiedPaymentsState>()(
               appliedToUser:
                 data.appliedToUser === true || data.appliedToUser === "true",
               financialAccountId: data.financialAccountId || "",
+              expiresAt: data.expiresAt,
             } as UnidentifiedPayment;
           }
         );
@@ -431,8 +436,8 @@ export const useUnidentifiedPaymentsStore = create<UnidentifiedPaymentsState>()(
             `Error HTTP: ${response.status} - ${response.statusText}`
           );
         }
-        // Se espera que el endpoint retorne un array de pagos
-        const payments = response.data;
+        // Asegurar que la respuesta sea un array
+        const payments = Array.isArray(response.data) ? response.data : [];
         return payments as UnidentifiedPayment[];
       } catch (error: any) {
         console.error("Error al obtener datos del QR:", error);

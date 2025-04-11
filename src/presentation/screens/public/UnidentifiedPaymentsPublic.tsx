@@ -4,6 +4,7 @@ import {
   UnidentifiedPayment,
   useUnidentifiedPaymentsStore,
 } from "../../../store/useUnidentifiedPaymentsStore";
+import LoadingApp from "../../components/shared/loaders/LoadingApp";
 
 const UnidentifiedPaymentsPublic = () => {
   const { qrId } = useParams<{ qrId: string }>();
@@ -11,18 +12,35 @@ const UnidentifiedPaymentsPublic = () => {
   const [payments, setPayments] = useState<UnidentifiedPayment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isExpired, setIsExpired] = useState(false);
 
   useEffect(() => {
     const loadPayments = async () => {
       try {
         setLoading(true);
         setError(null);
+        setIsExpired(false);
 
         if (!qrId) {
           throw new Error("ID de QR no válido");
         }
 
         const qrPayments = await getQRData(qrId);
+
+        // Verificar si el QR ha expirado
+        if (qrPayments.length > 0 && qrPayments[0].expiresAt) {
+          const expirationDate = new Date(
+            qrPayments[0].expiresAt.seconds * 1000
+          );
+          if (expirationDate < new Date()) {
+            setIsExpired(true);
+            setError(
+              "Este código QR ha expirado. Por favor, solicite uno nuevo."
+            );
+            return;
+          }
+        }
+
         setPayments(qrPayments);
       } catch (error: any) {
         console.error("Error al cargar pagos:", error);
@@ -38,19 +56,79 @@ const UnidentifiedPaymentsPublic = () => {
   }, [getQRData, qrId]);
 
   const formatDate = (timestamp: any): string => {
-    let date: Date;
-    if (timestamp && typeof timestamp === "object" && "seconds" in timestamp) {
-      date = new Date(timestamp.seconds * 1000);
-    } else {
-      date = new Date(timestamp);
+    try {
+      let date: Date;
+
+      // Si el timestamp es null o undefined
+      if (!timestamp) {
+        return "Fecha no disponible";
+      }
+
+      // Si es un string que representa una fecha
+      if (typeof timestamp === "string") {
+        date = new Date(timestamp);
+        if (isNaN(date.getTime())) {
+          return "Fecha inválida";
+        }
+        return date.toLocaleDateString("es-MX", {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+          timeZone: "America/Mexico_City",
+        });
+      }
+
+      // Si es un objeto (timestamp de Firestore)
+      if (typeof timestamp === "object") {
+        // Timestamp de Firestore con _seconds
+        if ("_seconds" in timestamp) {
+          date = new Date(timestamp._seconds * 1000);
+        }
+        // Timestamp de Firestore con seconds
+        else if ("seconds" in timestamp) {
+          date = new Date(timestamp.seconds * 1000);
+        }
+        // Timestamp de Firestore con toDate()
+        else if (
+          "toDate" in timestamp &&
+          typeof timestamp.toDate === "function"
+        ) {
+          date = timestamp.toDate();
+        }
+        // Si es un objeto Date
+        else if (timestamp instanceof Date) {
+          date = timestamp;
+        }
+        // Si no coincide con ningún formato conocido
+        else {
+          return "Formato de fecha no soportado";
+        }
+      } else {
+        // Si es un número (timestamp en milisegundos)
+        date = new Date(timestamp);
+      }
+
+      // Validar que la fecha sea válida
+      if (isNaN(date.getTime())) {
+        return "Fecha inválida";
+      }
+
+      return date.toLocaleDateString("es-MX", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        timeZone: "America/Mexico_City",
+      });
+    } catch (error) {
+      console.error("Error al formatear fecha:", error);
+      return "Error al formatear fecha";
     }
-    return date.toLocaleDateString("es-MX");
   };
 
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <div className="text-xl text-gray-600">Cargando...</div>
+        <LoadingApp />
       </div>
     );
   }
@@ -59,6 +137,17 @@ const UnidentifiedPaymentsPublic = () => {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
         <div className="text-xl text-red-600">{error}</div>
+      </div>
+    );
+  }
+
+  if (isExpired) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="text-xl text-red-600">
+          Este código QR ha expirado. Contacte a la administración para obtener
+          uno nuevo.
+        </div>
       </div>
     );
   }
@@ -117,6 +206,9 @@ const UnidentifiedPaymentsPublic = () => {
             <p className="text-sm text-gray-500">
               Si su pago aparece en esta lista, por favor contacte a la
               administración para identificarlo.
+            </p>
+            <p className="text-sm font-bold mt-1 text-indigo-500">
+              EstateAdmin
             </p>
           </div>
         </div>
