@@ -122,7 +122,7 @@ const SummaryCards: React.FC = React.memo(() => {
         {/* Total cargos */}
         <Card
           className="group relative flex flex-row items-center p-4 rounded-lg
-                     transition-all duration-200 ease-in-out
+                     transition-all duration-200 ease-in-out bg-white
                     gray-100 dark:bg-gray-800
                      cursor-pointer
                      shadow-lg hover:shadow-md hover:bg-gray-50 dark:hover:bg-transparent"
