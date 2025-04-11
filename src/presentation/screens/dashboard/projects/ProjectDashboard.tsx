@@ -79,13 +79,13 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ project }) => {
   return (
     <div className="space-y-6 p-4">
       {/* Encabezado del proyecto */}
-      <div className="bg-white rounded-lg shadow p-6 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 dark:bg-gray-800 dark:text-gray-100 dark:shadow-lg">
+      <div className="bg-white rounded-lg shadow p-6 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-2 dark:bg-gray-800 dark:text-gray-100 dark:shadow-lg">
         <div>
           <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2 dark:text-gray-100">
             {project.name}
             <ProjectStatusBadge status={project.status} />
           </h2>
-          <p className="text-gray-600 mt-1 max-w-2xl dark:text-gray-400">
+          <p className="text-gray-600 text-sm mt-1 max-w-xl dark:text-gray-400">
             {project.description}
           </p>
         </div>
