@@ -20,6 +20,8 @@ import ProjectExpenseTagsChart from "./components/ProjectExpenseTagsChart";
 import ProjectStatusBadge from "./components/ProjectStatusBadge";
 import ProjectSummaryCard from "./components/ProjectSummaryCard";
 import KanbanBoardModal from "./components/KanbanBoardModal";
+import ProjectExportMenu from "./components/ProjectExportMenu";
+import { usePaymentSummaryStore } from "../../../../store/paymentSummaryStore";
 
 interface ProjectDashboardProps {
   project: Project;
@@ -27,6 +29,8 @@ interface ProjectDashboardProps {
 
 const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ project }) => {
   const { projectExpenses, updateProject } = useProjectStore();
+  const { logoBase64, signatureBase64, adminCompany, adminPhone, adminEmail } =
+    usePaymentSummaryStore();
 
   const [isNewExpenseModalOpen, setIsNewExpenseModalOpen] = useState(false);
   const [isEditProjectModalOpen, setIsEditProjectModalOpen] = useState(false);
@@ -90,50 +94,61 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ project }) => {
           </p>
         </div>
 
-        <div className="flex flex-wrap gap-2">
-          {project.status === ProjectStatus.IN_PROGRESS && (
-            <>
-              <button
-                onClick={() => handleStatusChange(ProjectStatus.COMPLETED)}
-                className="inline-flex items-center px-1.5 py-1.5 text-xs font-medium rounded-md text-white bg-[#38b000] hover:bg-[#5ab630]"
-              >
-                <CheckCircleIcon className="h-4 w-4 mr-1" />
-                Marcar como Finalizado
-              </button>
+        <div className="flex flex-col items-end gap-2">
+          <div className="flex flex-wrap gap-2">
+            {project.status === ProjectStatus.IN_PROGRESS && (
+              <>
+                <button
+                  onClick={() => handleStatusChange(ProjectStatus.COMPLETED)}
+                  className="inline-flex items-center px-1.5 py-1.5 text-xs font-medium rounded-md text-white bg-[#38b000] hover:bg-[#5ab630]"
+                >
+                  <CheckCircleIcon className="h-4 w-4 mr-1" />
+                  Marcar como Finalizado
+                </button>
 
-              <button
-                onClick={() => handleStatusChange(ProjectStatus.CANCELLED)}
-                className="inline-flex items-center px-1.5 py-1.5 text-xs font-medium rounded-md text-white bg-[#ea282b] hover:bg-[#ed5154]"
-              >
-                <XCircleIcon className="h-4 w-4 mr-1" />
-                Cancelar Proyecto
-              </button>
-            </>
-          )}
+                <button
+                  onClick={() => handleStatusChange(ProjectStatus.CANCELLED)}
+                  className="inline-flex items-center px-1.5 py-1.5 text-xs font-medium rounded-md text-white bg-[#ea282b] hover:bg-[#ed5154]"
+                >
+                  <XCircleIcon className="h-4 w-4 mr-1" />
+                  Cancelar Proyecto
+                </button>
+              </>
+            )}
 
-          <button
-            onClick={() => setIsEditProjectModalOpen(true)}
-            className="inline-flex items-center px-1.5 py-1.5 text-xs font-medium rounded-md text-white bg-[#4361ee] hover:bg-[#5b76f1]"
-          >
-            <PencilIcon className="h-4 w-4 mr-1" />
-            Editar Proyecto
-          </button>
+            <button
+              onClick={() => setIsEditProjectModalOpen(true)}
+              className="inline-flex items-center px-1.5 py-1.5 text-xs font-medium rounded-md text-white bg-[#4361ee] hover:bg-[#5b76f1]"
+            >
+              <PencilIcon className="h-4 w-4 mr-1" />
+              Editar Proyecto
+            </button>
 
-          <button
-            onClick={() => setIsNewExpenseModalOpen(true)}
-            className="inline-flex items-center px-1.5 py-1.5 text-xs font-medium rounded-md text-white bg-[#f7b801] hover:bg-[#edc54f]"
-          >
-            <CurrencyDollarIcon className="h-4 w-4 mr-1" />
-            Registrar Gasto
-          </button>
+            <button
+              onClick={() => setIsNewExpenseModalOpen(true)}
+              className="inline-flex items-center px-1.5 py-1.5 text-xs font-medium rounded-md text-white bg-[#f7b801] hover:bg-[#edc54f]"
+            >
+              <CurrencyDollarIcon className="h-4 w-4 mr-1" />
+              Registrar Gasto
+            </button>
 
-          <button
-            onClick={() => setIsKanbanModalOpen(true)}
-            className="inline-flex items-center px-1.5 py-1.5 text-xs font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-500"
-          >
-            <ClipboardDocumentListIcon className="h-4 w-4 mr-1" />
-            Gestionar Tareas
-          </button>
+            <button
+              onClick={() => setIsKanbanModalOpen(true)}
+              className="inline-flex items-center px-1.5 py-1.5 text-xs font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-500"
+            >
+              <ClipboardDocumentListIcon className="h-4 w-4 mr-1" />
+              Gestionar Tareas
+            </button>
+          </div>
+
+          <ProjectExportMenu
+            project={project}
+            logoBase64={logoBase64}
+            signatureBase64={signatureBase64}
+            adminCompany={adminCompany}
+            adminPhone={adminPhone}
+            adminEmail={adminEmail}
+          />
         </div>
       </div>
 
