@@ -1,20 +1,39 @@
-import { Fragment } from 'react'
-import { Dialog, Menu, Transition } from '@headlessui/react'
-import { EllipsisVerticalIcon, XMarkIcon } from '@heroicons/react/24/outline'
-import { UserData } from '../../../../interfaces/UserData';
+import { Fragment } from "react";
+import { Dialog, Menu, Transition } from "@headlessui/react";
+import { EllipsisVerticalIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import { UserData } from "../../../../interfaces/UserData";
 
 interface UserDetailsProps {
-    open: boolean;
-    setOpen: (open: boolean) => void;
-    userDetails: UserData | null;
+  open: boolean;
+  setOpen: (open: boolean) => void;
+  userDetails: UserData | null;
 }
 
 function classNames(...classes: string[]) {
-  return classes.filter(Boolean).join(' ')
+  return classes.filter(Boolean).join(" ");
 }
-const UserDetailsCondominium = ({open, setOpen, userDetails} : UserDetailsProps) => {
-  
 
+// Función para generar un color basado en el nombre
+function stringToColor(string: string): string {
+  let hash = 0;
+  for (let i = 0; i < string.length; i++) {
+    hash = string.charCodeAt(i) + ((hash << 5) - hash);
+  }
+
+  let color = "#";
+  for (let i = 0; i < 3; i++) {
+    const value = (hash >> (i * 8)) & 0xff;
+    color += ("00" + value.toString(16)).substr(-2);
+  }
+
+  return color;
+}
+
+const UserDetailsCondominium = ({
+  open,
+  setOpen,
+  userDetails,
+}: UserDetailsProps) => {
   return (
     <Transition.Root show={open} as={Fragment}>
       <Dialog as="div" className="relative z-10" onClose={setOpen}>
@@ -33,10 +52,12 @@ const UserDetailsCondominium = ({open, setOpen, userDetails} : UserDetailsProps)
                 leaveTo="translate-x-full"
               >
                 <Dialog.Panel className="pointer-events-auto w-screen max-w-2xl">
-                  <div className="flex h-full flex-col overflow-y-scroll bg-white shadow-xl">
-                    <div className="px-4 py-6 sm:px-6">
+                  <div className="flex h-full flex-col overflow-y-scroll bg-white shadow-xl dark:bg-gray-800">
+                    <div className="px-4 py-6 sm:px-6 dark:bg-gray-900">
                       <div className="flex items-start justify-between">
-                        <Dialog.Title className="text-base font-semibold leading-6 text-gray-900">Perfil</Dialog.Title>
+                        <Dialog.Title className="text-base font-semibold leading-6 text-gray-900">
+                          Perfil
+                        </Dialog.Title>
                         <div className="ml-3 flex h-7 items-center">
                           <button
                             type="button"
@@ -50,35 +71,87 @@ const UserDetailsCondominium = ({open, setOpen, userDetails} : UserDetailsProps)
                       </div>
                     </div>
                     {/* Main */}
-                    <div className="divide-y divide-gray-200">
-                      <div className="pb-6">
-                        <div className="h-24 bg-indigo-700 sm:h-20 lg:h-28" />
+                    <div className="divide-y divide-gray-200 dark:divide-gray-800">
+                      <div className="pb-6 dark:bg-gray-800">
+                        <div className="h-24 bg-indigo-700 sm:h-20 lg:h-28 dark:bg-gray-900" />
                         <div className="-mt-12 flow-root px-4 sm:-mt-8 sm:flex sm:items-end sm:px-6 lg:-mt-16">
                           <div>
                             <div className="-m-1 flex">
                               <div className="inline-flex overflow-hidden rounded-lg border-4 border-white">
-                                {
-                                  userDetails?.photoURL ? 
+                                {userDetails?.photoURL ? (
                                   <img
-                                    className="w-24 h-24 rounded-lg flex-shrink-0 sm:h-40 sm:w-40 lg:h-48 lg:w-48"
-                                    src={userDetails?.photoURL}
-                                    alt={userDetails?.name}
+                                    className="w-24 h-24 rounded-lg flex-shrink-0 sm:h-40 sm:w-40 lg:h-48 lg:w-48 dark:bg-gray-900"
+                                    src={userDetails.photoURL}
+                                    alt={userDetails.name}
+                                    onError={(e) => {
+                                      // Prevenir múltiples llamadas al manejador de error
+                                      e.currentTarget.onerror = null;
+
+                                      // Crear un nuevo elemento div para el avatar
+                                      const avatarDiv =
+                                        document.createElement("div");
+                                      avatarDiv.className =
+                                        "w-24 h-24 flex justify-center items-center rounded-lg flex-shrink-0 sm:h-40 sm:w-40 lg:h-48 lg:w-48";
+                                      avatarDiv.style.background = `linear-gradient(135deg, ${stringToColor(
+                                        userDetails.name || ""
+                                      )}, ${stringToColor(
+                                        userDetails.name + "bg" || ""
+                                      )})`;
+
+                                      // Agregar la letra al avatar
+                                      const letterP =
+                                        document.createElement("p");
+                                      letterP.className =
+                                        "text-white text-2xl md:text-4xl font-bold";
+                                      letterP.textContent = userDetails.name
+                                        .charAt(0)
+                                        .toUpperCase();
+                                      avatarDiv.appendChild(letterP);
+
+                                      // Reemplazar la imagen con el avatar
+                                      const parent =
+                                        e.currentTarget.parentElement;
+                                      if (parent) {
+                                        // Eliminar la imagen actual
+                                        parent.removeChild(e.currentTarget);
+                                        // Agregar el avatar en su lugar
+                                        parent.appendChild(avatarDiv);
+                                      }
+                                    }}
                                   />
-                                  :
-                                  <div className="w-24 h-24 flex justify-center items-center rounded-lg bg-indigo-400 flex-shrink-0 sm:h-40 sm:w-40 lg:h-48 lg:w-48">
-                                    <p className="text-white text-2xl md:text-4xl font-bold">{userDetails?.name.charAt(0)}</p>
+                                ) : (
+                                  <div
+                                    className="w-24 h-24 flex justify-center items-center rounded-lg flex-shrink-0 sm:h-40 sm:w-40 lg:h-48 lg:w-48"
+                                    style={{
+                                      background: `linear-gradient(135deg, ${stringToColor(
+                                        userDetails?.name || ""
+                                      )}, ${stringToColor(
+                                        (userDetails?.name || "") + "bg"
+                                      )})`,
+                                    }}
+                                  >
+                                    <p className="text-white text-2xl md:text-4xl font-bold">
+                                      {userDetails?.name
+                                        ? userDetails.name
+                                            .charAt(0)
+                                            .toUpperCase()
+                                        : "U"}
+                                    </p>
                                   </div>
-                                  
-                                }
+                                )}
                               </div>
                             </div>
                           </div>
                           <div className="mt-6 sm:ml-6 sm:flex-1">
                             <div>
                               <div className="flex items-center">
-                                <h3 className="text-xl font-bold text-gray-900 sm:text-2xl">{userDetails?.name} {userDetails?.lastName}</h3>
+                                <h3 className="text-xl font-bold text-gray-900 sm:text-2xl dark:text-gray-100">
+                                  {userDetails?.name} {userDetails?.lastName}
+                                </h3>
                               </div>
-                              <p className="text-sm text-gray-500">{userDetails?.email}</p>
+                              <p className="text-sm text-gray-500 dark:text-gray-100">
+                                {userDetails?.email}
+                              </p>
                             </div>
                             <div className="mt-5 flex flex-wrap space-y-3 sm:space-x-3 sm:space-y-0">
                               <button
@@ -94,10 +167,16 @@ const UserDetailsCondominium = ({open, setOpen, userDetails} : UserDetailsProps)
                                 Llamar
                               </button>
                               <div className="ml-3 inline-flex sm:ml-0">
-                                <Menu as="div" className="relative inline-block text-left">
+                                <Menu
+                                  as="div"
+                                  className="relative inline-block text-left"
+                                >
                                   <Menu.Button className="relative inline-flex items-center rounded-md bg-white p-2 text-gray-400 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
                                     <span className="absolute -inset-1" />
-                                    <EllipsisVerticalIcon className="h-5 w-5" aria-hidden="true" />
+                                    <EllipsisVerticalIcon
+                                      className="h-5 w-5"
+                                      aria-hidden="true"
+                                    />
                                   </Menu.Button>
                                   <Transition
                                     as={Fragment}
@@ -115,8 +194,10 @@ const UserDetailsCondominium = ({open, setOpen, userDetails} : UserDetailsProps)
                                             <a
                                               href="#"
                                               className={classNames(
-                                                active ? 'bg-gray-100 text-gray-900' : 'text-gray-700',
-                                                'block px-4 py-2 text-sm'
+                                                active
+                                                  ? "bg-gray-100 text-gray-900"
+                                                  : "text-gray-700",
+                                                "block px-4 py-2 text-sm"
                                               )}
                                             >
                                               Ver perfil
@@ -132,44 +213,40 @@ const UserDetailsCondominium = ({open, setOpen, userDetails} : UserDetailsProps)
                           </div>
                         </div>
                       </div>
-                      <div className="px-4 py-5 sm:px-0 sm:py-0">
+                      <div className="px-4 py-5 sm:px-0 sm:py-0 dark:bg-gray-800">
                         <dl className="space-y-8 sm:space-y-0 sm:divide-y sm:divide-gray-200">
                           <div className="sm:flex sm:px-6 sm:py-5">
-                            <dt className="text-sm font-medium text-gray-500 sm:w-40 sm:flex-shrink-0 lg:w-48">Dirección fiscal</dt>
-                            <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:ml-6 sm:mt-0">
-                              <p>
-                                {
-                                  userDetails?.taxResidence
-                                }
-                              </p>
+                            <dt className="text-sm font-medium text-gray-500 sm:w-40 sm:flex-shrink-0 lg:w-48 dark:text-gray-100">
+                              Dirección fiscal
+                            </dt>
+                            <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:ml-6 sm:mt-0 dark:text-gray-100">
+                              <p>{userDetails?.taxResidence}</p>
                             </dd>
                           </div>
                           <div className="sm:flex sm:px-6 sm:py-5">
-                            <dt className="text-sm font-medium text-gray-500 sm:w-40 sm:flex-shrink-0 lg:w-48">
+                            <dt className="text-sm font-medium text-gray-500 sm:w-40 sm:flex-shrink-0 lg:w-48 dark:text-gray-100">
                               RFC
                             </dt>
-                            <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:ml-6 sm:mt-0">   
-                            {
-                              userDetails?.RFC
-                            }   
+                            <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:ml-6 sm:mt-0 dark:text-gray-100">
+                              {userDetails?.RFC}
                             </dd>
                           </div>
                           <div className="sm:flex sm:px-6 sm:py-5">
-                            <dt className="text-sm font-medium text-gray-500 sm:w-40 sm:flex-shrink-0 lg:w-48">
+                            <dt className="text-sm font-medium text-gray-500 sm:w-40 sm:flex-shrink-0 lg:w-48 dark:text-gray-100">
                               Régimen fiscal
                             </dt>
-                            <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:ml-6 sm:mt-0">
-                              {
-                                userDetails?.taxtRegime
-                              }
+                            <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:ml-6 sm:mt-0 dark:text-gray-100">
+                              {userDetails?.taxtRegime}
                             </dd>
                           </div>
                           <div className="sm:flex sm:px-6 sm:py-5">
-                            <dt className="text-sm font-medium text-gray-500 sm:w-40 sm:flex-shrink-0 lg:w-48">
+                            <dt className="text-sm font-medium text-gray-500 sm:w-40 sm:flex-shrink-0 lg:w-48 dark:text-gray-100">
                               Razón social
                             </dt>
-                            <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:ml-6 sm:mt-0">
-                              <time dateTime="1982-06-23">{userDetails?.businessName}</time>
+                            <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:ml-6 sm:mt-0 dark:text-gray-100">
+                              <time dateTime="1982-06-23">
+                                {userDetails?.businessName}
+                              </time>
                             </dd>
                           </div>
                         </dl>
@@ -183,7 +260,7 @@ const UserDetailsCondominium = ({open, setOpen, userDetails} : UserDetailsProps)
         </div>
       </Dialog>
     </Transition.Root>
-  )
-}
+  );
+};
 
-export default UserDetailsCondominium
+export default UserDetailsCondominium;

@@ -1,13 +1,19 @@
 import React, { useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import { MaintenanceReport, MaintenanceReportFilters, useMaintenanceReportStore } from "../../../../store/useMaintenanceStore";
+import {
+  MaintenanceReport,
+  MaintenanceReportFilters,
+  useMaintenanceReportStore,
+} from "../../../../store/useMaintenanceStore";
 
 interface MaintenanceReportsTableProps {
   // Función para abrir el formulario de edición con los datos del reporte seleccionado.
   onEdit: (report: MaintenanceReport) => void;
 }
 
-const MaintenanceReportsTable: React.FC<MaintenanceReportsTableProps> = ({ onEdit }) => {
+const MaintenanceReportsTable: React.FC<MaintenanceReportsTableProps> = ({
+  onEdit,
+}) => {
   // Estados para filtros
   const [year, setYear] = useState<string>("");
   const [month, setMonth] = useState<string>("");
@@ -21,7 +27,9 @@ const MaintenanceReportsTable: React.FC<MaintenanceReportsTableProps> = ({ onEdi
 
   // Opciones de año y mes
   const currentYear = new Date().getFullYear();
-  const yearOptions = Array.from({ length: 11 }, (_, i) => (currentYear - i).toString());
+  const yearOptions = Array.from({ length: 11 }, (_, i) =>
+    (currentYear - i).toString()
+  );
 
   const monthOptions = [
     { value: "", label: "Mes" },
@@ -39,38 +47,14 @@ const MaintenanceReportsTable: React.FC<MaintenanceReportsTableProps> = ({ onEdi
     { value: "12", label: "Diciembre" },
   ];
 
-  // const areaOptions = [
-  //   "Lobby",
-  //   "Recepción",
-  //   "Vestíbulo",
-  //   "Pasillos",
-  //   "Ascensores",
-  //   "Escaleras",
-  //   "Garaje",
-  //   "Zonas Verdes",
-  //   "Área de Juegos",
-  //   "Piscina",
-  //   "Gimnasio",
-  //   "Sauna",
-  //   "Terraza",
-  //   "Azotea",
-  //   "Baños Comunes",
-  //   "Salón de Eventos",
-  //   "Cocina Comunal",
-  //   "Jardín",
-  //   "Estacionamiento",
-  //   "Área de Barbacoa",
-  //   "Cuarto de Basura",
-  //   "Mantenimiento General",
-  //   "Sistemas Eléctricos",
-  //   "Plomería",
-  //   "Administración"
-  // ];
-
   // Si se selecciona un mes sin año, se asume el año actual
   useEffect(() => {
     const filters: MaintenanceReportFilters = {};
-    const effectiveYear = year ? parseInt(year) : (month ? currentYear : undefined);
+    const effectiveYear = year
+      ? parseInt(year)
+      : month
+      ? currentYear
+      : undefined;
     if (effectiveYear) {
       filters.year = effectiveYear;
       if (month) {
@@ -99,12 +83,17 @@ const MaintenanceReportsTable: React.FC<MaintenanceReportsTableProps> = ({ onEdi
   // Formatea la fecha en formato dd/mm/aaaa
   const formatDate = (date: Date | string): string => {
     const d = new Date(date);
-    return `${("0" + d.getDate()).slice(-2)}/${("0" + (d.getMonth() + 1)).slice(-2)}/${d.getFullYear()}`;
+    return `${("0" + d.getDate()).slice(-2)}/${("0" + (d.getMonth() + 1)).slice(
+      -2
+    )}/${d.getFullYear()}`;
   };
 
   // Paginación
   const totalPages = Math.ceil(reports.length / reportsPerPage);
-  const currentReports = reports.slice((currentPage - 1) * reportsPerPage, currentPage * reportsPerPage);
+  const currentReports = reports.slice(
+    (currentPage - 1) * reportsPerPage,
+    currentPage * reportsPerPage
+  );
 
   const handlePageChange = (page: number) => {
     if (page >= 1 && page <= totalPages) {
@@ -113,7 +102,9 @@ const MaintenanceReportsTable: React.FC<MaintenanceReportsTableProps> = ({ onEdi
   };
 
   // Estado para el modal de "Ver" reporte
-  const [reportToView, setReportToView] = useState<MaintenanceReport | null>(null);
+  const [reportToView, setReportToView] = useState<MaintenanceReport | null>(
+    null
+  );
 
   return (
     <div className="p-4">
@@ -126,7 +117,9 @@ const MaintenanceReportsTable: React.FC<MaintenanceReportsTableProps> = ({ onEdi
         >
           <option value="">Año</option>
           {yearOptions.map((yr) => (
-            <option key={yr} value={yr}>{yr}</option>
+            <option key={yr} value={yr}>
+              {yr}
+            </option>
           ))}
         </select>
         <select
@@ -135,7 +128,9 @@ const MaintenanceReportsTable: React.FC<MaintenanceReportsTableProps> = ({ onEdi
           className="rounded-md border-gray-300 p-2 dark:bg-gray-900"
         >
           {monthOptions.map((m) => (
-            <option key={m.value} value={m.value}>{m.label}</option>
+            <option key={m.value} value={m.value}>
+              {m.label}
+            </option>
           ))}
         </select>
         {/* Si se requiere, se puede agregar el filtro de área aquí */}
@@ -146,35 +141,52 @@ const MaintenanceReportsTable: React.FC<MaintenanceReportsTableProps> = ({ onEdi
         <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-50">
           <thead className="bg-gray-50 dark:bg-gray-800">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-100">Fecha</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-100">Área</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-100">Encargado</th>
-              <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-100">Acciones</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-100">
+                Fecha
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-100">
+                Área
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-100">
+                Encargado
+              </th>
+              <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-100">
+                Acciones
+              </th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200 dark:divide-gray-500 dark:bg-gray-800 dark:shadow-xl">
             {currentReports && currentReports.length > 0 ? (
               currentReports.map((report) => (
-                <tr key={report.id} className=" hover:bg-gray-50 transition-colors dark:hover:bg-gray-700 cursor-pointer">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{formatDate(report.fecha)}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{report.area}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{report.encargado}</td>
+                <tr
+                  key={report.id}
+                  className=" hover:bg-gray-50 transition-colors dark:hover:bg-gray-700 cursor-pointer"
+                >
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+                    {formatDate(report.fecha)}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+                    {report.area}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+                    {report.encargado}
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
                     <button
                       onClick={() => setReportToView(report)}
-                      className="text-green-600 hover:text-green-900 mr-2"
+                      className="bg-indigo-50 p-2 w-16 rounded-md text-indigo-600 hover:text-indigo-700 mr-2"
                     >
                       Ver
                     </button>
                     <button
                       onClick={() => onEdit(report)}
-                      className="text-indigo-600 hover:text-indigo-900 mr-2"
+                      className="text-indigo-600 hover:text-indigo-700 mr-2 bg-indigo-50 w-16 rounded-md px-2 p-2"
                     >
                       Editar
                     </button>
                     <button
                       onClick={() => handleDelete(report.id!)}
-                      className="text-red-600 hover:text-red-900"
+                      className="text-red-600 hover:text-red-700 bg-red-50 w-16 rounded-md px-2 p-2"
                     >
                       Eliminar
                     </button>
@@ -183,7 +195,10 @@ const MaintenanceReportsTable: React.FC<MaintenanceReportsTableProps> = ({ onEdi
               ))
             ) : (
               <tr>
-                <td colSpan={4} className="px-6 py-4 text-center text-sm text-gray-500">
+                <td
+                  colSpan={4}
+                  className="px-6 py-4 text-center text-sm text-gray-500"
+                >
                   No se encontraron reportes
                 </td>
               </tr>
@@ -236,9 +251,11 @@ const MaintenanceReportsTable: React.FC<MaintenanceReportsTableProps> = ({ onEdi
       {/* Modal para ver reporte */}
       {reportToView && (
         <div className="fixed inset-0 z-50 flex justify-center items-center bg-black bg-opacity-50">
-          <div className="bg-white p-5 rounded-lg w-full max-w-2xl">
+          <div className="bg-white p-8 rounded-lg w-full max-w-2xl dark:bg-gray-900">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-semibold">Ver Reporte de Mantenimiento</h2>
+              <h2 className="text-lg font-semibold dark:text-gray-100">
+                Ver Reporte de Mantenimiento
+              </h2>
               <button
                 onClick={() => setReportToView(null)}
                 className="text-black font-bold bg-gray-200 rounded-full py-1 px-3"
@@ -248,28 +265,37 @@ const MaintenanceReportsTable: React.FC<MaintenanceReportsTableProps> = ({ onEdi
             </div>
             <div className="space-y-4">
               <div>
-                <label className="font-bold">Fecha: </label>
+                <label className="font-bold dark:text-gray-100">Fecha: </label>
                 <span>{formatDate(reportToView.fecha)}</span>
               </div>
               <div>
-                <label className="font-bold">Área: </label>
+                <label className="font-bold dark:text-gray-100">Área: </label>
                 <span>{reportToView.area}</span>
               </div>
               <div>
-                <label className="font-bold">Encargado: </label>
+                <label className="font-bold dark:text-gray-100">
+                  Encargado:{" "}
+                </label>
                 <span>{reportToView.encargado}</span>
               </div>
               <div>
-                <label className="font-bold">Detalle: </label>
-                <div className="prose" dangerouslySetInnerHTML={{ __html: reportToView.detalle }} />
+                <label className="font-bold dark:text-gray-100">
+                  Detalle:{" "}
+                </label>
+                <div
+                  className="prose"
+                  dangerouslySetInnerHTML={{ __html: reportToView.detalle }}
+                />
               </div>
               {reportToView.evidenciaUrl && (
                 <div>
-                  <label className="font-bold">Evidencia: </label>
-                  <a 
-                    href={reportToView.evidenciaUrl} 
-                    target="_blank" 
-                    rel="noopener noreferrer" 
+                  <label className="font-bold dark:text-gray-100">
+                    Evidencia:{" "}
+                  </label>
+                  <a
+                    href={reportToView.evidenciaUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="text-indigo-600 hover:text-indigo-900"
                   >
                     Ver documento PDF
