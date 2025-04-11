@@ -1,6 +1,6 @@
 import React, { Fragment } from "react";
 import { Menu, Transition } from "@headlessui/react";
-import { ArrowDownTrayIcon } from "@heroicons/react/24/outline";
+import { ArrowDownTrayIcon } from "@heroicons/react/24/solid";
 import { Project } from "../../../../../store/projectStore";
 import ProjectPDFGenerator from "./ProjectPDFGenerator";
 import ProjectExcelGenerator from "./ProjectExcelGenerator";
@@ -25,7 +25,7 @@ const ProjectExportMenu: React.FC<ProjectExportMenuProps> = ({
   return (
     <Menu as="div" className="relative inline-block text-left mt-2">
       <div>
-        <Menu.Button className="flex items-center gap-2 bg-indigo-600 text-white text-sm py-1 px-2 rounded font-medium hover:bg-indigo-700">
+        <Menu.Button className="flex items-center gap-2 bg-indigo-600 text-white text-xs py-1.5 px-2.5 rounded font-bold hover:bg-indigo-700">
           <ArrowDownTrayIcon className="h-4 w-4 mr-1" />
           Exportar
           <svg
