@@ -2,7 +2,15 @@
 
 import { create } from "./createStore";
 import { getAuth, getIdTokenResult } from "firebase/auth";
-import { getFirestore, collection, addDoc, getDocs } from "firebase/firestore";
+import {
+  getFirestore,
+  collection,
+  addDoc,
+  getDocs,
+  doc,
+  getDoc,
+  updateDoc,
+} from "firebase/firestore";
 import * as Sentry from "@sentry/react";
 /**
  * Interfaz para la creación de cargos.
@@ -49,6 +57,17 @@ export const useChargeStore = create<ChargeState>()((set) => ({
       }
 
       const db = getFirestore();
+
+      // Obtener información del usuario desde Firestore
+      const userRef = doc(
+        db,
+        `clients/${clientId}/condominiums/${condominiumId}/users/${userId}`
+      );
+      const userDoc = await getDoc(userRef);
+      const userData = userDoc.data();
+      const userName = userData?.name || "";
+      const userEmail = userData?.email || "";
+
       const chargesRef = collection(
         db,
         `clients/${clientId}/condominiums/${condominiumId}/users/${userId}/charges`
@@ -59,7 +78,8 @@ export const useChargeStore = create<ChargeState>()((set) => ({
 
       const now = new Date();
 
-      await addDoc(chargesRef, {
+      // Ya no generamos un chargeId personalizado, usaremos el UID de Firestore
+      const docRef = await addDoc(chargesRef, {
         concept: options.concept,
         amount: amountCents,
         referenceAmount: amountCents, // Guardamos el monto original
@@ -69,6 +89,14 @@ export const useChargeStore = create<ChargeState>()((set) => ({
         paid: options.paid,
         clientId: clientId,
         condominiumId: condominiumId,
+        notificationSent: false,
+        email: userEmail,
+        name: userName,
+      });
+
+      // Actualizamos el documento con su propio ID como chargeId
+      await updateDoc(docRef, {
+        chargeId: docRef.id,
       });
 
       set({ loading: false, error: null });
@@ -116,6 +144,8 @@ export const useChargeStore = create<ChargeState>()((set) => ({
       usersSnapshot.forEach((docUser) => {
         const userData = docUser.data();
         const role = userData.role || "owner";
+        const userName = userData.name || "";
+        const userEmail = userData.email || "";
 
         // Excluir roles admin, admin-assistant, etc. si procede
         if (role === "admin" || role === "admin-assistant") {
@@ -128,7 +158,7 @@ export const useChargeStore = create<ChargeState>()((set) => ({
           `clients/${clientId}/condominiums/${condominiumId}/users/${userId}/charges`
         );
 
-        // Registramos el cargo con startAt, dueDate y amountCents
+        // Ya no generamos un chargeId personalizado, usaremos el UID de Firestore
         batchPromises.push(
           addDoc(chargesRef, {
             concept: options.concept,
@@ -140,7 +170,15 @@ export const useChargeStore = create<ChargeState>()((set) => ({
             paid: options.paid,
             clientId: clientId,
             condominiumId: condominiumId,
-          }).then(() => Promise.resolve())
+            notificationSent: false,
+            email: userEmail,
+            name: userName,
+          }).then((docRef) => {
+            // Actualizamos el documento con su propio ID como chargeId
+            return updateDoc(docRef, {
+              chargeId: docRef.id,
+            });
+          })
         );
       });
 
