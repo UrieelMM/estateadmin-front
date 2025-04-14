@@ -14,6 +14,7 @@ import UsersRegistration from "../presentation/screens/dashboard/users/UsersRegi
 import UsersScreen from "../presentation/screens/dashboard/users/UsersScreen";
 import PaymentSuccess from "../presentation/screens/dashboard/payment/PaymentSuccess";
 import PaymentCancel from "../presentation/screens/dashboard/payment/PaymentCancel";
+import ReceiptsAndInvoices from "../presentation/screens/dashboard/financialIncome/ReceiptsAndInvoices/ReceiptsAndInvoices";
 
 export const routesApp = [
   {
@@ -127,5 +128,12 @@ export const routesApp = [
     title: "Proyectos",
     description: "Gestión de proyectos de mejoras",
     component: <Projects />,
+  },
+  {
+    to: "/dashborad/receipts-and-invoices",
+    icon: "fa-solid fa-file-invoice",
+    title: "Recibos y Comprobantes",
+    description: "Gestión de recibos y comprobantes",
+    component: <ReceiptsAndInvoices />,
   },
 ];

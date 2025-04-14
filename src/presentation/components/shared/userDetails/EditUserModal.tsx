@@ -39,7 +39,7 @@ const EditUserModal = ({
       setFormData({
         name: userDetails.name || "",
         lastName: userDetails.lastName || "",
-        phone: userDetails.phone || "",
+        phone: String(userDetails.phone || ""),
         email: userDetails.email || "",
         taxResidence: userDetails.taxResidence || "",
         RFC: userDetails.RFC || "",
@@ -84,6 +84,12 @@ const EditUserModal = ({
       setFormData((prev) => ({
         ...prev,
         [name]: checked,
+      }));
+    } else if (name === "phone") {
+      // Asegurar que phone siempre sea string
+      setFormData((prev) => ({
+        ...prev,
+        [name]: String(value),
       }));
     } else {
       setFormData((prev) => ({
