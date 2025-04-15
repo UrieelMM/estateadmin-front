@@ -543,7 +543,7 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                                   id="paymentDate"
                                   className="px-8 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-50"
                                   value={
-                                    paymentDate
+                                    paymentDate && !isNaN(paymentDate.getTime())
                                       ? paymentDate.toISOString().split("T")[0]
                                       : ""
                                   }

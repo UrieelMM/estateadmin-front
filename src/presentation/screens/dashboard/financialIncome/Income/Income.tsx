@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import PaymentForm from "../../../../components/shared/forms/PaymentForm";
-import DownloadReceipts from "./DownloadReceipts";
 import PaymentHistory from "./PaymentHistory";
 import PaymentSummary from "./PaymentSummary";
 import MorosidadView from "../Summary/MorosidadView";
@@ -99,13 +98,13 @@ const Income = () => {
               {/* 3. Tab Historial y Recibos */}
               <button
                 className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === "history-and-send-receipts"
+                  activeTab === "history-by-condominium"
                     ? "border-indigo-500 text-indigo-600 dark:text-gray-100"
                     : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400"
                 }`}
-                onClick={() => handleTabChange("history-and-send-receipts")}
+                onClick={() => handleTabChange("history-by-condominium")}
               >
-                Historial y Recibos
+                Historial por condómino
               </button>
 
               {/* 4. Tab Morosidad */}
@@ -162,13 +161,10 @@ const Income = () => {
               <PaymentSummaryByAccount />
             </>
           )}
-          {activeTab === "history-and-send-receipts" && (
-            <div className="lg:p-4 flex mt-0 lg:mt-8 flex-col lg:flex-row gap-4">
-              <div className="w-full lg:w-[70%]">
+          {activeTab === "history-by-condominium" && (
+            <div className="lg:px-4 flex mt-0 flex-col lg:flex-row gap-4">
+              <div className="w-full lg:w-[100%]">
                 <PaymentHistory />
-              </div>
-              <div className="w-full lg:w-[30%] ml-2">
-                <DownloadReceipts />
               </div>
             </div>
           )}
