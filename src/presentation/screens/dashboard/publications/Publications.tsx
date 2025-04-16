@@ -19,7 +19,8 @@ import {
 
 const Publications = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [expandedContent, setExpandedContent] = useState<string | null>(null);
+  // Usar un Set para manejar múltiples cards expandidas de forma independiente
+const [expandedCards, setExpandedCards] = useState<Set<number>>(new Set());
   const { publications, loadPublications, hasMore } = usePublicationStore(
     (state) => ({
       publications: state.publications,
@@ -194,7 +195,7 @@ const Publications = () => {
               return (
                 <div
                   key={index}
-                  className="bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden border border-gray-100 dark:border-gray-700"
+                  className="self-start flex flex-col bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden border border-gray-100 dark:border-gray-700"
                 >
                   {/* Encabezado de la publicación */}
                   <div className="px-6 pt-6 pb-3 border-b border-gray-100 dark:border-gray-700">
@@ -234,12 +235,16 @@ const Publications = () => {
                   {/* Contenido de la publicación */}
                   <div className="px-6 py-4">
                     <div
-                      className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed publication-content"
+                      className={
+                        "text-gray-700 dark:text-gray-300 text-sm leading-relaxed publication-content transition-all duration-300 " +
+                        (expandedCards.has(index)
+                          ? "max-h-96 overflow-auto"
+                          : "max-h-24 overflow-hidden")
+                      }
                       dangerouslySetInnerHTML={{
-                        __html:
-                          expandedContent === publication.content
-                            ? publication.content
-                            : truncateHtml(publication.content),
+                        __html: expandedCards.has(index)
+                          ? publication.content
+                          : truncateHtml(publication.content),
                       }}
                     />
                   </div>
@@ -256,15 +261,19 @@ const Publications = () => {
                     )}
                     <button
                       onClick={() => {
-                        if (expandedContent === publication.content) {
-                          setExpandedContent(null);
-                        } else {
-                          setExpandedContent(publication.content);
-                        }
+                        setExpandedCards((prev) => {
+                          const newSet = new Set(prev);
+                          if (newSet.has(index)) {
+                            newSet.delete(index);
+                          } else {
+                            newSet.add(index);
+                          }
+                          return newSet;
+                        });
                       }}
                       className="text-indigo-600 dark:text-indigo-400 text-sm font-medium hover:text-indigo-800 dark:hover:text-indigo-300 transition-colors flex items-center"
                     >
-                      {expandedContent === publication.content ? (
+                      {expandedCards.has(index) ? (
                         <>
                           Ver menos
                           <ChevronDownIcon className="w-4 h-4 ml-1 transform rotate-180 transition-transform" />

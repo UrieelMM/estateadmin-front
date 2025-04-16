@@ -22,6 +22,7 @@ type Publication = {
   condominiumName: string;
   condominiumId: string;
   createdAt?: Date;
+  id?: string;
 };
 
 type PublicationsState = {

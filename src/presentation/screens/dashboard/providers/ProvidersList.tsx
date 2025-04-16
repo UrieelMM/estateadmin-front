@@ -156,7 +156,7 @@ const ProvidersList = () => {
                 {providers.map((provider) => (
                   <div
                     key={provider.id}
-                    className={`col-span-1 flex flex-col rounded-xl bg-white dark:bg-gray-800 text-center overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 border border-gray-100 dark:border-gray-700 ${
+                    className={`self-start flex flex-col col-span-1 rounded-xl bg-white dark:bg-gray-800 text-center overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 border border-gray-100 dark:border-gray-700 ${
                       selectedProviderId === provider.id
                         ? "ring-2 ring-indigo-500 z-10"
                         : ""
