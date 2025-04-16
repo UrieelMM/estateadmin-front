@@ -33,6 +33,7 @@ export interface PDFReportGeneratorProps {
   conceptData?: PaymentRecord[];
   renderButton?: (onClick: () => void) => React.ReactNode;
   signatureUrl?: string;
+  buttonClassName?: string;
 }
 
 // Función auxiliar para convertir una URL de imagen a base64

@@ -1,5 +1,6 @@
 // src/components/paymentSummary/MonthComparisonTable.tsx
 import React, { useMemo } from "react";
+import "./DetailedConceptsTable.css";
 import {
   usePaymentSummaryStore,
   MonthlyStat,
@@ -104,128 +105,257 @@ const MonthComparisonTable: React.FC = React.memo(() => {
     });
 
   return (
-    <div className="mb-8 flex flex-col lg:flex-row gap-4">
+    <div className="mb-8 grid grid-cols-1 gap-6">
       <div className="mb-8 w-full">
-        <h3 className="text-xl font-bold mb-2">
+        <h3 className="title text-xl font-bold mb-4 text-gray-800 dark:text-gray-100 relative z-10">
           Comparativa mes a mes (totales)
         </h3>
-        <table className="min-w-full border-collapse">
-          <thead className="text-md">
-            <tr className="bg-gray-100 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
-              <th className="p-2 text-gray-800 dark:text-gray-100">Mes</th>
-              <th className="p-2 text-gray-800 dark:text-gray-100">
-                Monto Abonado
-              </th>
-              <th className="p-2 text-gray-800 dark:text-gray-100">Cargos</th>
-              <th className="p-2 text-gray-800 dark:text-gray-100">Saldo</th>
-              <th className="p-2 text-gray-800 dark:text-gray-100">
-                Pagos no identificados
-              </th>
-              <th className="p-2 text-gray-800 dark:text-gray-100">
-                % Cumplimiento
-              </th>
-              <th className="p-2 text-gray-800 dark:text-gray-100">
-                % Morosidad
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {sortedMonthlyStats.map((row) => {
-              // Calcular porcentajes mensuales
-              const monthRecords = Object.values(detailed)
-                .flat()
-                .filter((rec) => rec.month === row.month);
+        <div className="overflow-x-auto scrollbar-thin rounded-lg mb-5">
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="bg-gray-50 dark:bg-gray-800 text-left">
+                <th className="py-3 px-4 font-semibold text-xs uppercase tracking-wider text-gray-600 dark:text-gray-300 border-b dark:border-gray-700">
+                  Mes
+                </th>
+                <th className="py-3 px-4 font-semibold text-xs uppercase tracking-wider text-gray-600 dark:text-gray-300 border-b dark:border-gray-700">
+                  Monto Abonado
+                </th>
+                <th className="py-3 px-4 font-semibold text-xs uppercase tracking-wider text-gray-600 dark:text-gray-300 border-b dark:border-gray-700">
+                  Cargos
+                </th>
+                <th className="py-3 px-4 font-semibold text-xs uppercase tracking-wider text-gray-600 dark:text-gray-300 border-b dark:border-gray-700">
+                  Saldo
+                </th>
+                <th className="py-3 px-4 font-semibold text-xs uppercase tracking-wider text-gray-600 dark:text-gray-300 border-b dark:border-gray-700">
+                  Pagos no identificados
+                </th>
+                <th className="py-3 px-4 font-semibold text-xs uppercase tracking-wider text-gray-600 dark:text-gray-300 border-b dark:border-gray-700">
+                  % Cumplimiento
+                </th>
+                <th className="py-3 px-4 font-semibold text-xs uppercase tracking-wider text-gray-600 dark:text-gray-300 border-b dark:border-gray-700">
+                  % Morosidad
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {sortedMonthlyStats.map((row) => {
+                // Calcular porcentajes mensuales
+                const monthRecords = Object.values(detailed)
+                  .flat()
+                  .filter((rec) => rec.month === row.month);
 
-              // Calcular total de cargos del mes
-              const monthCharges = monthRecords.reduce(
-                (sum, rec) => sum + rec.referenceAmount,
-                0
-              );
-              // Calcular total de cargos pagados en su totalidad
-              const monthPaidInFull = monthRecords
-                .filter((rec) => rec.amountPending === 0)
-                .reduce((sum, rec) => sum + rec.referenceAmount, 0);
+                // Calcular total de cargos del mes
+                const monthCharges = monthRecords.reduce(
+                  (sum, rec) => sum + rec.referenceAmount,
+                  0
+                );
+                // Calcular total de cargos pagados en su totalidad
+                const monthPaidInFull = monthRecords
+                  .filter((rec) => rec.amountPending === 0)
+                  .reduce((sum, rec) => sum + rec.referenceAmount, 0);
 
-              const monthComplianceRate =
-                monthCharges > 0 ? (monthPaidInFull / monthCharges) * 100 : 0;
-              const monthDelinquencyRate = 100 - monthComplianceRate;
+                const monthComplianceRate =
+                  monthCharges > 0 ? (monthPaidInFull / monthCharges) * 100 : 0;
+                const monthDelinquencyRate = 100 - monthComplianceRate;
 
-              // Calcular el saldo a favor generado en este mes
-              const monthCreditBalance = monthRecords.reduce(
-                (sum, rec) => sum + rec.creditBalance,
-                0
-              );
+                // Calcular el saldo a favor generado en este mes
+                const monthCreditBalance = monthRecords.reduce(
+                  (sum, rec) => sum + rec.creditBalance,
+                  0
+                );
 
-              return (
-                <tr
-                  key={row.month}
-                  className="hover:bg-gray-50 transition-colors text-md dark:hover:bg-gray-700 cursor-pointer border-b border-gray-200 dark:border-gray-800"
-                >
-                  <td className="p-2">{monthNames[row.month] || row.month}</td>
-                  <td className="p-2">
-                    {formatCurrency(
-                      row.paid +
-                        (monthCreditBalance > 0 ? monthCreditBalance : 0) -
-                        row.creditUsed
-                    )}
-                  </td>
-                  <td className="p-2">{formatCurrency(row.charges)}</td>
-                  <td
-                    className={`p-2 ${
-                      row.charges -
-                        (row.paid +
-                          (monthCreditBalance > 0 ? monthCreditBalance : 0) -
-                          row.creditUsed) <
-                      0
-                        ? "text-green-500 dark:text-green-400"
-                        : "text-red-600 dark:text-red-400"
-                    }`}
+                // Calcula el saldo para este mes
+                const balance =
+                  row.charges -
+                  (row.paid +
+                    (monthCreditBalance > 0 ? monthCreditBalance : 0) -
+                    row.creditUsed);
+
+                return (
+                  <tr
+                    key={row.month}
+                    className="border-b dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-800 transition-colors duration-150 table-row"
                   >
-                    {formatCurrency(
-                      row.charges -
-                        (row.paid +
+                    <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">
+                      <span className="font-medium">
+                        {monthNames[row.month] || row.month}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300 data-value">
+                      <div className="flex items-center">
+                        <span className="text-gray-400 text-xs mr-1">$</span>
+                        {(
+                          row.paid +
                           (monthCreditBalance > 0 ? monthCreditBalance : 0) -
-                          row.creditUsed)
-                    )}
-                  </td>
-                  <td className="p-2">
-                    {formatCurrency(row.unidentifiedPayments || 0)}
-                  </td>
-                  <td className="p-2">{monthComplianceRate.toFixed(2)}%</td>
-                  <td className="p-2">{monthDelinquencyRate.toFixed(2)}%</td>
-                </tr>
-              );
-            })}
-            {/* Fila de totales */}
-            <tr className="border-b border-gray-200 text-md dark:border-gray-800">
-              <td className="p-2 font-semibold">Totales</td>
-              <td className="p-2 font-semibold">
-                {formatCurrency(totalPaidWithCredit)}
-              </td>
-              <td className="p-2 font-semibold">
-                {formatCurrency(totals.charges)}
-              </td>
-              <td
-                className={`p-2 font-semibold ${
-                  totalBalance < 0
-                    ? "text-green-500 dark:text-green-400"
-                    : "text-red-600 dark:text-red-400"
-                }`}
-              >
-                {formatCurrency(totalBalance)}
-              </td>
-              <td className="p-2 font-semibold">
-                {formatCurrency(totals.unidentifiedPayments)}
-              </td>
-              <td className="p-2 font-semibold">
-                {totalCompliance.toFixed(2)}%
-              </td>
-              <td className="p-2 font-semibold">
-                {totalDelinquency.toFixed(2)}%
-              </td>
-            </tr>
-          </tbody>
-        </table>
+                          row.creditUsed
+                        ).toLocaleString("en-US", {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
+                      </div>
+                    </td>
+                    <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300 data-value">
+                      <div className="flex items-center">
+                        <span className="text-gray-400 text-xs mr-1">$</span>
+                        {row.charges.toLocaleString("en-US", {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
+                      </div>
+                    </td>
+                    <td className="py-3 px-4 text-sm data-value">
+                      <div
+                        className={`
+                      flex items-center gap-1 px-2 py-1 rounded-full 
+                      ${
+                        balance < 0
+                          ? "bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400"
+                          : "bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400"
+                      }
+                    `}
+                      >
+                        <span className="text-xs">
+                          {balance < 0 ? "↓" : "↑"}
+                        </span>
+                        <span>
+                          $
+                          {Math.abs(balance).toLocaleString("en-US", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300 data-value">
+                      <div className="flex items-center">
+                        <span className="text-gray-400 text-xs mr-1">$</span>
+                        {(row.unidentifiedPayments || 0).toLocaleString(
+                          "en-US",
+                          {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          }
+                        )}
+                      </div>
+                    </td>
+                    <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">
+                      <div className="flex items-center gap-2">
+                        <div className="w-12 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-indigo-500 dark:bg-indigo-400 rounded-full"
+                            style={{ width: `${monthComplianceRate}%` }}
+                          ></div>
+                        </div>
+                        <span className="text-sm data-value">
+                          {monthComplianceRate.toFixed(2)}%
+                        </span>
+                      </div>
+                    </td>
+                    <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">
+                      <div className="flex items-center gap-2">
+                        <div className="w-12 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-rose-500 dark:bg-rose-400 rounded-full"
+                            style={{ width: `${monthDelinquencyRate}%` }}
+                          ></div>
+                        </div>
+                        <span className="text-sm data-value">
+                          {monthDelinquencyRate.toFixed(2)}%
+                        </span>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+              {/* Fila de totales */}
+              <tr className="bg-gray-100 dark:bg-indigo-900/30 font-medium text-gray-800 dark:text-white">
+                <td className="py-3 px-4 text-sm font-bold">Totales</td>
+                <td className="py-3 px-4 text-sm data-value font-bold">
+                  <div className="flex items-center">
+                    <span className="text-gray-500 dark:text-gray-400 text-xs mr-1">
+                      $
+                    </span>
+                    {totalPaidWithCredit.toLocaleString("en-US", {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
+                  </div>
+                </td>
+                <td className="py-3 px-4 text-sm data-value font-bold">
+                  <div className="flex items-center">
+                    <span className="text-gray-500 dark:text-gray-400 text-xs mr-1">
+                      $
+                    </span>
+                    {totals.charges.toLocaleString("en-US", {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
+                  </div>
+                </td>
+                <td className="py-3 px-4 text-sm data-value font-bold">
+                  <div
+                    className={`
+                  flex items-center gap-1 px-2 py-1 rounded-full 
+                  ${
+                    totalBalance < 0
+                      ? "bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400"
+                      : "bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400"
+                  }
+                `}
+                  >
+                    <span className="text-xs">
+                      {totalBalance < 0 ? "↓" : "↑"}
+                    </span>
+                    <span>
+                      $
+                      {Math.abs(totalBalance).toLocaleString("en-US", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
+                    </span>
+                  </div>
+                </td>
+                <td className="py-3 px-4 text-sm data-value font-bold">
+                  <div className="flex items-center">
+                    <span className="text-gray-500 dark:text-gray-400 text-xs mr-1">
+                      $
+                    </span>
+                    {totals.unidentifiedPayments.toLocaleString("en-US", {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
+                  </div>
+                </td>
+                <td className="py-3 px-4 text-sm font-bold">
+                  <div className="flex items-center gap-2">
+                    <div className="w-16 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-indigo-500 dark:bg-indigo-400 rounded-full"
+                        style={{ width: `${totalCompliance}%` }}
+                      ></div>
+                    </div>
+                    <span className="text-sm data-value">
+                      {totalCompliance.toFixed(2)}%
+                    </span>
+                  </div>
+                </td>
+                <td className="py-3 px-4 text-sm font-bold">
+                  <div className="flex items-center gap-2">
+                    <div className="w-16 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-rose-500 dark:bg-rose-400 rounded-full"
+                        style={{ width: `${totalDelinquency}%` }}
+                      ></div>
+                    </div>
+                    <span className="text-sm data-value">
+                      {totalDelinquency.toFixed(2)}%
+                    </span>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
