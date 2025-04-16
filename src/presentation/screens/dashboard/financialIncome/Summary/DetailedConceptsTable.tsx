@@ -515,32 +515,26 @@ const DetailedConceptsTable: React.FC<DetailedConceptsTableProps> = React.memo(
                   showAll ? "Mostrar menos conceptos" : "Mostrar más conceptos"
                 }
                 aria-expanded={showAll}
-                className="group flex items-center gap-2 px-6 py-2.5 rounded-full 
-                          text-sm font-medium text-indigo-600 dark:text-indigo-400 
-                          border border-indigo-200 dark:border-indigo-800 
-                          hover:bg-indigo-50 dark:hover:bg-indigo-900/30 
-                          transition-all duration-300 focus:outline-none focus:ring-2 
-                          focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
+                className="group relative px-6 py-1.5 text-sm bg-white dark:bg-gray-800 text-indigo-600 dark:text-indigo-400 font-medium rounded-lg border border-indigo-200 dark:border-indigo-900 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-all duration-200 shadow-sm hover:shadow focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50"
                 onClick={() => setShowAll(!showAll)}
               >
-                <span>
-                  {showAll ? "Mostrar menos" : "Mostrar más conceptos"}
+                <span className="flex items-center">
+                  <span>{showAll ? "Mostrar menos" : "Mostrar más conceptos"}</span>
+                  <svg
+                    className="w-4 h-4 ml-2 group-hover:translate-y-1 transition-transform duration-200"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
                 </span>
-                <svg
-                  className={`h-4 w-4 transition-transform duration-300 ${
-                    showAll ? "rotate-180" : ""
-                  }`}
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 9l-7 7-7-7"
-                  />
-                </svg>
+                <span className="absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r from-indigo-600 to-purple-600 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></span>
               </button>
             </div>
           )}

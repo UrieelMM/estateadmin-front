@@ -20,7 +20,7 @@ import {
 const Publications = () => {
   const [isOpen, setIsOpen] = useState(false);
   // Usar un Set para manejar múltiples cards expandidas de forma independiente
-const [expandedCards, setExpandedCards] = useState<Set<number>>(new Set());
+  const [expandedCards, setExpandedCards] = useState<Set<number>>(new Set());
   const { publications, loadPublications, hasMore } = usePublicationStore(
     (state) => ({
       publications: state.publications,
@@ -296,7 +296,7 @@ const [expandedCards, setExpandedCards] = useState<Set<number>>(new Set());
         {hasMore && (
           <div className="flex justify-center mt-10">
             <button
-              className="group relative px-6 py-3 bg-white dark:bg-gray-800 text-indigo-600 dark:text-indigo-400 font-medium rounded-lg border border-indigo-200 dark:border-indigo-900 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-all duration-200 shadow-sm hover:shadow focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50"
+              className="group relative px-6 py-1.5 text-sm bg-white dark:bg-gray-800 text-indigo-600 dark:text-indigo-400 font-medium rounded-lg border border-indigo-200 dark:border-indigo-900 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-all duration-200 shadow-sm hover:shadow focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50"
               onClick={() => loadPublications(true)}
             >
               <span className="flex items-center">
