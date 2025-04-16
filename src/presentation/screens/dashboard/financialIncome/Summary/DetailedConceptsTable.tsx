@@ -361,7 +361,7 @@ const DetailedConceptsTable: React.FC<DetailedConceptsTableProps> = React.memo(
                                     }`,
                                   });
                                 })}
-                                <tr className="bg-gray-100 dark:bg-indigo-900/30 font-medium text-gray-800 dark:text-white">
+                                <tr className="bg-gray-100 dark:bg-gray-900 font-medium text-gray-800 dark:text-white">
                                   <td className="py-3 px-4 text-sm font-bold">
                                     Total
                                   </td>

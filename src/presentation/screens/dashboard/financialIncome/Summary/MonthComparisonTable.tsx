@@ -183,24 +183,16 @@ const MonthComparisonTable: React.FC = React.memo(() => {
                     </td>
                     <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300 data-value">
                       <div className="flex items-center">
-                        <span className="text-gray-400 text-xs mr-1">$</span>
-                        {(
+                        {formatCurrency(
                           row.paid +
-                          (monthCreditBalance > 0 ? monthCreditBalance : 0) -
-                          row.creditUsed
-                        ).toLocaleString("en-US", {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        })}
+                            (monthCreditBalance > 0 ? monthCreditBalance : 0) -
+                            row.creditUsed
+                        )}
                       </div>
                     </td>
                     <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300 data-value">
                       <div className="flex items-center">
-                        <span className="text-gray-400 text-xs mr-1">$</span>
-                        {row.charges.toLocaleString("en-US", {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        })}
+                        {formatCurrency(row.charges)}
                       </div>
                     </td>
                     <td className="py-3 px-4 text-sm data-value">
@@ -217,25 +209,12 @@ const MonthComparisonTable: React.FC = React.memo(() => {
                         <span className="text-xs">
                           {balance < 0 ? "↓" : "↑"}
                         </span>
-                        <span>
-                          $
-                          {Math.abs(balance).toLocaleString("en-US", {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
-                          })}
-                        </span>
+                        <span>{formatCurrency(Math.abs(balance))}</span>
                       </div>
                     </td>
                     <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300 data-value">
                       <div className="flex items-center">
-                        <span className="text-gray-400 text-xs mr-1">$</span>
-                        {(row.unidentifiedPayments || 0).toLocaleString(
-                          "en-US",
-                          {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
-                          }
-                        )}
+                        {formatCurrency(row.unidentifiedPayments || 0)}
                       </div>
                     </td>
                     <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">
@@ -268,28 +247,16 @@ const MonthComparisonTable: React.FC = React.memo(() => {
                 );
               })}
               {/* Fila de totales */}
-              <tr className="bg-gray-100 dark:bg-indigo-900/30 font-medium text-gray-800 dark:text-white">
+              <tr className="bg-gray-100 dark:bg-gray-900 font-medium text-gray-800 dark:text-white">
                 <td className="py-3 px-4 text-sm font-bold">Totales</td>
                 <td className="py-3 px-4 text-sm data-value font-bold">
                   <div className="flex items-center">
-                    <span className="text-gray-500 dark:text-gray-400 text-xs mr-1">
-                      $
-                    </span>
-                    {totalPaidWithCredit.toLocaleString("en-US", {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}
+                    {formatCurrency(totalPaidWithCredit)}
                   </div>
                 </td>
                 <td className="py-3 px-4 text-sm data-value font-bold">
                   <div className="flex items-center">
-                    <span className="text-gray-500 dark:text-gray-400 text-xs mr-1">
-                      $
-                    </span>
-                    {totals.charges.toLocaleString("en-US", {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}
+                    {formatCurrency(totals.charges)}
                   </div>
                 </td>
                 <td className="py-3 px-4 text-sm data-value font-bold">
@@ -306,24 +273,12 @@ const MonthComparisonTable: React.FC = React.memo(() => {
                     <span className="text-xs">
                       {totalBalance < 0 ? "↓" : "↑"}
                     </span>
-                    <span>
-                      $
-                      {Math.abs(totalBalance).toLocaleString("en-US", {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}
-                    </span>
+                    <span>{formatCurrency(Math.abs(totalBalance))}</span>
                   </div>
                 </td>
                 <td className="py-3 px-4 text-sm data-value font-bold">
                   <div className="flex items-center">
-                    <span className="text-gray-500 dark:text-gray-400 text-xs mr-1">
-                      $
-                    </span>
-                    {totals.unidentifiedPayments.toLocaleString("en-US", {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}
+                    {formatCurrency(totals.unidentifiedPayments)}
                   </div>
                 </td>
                 <td className="py-3 px-4 text-sm font-bold">
