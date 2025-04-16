@@ -52,12 +52,14 @@ const ProvidersList = () => {
   return (
     <>
       <header className="bg-gradient-to-r ml-2  shadow-lg flex w-full justify-between px-6 py-4 rounded-lg items-center mb-6 dark:shadow-2xl">
-        <h1 className="text-xl font-semibold text-indigo-600 dark:text-indigo-200 flex items-center">
-          <UserCircleIcon className="h-6 w-6 mr-2" />
-          Directorio de Proveedores
-        </h1>
+        <div className="flex items-center space-x-2">
+          <UserCircleIcon className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
+          <h1 className="text-xl font-semibold text-gray-800 dark:text-gray-100">
+            Directorio de Proveedores
+          </h1>
+        </div>
         <button
-          className="bg-white text-indigo-600 hover:bg-indigo-50 font-medium py-2 px-4 rounded-lg shadow-md flex items-center transition-all duration-200"
+          className="flex items-center px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-medium rounded-lg  shadow-md hover:shadow-lg focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50 active:scale-95"
           onClick={() => {
             setSelectedProviderId(null);
             setOpen(true);

@@ -64,11 +64,15 @@ export const usePublicationStore = create<PublicationsState>()((set, get) => ({
     formData.append("attachments", publication.file as Blob);
 
     try {
-      await axios.post("http://localhost:3000/publications/create", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
+      await axios.post(
+        `${import.meta.env.VITE_URL_SERVER}/publications/create`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
     } catch (error) {
       throw new Error("Error al enviar la publicación");
     }
