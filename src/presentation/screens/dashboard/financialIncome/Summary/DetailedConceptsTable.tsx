@@ -135,7 +135,7 @@ const DetailedConceptsTable: React.FC<DetailedConceptsTableProps> = React.memo(
                     }
                   }}
                   onClick={toggleConcept}
-                  className="cursor-pointer bg-gray-50 dark:from-gray-800 dark:to-gray-750 px-5 py-4 flex items-center justify-between"
+                  className="cursor-pointer bg-gray-50 dark:bg-gray-800 px-5 py-4 flex items-center justify-between"
                 >
                   <h4 className="text-lg font-semibold text-gray-800 dark:text-gray-100 concept-header">
                     {concept}
