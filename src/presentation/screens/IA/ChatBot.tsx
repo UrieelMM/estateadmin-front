@@ -74,7 +74,6 @@ const ChatBotUI: React.FC<ChatBotUIProps> = memo(
     fileInputRef,
     messagesEndRef,
   }) => {
-    console.log("Rendering ChatBotUI"); // Añadir log para depuración
     return (
       <div className="fixed bottom-4 right-4 z-[9]">
         {isOpen ? (
@@ -316,11 +315,6 @@ ${last5
   const handleSend = useCallback(
     async (e: FormEvent<HTMLFormElement>) => {
       e.preventDefault();
-      // Log para ver el estado del archivo ANTES de enviar
-      console.log(
-        "handleSend - File state from store:",
-        useChatBotStore.getState().file
-      );
       const contextPrompt = generateLast5PaymentsContext();
       await stableSendMessage(BASE_PROMPT, contextPrompt);
 

@@ -123,9 +123,6 @@ export const useChatBotStore = create<ChatBotState & ChatBotActions>()(
         condominiumId,
       } = get();
 
-      // Log para ver el archivo que recibe la acción
-      console.log("sendMessage Action - Received file:", file);
-
       if (!input.trim() && !file) {
         setError("Por favor escribe un mensaje o adjunta un archivo.");
         return;
