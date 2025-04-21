@@ -1,4 +1,4 @@
-import { create } from "zustand";
+import { create } from "../createStore";
 import { getFirestore, collection, getDocs } from "firebase/firestore";
 import { executeSuperAdminOperation } from "../../services/superAdminService";
 import toast from "react-hot-toast";
@@ -68,7 +68,7 @@ const initialCondominiumForm: CondominiumFormData = {
 const db = getFirestore();
 
 // Store para gestión de clientes y condominios
-const useClientsConfig = create<ClientsConfigStore>((set, get) => ({
+const useClientsConfig = create<ClientsConfigStore>()((set, get) => ({
   // Estado inicial
   clientsWithCondominiums: [],
   currentClient: null,

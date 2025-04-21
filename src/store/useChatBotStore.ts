@@ -1,4 +1,4 @@
-import { create } from "zustand";
+import { create } from "./createStore";
 import { produce } from "immer"; // Para mutaciones inmutables más sencillas
 import { streamGeminiResponse } from "../services/geminiService"; // Importamos el servicio
 

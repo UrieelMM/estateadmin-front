@@ -1,4 +1,4 @@
-import { create } from "zustand";
+import { create } from "../createStore";
 import {
   getFirestore,
   collection,
@@ -102,7 +102,7 @@ const invoiceCache: Record<
   }
 > = {};
 
-const useBillingStore = create<BillingStore>((set, _get) => ({
+const useBillingStore = create<BillingStore>()((set, _get) => ({
   loading: false,
   error: null,
   invoices: [],

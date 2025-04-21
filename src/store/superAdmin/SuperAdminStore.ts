@@ -1,4 +1,4 @@
-import { create } from "zustand";
+import { create } from "../createStore";
 import * as Sentry from "@sentry/react";
 import {
   getFirestore,
@@ -69,7 +69,7 @@ interface SuperAdminStore {
 const db = getFirestore();
 
 // Store específico para operaciones de solo lectura de Super Admin
-const useSuperAdminStore = create<SuperAdminStore>((set, _get) => ({
+const useSuperAdminStore = create<SuperAdminStore>()((set, _get) => ({
   clients: [],
   recentAudits: [],
   loadingClients: false,
