@@ -22,6 +22,7 @@ import { getAuth } from "firebase/auth";
 import ClientInvoicesTable from "../../../../components/client/invoices/ClientInvoicesTable";
 import { ClientInvoice } from "../../../../../store/useClientInvoicesStore";
 import useClientInvoicesStore from "../../../../../store/useClientInvoicesStore";
+import PaymentMessageEditor from "../PaymentMessageEditor/PaymentMessageEditor";
 
 const ConfigForm = () => {
   const { config, loading, error, fetchConfig, updateConfig } =
@@ -174,7 +175,7 @@ const ConfigForm = () => {
         {userRole === "admin" && (
           <>
             <button
-              className={`py-2 px-4 ${
+              className={`mr-4 py-2 px-4 ${
                 activeTab === "cuentas"
                   ? "border-b-2 border-indigo-600 text-indigo-600 dark:text-gray-100"
                   : "text-gray-500 dark:text-gray-400"
@@ -182,6 +183,16 @@ const ConfigForm = () => {
               onClick={() => setActiveTab("cuentas")}
             >
               Cuentas Bancarias
+            </button>
+            <button
+              className={`mr-4 py-2 px-4 ${
+                activeTab === "mensaje-pago"
+                  ? "border-b-2 border-indigo-600 text-indigo-600 dark:text-gray-100"
+                  : "text-gray-500 dark:text-gray-400"
+              }`}
+              onClick={() => setActiveTab("mensaje-pago")}
+            >
+              Mensaje de Pago
             </button>
             <button
               className={`py-2 px-4 ${
@@ -581,6 +592,9 @@ const ConfigForm = () => {
         </div>
       )}
       {userRole === "admin" && activeTab === "cuentas" && <FinancialAccounts />}
+      {userRole === "admin" && activeTab === "mensaje-pago" && (
+        <PaymentMessageEditor />
+      )}
       {userRole === "admin" && activeTab === "users" && <AdminUsers />}
     </div>
   );

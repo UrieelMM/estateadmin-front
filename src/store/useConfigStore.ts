@@ -7,6 +7,7 @@ import {
   updateDoc,
   collection,
   getDocs,
+  setDoc,
 } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import * as Sentry from "@sentry/react";
@@ -26,8 +27,18 @@ export type Config = {
   darkMode?: boolean;
 };
 
+/** Información del mensaje de pago para clientes */
+export interface PaymentMessageInfo {
+  bankAccount: string;
+  bankName: string;
+  dueDay: number;
+  paymentMessage: string;
+  updatedAt: Date;
+}
+
 type ConfigState = {
   config: Config | null;
+  paymentMessageInfo: PaymentMessageInfo | null;
   loading: boolean;
   error: string | null;
   fetchConfig: () => Promise<void>;
@@ -37,10 +48,13 @@ type ConfigState = {
     signatureFile?: File,
     logoReportsFile?: File
   ) => Promise<void>;
+  updatePaymentMessageInfo: (data: Omit<PaymentMessageInfo, "updatedAt">) => Promise<void>;
+  fetchPaymentMessageInfo: () => Promise<void>;
 };
 
 export const useConfigStore = create<ConfigState>()((set, get) => ({
   config: null,
+  paymentMessageInfo: null,
   loading: false,
   error: null,
 
@@ -190,6 +204,124 @@ export const useConfigStore = create<ConfigState>()((set, get) => ({
       set({ error: err.message, loading: false });
       Sentry.captureException(err);
       throw err;
+    }
+  },
+
+  /**
+   * Actualiza la información del mensaje de pago en una nueva colección en Firestore
+   * Estos datos se guardan en clients/{clientId}/condominiums/{condominiumId}/paymentMessageInfo/config
+   */
+  updatePaymentMessageInfo: async (data) => {
+    set({ loading: true, error: null });
+    try {
+      // Obtenemos condominiumId
+      const condominiumId = localStorage.getItem("condominiumId");
+      if (!condominiumId) {
+        set({ error: "Condominio no seleccionado", loading: false });
+        return;
+      }
+
+      // Obtenemos user y clientId
+      const auth = getAuth();
+      const user = auth.currentUser;
+      if (!user) throw new Error("Usuario no autenticado");
+
+      const tokenResult = await getIdTokenResult(user);
+      const clientId = tokenResult.claims["clientId"] as string;
+      if (!clientId) throw new Error("clientId no disponible en el token");
+
+      const db = getFirestore();
+      
+      // Preparamos los datos con la fecha de actualización
+      const paymentMessageData: PaymentMessageInfo = {
+        ...data,
+        updatedAt: new Date()
+      };
+
+      // Guardamos en la colección paymentMessageInfo
+      const paymentMsgDocRef = doc(
+        db, 
+        "clients", 
+        clientId, 
+        "condominiums", 
+        condominiumId, 
+        "paymentMessageInfo", 
+        "config"
+      );
+      
+      await setDoc(paymentMsgDocRef, paymentMessageData);
+
+      // Actualizamos el estado local
+      set({ 
+        paymentMessageInfo: paymentMessageData, 
+        loading: false 
+      });
+    } catch (err: any) {
+      set({ error: err.message, loading: false });
+      Sentry.captureException(err);
+      throw err;
+    }
+  },
+
+  /**
+   * Obtiene la información del mensaje de pago desde Firestore
+   * Estos datos se leen de clients/{clientId}/condominiums/{condominiumId}/paymentMessageInfo/config
+   */
+  fetchPaymentMessageInfo: async () => {
+    set({ loading: true, error: null });
+    try {
+      // Obtenemos condominiumId
+      const condominiumId = localStorage.getItem("condominiumId");
+      if (!condominiumId) {
+        set({ error: "Condominio no seleccionado", loading: false });
+        return;
+      }
+
+      // Obtenemos user y clientId
+      const auth = getAuth();
+      const user = auth.currentUser;
+      if (!user) throw new Error("Usuario no autenticado");
+
+      const tokenResult = await getIdTokenResult(user);
+      const clientId = tokenResult.claims["clientId"] as string;
+      if (!clientId) throw new Error("clientId no disponible en el token");
+
+      const db = getFirestore();
+      
+      // Leemos el documento de la colección paymentMessageInfo
+      const paymentMsgDocRef = doc(
+        db, 
+        "clients", 
+        clientId, 
+        "condominiums", 
+        condominiumId, 
+        "paymentMessageInfo", 
+        "config"
+      );
+      
+      const docSnap = await getDoc(paymentMsgDocRef);
+      
+      if (docSnap.exists()) {
+        const data = docSnap.data() as PaymentMessageInfo;
+        // Aseguramos que updatedAt sea un objeto Date
+        if (data.updatedAt && typeof data.updatedAt !== 'object') {
+          data.updatedAt = (data.updatedAt as any).toDate();
+        }
+        set({ paymentMessageInfo: data, loading: false });
+      } else {
+        // Si no existe, establecemos un valor por defecto
+        const defaultPaymentInfo: PaymentMessageInfo = {
+          bankAccount: "",
+          bankName: "",
+          dueDay: 10,
+          paymentMessage: "",
+          updatedAt: new Date()
+        };
+        set({ paymentMessageInfo: defaultPaymentInfo, loading: false });
+      }
+    } catch (err: any) {
+      set({ error: err.message, loading: false });
+      Sentry.captureException(err);
     }
   },
 }));
