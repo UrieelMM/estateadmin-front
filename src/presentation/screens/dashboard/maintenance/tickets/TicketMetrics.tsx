@@ -10,19 +10,49 @@ const TicketMetrics: React.FC = () => {
     const enProgreso = tickets.filter((t) => t.status === "en_progreso").length;
     const cerrados = tickets.filter((t) => t.status === "cerrado").length;
     
-    // Calcular promedio de resolución (solo tickets cerrados con history)
+    // Calcular promedio de resolución (solo tickets cerrados)
+    // Filtramos tickets que estén cerrados y tengan both createdAt y history
     const resolvedTickets = tickets.filter(
-      (t) => t.status === "cerrado" && Array.isArray(t.history) && (t.history?.length ?? 0) > 0
+      (t) => t.status === "cerrado" && t.createdAt && Array.isArray(t.history) && (t.history?.length ?? 0) > 0
     );
+    
     let avgTime = 0;
     if (resolvedTickets.length > 0) {
       const sum = resolvedTickets.reduce((acc, t) => {
+        // Usamos createdAt como fecha de inicio (más preciso que buscar en history)
+        const createdTime = t.createdAt instanceof Date
+          ? t.createdAt.getTime()
+          : new Date(t.createdAt).getTime();
+        
+        // Buscamos la última vez que el ticket se marcó como cerrado
         const historyArr = t.history ?? [];
-        const created = historyArr[0]?.date ? new Date(historyArr[0].date).getTime() : 0;
-        const closed = historyArr.find((h:any) => h.status === "cerrado");
-        const closedDate = closed ? new Date(closed.date).getTime() : 0;
-        return acc + (closedDate && created ? closedDate - created : 0);
+        // Ordenar el historial por fecha (más reciente primero) para asegurar que tomamos el último cierre
+        const sortedHistory = [...historyArr].sort((a, b) => {
+          const dateA = a.date instanceof Date ? a.date : new Date(a.date as string);
+          const dateB = b.date instanceof Date ? b.date : new Date(b.date as string);
+          return dateB.getTime() - dateA.getTime(); // Orden descendente
+        });
+        
+        // Encontrar el último evento de cierre
+        const closed = sortedHistory.find(h => h.status === "cerrado");
+        const closedDate = closed
+          ? (closed.date instanceof Date 
+            ? closed.date.getTime() 
+            : new Date(closed.date as string).getTime())
+          : 0;
+        
+        // Si no hay fecha de cierre en el historial, usar la fecha de actualización del ticket
+        const resolvedTime = closedDate || (
+          t.updatedAt instanceof Date
+            ? t.updatedAt.getTime()
+            : new Date(t.updatedAt).getTime()
+        );
+        
+        // Calcular la diferencia en milisegundos y agregarla al acumulador
+        return acc + (resolvedTime && createdTime ? resolvedTime - createdTime : 0);
       }, 0);
+      
+      // Convertir de milisegundos a horas, redondeando al entero más cercano
       avgTime = Math.round(sum / resolvedTickets.length / 1000 / 60 / 60); // en horas
     }
     

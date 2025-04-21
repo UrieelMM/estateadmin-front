@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useTicketsStore, Ticket } from "./ticketsStore";
 import TicketStatusBadge from "./TicketStatusBadge";
 import TicketForm from "./TicketForm";
+import TicketTimeline from "./TicketTimeline";
 import { motion } from "framer-motion";
 
 const TicketDetail: React.FC = () => {
@@ -11,10 +12,193 @@ const TicketDetail: React.FC = () => {
     updateTicket,
     deleteTicket,
     loading,
-    error,
+    tickets,
   } = useTicketsStore();
+
+  function renderMergedTimeline(activeTicket: Ticket, tickets: Ticket[]) {
+    console.log("TicketDetail - activeTicket:", activeTicket);
+    console.log("TicketDetail - activeTicket.history:", activeTicket.history);
+
+    // Verificar si activeTicket.history está inicializado correctamente
+    if (!activeTicket.history) {
+      console.warn("El historial del ticket está vacío o undefined");
+    }
+
+    // Asegurarse de que history sea un array
+    let mergedHistory = Array.isArray(activeTicket.history)
+      ? [...activeTicket.history]
+      : [];
+    let mergedTags = [...(activeTicket.tags || [])];
+    let mergedInfo: { title: string; description: string; id: string }[] = [];
+
+    // Manejar tickets fusionados
+    if (activeTicket.mergedFrom && activeTicket.mergedFrom.length > 0) {
+      console.log("Ticket tiene mergedFrom:", activeTicket.mergedFrom);
+      for (const mergedId of activeTicket.mergedFrom) {
+        const mergedTicket = tickets.find((t) => t.id === mergedId);
+        if (mergedTicket) {
+          mergedHistory.push({
+            date: mergedTicket.updatedAt || mergedTicket.createdAt,
+            action: "merge",
+            user: mergedTicket.createdBy,
+            comment: `Ticket fusionado: ${mergedTicket.title}`,
+          });
+          mergedInfo.push({
+            title: mergedTicket.title,
+            description: mergedTicket.description,
+            id: mergedTicket.id || "",
+          });
+
+          // Verificar si el ticket fusionado tiene historial
+          if (mergedTicket.history && mergedTicket.history.length > 0) {
+            console.log(
+              `Añadiendo historial del ticket fusionado ${mergedId}:`,
+              mergedTicket.history
+            );
+            mergedHistory = mergedHistory.concat(mergedTicket.history);
+          }
+
+          mergedTags = mergedTags.concat(mergedTicket.tags || []);
+        }
+      }
+      mergedTags = Array.from(new Set(mergedTags));
+    }
+
+    // Asegurarse de que todas las fechas sean objetos Date para ordenar correctamente
+    mergedHistory = mergedHistory.map((item) => {
+      if (typeof item.date === "string") {
+        return { ...item, date: new Date(item.date) };
+      }
+      return item;
+    });
+
+    // Ordenar por fecha
+    mergedHistory.sort((a, b) => {
+      const dateA =
+        a.date instanceof Date ? a.date : new Date(a.date as string);
+      const dateB =
+        b.date instanceof Date ? b.date : new Date(b.date as string);
+      return dateA.getTime() - dateB.getTime();
+    });
+
+    console.log("TicketDetail - mergedHistory final:", mergedHistory);
+    console.log("TicketDetail - mergedHistory length:", mergedHistory.length);
+
+    return mergedHistory.length > 0 ? (
+      <>
+        {mergedInfo.length > 0 && (
+          <div className="mb-6">
+            <div className="text-xs text-gray-500 dark:text-gray-400 mb-1 font-bold">
+              Tickets fusionados:
+            </div>
+            <ul className="list-disc ml-5">
+              {mergedInfo.map((info, idx) => (
+                <li key={info.id + idx} className="mb-1">
+                  <span className="font-semibold text-indigo-600 dark:text-indigo-300">
+                    {info.title}
+                  </span>
+                  <span className="ml-2 text-gray-500 dark:text-gray-400 text-xs">
+                    {info.description}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        <div className="mt-6 flex justify-center">
+          <button
+            onClick={() => setShowHistory(!showHistory)}
+            className="px-4 py-2 bg-transparent border-b-2 border-indigo-700 dark:border-indigo-100 mb-4 text-sm text-indigo-700 dark:text-indigo-100 flex items-center font-medium transition-colors relative"
+          >
+            {/* Indicador de actualización reciente */}
+            {activeTicket?.history &&
+              activeTicket.history.length > 0 &&
+              (() => {
+                const lastEntry =
+                  activeTicket.history[activeTicket.history.length - 1];
+                const lastEntryTime =
+                  lastEntry.date instanceof Date
+                    ? lastEntry.date.getTime()
+                    : new Date(lastEntry.date as string).getTime();
+                const isRecentUpdate = Date.now() - lastEntryTime < 60000; // 1 minuto
+
+                return (
+                  isRecentUpdate && (
+                    <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse" />
+                  )
+                );
+              })()}
+
+            {showHistory ? (
+              <>
+                <svg
+                  className="w-4 h-4 mr-2"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M5 15l7-7 7 7"
+                  />
+                </svg>
+                Ocultar Historial
+              </>
+            ) : (
+              <>
+                <svg
+                  className="w-4 h-4 mr-2"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
+                Mostrar Historial
+              </>
+            )}
+          </button>
+        </div>
+
+        {showHistory && <TicketTimeline history={mergedHistory} />}
+      </>
+    ) : (
+      <div className="text-gray-500 dark:text-gray-400 text-center py-8">
+        No hay historial de actividad para este ticket.
+      </div>
+    );
+  }
+
   const [editMode, setEditMode] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+
+  // Efecto para mostrar automáticamente el historial después de una edición
+  useEffect(() => {
+    if (activeTicket?.history && activeTicket.history.length > 0) {
+      // Verificar si la última entrada del historial es reciente (menos de 3 segundos)
+      const lastEntry = activeTicket.history[activeTicket.history.length - 1];
+      const lastEntryTime =
+        lastEntry.date instanceof Date
+          ? lastEntry.date.getTime()
+          : new Date(lastEntry.date as string).getTime();
+
+      const isRecentUpdate = Date.now() - lastEntryTime < 3000; // 3 segundos
+
+      // Si se acaba de hacer una actualización, mostrar automáticamente el historial
+      if (isRecentUpdate && !showHistory) {
+        setShowHistory(true);
+      }
+    }
+  }, [activeTicket?.history]);
   const [status, setStatus] = useState<Ticket["status"]>(
     activeTicket?.status || "abierto"
   );
@@ -161,7 +345,8 @@ const TicketDetail: React.FC = () => {
                 Ticket
               </h3>
               <div className="ml-3 px-2.5 py-0.5 bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-xs font-medium rounded-full flex items-center shadow-sm">
-                #{activeTicket.id?.substring(0, 6) || ""}
+                {activeTicket.folio ||
+                  `#${activeTicket.id?.substring(0, 6) || ""}`}
               </div>
             </div>
             <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -196,27 +381,7 @@ const TicketDetail: React.FC = () => {
           Cerrar
         </motion.button>
       </div>
-      {error && (
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mx-6 mt-6 flex items-center p-4 text-sm rounded-xl bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-300 border border-red-100 dark:border-red-900/30 shadow-sm"
-        >
-          <svg
-            className="w-5 h-5 mr-3 flex-shrink-0"
-            fill="currentColor"
-            viewBox="0 0 20 20"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              fillRule="evenodd"
-              d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-              clipRule="evenodd"
-            ></path>
-          </svg>
-          <span className="font-medium">{error}</span>
-        </motion.div>
-      )}
+      {/* Se eliminó el mensaje de error visual ya que ahora se muestra como toast */}
 
       <div className="p-6 pt-0 flex flex-col gap-6">
         <div className="w-full mt-6">
@@ -318,7 +483,7 @@ const TicketDetail: React.FC = () => {
                         href={url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-indigo-600 dark:text-indigo-300 text-sm font-medium hover:border-indigo-300 dark:hover:border-indigo-500 hover:shadow-md transition-all duration-200"
+                        className="flex items-center px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-indigo-600 dark:text-indigo-300 text-sm font-medium hover:border-indigo-300 dark:hover:border-indigo-500 hover:shadow-md"
                       >
                         <div className="bg-indigo-100 dark:bg-indigo-900/50 p-2 rounded-lg mr-3">
                           <svg
@@ -434,7 +599,7 @@ const TicketDetail: React.FC = () => {
                   Creado por
                 </label>
                 <div className="px-3 py-2 bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 text-sm text-gray-800 dark:text-gray-200 truncate">
-                  {activeTicket.createdBy}
+                  {activeTicket.createdByEmail || activeTicket.createdBy}
                 </div>
               </div>
 
@@ -574,134 +739,8 @@ const TicketDetail: React.FC = () => {
         </div>
       )}
       {/* Historial de actividad */}
-      {Array.isArray(activeTicket.history) &&
-        activeTicket.history.length > 0 && (
-          <div className="mt-8 bg-gray-50 dark:bg-gray-800/30 rounded-xl p-5 border border-gray-200 dark:border-gray-700">
-            <h4 className="font-bold text-gray-700 dark:text-gray-200 text-sm uppercase tracking-wide mb-5 flex items-center">
-              <svg
-                className="w-5 h-5 mr-2 text-indigo-600 dark:text-indigo-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                ></path>
-              </svg>
-              Historial de actividad
-            </h4>
-
-            <div className="flow-root">
-              <ol className="relative border-l-2 border-indigo-200 dark:border-indigo-700 ml-3 space-y-5">
-                {activeTicket.history.map((h, idx) => (
-                  <li key={idx} className="ml-6">
-                    <span className="absolute flex items-center justify-center w-6 h-6 bg-indigo-100 dark:bg-indigo-900/40 rounded-full -left-3 ring-4 ring-white dark:ring-gray-800">
-                      {h.action.toLowerCase().includes("creación") ? (
-                        <svg
-                          className="w-3 h-3 text-indigo-600 dark:text-indigo-400"
-                          fill="currentColor"
-                          viewBox="0 0 20 20"
-                          xmlns="http://www.w3.org/2000/svg"
-                        >
-                          <path
-                            fillRule="evenodd"
-                            d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z"
-                            clipRule="evenodd"
-                          ></path>
-                        </svg>
-                      ) : h.status === "cerrado" ? (
-                        <svg
-                          className="w-3 h-3 text-green-600 dark:text-green-400"
-                          fill="currentColor"
-                          viewBox="0 0 20 20"
-                          xmlns="http://www.w3.org/2000/svg"
-                        >
-                          <path
-                            fillRule="evenodd"
-                            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                            clipRule="evenodd"
-                          ></path>
-                        </svg>
-                      ) : h.status === "en_progreso" ? (
-                        <svg
-                          className="w-3 h-3 text-blue-600 dark:text-blue-400"
-                          fill="currentColor"
-                          viewBox="0 0 20 20"
-                          xmlns="http://www.w3.org/2000/svg"
-                        >
-                          <path
-                            fillRule="evenodd"
-                            d="M10 2a1 1 0 011 1v1.323l3.954 1.582 1.599-.8a1 1 0 01.894 1.79l-1.233.616 1.738 5.42a1 1 0 01-.285 1.05A3.989 3.989 0 0115 14a3.989 3.989 0 01-2.667-1.019 1 1 0 01-.285-1.05l1.715-5.349L11 5.477V14a1 1 0 11-2 0V2a1 1 0 011-1z"
-                            clipRule="evenodd"
-                          ></path>
-                        </svg>
-                      ) : (
-                        <svg
-                          className="w-3 h-3 text-gray-600 dark:text-gray-400"
-                          fill="currentColor"
-                          viewBox="0 0 20 20"
-                          xmlns="http://www.w3.org/2000/svg"
-                        >
-                          <path
-                            fillRule="evenodd"
-                            d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                            clipRule="evenodd"
-                          ></path>
-                        </svg>
-                      )}
-                    </span>
-
-                    <div className="bg-white dark:bg-gray-900 rounded-lg p-4 border border-gray-100 dark:border-gray-700 shadow-sm">
-                      <div className="flex justify-between items-center mb-2">
-                        <h3 className="font-medium text-gray-900 dark:text-gray-100">
-                          {h.action}
-                          {h.status && (
-                            <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-300 capitalize">
-                              {h.status.replace("_", " ")}
-                            </span>
-                          )}
-                        </h3>
-                        <time className="text-xs text-gray-500 dark:text-gray-400">
-                          {h.date ? new Date(h.date).toLocaleString() : ""}
-                        </time>
-                      </div>
-
-                      {h.user && (
-                        <div className="flex items-center text-sm text-gray-600 dark:text-gray-400 mb-1">
-                          <svg
-                            className="w-4 h-4 mr-1.5"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                            xmlns="http://www.w3.org/2000/svg"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth="2"
-                              d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                            ></path>
-                          </svg>
-                          {h.user}
-                        </div>
-                      )}
-
-                      {h.comment && (
-                        <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">
-                          {h.comment}
-                        </p>
-                      )}
-                    </div>
-                  </li>
-                ))}
-              </ol>
-            </div>
-          </div>
-        )}
+      {/* Timeline moderno y tags a la izquierda, descripciones a la derecha */}
+      <div className="mt-8">{renderMergedTimeline(activeTicket, tickets)}</div>
     </motion.div>
   );
 };

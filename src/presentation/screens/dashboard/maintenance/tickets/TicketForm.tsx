@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useTicketsStore, Ticket } from "./ticketsStore";
 import useProviderStore from "../../../../../store/providerStore";
+import { getAuth } from "firebase/auth";
+import toast from "react-hot-toast";
 import { componentStyles } from "./ticketFormStyles";
 
 interface TicketFormProps {
@@ -30,7 +32,7 @@ const priorityIcons = {
         strokeLinecap="round"
         strokeLinejoin="round"
         strokeWidth="2"
-        d="M5 15l7-7 7 7"
+        d="M19 9l-7 7-7-7"
       />
     </svg>
   ),
@@ -60,7 +62,7 @@ const priorityIcons = {
         strokeLinecap="round"
         strokeLinejoin="round"
         strokeWidth="2"
-        d="M19 9l-7 7-7-7"
+        d="M5 15l7-7 7 7"
       />
     </svg>
   ),
@@ -320,6 +322,13 @@ const TicketForm: React.FC<TicketFormProps> = ({ initialTicket, onClose }) => {
     }
 
     try {
+      const auth = getAuth();
+      const user = auth.currentUser;
+      const userEmail = user ? user.email : "Usuario desconocido";
+      const userName = user
+        ? user.displayName || user.email
+        : "Usuario desconocido";
+
       if (isEdit && initialTicket?.id) {
         await updateTicket(
           initialTicket.id,
@@ -331,6 +340,14 @@ const TicketForm: React.FC<TicketFormProps> = ({ initialTicket, onClose }) => {
             assignedTo,
             tags,
             providerId,
+            // Mantenemos los valores originales si existen
+            folio: initialTicket.folio,
+            createdBy:
+              initialTicket.createdBy || userName || "Usuario desconocido",
+            createdByEmail:
+              initialTicket.createdByEmail ||
+              userEmail ||
+              "Usuario desconocido",
           },
           files
         );
@@ -338,6 +355,8 @@ const TicketForm: React.FC<TicketFormProps> = ({ initialTicket, onClose }) => {
         // Generar ID EA-XXXXXXXX
         const randomId =
           "EA-" + Math.random().toString(36).substring(2, 8).toUpperCase();
+        // auth, user, userEmail y userName ya están definidos arriba
+
         await createTicket(
           {
             title,
@@ -347,14 +366,16 @@ const TicketForm: React.FC<TicketFormProps> = ({ initialTicket, onClose }) => {
             assignedTo,
             tags,
             providerId,
-            createdBy: "Usuario actual", // TODO: obtener del contexto de usuario
+            folio: randomId,
+            createdBy: userName || "Usuario desconocido",
+            createdByEmail: userEmail || "Usuario desconocido",
             history: [
               {
                 date: new Date(),
-                action: "Creación",
+                action: "created",
                 status,
-                user: "Usuario actual",
-                comment: `Ticket creado (ID: ${randomId})`,
+                user: userName || "Usuario desconocido",
+                comment: `Ticket creado con folio: ${randomId}`,
               },
             ],
           },
@@ -364,7 +385,23 @@ const TicketForm: React.FC<TicketFormProps> = ({ initialTicket, onClose }) => {
       resetForm();
       if (onClose) onClose();
     } catch (err: any) {
-      setError(err.message || "Error al guardar el ticket");
+      console.error("Error al guardar ticket:", err);
+      let errorMsg = "Error al guardar el ticket";
+
+      if (err.code === "auth/user-not-found" || err.code === "auth/null-user") {
+        errorMsg = "Error de autenticación: Usuario no encontrado";
+      } else if (err.code === "permission-denied") {
+        errorMsg = "No tienes permisos para realizar esta acción";
+      } else if (err.code === "storage/unauthorized" || err.message?.includes("unauthorized")) {
+        errorMsg = "No tienes permisos para subir archivos";
+      } else if (err.code === "storage/object-too-large" || err.message?.includes("too large")) {
+        errorMsg = "El archivo es demasiado grande. El límite es de 15MB";
+      } else if (err.message) {
+        errorMsg = err.message;
+      }
+      
+      // Mostrar mensaje de error en toast en lugar de en la interfaz
+      toast.error(errorMsg);
     }
   };
 
