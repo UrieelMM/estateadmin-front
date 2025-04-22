@@ -453,7 +453,7 @@ const LayoutDashboard = ({ children }: Props) => {
       */}
       <div className="xl:ml-52">
         <Navbar />
-        <main className="p-4 bg-gray-50 dark:bg-gray-800 min-h-screen">
+        <main className="p-4 bg-gray-50 dark:bg-gray-800 min-h-screen pl-6">
           {children}
         </main>
       </div>

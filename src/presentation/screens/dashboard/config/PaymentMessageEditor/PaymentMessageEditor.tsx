@@ -137,7 +137,7 @@ const PaymentMessageEditor: React.FC = () => {
 
   return (
     <div className="bg-white dark:bg-gray-800 shadow-md rounded px-8 pt-6 pb-8 mb-4">
-      <div className="flex items-center mb-4">
+      <div className="flex items-center mb-2">
         <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100">
           Mensaje de Pago Personalizado
         </h2>
@@ -147,9 +147,9 @@ const PaymentMessageEditor: React.FC = () => {
           </span>
         )}
       </div>
-      <p className="text-gray-700 dark:text-gray-300 mb-4">
+      <p className="text-gray-700 dark:text-gray-300 mb-4 mt-0">
         Configure el mensaje que verán los residentes sobre la información de
-        pago de mantenimiento.
+        pago de sus cuotas.
       </p>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
@@ -235,8 +235,7 @@ const PaymentMessageEditor: React.FC = () => {
         </div>
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
           Personalice el mensaje que verán los residentes con la información de
-          pago. El editor le permite dar formato al texto, añadir listas,
-          enlaces y más.
+          pago. Este mensaje se mostrará en los correos de cargos generados.
         </p>
       </div>
 

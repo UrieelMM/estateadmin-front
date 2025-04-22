@@ -145,8 +145,8 @@ const Publications = () => {
   return (
     <div className="flex flex-col w-full min-h-screen bg-slate-50 dark:bg-gray-900 transition-colors duration-200">
       {/* Header */}
-      <header className="sticky ml-2 top-0 bg-white dark:bg-gray-800 shadow-sm rounded-lg mb-6 transition-all duration-200 backdrop-blur-sm bg-opacity-90 dark:bg-opacity-90">
-        <div className="flex items-center justify-between px-6 py-4">
+      <header className="sticky top-0 bg-white dark:bg-gray-800 shadow-sm rounded-br-lg rounded-bl-lg mb-6 transition-all duration-200 backdrop-blur-sm bg-opacity-90 dark:bg-opacity-90">
+        <div className="flex items-center justify-between px-2 py-4">
           <div className="flex items-center space-x-2">
             <DocumentTextIcon className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
             <h1 className="text-xl font-semibold text-gray-800 dark:text-gray-100">
