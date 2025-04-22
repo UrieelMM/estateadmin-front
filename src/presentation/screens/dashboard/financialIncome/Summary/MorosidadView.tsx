@@ -204,9 +204,9 @@ const MorosidadView: React.FC = () => {
       ...data,
     }));
 
-    // Ordenar desc para encontrar los top 10
+    // Ordenar desc para encontrar los top 20
     pendingArray.sort((a, b) => b.amount - a.amount);
-    const topDebtors = pendingArray.slice(0, 10);
+    const topDebtors = pendingArray.slice(0, 20);
 
     // Estadísticas
     const totalPending = pendingArray.reduce(
@@ -220,8 +220,8 @@ const MorosidadView: React.FC = () => {
         : { user: "N/A", amount: 0, userUID: "", numberCondominium: "" };
     const averageDebt = debtorsCount > 0 ? totalPending / debtorsCount : 0;
 
-    // Datos para la gráfica de líneas
-    const lineChartData = topDebtors.map((debtor) => ({
+    // Datos para la gráfica de líneas (solo los top 10 para la gráfica)
+    const lineChartData = topDebtors.slice(0, 10).map((debtor) => ({
       name: `#${debtor.user}`,
       pending: debtor.amount,
     }));
@@ -300,7 +300,7 @@ const MorosidadView: React.FC = () => {
               <p className="text-sm text-gray-600 dark:text-gray-100">
                 Total Pendiente
               </p>
-              <p className="text-2xl font-semibold">
+              <p className="text-xl font-semibold">
                 {formatCurrency(totalPending)}
               </p>
             </div>
@@ -308,14 +308,14 @@ const MorosidadView: React.FC = () => {
               <p className="text-sm text-gray-600 dark:text-gray-100">
                 Condominos con deuda &gt; 0
               </p>
-              <p className="text-2xl font-semibold">{debtorsCount}</p>
+              <p className="text-xl font-semibold">{debtorsCount}</p>
             </div>
             <div className="p-4 shadow-md rounded-md">
               <p className="text-sm text-gray-600 dark:text-gray-100">
                 Deudor Máximo
               </p>
               <p className="text-base font-semibold">#{maxDebtor.user}</p>
-              <p className="text-2xl font-semibold">
+              <p className="text-xl font-semibold">
                 {formatCurrency(maxDebtor.amount)}
               </p>
             </div>
@@ -323,7 +323,7 @@ const MorosidadView: React.FC = () => {
               <p className="text-sm text-gray-600 dark:text-gray-100">
                 Promedio de Deuda
               </p>
-              <p className="text-2xl font-semibold">
+              <p className="text-xl font-semibold">
                 {formatCurrency(averageDebt)}
               </p>
             </div>
@@ -337,56 +337,112 @@ const MorosidadView: React.FC = () => {
             </p>
           </div>
 
-          {/* Tabla con top 10 morosos */}
-          <div className="overflow-x-auto mb-6">
+          {/* Tabla con top 20 morosos en dos columnas responsivas */}
+          <div className="mb-6">
             <h3 className="text-lg font-bold mb-2">
-              Condominos con mayor monto pendiente
+              Condominos con mayor monto pendiente{" "}
+              <span className="text-gray-600 text-xs dark:text-gray-400">
+                (20 condóminos con mayor deuda)
+              </span>
             </h3>
-            <table className="min-w-full border text-sm">
-              <thead className="bg-gray-100">
-                <tr>
-                  <th className="py-2 px-4 text-left border-b dark:bg-gray-900">
-                    # Usuario
-                  </th>
-                  <th className="py-2 px-4 text-left border-b dark:bg-gray-900">
-                    Monto Pendiente
-                  </th>
-                  <th className="py-2 px-4 text-left border-b dark:bg-gray-900">
-                    Acción
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {topDebtors
-                  .filter((item) => item.user !== "N/A")
-                  .map((item) => (
-                    <tr
-                      key={item.user}
-                      className="hover:bg-gray-50 transition-colors dark:hover:bg-gray-700 cursor-pointer"
-                    >
-                      <td className="py-2 px-4 border-b">{item.user}</td>
-                      <td className="py-2 px-4 border-b">
-                        {formatCurrency(item.amount)}
-                      </td>
-                      <td className="py-2 px-4 border-b">
-                        <button
-                          onClick={() => handleNotifyDebtor(item)}
-                          disabled={loadingStates[item.userUID]}
-                          className="bg-[#f87171] w-32 justify-center text-white px-4 text-xs py-1 rounded hover:bg-[#ef4444] transition-colors flex items-center gap-2 disabled:opacity-50 dark:bg-indigo-600 dark:hover:bg-indigo-700 dark:text-white"
-                        >
-                          <BellAlertIcon className="h-4 w-4" />
-                          {loadingStates[item.userUID]
-                            ? "Enviando..."
-                            : "Notificar"}
-                        </button>
-                      </td>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Primera columna (top 1-10) */}
+              <div className="overflow-x-auto">
+                <table className="min-w-full border text-sm">
+                  <thead className="bg-gray-100">
+                    <tr>
+                      <th className="py-2 px-4 text-left border-b dark:bg-gray-900">
+                        # Condómino
+                      </th>
+                      <th className="py-2 px-4 text-left border-b dark:bg-gray-900">
+                        Monto Pendiente
+                      </th>
+                      <th className="py-2 px-4 text-left border-b dark:bg-gray-900">
+                        Acción
+                      </th>
                     </tr>
-                  ))}
-              </tbody>
-            </table>
+                  </thead>
+                  <tbody>
+                    {topDebtors
+                      .slice(0, 10)
+                      .filter((item) => item.user !== "N/A")
+                      .map((item) => (
+                        <tr
+                          key={item.user}
+                          className="hover:bg-gray-50 transition-colors dark:hover:bg-gray-700 cursor-pointer"
+                        >
+                          <td className="py-2 px-4 border-b">{item.user}</td>
+                          <td className="py-2 px-4 border-b">
+                            {formatCurrency(item.amount)}
+                          </td>
+                          <td className="py-2 px-4 border-b">
+                            <button
+                              onClick={() => handleNotifyDebtor(item)}
+                              disabled={loadingStates[item.userUID]}
+                              className="bg-[#f87171] w-32 justify-center text-white px-4 text-xs py-1 rounded hover:bg-[#ef4444] transition-colors flex items-center gap-2 disabled:opacity-50 dark:bg-indigo-600 dark:hover:bg-indigo-700 dark:text-white"
+                            >
+                              <BellAlertIcon className="h-4 w-4" />
+                              {loadingStates[item.userUID]
+                                ? "Enviando..."
+                                : "Notificar"}
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Segunda columna (top 11-20) */}
+              <div className="overflow-x-auto">
+                <table className="min-w-full border text-sm">
+                  <thead className="bg-gray-100">
+                    <tr>
+                      <th className="py-2 px-4 text-left border-b dark:bg-gray-900">
+                        # Usuario
+                      </th>
+                      <th className="py-2 px-4 text-left border-b dark:bg-gray-900">
+                        Monto Pendiente
+                      </th>
+                      <th className="py-2 px-4 text-left border-b dark:bg-gray-900">
+                        Acción
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {topDebtors
+                      .slice(10, 20)
+                      .filter((item) => item.user !== "N/A")
+                      .map((item) => (
+                        <tr
+                          key={item.user}
+                          className="hover:bg-gray-50 transition-colors dark:hover:bg-gray-700 cursor-pointer"
+                        >
+                          <td className="py-2 px-4 border-b">{item.user}</td>
+                          <td className="py-2 px-4 border-b">
+                            {formatCurrency(item.amount)}
+                          </td>
+                          <td className="py-2 px-4 border-b">
+                            <button
+                              onClick={() => handleNotifyDebtor(item)}
+                              disabled={loadingStates[item.userUID]}
+                              className="bg-[#f87171] w-32 justify-center text-white px-4 text-xs py-1 rounded hover:bg-[#ef4444] transition-colors flex items-center gap-2 disabled:opacity-50 dark:bg-indigo-600 dark:hover:bg-indigo-700 dark:text-white"
+                            >
+                              <BellAlertIcon className="h-4 w-4" />
+                              {loadingStates[item.userUID]
+                                ? "Enviando..."
+                                : "Notificar"}
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
 
-          {/* Gráfica de líneas - Top 10 Morosos */}
+          {/* Gráfica de líneas - Top 10 Morosos (se mantiene con los 10 principales) */}
           <div className="mb-8">
             <h3 className="text-lg font-bold mb-2">Condominos con morosidad</h3>
             <div style={{ width: "100%", height: 300 }}>

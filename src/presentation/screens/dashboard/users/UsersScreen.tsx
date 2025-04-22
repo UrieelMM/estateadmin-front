@@ -79,6 +79,8 @@ const UsersScreen = () => {
 
     setCurrentPage(1); // Resetear a la primera página después de la búsqueda
     if (searchTerm.trim() !== "") {
+      // La función searchUsersByName ahora busca en todos los usuarios, no solo la página actual
+      // y ahora también busca por número de departamento/casa
       const filteredUsers = await searchUsersByName(searchTerm, pageSize, 1);
       setUsers(filteredUsers);
     } else {
@@ -254,8 +256,8 @@ const UsersScreen = () => {
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   id="user-search"
-                  className="w-full pl-10 pr-4 py-3 text-gray-700 bg-gray-50 dark:bg-gray-800 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
-                  placeholder="Buscar por nombre"
+                  className="w-full pl-10 pr-4 py-3 text-gray-700 bg-gray-50 dark:bg-gray-800 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all outline-none"
+                  placeholder="Buscar por nombre o número"
                   aria-label="Buscar usuarios por nombre"
                 />
                 <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">

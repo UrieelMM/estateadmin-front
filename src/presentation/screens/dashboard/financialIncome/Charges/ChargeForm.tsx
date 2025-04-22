@@ -158,14 +158,14 @@ const ChargeForm = () => {
           </label>
           <div className="flex gap-4">
             <label
-              className={`flex items-center p-3 border border-gray-200 dark:border-gray-600 rounded-lg cursor-pointer transition-all hover:border-indigo-400 dark:hover:border-indigo-400 hover:bg-indigo-50 dark:hover:bg-gray-700 ${
+              className={`flex items-center p-3 border text-md border-gray-200 dark:border-gray-600 rounded-lg cursor-pointer transition-all hover:border-indigo-400 dark:hover:border-indigo-400 hover:bg-indigo-50 dark:hover:bg-gray-700 ${
                 chargeType === "individual"
                   ? "border-indigo-500 bg-indigo-50 dark:bg-gray-700 dark:border-indigo-500"
                   : ""
               }`}
             >
               <div
-                className={`flex items-center justify-center w-5 h-5 border-2 rounded-full mr-3 ${
+                className={`flex items-center justify-center w-4 h-4 border-2 rounded-full mr-3 ${
                   chargeType === "individual"
                     ? "border-indigo-500 dark:border-indigo-400"
                     : "border-gray-400 dark:border-gray-500"
@@ -184,18 +184,18 @@ const ChargeForm = () => {
               />
               <div className="flex items-center gap-2">
                 <UserIcon className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
-                <span className="font-medium">Individual</span>
+                <span className="font-medium text-xs">Individual</span>
               </div>
             </label>
             <label
-              className={`flex items-center p-3 border border-gray-200 dark:border-gray-600 rounded-lg cursor-pointer transition-all hover:border-indigo-400 dark:hover:border-indigo-400 hover:bg-indigo-50 dark:hover:bg-gray-700 ${
+              className={`flex items-center p-3 border text-md border-gray-200 dark:border-gray-600 rounded-lg cursor-pointer transition-all hover:border-indigo-400 dark:hover:border-indigo-400 hover:bg-indigo-50 dark:hover:bg-gray-700 ${
                 chargeType === "all"
                   ? "border-indigo-500 bg-indigo-50 dark:bg-gray-700 dark:border-indigo-500"
                   : ""
               }`}
             >
               <div
-                className={`flex items-center justify-center w-5 h-5 border-2 rounded-full mr-3 ${
+                className={`flex items-center justify-center w-4 h-4 border-2 rounded-full mr-3 ${
                   chargeType === "all"
                     ? "border-indigo-500 dark:border-indigo-400"
                     : "border-gray-400 dark:border-gray-500"
@@ -214,7 +214,9 @@ const ChargeForm = () => {
               />
               <div className="flex items-center gap-2">
                 <UserGroupIcon className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
-                <span className="font-medium">Todos los condóminos</span>
+                <span className="font-medium text-xs">
+                  Todos los condóminos
+                </span>
               </div>
             </label>
           </div>

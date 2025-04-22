@@ -358,7 +358,7 @@ const useUserStore = create<UserState>()((set, get) => ({
       return [];
     }
   },
-  searchUsersByName: async (name: string, pageSize: number, page: number) => {
+  searchUsersByName: async (searchTerm: string, pageSize: number, page: number) => {
     const userAuth = auth.currentUser;
     if (userAuth) {
       try {
@@ -391,6 +391,7 @@ const useUserStore = create<UserState>()((set, get) => ({
           `clients/${clientId}/condominiums/${currentCondominiumId}/users`
         );
 
+        // Obtener todos los usuarios no administrativos
         const q = query(
           usersRef,
           where("role", "not-in", ["admin", "admin-assistant"])
@@ -402,24 +403,37 @@ const useUserStore = create<UserState>()((set, get) => ({
         );
 
         // Función para normalizar y remover acentos de una cadena de texto
-        const normalizeText = (text: string) =>
+        const normalizeText = (text: string | undefined) =>
           text
-            .normalize("NFD")
-            .replace(/[\u0300-\u036f]/g, "")
-            .toLowerCase();
+            ? text
+                .normalize("NFD")
+                .replace(/[\u0300-\u036f]/g, "")
+                .toLowerCase()
+            : "";
 
         // Normalizar el término de búsqueda
-        const normalizedSearchName = normalizeText(name);
+        const normalizedSearchTerm = normalizeText(searchTerm);
 
-        // Filtrar los usuarios por nombre en el cliente, después de normalizar
-        const filteredUsersByName = users.filter((user) =>
-          normalizeText(user.name).includes(normalizedSearchName)
-        );
+        // Filtrar los usuarios por nombre o número de departamento
+        const filteredUsers = users.filter((user) => {
+          const normalizedName = normalizeText(user.name);
+          const normalizedLastName = normalizeText(user.lastName);
+          const normalizedFullName = `${normalizedName} ${normalizedLastName}`;
+          const normalizedNumber = normalizeText(user.number);
+          
+          return (
+            normalizedName.includes(normalizedSearchTerm) ||
+            normalizedLastName.includes(normalizedSearchTerm) ||
+            normalizedFullName.includes(normalizedSearchTerm) ||
+            normalizedNumber.includes(normalizedSearchTerm)
+          );
+        });
 
+        // Paginar los resultados para mantener consistencia con la interfaz
         const startIdx = (page - 1) * pageSize;
         const endIdx = startIdx + pageSize;
-
-        const paginatedUsers = filteredUsersByName.slice(startIdx, endIdx);
+        
+        const paginatedUsers = filteredUsers.slice(startIdx, endIdx);
         return paginatedUsers;
       } catch (error) {
         console.error("Error al buscar usuarios por nombre:", error);

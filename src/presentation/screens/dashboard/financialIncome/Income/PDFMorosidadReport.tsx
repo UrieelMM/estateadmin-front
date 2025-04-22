@@ -26,7 +26,7 @@ const MONTH_NAMES: Record<string, string> = {
 const MorosidadPDFReport: React.FC = () => {
   // Obtenemos datos del store
   const {
-    detailed,        // Record<string, PaymentRecord[]>, agrupados por número de condómino
+    detailed, // Record<string, PaymentRecord[]>, agrupados por número de condómino
     adminCompany,
     adminPhone,
     adminEmail,
@@ -45,10 +45,13 @@ const MorosidadPDFReport: React.FC = () => {
    * Formatear números como moneda, por ejemplo: $2,500.00
    */
   const formatCurrency = (value: number): string => {
-    return "$" + value.toLocaleString("en-US", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    });
+    return (
+      "$" +
+      value.toLocaleString("en-US", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })
+    );
   };
 
   /**
@@ -113,14 +116,26 @@ const MorosidadPDFReport: React.FC = () => {
         // Dejamos un espacio adicional si no es el primer usuario
         currentY += 5;
       }
-      doc.text(`Usuario #${user} - Total: ${formatCurrency(userDebt)}`, 14, currentY);
+      doc.text(
+        `Condómino #${user} - Total: ${formatCurrency(userDebt)}`,
+        14,
+        currentY
+      );
+
+      // Ordenamos los registros por mes (ordenados numéricamente) y luego construimos las filas
+      const sortedPendingRecords = [...pendingRecords].sort((a, b) => {
+        // Convertir a números para ordenar correctamente (01, 02... 10, 11, 12)
+        const monthA = parseInt(a.month, 10);
+        const monthB = parseInt(b.month, 10);
+        return monthA - monthB;
+      });
 
       // Construimos las filas para la tabla: [Concepto, Mes, Monto Pendiente]
-      const rows = pendingRecords.map((rec) => {
+      const rows = sortedPendingRecords.map((rec) => {
         const mes = MONTH_NAMES[rec.month] || rec.month;
         return [
-          rec.concept,                // Concepto
-          mes,                        // Mes
+          rec.concept, // Concepto
+          mes, // Mes
           formatCurrency(rec.amountPending), // Pendiente
         ];
       });
@@ -164,7 +179,11 @@ const MorosidadPDFReport: React.FC = () => {
     // 3. Mostrar un gran total de morosidad al final
     doc.setFontSize(12);
     doc.setFont("helvetica", "bold");
-    doc.text(`Total Global de Morosidad: ${formatCurrency(grandTotal)}`, 14, currentY);
+    doc.text(
+      `Total Global de Morosidad: ${formatCurrency(grandTotal)}`,
+      14,
+      currentY
+    );
     currentY += 20;
 
     // 4. Pie de página: firma y datos de la administradora (página nueva para consistencia)
