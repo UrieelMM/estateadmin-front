@@ -23,10 +23,10 @@ const PaymentSummaryByAccount: React.FC = () => {
   }
 
   // Asegurarnos de que se muestren todas las cuentas disponibles en financialAccountsMap
-  const accountsToShow = Object.keys(financialAccountsMap).map(accountId => ({
+  const accountsToShow = Object.keys(financialAccountsMap).map((accountId) => ({
     accountId,
     payments: byFinancialAccount[accountId] || [],
-    name: financialAccountsMap[accountId]?.name || "Cuenta sin nombre"
+    name: financialAccountsMap[accountId]?.name || "Cuenta sin nombre",
   }));
 
   return (
@@ -36,7 +36,7 @@ const PaymentSummaryByAccount: React.FC = () => {
           key={accountId}
           className="bg-gray-50 dark:bg-gray-800 shadow-lg rounded-md p-4"
         >
-          <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-4">
+          <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">
             Cuenta Financiera: {name}
           </h2>
 

@@ -9,7 +9,7 @@ const AccountSummaryCards: React.FC<{
   payments: PaymentRecord[];
   accountId: string;
 }> = ({ payments, accountId }) => {
-  const { financialAccountsMap, monthlyStats } = usePaymentSummaryStore();
+  const { financialAccountsMap } = usePaymentSummaryStore();
 
   // Obtenemos el initialBalance de la cuenta usando el accountId proporcionado
   const accountInfo = financialAccountsMap[accountId] || null;
@@ -27,15 +27,6 @@ const AccountSummaryCards: React.FC<{
   // Calcular saldo a favor disponible (creditBalance)
   const totalCreditBalance = payments.reduce(
     (acc, pr) => acc + pr.creditBalance,
-    0
-  );
-
-  // Calcular saldo a favor disponible
-  const accountMonthlyStats = monthlyStats.filter((stat) =>
-    payments.some((p) => p.month === stat.month)
-  );
-  const totalSaldo = accountMonthlyStats.reduce(
-    (acc, stat) => acc + stat.saldo,
     0
   );
 
@@ -63,18 +54,6 @@ const AccountSummaryCards: React.FC<{
           </span>
           <span className="text-2xl font-semibold text-gray-800 dark:text-gray-100">
             {formatCurrency(realTotalIncome)}
-          </span>
-        </div>
-      </div>
-
-      {/* Card: Saldo a favor */}
-      <div className="p-4 shadow-xl rounded-md bg-white dark:bg-gray-800">
-        <div className="flex flex-col gap-y-1">
-          <span className="text-sm font-medium text-gray-600 dark:text-gray-100">
-            Saldo a favor
-          </span>
-          <span className="text-2xl font-semibold text-gray-800 dark:text-gray-100">
-            {formatCurrency(totalSaldo)}
           </span>
         </div>
       </div>
