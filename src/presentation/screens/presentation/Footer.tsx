@@ -53,6 +53,16 @@ const Footer = () => {
               Privacidad
             </a>
           </li>
+
+          <li>
+            <a
+              href="/data-deletion"
+              title="Guía para eliminación de datos"
+              className="inline-flex text-lg font-medium text-gray-900 transition-all duration-200 transform font-pj hover:-translate-y-1 hover:text-gray-600"
+            >
+              Eliminación de datos
+            </a>
+          </li>
         </ul>
 
         <div className="mt-8 sm:mt-12">

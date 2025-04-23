@@ -18,6 +18,8 @@ import UnidentifiedPaymentsPublic from "../presentation/screens/public/Unidentif
 import SuperAdminProtectedRoute from "./SuperAdminProtectedRoute";
 import SuperAdminLayout from "../presentation/screens/layout/SuperAdminLayout";
 import ContactForm from "../presentation/screens/public/ContactForm";
+import DataDeletion from "../presentation/screens/presentation/DataDeletion";
+import PrivacyPolicy from "../presentation/screens/presentation/PrivacyPolicy";
 
 export const AppRouterPage = () => {
   return (
@@ -28,6 +30,8 @@ export const AppRouterPage = () => {
         <Route path="/reset-password" element={<ResetPasswordScreen />} />
         <Route path="/presentation" element={<Hero />} />
         <Route path="/contact" element={<ContactForm />} />
+        <Route path="/privacy" element={<PrivacyPolicy />} />
+        <Route path="/data-deletion" element={<DataDeletion />} />
         <Route
           path="/unidentified-payments/:qrId"
           element={<UnidentifiedPaymentsPublic />}
