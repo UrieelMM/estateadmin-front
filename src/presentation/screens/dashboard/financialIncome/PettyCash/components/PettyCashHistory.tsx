@@ -72,11 +72,11 @@ const PettyCashHistory: React.FC = () => {
       className="bg-white dark:bg-gray-900 rounded-lg shadow-md overflow-hidden"
     >
       <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-        <div className="flex justify-between items-center">
-          <div className="flex items-center">
-            <h2 className="text-xl font-bold text-gray-800 dark:text-white">
-              Historial de Cajas Chica
-            </h2>
+        <div className="flex mb-2 justify-between items-center">
+          <h2 className="text-xl font-bold text-gray-800 dark:text-white">
+            Historial de Cajas Chica
+          </h2>
+          <div>
             <button
               type="button"
               onClick={() => navigate("/dashboard/pettycash")}
@@ -86,6 +86,8 @@ const PettyCashHistory: React.FC = () => {
               Volver
             </button>
           </div>
+        </div>
+        <div className="flex justify-end items-center">
           <button
             onClick={loadHistoricalCashBoxes}
             className="inline-flex items-center px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/20 dark:hover:bg-indigo-800/30 text-indigo-700 dark:text-indigo-300 text-sm rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400"

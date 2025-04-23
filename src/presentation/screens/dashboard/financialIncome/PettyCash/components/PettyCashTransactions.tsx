@@ -159,20 +159,22 @@ const PettyCashTransactions: React.FC = () => {
       className="bg-white dark:bg-gray-900 shadow-md rounded-lg overflow-hidden"
     >
       <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-        <div className="flex flex-col md:flex-row justify-between md:items-center">
+        <div className="flex justify-between items-center mb-2">
           <div className="flex flex-col sm:flex-row sm:items-center mb-3 md:mb-0">
             <h2 className="text-xl font-bold text-gray-800 dark:text-white">
               Transacciones de Caja Chica
             </h2>
-            <button
-              type="button"
-              onClick={() => navigate("/dashboard/pettycash")}
-              className="mt-2 sm:mt-0 sm:ml-4 inline-flex items-center px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-            >
-              <ChevronLeftIcon className="h-5 w-5 mr-1" />
-              Volver
-            </button>
           </div>
+          <button
+            type="button"
+            onClick={() => navigate("/dashboard/pettycash")}
+            className="mt-2 sm:mt-0 sm:ml-4 inline-flex items-center px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+          >
+            <ChevronLeftIcon className="h-5 w-5 mr-1" />
+            Volver
+          </button>
+        </div>
+        <div className="flex flex-col md:flex-row justify-end md:items-center">
           <button
             onClick={exportToExcel}
             className="inline-flex items-center px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/20 dark:hover:bg-indigo-800/30 text-indigo-700 dark:text-indigo-300 text-sm rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400"

@@ -251,7 +251,7 @@ const PettyCashDashboard: React.FC = () => {
           {/* Botones de acción rápida */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
             <button
-              className="flex items-center justify-center px-4 py-2 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:hover:bg-indigo-800/30 text-indigo-700 dark:text-indigo-300 rounded-lg transition duration-150"
+              className="flex text-sm items-center justify-center px-1 py-2 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:hover:bg-indigo-800/30 text-indigo-700 dark:text-indigo-300 rounded-lg transition duration-150"
               onClick={() => navigate("expense")}
             >
               <ArrowDownTrayIcon className="h-5 w-5 mr-2" />
@@ -259,7 +259,7 @@ const PettyCashDashboard: React.FC = () => {
             </button>
 
             <button
-              className="flex items-center justify-center px-4 py-2 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:hover:bg-emerald-800/30 text-emerald-700 dark:text-emerald-300 rounded-lg transition duration-150"
+              className="flex text-sm items-center justify-center px-1 py-2 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:hover:bg-emerald-800/30 text-emerald-700 dark:text-emerald-300 rounded-lg transition duration-150"
               onClick={() => navigate("audit")}
             >
               <CheckCircleIcon className="h-5 w-5 mr-2" />
@@ -267,7 +267,7 @@ const PettyCashDashboard: React.FC = () => {
             </button>
 
             <button
-              className="flex items-center justify-center px-4 py-2 bg-amber-50 hover:bg-amber-100 dark:bg-amber-900/30 dark:hover:bg-amber-800/30 text-amber-700 dark:text-amber-300 rounded-lg transition duration-150"
+              className="flex text-sm items-center justify-center px-1 py-2 bg-amber-50 hover:bg-amber-100 dark:bg-amber-900/30 dark:hover:bg-amber-800/30 text-amber-700 dark:text-amber-300 rounded-lg transition duration-150"
               onClick={() => navigate("replenish")}
             >
               <BanknotesIcon className="h-5 w-5 mr-2" />
@@ -275,7 +275,7 @@ const PettyCashDashboard: React.FC = () => {
             </button>
 
             <button
-              className="flex items-center justify-center px-4 py-2 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/30 dark:hover:bg-blue-800/30 text-blue-700 dark:text-blue-300 rounded-lg transition duration-150"
+              className="flex text-sm items-center justify-center px-1 py-2 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/30 dark:hover:bg-blue-800/30 text-blue-700 dark:text-blue-300 rounded-lg transition duration-150"
               onClick={() => navigate("audits")}
             >
               <ClipboardDocumentListIcon className="h-5 w-5 mr-2" />
@@ -283,7 +283,7 @@ const PettyCashDashboard: React.FC = () => {
             </button>
 
             <button
-              className="flex items-center justify-center px-4 py-2 bg-purple-50 hover:bg-purple-100 dark:bg-purple-900/30 dark:hover:bg-purple-800/30 text-purple-700 dark:text-purple-300 rounded-lg transition duration-150"
+              className="flex text-sm items-center justify-center px-1 py-2 bg-purple-50 hover:bg-purple-100 dark:bg-purple-900/30 dark:hover:bg-purple-800/30 text-purple-700 dark:text-purple-300 rounded-lg transition duration-150"
               onClick={() => navigate("history")}
             >
               <ClockIcon className="h-5 w-5 mr-2" />
@@ -291,7 +291,7 @@ const PettyCashDashboard: React.FC = () => {
             </button>
 
             <button
-              className="flex items-center justify-center px-4 py-2 bg-teal-50 hover:bg-teal-100 dark:bg-teal-900/30 dark:hover:bg-teal-800/30 text-teal-700 dark:text-teal-300 rounded-lg transition duration-150"
+              className="flex text-sm items-center justify-center px-1 py-2 bg-teal-50 hover:bg-teal-100 dark:bg-teal-900/30 dark:hover:bg-teal-800/30 text-teal-700 dark:text-teal-300 rounded-lg transition duration-150"
               onClick={() => navigate("finalize")}
             >
               <ArrowUturnRightIcon className="h-5 w-5 mr-2" />

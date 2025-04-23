@@ -118,43 +118,39 @@ const PettyCashReplenishForm: React.FC = () => {
       className="bg-white dark:bg-gray-900 shadow-md rounded-lg overflow-hidden"
     >
       <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-        <div className="flex justify-between items-center">
-          <div>
-            <div className="flex items-center mb-2">
-              <h2 className="text-xl font-bold text-gray-800 dark:text-white">
-                Reposición de Fondos
-              </h2>
-              <button
-                type="button"
-                onClick={() => navigate("/dashboard/pettycash")}
-                className="ml-4 inline-flex items-center px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-              >
-                <ChevronLeftIcon className="h-5 w-5 mr-1" />
-                Volver
-              </button>
-            </div>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              Registra una reposición de efectivo a la caja chica
-            </p>
-          </div>
-          <div className="flex items-center">
-            <span className="text-sm text-gray-500 dark:text-gray-400 mr-2">
-              Saldo actual:
-            </span>
-            <span
-              className={`font-semibold ${
-                currentBalance < (config?.thresholdAmount || 0) / 100
-                  ? "text-amber-600 dark:text-amber-400"
-                  : "text-gray-800 dark:text-white"
-              }`}
-            >
-              $
-              {currentBalance.toLocaleString("es-MX", {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              })}
-            </span>
-          </div>
+        <div className="flex justify-between items-center mb-2">
+          <h2 className="text-xl font-bold text-gray-800 dark:text-white">
+            Reposición de Fondos
+          </h2>
+          <button
+            type="button"
+            onClick={() => navigate("/dashboard/pettycash")}
+            className="inline-flex items-center px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+          >
+            <ChevronLeftIcon className="h-5 w-5 mr-1" />
+            Volver
+          </button>
+        </div>
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          Registra una reposición de efectivo a la caja chica
+        </p>
+        <div className="flex items-center mt-2">
+          <span className="text-sm text-gray-500 dark:text-gray-400 mr-2">
+            Saldo actual:
+          </span>
+          <span
+            className={`font-semibold ${
+              currentBalance < (config?.thresholdAmount || 0) / 100
+                ? "text-amber-600 dark:text-amber-400"
+                : "text-gray-800 dark:text-white"
+            }`}
+          >
+            $
+            {currentBalance.toLocaleString("es-MX", {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}
+          </span>
         </div>
       </div>
 
