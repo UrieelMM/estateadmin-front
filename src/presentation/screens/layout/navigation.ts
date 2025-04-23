@@ -24,21 +24,21 @@ export const navigation = [
     icon: ChartBarIcon,
     current: false,
     children: [
-      { name: "Ingresos", href: "/dashborad/income" },
+      { name: "Ingresos", href: "/dashboard/income" },
       { name: "Egresos", href: "/dashboard/expenses" },
       { name: "Balance General", href: "/dashboard/balance" },
       { name: "Caja Chica", href: "/dashboard/pettycash" },
-      { name: "Cargos", href: "/dashborad/charges" },
+      { name: "Cargos", href: "/dashboard/charges" },
       {
         name: "Recibos y Comprobantes",
-        href: "/dashborad/receipts-and-invoices",
+        href: "/dashboard/receipts-and-invoices",
       },
       { name: "Proyectos", href: "/dashboard/projects" },
     ],
   },
   {
     name: "Comunidad",
-    href: "/dasboard/community",
+    href: "/dashboard/community",
     icon: UserGroupIcon,
     current: false,
     children: [
@@ -49,19 +49,19 @@ export const navigation = [
   },
   {
     name: "Paquetería",
-    href: "/dasboard/parcel-reception",
+    href: "/dashboard/parcel-reception",
     icon: TruckIcon,
     current: false,
   },
   {
     name: "Mantenimiento",
-    href: "/dasboard/maintenance-reports",
+    href: "/dashboard/maintenance-reports",
     icon: WrenchIcon,
     current: false,
   },
   {
     name: "Proveedores",
-    href: "/dasboard/providers",
+    href: "/dashboard/providers",
     icon: BuildingStorefrontIcon,
     current: false,
   },
