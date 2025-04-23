@@ -6,11 +6,7 @@ import { motion } from "framer-motion";
 import {
   ArrowPathIcon,
   ChevronLeftIcon,
-  ClockIcon,
   BookOpenIcon,
-  ArrowUturnLeftIcon,
-  CheckCircleIcon,
-  BanknotesIcon,
   CalendarDaysIcon,
 } from "@heroicons/react/24/solid";
 import {

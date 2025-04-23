@@ -38,7 +38,7 @@ const PettyCashDashboard: React.FC = () => {
 
   // Usamos useState en lugar de useRef para manejar el estado de inicialización
   const [isInitialized, setIsInitialized] = useState<boolean>(false);
-  const [shouldShowSetup, setShouldShowSetup] = useState<boolean>(false);
+  const [_shouldShowSetup, setShouldShowSetup] = useState<boolean>(false);
 
   // Efecto para la inicialización inicial y carga de datos
   useEffect(() => {
@@ -180,11 +180,7 @@ const PettyCashDashboard: React.FC = () => {
   }
 
   // Dashboard principal cuando ya hay configuración
-  const latestTransactions = transactions.slice(0, 5);
-  const hasPettyCashIssuance = transactions.some(
-    (t) => t.type === PettyCashTransactionType.INITIAL
-  );
-  const lastAudit = null; // Implementar obtención del último Cierre
+  const latestTransactions = transactions.slice(0, 5); // Implementar obtención del último Cierre
 
   const getStatusColor = () => {
     if (currentBalance <= 0)

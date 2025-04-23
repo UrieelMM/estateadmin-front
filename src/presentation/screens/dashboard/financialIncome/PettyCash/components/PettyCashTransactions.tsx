@@ -37,7 +37,6 @@ const PettyCashTransactions: React.FC = () => {
     startDate: moment().startOf("month").format("YYYY-MM-DD"),
     endDate: moment().endOf("month").format("YYYY-MM-DD"),
   });
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   useEffect(() => {
     // Cargar transacciones
@@ -87,11 +86,6 @@ const PettyCashTransactions: React.FC = () => {
   const openPreview = (url: string) => {
     // Abrir la URL en una nueva pestaña del navegador
     window.open(url, "_blank");
-  };
-
-  // Esta función ya no se usará pero la mantenemos por compatibilidad con el código existente
-  const closePreview = () => {
-    setPreviewUrl(null);
   };
 
   // Formato para el tipo de transacción
