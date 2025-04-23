@@ -15,6 +15,16 @@ import UsersScreen from "../presentation/screens/dashboard/users/UsersScreen";
 import PaymentSuccess from "../presentation/screens/dashboard/payment/PaymentSuccess";
 import PaymentCancel from "../presentation/screens/dashboard/payment/PaymentCancel";
 import ReceiptsAndInvoices from "../presentation/screens/dashboard/financialIncome/ReceiptsAndInvoices/ReceiptsAndInvoices";
+import PettyCash from "../presentation/screens/dashboard/financialIncome/PettyCash/PettyCash";
+import PettyCashDashboard from "../presentation/screens/dashboard/financialIncome/PettyCash/components/PettyCashDashboard";
+import PettyCashExpenseForm from "../presentation/screens/dashboard/financialIncome/PettyCash/components/PettyCashExpenseForm";
+import PettyCashAuditForm from "../presentation/screens/dashboard/financialIncome/PettyCash/components/PettyCashAuditForm";
+import PettyCashReplenishForm from "../presentation/screens/dashboard/financialIncome/PettyCash/components/PettyCashReplenishForm";
+import PettyCashSetupForm from "../presentation/screens/dashboard/financialIncome/PettyCash/components/PettyCashSetupForm";
+import PettyCashTransactions from "../presentation/screens/dashboard/financialIncome/PettyCash/components/PettyCashTransactions";
+import PettyCashAudits from "../presentation/screens/dashboard/financialIncome/PettyCash/components/PettyCashAudits";
+import PettyCashHistory from "../presentation/screens/dashboard/financialIncome/PettyCash/components/PettyCashHistory";
+import PettyCashFinalize from "../presentation/screens/dashboard/financialIncome/PettyCash/components/PettyCashFinalize";
 
 export const routesApp = [
   {
@@ -135,5 +145,75 @@ export const routesApp = [
     title: "Recibos y Comprobantes",
     description: "Gestión de recibos y comprobantes",
     component: <ReceiptsAndInvoices />,
+  },
+  {
+    to: "/dashboard/pettycash",
+    icon: "fa-solid fa-cash-register",
+    title: "Caja chica",
+    description: "Gestión de caja chica",
+    component: <PettyCash />,
+  },
+  {
+    to: "/dashboard/pettycash/setup",
+    icon: "fa-solid fa-cog",
+    title: "Configuración de Caja Chica",
+    description: "Configuración inicial de caja chica",
+    component: <PettyCashSetupForm />,
+  },
+  {
+    to: "/dashboard/pettycash/expense",
+    icon: "fa-solid fa-receipt",
+    title: "Registrar Gasto",
+    description: "Registrar gasto de caja chica",
+    component: <PettyCashExpenseForm />,
+  },
+  {
+    to: "/dashboard/pettycash/audit",
+    icon: "fa-solid fa-clipboard-check",
+    title: "Cierre de Caja",
+    description: "Realizar Cierre de caja chica",
+    component: <PettyCashAuditForm />,
+  },
+  {
+    to: "/dashboard/pettycash/replenish",
+    icon: "fa-solid fa-money-bill",
+    title: "Reposición de Fondos",
+    description: "Reponer fondos de caja chica",
+    component: <PettyCashReplenishForm />,
+  },
+  {
+    to: "/dashboard/pettycash/audits",
+    icon: "fa-solid fa-clipboard-list",
+    title: "Administrar Cierres",
+    description: "Administrar Cierres de caja chica",
+    component: <PettyCashAudits />,
+  },
+  {
+    to: "/dashboard/pettycash/transactions",
+    icon: "fa-solid fa-list",
+    title: "Transacciones",
+    description: "Ver transacciones de caja chica",
+    component: <PettyCashTransactions />,
+  },
+  {
+    to: "/dashboard/pettycash/dashboard",
+    icon: "fa-solid fa-list",
+    title: "Dashboard",
+    description: "Dashboard de caja chica",
+    component: <PettyCashDashboard />,
+  },
+  {
+    to: "/dashboard/pettycash/history",
+    icon: "fa-solid fa-history",
+    title: "Historial de Cajas",
+    description: "Ver historial de cajas chica cerradas",
+    component: <PettyCashHistory />,
+  },
+  {
+    to: "/dashboard/pettycash/finalize",
+    icon: "fa-solid fa-flag-checkered",
+    title: "Finalizar Caja",
+    description: "Finalizar caja actual y crear nueva",
+    component: <PettyCashFinalize />,
   },
 ];

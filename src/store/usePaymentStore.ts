@@ -72,6 +72,7 @@ export type MaintenancePayment = {
 type FinancialAccount = {
   id: string;
   name: string;
+  type?: string;
 };
 
 type MaintenancePaymentState = {
@@ -143,6 +144,7 @@ export const usePaymentStore = create<MaintenancePaymentState>()(
         const accounts: FinancialAccount[] = snap.docs.map((doc) => ({
           id: doc.id,
           name: doc.data().name || "Sin nombre",
+          type: doc.data().type || null,
         }));
 
         set({ financialAccounts: accounts, loading: false, error: null });
