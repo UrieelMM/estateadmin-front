@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useExpenseSummaryStore } from "../../../../../store/expenseSummaryStore";
 import useProviderStore from "../../../../../store/providerStore";
-import { CurrencyDollarIcon } from "@heroicons/react/24/outline";
+import { CurrencyDollarIcon } from "@heroicons/react/24/solid";
 import PDFExpenseByProviderReport from "./ExpensesByProvider/PDFExpenseByProviderReport";
 import LoadingApp from "../../../../components/shared/loaders/LoadingApp";
 

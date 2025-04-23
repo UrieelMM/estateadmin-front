@@ -2,7 +2,10 @@ import React, { useEffect, useState } from "react";
 import ReactQuill from "react-quill";
 import { useDropzone } from "react-dropzone";
 import { DocumentPlusIcon } from "@heroicons/react/24/solid";
-import { MaintenanceReport, useMaintenanceReportStore } from "../../../../store/useMaintenanceStore";
+import {
+  MaintenanceReport,
+  useMaintenanceReportStore,
+} from "../../../../store/useMaintenanceStore";
 import "react-quill/dist/quill.snow.css";
 import toast from "react-hot-toast";
 
@@ -38,14 +41,19 @@ const areaOptions = [
   "Mantenimiento General",
   "Sistemas Eléctricos",
   "Plomería",
-  "Administración"
+  "Administración",
 ];
 
 const modules = {
   toolbar: [
     [{ header: [1, 2, 3, 4, false] }],
     ["bold", "italic", "underline", "strike", "blockquote"],
-    [{ list: "ordered" }, { list: "bullet" }, { indent: "-1" }, { indent: "+1" }],
+    [
+      { list: "ordered" },
+      { list: "bullet" },
+      { indent: "-1" },
+      { indent: "+1" },
+    ],
     [{ color: [] }, { background: [] }],
     ["link"],
     ["clean"],
@@ -171,7 +179,9 @@ const MaintenanceReportForm: React.FC<MaintenanceReportFormProps> = ({
       <div className="bg-white p-5 rounded-lg w-full max-w-2xl dark:bg-gray-900">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-lg font-semibold">
-            {initialData ? "Editar Reporte de Mantenimiento" : "Crear Reporte de Mantenimiento"}
+            {initialData
+              ? "Editar Reporte de Mantenimiento"
+              : "Crear Reporte de Mantenimiento"}
           </h2>
           <button
             onClick={onClose}
@@ -223,7 +233,9 @@ const MaintenanceReportForm: React.FC<MaintenanceReportFormProps> = ({
 
           {/* Detalle del mantenimiento */}
           <div className="flex flex-col" style={{ marginBottom: "60px" }}>
-            <label className="text-sm font-bold">Detalle del mantenimiento</label>
+            <label className="text-sm font-bold">
+              Detalle del mantenimiento
+            </label>
             <ReactQuill
               className="mt-1 h-48"
               modules={modules}

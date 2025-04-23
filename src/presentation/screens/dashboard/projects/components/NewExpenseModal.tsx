@@ -241,13 +241,19 @@ const NewExpenseModal: React.FC<NewExpenseModalProps> = ({
                               type="number"
                               name="amount"
                               id="amount"
-                              value={formData.amount === 0 ? "" : formData.amount}
+                              value={
+                                formData.amount === 0 ? "" : formData.amount
+                              }
                               onChange={handleChange}
                               className="px-6 mt-1 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
                               min="1"
                               step="0.01"
                               required
-                              style={{ appearance: 'textfield', WebkitAppearance: 'none', MozAppearance: 'textfield' }}
+                              style={{
+                                appearance: "textfield",
+                                WebkitAppearance: "none",
+                                MozAppearance: "textfield",
+                              }}
                             />
                           </div>
                         </div>
@@ -263,11 +269,14 @@ const NewExpenseModal: React.FC<NewExpenseModalProps> = ({
                             type="date"
                             name="expenseDate"
                             id="expenseDate"
-                            value={formData.expenseDate.split('T')[0]}
+                            value={formData.expenseDate.split("T")[0]}
                             onChange={(e) => {
                               // Maintain the T00:00 format when changing date
-                              const newDate = e.target.value + 'T00:00';
-                              setFormData({ ...formData, expenseDate: newDate });
+                              const newDate = e.target.value + "T00:00";
+                              setFormData({
+                                ...formData,
+                                expenseDate: newDate,
+                              });
                             }}
                             className="px-2 mt-1 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
                             required

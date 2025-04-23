@@ -1,20 +1,22 @@
-import { Fragment } from 'react'
-import { Dialog, Menu, Transition } from '@headlessui/react'
-import { EllipsisVerticalIcon, XMarkIcon } from '@heroicons/react/24/outline'
-import { UserData } from '../../../../interfaces/UserData';
+import { Fragment } from "react";
+import { Dialog, Menu, Transition } from "@headlessui/react";
+import { EllipsisVerticalIcon, XMarkIcon } from "@heroicons/react/24/solid";
+import { UserData } from "../../../../interfaces/UserData";
 
 interface UserDetailsAdminProps {
-    open: boolean;
-    setOpen: (open: boolean) => void;
-    userDetails: UserData | null;
+  open: boolean;
+  setOpen: (open: boolean) => void;
+  userDetails: UserData | null;
 }
 
 function classNames(...classes: string[]) {
-  return classes.filter(Boolean).join(' ')
+  return classes.filter(Boolean).join(" ");
 }
-const UserDetailsAdmin = ({open, setOpen, userDetails} : UserDetailsAdminProps) => {
-  
-
+const UserDetailsAdmin = ({
+  open,
+  setOpen,
+  userDetails,
+}: UserDetailsAdminProps) => {
   return (
     <Transition.Root show={open} as={Fragment}>
       <Dialog as="div" className="relative z-10" onClose={setOpen}>
@@ -36,7 +38,9 @@ const UserDetailsAdmin = ({open, setOpen, userDetails} : UserDetailsAdminProps) 
                   <div className="flex h-full flex-col overflow-y-scroll bg-white shadow-xl">
                     <div className="px-4 py-6 sm:px-6">
                       <div className="flex items-start justify-between">
-                        <Dialog.Title className="text-base font-semibold leading-6 text-gray-900">Perfil</Dialog.Title>
+                        <Dialog.Title className="text-base font-semibold leading-6 text-gray-900">
+                          Perfil
+                        </Dialog.Title>
                         <div className="ml-3 flex h-7 items-center">
                           <button
                             type="button"
@@ -57,28 +61,32 @@ const UserDetailsAdmin = ({open, setOpen, userDetails} : UserDetailsAdminProps) 
                           <div>
                             <div className="-m-1 flex">
                               <div className="inline-flex overflow-hidden rounded-lg border-4 border-white">
-                                {
-                                  userDetails?.photoURL ? 
+                                {userDetails?.photoURL ? (
                                   <img
                                     className="w-24 h-24 rounded-lg flex-shrink-0 sm:h-40 sm:w-40 lg:h-48 lg:w-48"
                                     src={userDetails?.photoURL}
                                     alt={userDetails?.name}
                                   />
-                                  :
+                                ) : (
                                   <div className="w-24 h-24 flex justify-center items-center rounded-lg bg-indigo-400 flex-shrink-0 sm:h-40 sm:w-40 lg:h-48 lg:w-48">
-                                    <p className="text-white text-2xl md:text-4xl font-bold">{userDetails?.name.charAt(0)}</p>
+                                    <p className="text-white text-2xl md:text-4xl font-bold">
+                                      {userDetails?.name.charAt(0)}
+                                    </p>
                                   </div>
-                                  
-                                }
+                                )}
                               </div>
                             </div>
                           </div>
                           <div className="mt-6 sm:ml-6 sm:flex-1">
                             <div>
                               <div className="flex items-center">
-                                <h3 className="text-xl font-bold text-gray-900 sm:text-2xl">{userDetails?.name} {userDetails?.lastName}</h3>
+                                <h3 className="text-xl font-bold text-gray-900 sm:text-2xl">
+                                  {userDetails?.name} {userDetails?.lastName}
+                                </h3>
                               </div>
-                              <p className="text-sm text-gray-500">{userDetails?.email}</p>
+                              <p className="text-sm text-gray-500">
+                                {userDetails?.email}
+                              </p>
                             </div>
                             <div className="mt-5 flex flex-wrap space-y-3 sm:space-x-3 sm:space-y-0">
                               <button
@@ -94,11 +102,19 @@ const UserDetailsAdmin = ({open, setOpen, userDetails} : UserDetailsAdminProps) 
                                 Llamar
                               </button>
                               <div className="ml-3 inline-flex sm:ml-0">
-                                <Menu as="div" className="relative inline-block text-left">
+                                <Menu
+                                  as="div"
+                                  className="relative inline-block text-left"
+                                >
                                   <Menu.Button className="relative inline-flex items-center rounded-md bg-white p-2 text-gray-400 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
                                     <span className="absolute -inset-1" />
-                                    <span className="sr-only">Open options menu</span>
-                                    <EllipsisVerticalIcon className="h-5 w-5" aria-hidden="true" />
+                                    <span className="sr-only">
+                                      Open options menu
+                                    </span>
+                                    <EllipsisVerticalIcon
+                                      className="h-5 w-5"
+                                      aria-hidden="true"
+                                    />
                                   </Menu.Button>
                                   <Transition
                                     as={Fragment}
@@ -116,8 +132,10 @@ const UserDetailsAdmin = ({open, setOpen, userDetails} : UserDetailsAdminProps) 
                                             <a
                                               href="#"
                                               className={classNames(
-                                                active ? 'bg-gray-100 text-gray-900' : 'text-gray-700',
-                                                'block px-4 py-2 text-sm'
+                                                active
+                                                  ? "bg-gray-100 text-gray-900"
+                                                  : "text-gray-700",
+                                                "block px-4 py-2 text-sm"
                                               )}
                                             >
                                               View profile
@@ -129,8 +147,10 @@ const UserDetailsAdmin = ({open, setOpen, userDetails} : UserDetailsAdminProps) 
                                             <a
                                               href="#"
                                               className={classNames(
-                                                active ? 'bg-gray-100 text-gray-900' : 'text-gray-700',
-                                                'block px-4 py-2 text-sm'
+                                                active
+                                                  ? "bg-gray-100 text-gray-900"
+                                                  : "text-gray-700",
+                                                "block px-4 py-2 text-sm"
                                               )}
                                             >
                                               Copy profile link
@@ -149,12 +169,15 @@ const UserDetailsAdmin = ({open, setOpen, userDetails} : UserDetailsAdminProps) 
                       <div className="px-4 py-5 sm:px-0 sm:py-0">
                         <dl className="space-y-8 sm:space-y-0 sm:divide-y sm:divide-gray-200">
                           <div className="sm:flex sm:px-6 sm:py-5">
-                            <dt className="text-sm font-medium text-gray-500 sm:w-40 sm:flex-shrink-0 lg:w-48">Bio</dt>
+                            <dt className="text-sm font-medium text-gray-500 sm:w-40 sm:flex-shrink-0 lg:w-48">
+                              Bio
+                            </dt>
                             <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:ml-6 sm:mt-0">
                               <p>
-                                Enim feugiat ut ipsum, neque ut. Tristique mi id elementum praesent. Gravida in tempus
-                                feugiat netus enim aliquet a, quam scelerisque. Dictumst in convallis nec in bibendum
-                                aenean arcu.
+                                Enim feugiat ut ipsum, neque ut. Tristique mi id
+                                elementum praesent. Gravida in tempus feugiat
+                                netus enim aliquet a, quam scelerisque. Dictumst
+                                in convallis nec in bibendum aenean arcu.
                               </p>
                             </dd>
                           </div>
@@ -193,7 +216,7 @@ const UserDetailsAdmin = ({open, setOpen, userDetails} : UserDetailsAdminProps) 
         </div>
       </Dialog>
     </Transition.Root>
-  )
-}
+  );
+};
 
-export default UserDetailsAdmin
+export default UserDetailsAdmin;

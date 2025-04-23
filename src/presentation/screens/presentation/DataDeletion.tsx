@@ -22,7 +22,7 @@ const DataDeletion = () => {
             </span>
           </Link>
           <Link
-            to="/presentation"
+            to="/"
             className="text-sm font-medium text-indigo-600 hover:text-indigo-800"
           >
             Volver al inicio

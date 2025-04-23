@@ -26,6 +26,7 @@ export const AppRouterPage = () => {
     <Router>
       <Routes>
         {/* Rutas públicas */}
+        <Route path="/" element={<Hero />} />
         <Route path="/login" element={<LoginScreen />} />
         <Route path="/reset-password" element={<ResetPasswordScreen />} />
         <Route path="/presentation" element={<Hero />} />
@@ -40,7 +41,7 @@ export const AppRouterPage = () => {
         {/* Rutas protegidas para usuarios normales */}
         <Route element={<ProtectedRoute />}>
           <Route
-            path="/"
+            path="/dashboard"
             element={
               <LayoutDashboard>
                 <Outlet />
@@ -50,7 +51,7 @@ export const AppRouterPage = () => {
             {routesApp.map((route) => (
               <Route key={route.to} path={route.to} element={route.component} />
             ))}
-            <Route index element={<Navigate to={routesApp[0].to} />} />
+            <Route index element={<Navigate to="/dashboard/home" />} />
           </Route>
         </Route>
 

@@ -128,11 +128,13 @@ const PDFReportGeneratorSingle: React.FC<PDFReportGeneratorSingleProps> = ({
   logoBase64,
 }) => {
   // Obtener la URL de la firma y la función prepareSingleReportData desde el store
-  const { signatureUrl, prepareSingleReportData } = usePaymentSummaryStore((state) => ({
-    signatureUrl: state.signatureUrl,
-    prepareSingleReportData: state.prepareSingleReportData,
-  }));
-  
+  const { signatureUrl, prepareSingleReportData } = usePaymentSummaryStore(
+    (state) => ({
+      signatureUrl: state.signatureUrl,
+      prepareSingleReportData: state.prepareSingleReportData,
+    })
+  );
+
   // Procesar los datos correctamente para evitar duplicaciones y mostrar solo los cargos correspondientes
   const processedData = React.useMemo(() => {
     if (condominium && condominium.number) {

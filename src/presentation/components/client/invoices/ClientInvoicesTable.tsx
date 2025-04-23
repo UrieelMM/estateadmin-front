@@ -6,7 +6,7 @@ import {
   ArrowDownTrayIcon,
   CreditCardIcon,
   DocumentTextIcon,
-} from "@heroicons/react/24/outline";
+} from "@heroicons/react/24/solid";
 import useClientInvoicesStore, {
   ClientInvoice,
 } from "../../../../store/useClientInvoicesStore";

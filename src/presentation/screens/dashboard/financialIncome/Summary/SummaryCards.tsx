@@ -9,7 +9,7 @@ import {
   ExclamationCircleIcon,
   ArrowTrendingUpIcon,
   InformationCircleIcon,
-} from "@heroicons/react/24/outline";
+} from "@heroicons/react/24/solid";
 
 const Tooltip: React.FC<{ text: string }> = ({ text }) => {
   const [show, setShow] = React.useState(false);

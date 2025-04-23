@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Dialog } from "@headlessui/react";
-import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
+import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/solid";
 import { Helmet } from "react-helmet-async";
 import logo from "../../../assets/logo.png";
 import Footer from "./Footer";
@@ -10,6 +10,7 @@ import FinancialDetails from "./FinancialDetails";
 import ProjectDetails from "./ProjectDetails";
 import AreaReservation from "./AreaReservation";
 import DataControl from "./DataControl";
+import MaintenanceTickets from "./MaintenanceTickets";
 
 const navigation = [
   { name: "Características", href: "#features" },
@@ -25,10 +26,17 @@ const Hero = () => {
     href: string
   ) => {
     e.preventDefault();
-    const element = document.querySelector(href);
-    if (element) {
-      element.scrollIntoView({ behavior: "smooth" });
-      setMobileMenuOpen(false);
+
+    // Si es un enlace interno (inicia con #), hacer scroll
+    if (href.startsWith("#")) {
+      const element = document.querySelector(href);
+      if (element) {
+        element.scrollIntoView({ behavior: "smooth" });
+        setMobileMenuOpen(false);
+      }
+    } else {
+      // Si es un enlace externo (no inicia con #), navegar a esa URL
+      window.location.href = href;
     }
   };
 
@@ -269,6 +277,7 @@ const Hero = () => {
       <FinancialDetails />
       <ProjectDetails />
       <AreaReservation />
+      <MaintenanceTickets />
       <DataControl />
       <Contact />
       <Footer />

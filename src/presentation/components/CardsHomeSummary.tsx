@@ -4,7 +4,7 @@ import {
   ArrowTrendingDownIcon,
   ScaleIcon,
   InformationCircleIcon,
-} from "@heroicons/react/24/outline";
+} from "@heroicons/react/24/solid";
 import { usePaymentSummaryStore } from "../../store/paymentSummaryStore";
 import { useExpenseSummaryStore } from "../../store/expenseSummaryStore";
 import { Card } from "@heroui/react";
@@ -212,13 +212,11 @@ const CardsHomeSummary: React.FC = () => {
             key={card.title}
             className={
               `relative p-4 shadow-md rounded-xl transition duration-300 ease-in-out transform hover:translate-y-[-5px] hover:shadow-lg ` +
-              (
-                card.title === "Ingresos del Mes"
-                  ? "bg-gradient-to-br from-green-50 to-white dark:from-gray-800 dark:to-gray-900"
-                  : card.title === "Egresos del Mes"
-                  ? "bg-gradient-to-br from-red-50 to-white dark:from-gray-800 dark:to-gray-900"
-                  : "bg-gradient-to-br from-blue-50 to-white dark:from-gray-800 dark:to-gray-900"
-              )
+              (card.title === "Ingresos del Mes"
+                ? "bg-gradient-to-br from-green-50 to-white dark:from-gray-800 dark:to-gray-900"
+                : card.title === "Egresos del Mes"
+                ? "bg-gradient-to-br from-red-50 to-white dark:from-gray-800 dark:to-gray-900"
+                : "bg-gradient-to-br from-blue-50 to-white dark:from-gray-800 dark:to-gray-900")
             }
           >
             <div className="absolute top-2 right-2">
@@ -236,13 +234,11 @@ const CardsHomeSummary: React.FC = () => {
               <span
                 className={
                   `text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r ` +
-                  (
-                    card.title === "Ingresos del Mes"
-                      ? "from-green-500 to-green-600 dark:from-green-300 dark:to-green-400"
-                      : card.title === "Egresos del Mes"
-                      ? "from-red-500 to-red-600 dark:from-red-300 dark:to-red-400"
-                      : "from-blue-500 to-blue-600 dark:from-blue-300 dark:to-blue-400"
-                  )
+                  (card.title === "Ingresos del Mes"
+                    ? "from-green-500 to-green-600 dark:from-green-300 dark:to-green-400"
+                    : card.title === "Egresos del Mes"
+                    ? "from-red-500 to-red-600 dark:from-red-300 dark:to-red-400"
+                    : "from-blue-500 to-blue-600 dark:from-blue-300 dark:to-blue-400")
                 }
               >
                 {card.isPercentage

@@ -35,14 +35,6 @@ const FinancialDetails = () => {
         damping: 15,
       },
     },
-    hover: {
-      scale: 1.02,
-      transition: {
-        type: "spring",
-        stiffness: 300,
-        damping: 10,
-      },
-    },
   };
 
   return (
@@ -72,7 +64,6 @@ const FinancialDetails = () => {
             className="absolute inset-x-0 hidden top-36 xl:block"
           >
             <motion.img
-              whileHover={{ scale: 1.02 }}
               transition={{ type: "spring", stiffness: 300 }}
               className="object-contain w-full h-auto max-w-xl mx-auto"
               src="https://cdn.rareblocks.xyz/collection/clarity/images/how-it-works/2/line-pattern.png"
@@ -90,15 +81,15 @@ const FinancialDetails = () => {
               className="flex flex-col justify-between"
             >
               <motion.div
-                whileHover={{ scale: 1.05 }}
+                whileHover={{ scale: 1.0 }}
                 className="relative flex-shrink-0 mx-8 md:mx-0"
               >
                 <motion.img
-                  whileHover={{ scale: 1.1 }}
+                  whileHover={{ scale: 1.0 }}
                   className="relative w-full h-auto mx-auto rounded-lg max-w-[200px]"
                   style={{
                     filter:
-                      "drop-shadow(0 0 20px rgba(68, 255, 154, 0.1)) drop-shadow(0 0 15px rgba(139, 90, 255, 0.3)) drop-shadow(0 0 15px rgba(139, 68, 255, 0.3)) drop-shadow(0 0 20px rgba(255, 102, 68, 0.1)) drop-shadow(0 0 20px rgba(235, 255, 112, 0.1))",
+                      "drop-shadow(0 0 20px rgba(68, 255, 154, 0.1)) drop-shadow(0 0 15px rgba(139, 90, 255, 0.2)) drop-shadow(0 0 15px rgba(139, 68, 255, 0.2)) drop-shadow(0 0 20px rgba(255, 102, 68, 0.1)) drop-shadow(0 0 20px rgba(235, 255, 112, 0.1))",
                   }}
                   src="https://res.cloudinary.com/dz5tntwl1/image/upload/v1744238996/OmniPixel/1_fc7uk1.svg"
                   alt="Pagos Sencillos"
@@ -122,16 +113,12 @@ const FinancialDetails = () => {
               whileHover="hover"
               className="flex flex-col justify-between"
             >
-              <motion.div
-                whileHover={{ scale: 1.05 }}
-                className="relative flex-shrink-0 mx-8 md:mx-0"
-              >
+              <motion.div className="relative flex-shrink-0 mx-8 md:mx-0">
                 <motion.img
-                  whileHover={{ scale: 1.1 }}
                   className="relative w-full h-auto mx-auto rounded-lg max-w-[200px]"
                   style={{
                     filter:
-                      "drop-shadow(0 0 20px rgba(68, 255, 154, 0.1)) drop-shadow(0 0 15px rgba(139, 90, 255, 0.3)) drop-shadow(0 0 15px rgba(139, 68, 255, 0.3)) drop-shadow(0 0 20px rgba(255, 102, 68, 0.1)) drop-shadow(0 0 20px rgba(235, 255, 112, 0.1))",
+                      "drop-shadow(0 0 20px rgba(68, 255, 154, 0.1)) drop-shadow(0 0 15px rgba(139, 90, 255, 0.2)) drop-shadow(0 0 15px rgba(139, 68, 255, 0.2)) drop-shadow(0 0 20px rgba(255, 102, 68, 0.1)) drop-shadow(0 0 20px rgba(235, 255, 112, 0.1))",
                   }}
                   src="https://res.cloudinary.com/dz5tntwl1/image/upload/v1744243752/OmniPixel/5_vxlcht.svg"
                   alt="Notificaciones Automáticas"
@@ -154,16 +141,12 @@ const FinancialDetails = () => {
               whileHover="hover"
               className="flex flex-col justify-between"
             >
-              <motion.div
-                whileHover={{ scale: 1.05 }}
-                className="relative flex-shrink-0 mx-8 md:mx-0"
-              >
+              <motion.div className="relative flex-shrink-0 mx-8 md:mx-0">
                 <motion.img
-                  whileHover={{ scale: 1.1 }}
                   className="relative w-full h-auto mx-auto rounded-lg max-w-[200px]"
                   style={{
                     filter:
-                      "drop-shadow(0 0 20px rgba(68, 255, 154, 0.1)) drop-shadow(0 0 15px rgba(139, 90, 255, 0.3)) drop-shadow(0 0 15px rgba(139, 68, 255, 0.3)) drop-shadow(0 0 20px rgba(255, 102, 68, 0.1)) drop-shadow(0 0 20px rgba(235, 255, 112, 0.1))",
+                      "drop-shadow(0 0 20px rgba(68, 255, 154, 0.1)) drop-shadow(0 0 15px rgba(139, 90, 255, 0.2)) drop-shadow(0 0 15px rgba(139, 68, 255, 0.2)) drop-shadow(0 0 20px rgba(255, 102, 68, 0.1)) drop-shadow(0 0 20px rgba(235, 255, 112, 0.1))",
                   }}
                   src="https://res.cloudinary.com/dz5tntwl1/image/upload/v1744238997/OmniPixel/3_en0ihl.svg"
                   alt="Reportes Financieros"

@@ -13,7 +13,11 @@ export type GrowthCardProps = {
   previous: number;
 };
 
-const GrowthCard: React.FC<GrowthCardProps> = ({ title, current, previous }) => {
+const GrowthCard: React.FC<GrowthCardProps> = ({
+  title,
+  current,
+  previous,
+}) => {
   let changeDisplay = "N/A";
   let changeType: "increase" | "decrease" = "increase";
 
@@ -25,7 +29,9 @@ const GrowthCard: React.FC<GrowthCardProps> = ({ title, current, previous }) => 
 
   return (
     <div className="px-4 py-5 sm:p-6">
-      <dt className="text-base font-normal text-gray-900 dark:text-gray-100">{title}</dt>
+      <dt className="text-base font-normal text-gray-900 dark:text-gray-100">
+        {title}
+      </dt>
       <dd className="mt-1 flex items-baseline justify-between md:block lg:flex">
         <div className="flex items-baseline text-xl font-semibold text-indigo-600">
           {"$" +

@@ -12,7 +12,7 @@ import {
   ChevronDownIcon,
   ChevronUpIcon,
   Cog6ToothIcon,
-} from "@heroicons/react/24/outline";
+} from "@heroicons/react/24/solid";
 import { UserCircleIcon } from "@heroicons/react/24/solid";
 
 const UsersScreen = () => {

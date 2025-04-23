@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import useClientInvoicesStore, {
   ClientInvoice,
 } from "../../../../store/useClientInvoicesStore";
-import { CheckCircleIcon } from "@heroicons/react/24/outline";
+import { CheckCircleIcon } from "@heroicons/react/24/solid";
 import LoadingApp from "../../../components/shared/loaders/LoadingApp";
 
 const PaymentSuccess: React.FC = () => {

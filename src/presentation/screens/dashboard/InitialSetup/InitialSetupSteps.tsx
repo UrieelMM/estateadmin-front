@@ -26,8 +26,19 @@ import {
 } from "@heroicons/react/24/solid";
 import { motion, AnimatePresence } from "framer-motion";
 import logo from "../../../../assets/logo.png";
-import { getFirestore, doc, setDoc, collection, query, where, getDocs, addDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
-import { getAuth, getIdTokenResult } from 'firebase/auth';
+import {
+  getFirestore,
+  doc,
+  setDoc,
+  collection,
+  query,
+  where,
+  getDocs,
+  addDoc,
+  serverTimestamp,
+  updateDoc,
+} from "firebase/firestore";
+import { getAuth, getIdTokenResult } from "firebase/auth";
 
 const InitialSetupSteps = () => {
   const [currentStep, setCurrentStep] = useState(1);
@@ -43,8 +54,12 @@ const InitialSetupSteps = () => {
   });
   const [logoReportsFile, setLogoReportsFile] = useState<File | null>(null);
   const [signReportsFile, setSignReportsFile] = useState<File | null>(null);
-  const [logoReportsPreview, setLogoReportsPreview] = useState<string | null>(null);
-  const [signReportsPreview, setSignReportsPreview] = useState<string | null>(null);
+  const [logoReportsPreview, setLogoReportsPreview] = useState<string | null>(
+    null
+  );
+  const [signReportsPreview, setSignReportsPreview] = useState<string | null>(
+    null
+  );
   const [accountData, setAccountData] = useState({
     name: "",
     type: "",
@@ -67,7 +82,7 @@ const InitialSetupSteps = () => {
         toast.error("Error al cargar datos iniciales");
       }
     };
-    
+
     initializeData();
   }, [fetchConfig, fetchCondominiums]);
 
@@ -88,8 +103,16 @@ const InitialSetupSteps = () => {
   // Función para avanzar pasos con validaciones
   const nextStep = () => {
     if (currentStep === 2) {
-      const { companyName, email, phoneNumber, address, RFC, country } = userData;
-      if (!companyName || !email || !phoneNumber || !address || !RFC || !country) {
+      const { companyName, email, phoneNumber, address, RFC, country } =
+        userData;
+      if (
+        !companyName ||
+        !email ||
+        !phoneNumber ||
+        !address ||
+        !RFC ||
+        !country
+      ) {
         toast.error("Datos incompletos. Comunícate con soporte.");
         return;
       }
@@ -126,7 +149,9 @@ const InitialSetupSteps = () => {
 
   // Handler para el formulario del paso 4
   const handleAccountInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
   ) => {
     const { name, value } = e.target;
     setAccountData((prev) => ({
@@ -168,14 +193,14 @@ const InitialSetupSteps = () => {
           role: "admin",
           darkMode: isDarkMode,
           createdAt: serverTimestamp(),
-          userId: user.uid
+          userId: user.uid,
         });
       } else {
         // Actualizar el tema en el documento existente
         const userDoc = snap.docs[0];
         await updateDoc(userDoc.ref, {
           darkMode: isDarkMode,
-          userId: user.uid
+          userId: user.uid,
         });
       }
 
@@ -183,7 +208,7 @@ const InitialSetupSteps = () => {
       await updateConfig(
         {
           ...userData,
-          darkMode: isDarkMode
+          darkMode: isDarkMode,
         },
         undefined,
         undefined,
@@ -197,18 +222,22 @@ const InitialSetupSteps = () => {
           type: accountData.type,
           description: accountData.description,
           initialBalance: accountData.initialBalance,
-          active: true
+          active: true,
         });
       }
 
       // 4. Marcar configuración inicial como completada
       const configDocRef = doc(db, "clients", clientId);
-      await setDoc(configDocRef, {
-        initialSetupCompleted: true
-      }, { merge: true });
+      await setDoc(
+        configDocRef,
+        {
+          initialSetupCompleted: true,
+        },
+        { merge: true }
+      );
 
       toast.success("¡Configuración inicial completada!");
-      
+
       // 5. Redirigir después de un breve delay
       setTimeout(() => {
         window.location.href = "/dashboard/home";
@@ -224,19 +253,33 @@ const InitialSetupSteps = () => {
   const getHeaderData = () => {
     switch (currentStep) {
       case 1:
-        return { title: "Bienvenido a EstateAdmin", icon: <SparklesIcon className="h-8 w-8 text-indigo-400" /> };
+        return {
+          title: "Bienvenido a EstateAdmin",
+          icon: <SparklesIcon className="h-8 w-8 text-indigo-400" />,
+        };
       case 2:
-        return { title: "Confirma tus datos", icon: <UserCircleIcon className="h-8 w-8 text-indigo-400" /> };
+        return {
+          title: "Confirma tus datos",
+          icon: <UserCircleIcon className="h-8 w-8 text-indigo-400" />,
+        };
       case 3:
-        return { title: "Carga tus imágenes", icon: <PhotoIcon className="h-8 w-8 text-indigo-400" /> };
+        return {
+          title: "Carga tus imágenes",
+          icon: <PhotoIcon className="h-8 w-8 text-indigo-400" />,
+        };
       case 4:
-        return { title: "Crea al menos una cuenta financiera", icon: <CurrencyDollarIcon className="h-8 w-8 text-indigo-400" /> };
+        return {
+          title: "Crea al menos una cuenta financiera",
+          icon: <CurrencyDollarIcon className="h-8 w-8 text-indigo-400" />,
+        };
       case 5:
         return {
           title: "Elige tu tema",
-          icon: isDarkMode
-            ? <MoonIcon className="h-8 w-8 text-indigo-400" />
-            : <SunIcon className="h-8 w-8 text-indigo-400" />,
+          icon: isDarkMode ? (
+            <MoonIcon className="h-8 w-8 text-indigo-400" />
+          ) : (
+            <SunIcon className="h-8 w-8 text-indigo-400" />
+          ),
         };
       default:
         return { title: "", icon: null };
@@ -274,16 +317,19 @@ const InitialSetupSteps = () => {
               layout
               animate={{ scale: isActive ? 1.2 : 1 }}
               transition={{ type: "spring", stiffness: 300, damping: 20 }}
-              className={`flex items-center justify-center w-10 h-10 rounded-full border-2 font-bold text-lg transition-colors duration-300 ${isCompleted
+              className={`flex items-center justify-center w-10 h-10 rounded-full border-2 font-bold text-lg transition-colors duration-300 ${
+                isCompleted
                   ? "bg-indigo-400 text-white border-indigo-400"
                   : isActive
-                    ? "bg-indigo-100 text-indigo-500 border-indigo-500"
-                    : "bg-white text-gray-600 border-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600"
-                }`}
+                  ? "bg-indigo-100 text-indigo-500 border-indigo-500"
+                  : "bg-white text-gray-600 border-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600"
+              }`}
             >
               {isCompleted ? <CheckIcon className="h-5 w-5" /> : stepNumber}
             </motion.div>
-            <div className="text-base font-medium text-gray-800 dark:text-gray-200">{step.label}</div>
+            <div className="text-base font-medium text-gray-800 dark:text-gray-200">
+              {step.label}
+            </div>
           </div>
         );
       })}
@@ -303,16 +349,19 @@ const InitialSetupSteps = () => {
               layout
               animate={{ scale: isActive ? 1.2 : 1 }}
               transition={{ type: "spring", stiffness: 300, damping: 20 }}
-              className={`flex items-center justify-center w-10 h-10 rounded-full border-2 font-bold text-lg transition-colors duration-300 ${isCompleted
+              className={`flex items-center justify-center w-10 h-10 rounded-full border-2 font-bold text-lg transition-colors duration-300 ${
+                isCompleted
                   ? "bg-indigo-400 text-white border-indigo-400"
                   : isActive
-                    ? "bg-indigo-100 text-indigo-500 border-indigo-500"
-                    : "bg-white text-gray-600 border-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600"
-                }`}
+                  ? "bg-indigo-100 text-indigo-500 border-indigo-500"
+                  : "bg-white text-gray-600 border-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600"
+              }`}
             >
               {isCompleted ? <CheckIcon className="h-5 w-5" /> : stepNumber}
             </motion.div>
-            <div className="text-xs font-medium text-gray-800 dark:text-gray-200">{step.label}</div>
+            <div className="text-xs font-medium text-gray-800 dark:text-gray-200">
+              {step.label}
+            </div>
           </div>
         );
       })}
@@ -326,11 +375,23 @@ const InitialSetupSteps = () => {
         return (
           <div className="space-y-4 text-center md:text-left">
             <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-              Tu herramienta integral para la administración de condominios. Nuestro sistema te permitirá gestionar cada aspecto de tu comunidad, desde la configuración inicial y el registro de residentes, hasta el control detallado de ingresos, egresos y cuentas financieras. Con una interfaz intuitiva y fácil de usar, <span className="font-bold text-indigo-500">EstateAdmin</span> facilita una gestión transparente y colaborativa.
+              Tu herramienta integral para la administración de condominios.
+              Nuestro sistema te permitirá gestionar cada aspecto de tu
+              comunidad, desde la configuración inicial y el registro de
+              residentes, hasta el control detallado de ingresos, egresos y
+              cuentas financieras. Con una interfaz intuitiva y fácil de usar,{" "}
+              <span className="font-bold text-indigo-500">EstateAdmin</span>{" "}
+              facilita una gestión transparente y colaborativa.
             </p>
             <br />
-            <span className="text-gray-700 dark:text-gray-100 mt-4">Antes de comenzar, necesitamos realizar algunas configuraciones iniciales.</span>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-0" style={{ marginTop: '5px' }}>
+            <span className="text-gray-700 dark:text-gray-100 mt-4">
+              Antes de comenzar, necesitamos realizar algunas configuraciones
+              iniciales.
+            </span>
+            <p
+              className="text-sm text-gray-500 dark:text-gray-400 mt-0"
+              style={{ marginTop: "5px" }}
+            >
               Haz clic en <strong>Siguiente</strong> para continuar.
             </p>
           </div>
@@ -341,31 +402,44 @@ const InitialSetupSteps = () => {
             <div className="text-gray-700 dark:text-gray-300 space-y-4">
               <div className="flex items-center justify-center md:justify-start space-x-2">
                 <BuildingOffice2Icon className="h-5 w-5 text-gray-300" />
-                <span><strong>Empresa:</strong> {userData.companyName}</span>
+                <span>
+                  <strong>Empresa:</strong> {userData.companyName}
+                </span>
               </div>
               <div className="flex items-center justify-center md:justify-start space-x-2">
                 <EnvelopeIcon className="h-5 w-5 text-gray-300" />
-                <span><strong>Email:</strong> {userData.email}</span>
+                <span>
+                  <strong>Email:</strong> {userData.email}
+                </span>
               </div>
               <div className="flex items-center justify-center md:justify-start space-x-2">
                 <PhoneIcon className="h-5 w-5 text-gray-300" />
-                <span><strong>Teléfono:</strong> {userData.phoneNumber}</span>
+                <span>
+                  <strong>Teléfono:</strong> {userData.phoneNumber}
+                </span>
               </div>
               <div className="flex items-center justify-center md:justify-start space-x-2">
                 <MapPinIcon className="h-5 w-5 text-gray-300" />
-                <span><strong>Dirección:</strong> {userData.address}</span>
+                <span>
+                  <strong>Dirección:</strong> {userData.address}
+                </span>
               </div>
               <div className="flex items-center justify-center md:justify-start space-x-2">
                 <IdentificationIcon className="h-5 w-5 text-gray-300" />
-                <span><strong>RFC:</strong> {userData.RFC}</span>
+                <span>
+                  <strong>RFC:</strong> {userData.RFC}
+                </span>
               </div>
               <div className="flex items-center justify-center md:justify-start space-x-2">
                 <GlobeAltIcon className="h-5 w-5 text-gray-300" />
-                <span><strong>País:</strong> {userData.country}</span>
+                <span>
+                  <strong>País:</strong> {userData.country}
+                </span>
               </div>
             </div>
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              Si alguno de estos datos no es correcto, comunícate con <span className="font-bold">soporte.</span>
+              Si alguno de estos datos no es correcto, comunícate con{" "}
+              <span className="font-bold">soporte.</span>
             </p>
           </div>
         );
@@ -373,25 +447,55 @@ const InitialSetupSteps = () => {
         return (
           <div className="space-y-4 text-center md:text-left">
             <div>
-              <label className="block text-gray-700 dark:text-gray-300 mb-1 font-medium">Logo para Reportes</label>
+              <label className="block text-gray-700 dark:text-gray-300 mb-1 font-medium">
+                Logo para Reportes
+              </label>
               <label className="inline-flex items-center space-x-2 cursor-pointer bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-md transition-colors">
-                {logoReportsFile ? <CheckIcon className="h-5 w-5" /> : <PhotoIcon className="h-5 w-5" />}
+                {logoReportsFile ? (
+                  <CheckIcon className="h-5 w-5" />
+                ) : (
+                  <PhotoIcon className="h-5 w-5" />
+                )}
                 <span>{logoReportsFile ? "Cambiar Logo" : "Seleccionar"}</span>
-                <input type="file" accept="image/*" onChange={handleLogoReportsChange} className="hidden" />
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleLogoReportsChange}
+                  className="hidden"
+                />
               </label>
               {logoReportsPreview && (
-                <img src={logoReportsPreview} alt="Logo Reports Preview" className="mt-2 h-20 w-auto rounded" />
+                <img
+                  src={logoReportsPreview}
+                  alt="Logo Reports Preview"
+                  className="mt-2 h-20 w-auto rounded"
+                />
               )}
             </div>
             <div>
-              <label className="block text-gray-700 dark:text-gray-300 mb-1 font-medium">Firma para Reportes</label>
+              <label className="block text-gray-700 dark:text-gray-300 mb-1 font-medium">
+                Firma para Reportes
+              </label>
               <label className="inline-flex items-center space-x-2 cursor-pointer bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-md transition-colors">
-                {signReportsFile ? <CheckIcon className="h-5 w-5" /> : <PhotoIcon className="h-5 w-5" />}
+                {signReportsFile ? (
+                  <CheckIcon className="h-5 w-5" />
+                ) : (
+                  <PhotoIcon className="h-5 w-5" />
+                )}
                 <span>{signReportsFile ? "Cambiar Firma" : "Seleccionar"}</span>
-                <input type="file" accept="image/*" onChange={handleSignReportsChange} className="hidden" />
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleSignReportsChange}
+                  className="hidden"
+                />
               </label>
               {signReportsPreview && (
-                <img src={signReportsPreview} alt="Sign Reports Preview" className="mt-2 h-20 w-auto rounded" />
+                <img
+                  src={signReportsPreview}
+                  alt="Sign Reports Preview"
+                  className="mt-2 h-20 w-auto rounded"
+                />
               )}
             </div>
           </div>
@@ -402,7 +506,9 @@ const InitialSetupSteps = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Nombre de la cuenta */}
               <div>
-                <label className="block text-gray-700 dark:text-gray-300 font-medium mb-1">Nombre de la cuenta</label>
+                <label className="block text-gray-700 dark:text-gray-300 font-medium mb-1">
+                  Nombre de la cuenta
+                </label>
                 <div className="relative">
                   <CreditCardIcon className="h-5 w-5 text-gray-300 absolute left-2 top-1/2 -translate-y-1/2" />
                   <input
@@ -417,7 +523,9 @@ const InitialSetupSteps = () => {
               </div>
               {/* Tipo */}
               <div>
-                <label className="block text-gray-700 dark:text-gray-300 font-medium mb-1">Tipo</label>
+                <label className="block text-gray-700 dark:text-gray-300 font-medium mb-1">
+                  Tipo
+                </label>
                 <div className="relative">
                   <BanknotesIcon className="h-5 w-5 text-gray-300 absolute left-2 top-1/2 -translate-y-1/2" />
                   <select
@@ -435,7 +543,9 @@ const InitialSetupSteps = () => {
               </div>
               {/* Saldo Inicial */}
               <div>
-                <label className="block text-gray-700 dark:text-gray-300 font-medium mb-1">Saldo Inicial</label>
+                <label className="block text-gray-700 dark:text-gray-300 font-medium mb-1">
+                  Saldo Inicial
+                </label>
                 <div className="relative">
                   <CurrencyDollarIcon className="h-5 w-5 text-gray-300 absolute left-2 top-1/2 -translate-y-1/2" />
                   <input
@@ -450,7 +560,9 @@ const InitialSetupSteps = () => {
               </div>
               {/* Descripción */}
               <div>
-                <label className="block text-gray-700 dark:text-gray-300 font-medium mb-1">Descripción (opcional)</label>
+                <label className="block text-gray-700 dark:text-gray-300 font-medium mb-1">
+                  Descripción (opcional)
+                </label>
                 <div className="relative">
                   <PencilSquareIcon className="h-5 w-5 text-gray-300 absolute left-2 top-1/2 -translate-y-1/2" />
                   <textarea
@@ -472,7 +584,11 @@ const InitialSetupSteps = () => {
               Elige si deseas Modo Día o Modo Noche
             </p>
             <div className="flex items-center justify-start space-x-4">
-              <SunIcon className={`h-6 w-6 ${isDarkMode ? "text-gray-400" : "text-yellow-500"}`} />
+              <SunIcon
+                className={`h-6 w-6 ${
+                  isDarkMode ? "text-gray-400" : "text-yellow-500"
+                }`}
+              />
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
                   type="checkbox"
@@ -480,11 +596,16 @@ const InitialSetupSteps = () => {
                   onChange={toggleDarkMode}
                   className="sr-only peer"
                 />
-                <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-indigo-500 rounded-full 
+                <div
+                  className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-indigo-500 rounded-full 
                   peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600"
                 ></div>
               </label>
-              <MoonIcon className={`h-6 w-6 ${isDarkMode ? "text-indigo-400" : "text-gray-400"}`} />
+              <MoonIcon
+                className={`h-6 w-6 ${
+                  isDarkMode ? "text-indigo-400" : "text-gray-400"
+                }`}
+              />
             </div>
           </div>
         );
@@ -495,15 +616,15 @@ const InitialSetupSteps = () => {
 
   return (
     // Animación inicial del contenedor
-    <div
-      className="fixed inset-0 z-50 bg-gradient-to-br from-indigo-50 dark:from-gray-900 to-white dark:to-gray-800 flex items-center justify-center"
-    >
+    <div className="fixed inset-0 z-50 bg-gradient-to-br from-indigo-50 dark:from-gray-900 to-white dark:to-gray-800 flex items-center justify-center">
       {/* Contenedor principal con posición relativa para el logo */}
       <div className="relative w-full max-w-5xl h-auto md:h-[500px] min-h-[600px] bg-white dark:bg-gray-800 rounded-xl shadow-[0_0_10px_rgba(79,70,229,0.5),0_0_200px_#8093e8ac,0_0_100px_#c2abe6c1] p-8 flex flex-col md:flex-row">
         {/* Mobile: Steps en horizontal */}
         <div className="md:hidden mb-4">{renderStepsHorizontal()}</div>
         {/* Desktop: Steps en vertical */}
-        <div className="hidden md:block md:w-1/3 md:border-r md:pr-6">{renderStepsVertical()}</div>
+        <div className="hidden md:block md:w-1/3 md:border-r md:pr-6">
+          {renderStepsVertical()}
+        </div>
 
         {/* Contenedor de contenido */}
         <div className="flex-1 pl-0 md:pl-6 pr-6 flex flex-col items-center md:items-start text-center md:text-left">
@@ -511,7 +632,9 @@ const InitialSetupSteps = () => {
           <div className="mb-4 w-full flex justify-center md:justify-start">
             <div className="flex items-center space-x-2">
               {icon}
-              <h3 className="text-2xl font-semibold text-gray-800 dark:text-gray-200">{title}</h3>
+              <h3 className="text-2xl font-semibold text-gray-800 dark:text-gray-200">
+                {title}
+              </h3>
             </div>
           </div>
 
@@ -560,9 +683,25 @@ const InitialSetupSteps = () => {
               >
                 {isSubmitting ? (
                   <>
-                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    <svg
+                      className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
                     </svg>
                     Procesando...
                   </>

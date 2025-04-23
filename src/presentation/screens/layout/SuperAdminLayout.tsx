@@ -11,7 +11,7 @@ import {
   CreditCardIcon,
   ChartBarIcon,
   ShieldCheckIcon,
-} from "@heroicons/react/24/outline";
+} from "@heroicons/react/24/solid";
 import {
   ChevronRightIcon,
   Bars3Icon,

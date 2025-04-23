@@ -4,7 +4,7 @@ import {
   InformationCircleIcon,
   MagnifyingGlassIcon,
   XMarkIcon,
-} from "@heroicons/react/24/outline";
+} from "@heroicons/react/24/solid";
 import { usePaymentSummaryStore } from "../../../../../store/paymentSummaryStore";
 import { PaymentRecord } from "../../../../../store/paymentSummaryStore";
 import { formatCurrency } from "../../../../../utils/curreyncy";

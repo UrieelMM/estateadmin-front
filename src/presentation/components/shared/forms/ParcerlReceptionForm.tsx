@@ -61,7 +61,7 @@ const ParcelReceptionForm = ({ open, setOpen }: FormParcelReceptionProps) => {
       toast.error("Todos los campos son obligatorios");
       return;
     }
-    
+
     if (file && (file as File).size > 10485760) {
       toast.error("El tamaño del archivo no debe superar los 10MB");
       return;
@@ -196,10 +196,7 @@ const ParcelReceptionForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                                       user.role !== "admin" &&
                                       user.role !== "super-admin" &&
                                       user.role !== "security" && (
-                                        <option
-                                          key={user.uid}
-                                          value={user.uid}
-                                        >
+                                        <option key={user.uid} value={user.uid}>
                                           {user.number} {user.name}
                                         </option>
                                       )

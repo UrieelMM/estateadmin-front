@@ -9,7 +9,7 @@ import {
   ArrowPathIcon,
   DocumentTextIcon,
   UserGroupIcon,
-} from "@heroicons/react/24/outline";
+} from "@heroicons/react/24/solid";
 import { useChargeStore } from "../../../../../store/useChargeStore";
 import useUserStore from "../../../../../store/UserDataStore";
 import { usePaymentSummaryStore } from "../../../../../store/paymentSummaryStore";

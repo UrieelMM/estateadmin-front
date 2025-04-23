@@ -1,6 +1,6 @@
 import { Fragment, useState, useEffect } from "react";
 import { Dialog, Transition, Switch } from "@headlessui/react";
-import { XMarkIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon } from "@heroicons/react/24/solid";
 import { UserData } from "../../../../interfaces/UserData";
 import useUserStore from "../../../../store/UserDataStore";
 import { toast } from "react-hot-toast";

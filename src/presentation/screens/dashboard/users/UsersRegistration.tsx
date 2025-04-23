@@ -1,5 +1,5 @@
-import UsersRegistrationForm from "../../../components/shared/forms/UsersRegistrationForm"
-import { DocumentArrowUpIcon } from "@heroicons/react/24/outline"
+import UsersRegistrationForm from "../../../components/shared/forms/UsersRegistrationForm";
+import { DocumentArrowUpIcon } from "@heroicons/react/24/solid";
 
 const UsersRegistration = () => {
   return (
@@ -15,7 +15,7 @@ const UsersRegistration = () => {
       </header>
       <UsersRegistrationForm />
     </>
-  )
-}
+  );
+};
 
-export default UsersRegistration
+export default UsersRegistration;

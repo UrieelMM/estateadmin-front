@@ -37,7 +37,11 @@ const ExpenseConceptGrowthSection: React.FC = () => {
       const currentValue = monthlyObj[currentMonthString] || 0;
       const previousValue = monthlyObj[previousMonthString] || 0;
       const growthPct =
-        previousValue === 0 ? (currentValue > 0 ? 100 : 0) : ((currentValue - previousValue) / previousValue) * 100;
+        previousValue === 0
+          ? currentValue > 0
+            ? 100
+            : 0
+          : ((currentValue - previousValue) / previousValue) * 100;
       return {
         concept,
         currentValue,
@@ -48,17 +52,26 @@ const ExpenseConceptGrowthSection: React.FC = () => {
   }, [conceptMap, currentMonthString, previousMonthString]);
 
   // Ordenar descendentemente por crecimiento y mostrar máximo 4 conceptos (si no se activa "mostrar más")
-  const sortedByGrowth = [...conceptGrowth].sort((a, b) => b.growthPct - a.growthPct);
-  const visibleConcepts = showAllConcepts ? sortedByGrowth : sortedByGrowth.slice(0, 4);
+  const sortedByGrowth = [...conceptGrowth].sort(
+    (a, b) => b.growthPct - a.growthPct
+  );
+  const visibleConcepts = showAllConcepts
+    ? sortedByGrowth
+    : sortedByGrowth.slice(0, 4);
 
   const formatCurrency = (val: number) =>
-    `$${val.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    `$${val.toLocaleString("en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`;
 
   return (
     <div className="mb-8 w-full">
       <h3 className="text-xl font-bold mb-4">
         Crecimiento de gastos por concepto{" "}
-        <span className="text-xs font-medium text-gray-500 dark:text-gray-300">(Respecto al mes anterior)</span>
+        <span className="text-xs font-medium text-gray-500 dark:text-gray-300">
+          (Respecto al mes anterior)
+        </span>
       </h3>
       <div className="flex flex-col gap-1 lg:flex-row lg:flex-wrap">
         {visibleConcepts.map((item) => (

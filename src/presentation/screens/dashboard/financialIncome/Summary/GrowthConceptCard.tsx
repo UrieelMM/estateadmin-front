@@ -13,63 +13,65 @@ type GrowthRowProps = {
   previous: number;
 };
 
-const GrowthRow: React.FC<GrowthRowProps> = React.memo(({ label, current, previous }) => {
-  let changeDisplay = "N/A";
-  let changeType: "increase" | "decrease" = "increase";
+const GrowthRow: React.FC<GrowthRowProps> = React.memo(
+  ({ label, current, previous }) => {
+    let changeDisplay = "N/A";
+    let changeType: "increase" | "decrease" = "increase";
 
-  if (previous !== 0) {
-    const change = ((current - previous) / previous) * 100;
-    changeDisplay = Math.abs(change).toFixed(2) + "%";
-    changeType = change >= 0 ? "increase" : "decrease";
-  }
+    if (previous !== 0) {
+      const change = ((current - previous) / previous) * 100;
+      changeDisplay = Math.abs(change).toFixed(2) + "%";
+      changeType = change >= 0 ? "increase" : "decrease";
+    }
 
-  return (
-    <div className="flex items-baseline justify-between">
-      <div className="text-sm font-normal text-gray-900">{label}</div>
-      <div className="flex items-center">
-        <div className="text-lg font-semibold text-indigo-600">
-          {"$" +
-            current.toLocaleString("en-US", {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}
-          <span className="ml-2 text-sm font-medium text-gray-500">
-            -{" "}
+    return (
+      <div className="flex items-baseline justify-between">
+        <div className="text-sm font-normal text-gray-900">{label}</div>
+        <div className="flex items-center">
+          <div className="text-lg font-semibold text-indigo-600">
             {"$" +
-              previous.toLocaleString("en-US", {
+              current.toLocaleString("en-US", {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2,
               })}
-          </span>
-        </div>
-        <div
-          className={classNames(
-            changeType === "increase"
-              ? "bg-green-100 text-green-800"
-              : "bg-red-100 text-red-800",
-            "inline-flex items-baseline rounded-full px-2.5 py-0.5 text-sm font-medium ml-4"
-          )}
-        >
-          {changeType === "increase" ? (
-            <ArrowUpIcon
-              aria-hidden="true"
-              className="-ml-1 mr-0.5 h-5 w-5 shrink-0 self-center text-green-500"
-            />
-          ) : (
-            <ArrowDownIcon
-              aria-hidden="true"
-              className="-ml-1 mr-0.5 h-5 w-5 shrink-0 self-center text-red-500"
-            />
-          )}
-          <span className="sr-only">
-            {changeType === "increase" ? "Increased" : "Decreased"} by{" "}
-          </span>
-          {changeDisplay}
+            <span className="ml-2 text-sm font-medium text-gray-500">
+              -{" "}
+              {"$" +
+                previous.toLocaleString("en-US", {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
+            </span>
+          </div>
+          <div
+            className={classNames(
+              changeType === "increase"
+                ? "bg-green-100 text-green-800"
+                : "bg-red-100 text-red-800",
+              "inline-flex items-baseline rounded-full px-2.5 py-0.5 text-sm font-medium ml-4"
+            )}
+          >
+            {changeType === "increase" ? (
+              <ArrowUpIcon
+                aria-hidden="true"
+                className="-ml-1 mr-0.5 h-5 w-5 shrink-0 self-center text-green-500"
+              />
+            ) : (
+              <ArrowDownIcon
+                aria-hidden="true"
+                className="-ml-1 mr-0.5 h-5 w-5 shrink-0 self-center text-red-500"
+              />
+            )}
+            <span className="sr-only">
+              {changeType === "increase" ? "Increased" : "Decreased"} by{" "}
+            </span>
+            {changeDisplay}
+          </div>
         </div>
       </div>
-    </div>
-  );
-});
+    );
+  }
+);
 
 type GrowthConceptCardProps = {
   concept: string;
@@ -81,7 +83,20 @@ const GrowthConceptCard: React.FC<GrowthConceptCardProps> = React.memo(
   ({ concept, records, maxMonth }) => {
     // Definir los meses base (no cambia, por lo que se memoriza)
     const monthKeys = useMemo(
-      () => ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"],
+      () => [
+        "01",
+        "02",
+        "03",
+        "04",
+        "05",
+        "06",
+        "07",
+        "08",
+        "09",
+        "10",
+        "11",
+        "12",
+      ],
       []
     );
 
@@ -98,7 +113,9 @@ const GrowthConceptCard: React.FC<GrowthConceptCardProps> = React.memo(
             saldo: recs.reduce((sum, r) => sum + r.creditBalance, 0),
           };
         })
-        .filter((item) => item.paid !== 0 || item.pending !== 0 || item.saldo !== 0);
+        .filter(
+          (item) => item.paid !== 0 || item.pending !== 0 || item.saldo !== 0
+        );
     }, [monthKeys, maxMonth, records]);
 
     // Si no hay al menos dos meses con datos, mostramos un mensaje informativo
@@ -119,7 +136,9 @@ const GrowthConceptCard: React.FC<GrowthConceptCardProps> = React.memo(
 
     return (
       <div className="px-2 py-3 sm:p-6 bg-white shadow rounded-lg w-full lg:w-[49%]">
-        <h4 className="text-base font-semibold text-gray-900 mb-4">{concept}</h4>
+        <h4 className="text-base font-semibold text-gray-900 mb-4">
+          {concept}
+        </h4>
         <div className="space-y-4">
           <GrowthRow
             label="Monto abonado"

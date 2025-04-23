@@ -12,7 +12,7 @@ import {
   PaperClipIcon,
   ChatBubbleOvalLeftEllipsisIcon,
   ExclamationTriangleIcon,
-} from "@heroicons/react/24/outline";
+} from "@heroicons/react/24/solid";
 import { usePaymentSummaryStore } from "../../../store/paymentSummaryStore";
 import ProtectedProFeature from "../../../components/ProFeature/ProtectedProFeature";
 import { useClientPlanStore } from "../../../store/clientPlanStore";

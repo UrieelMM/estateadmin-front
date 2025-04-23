@@ -4,7 +4,7 @@ import {
   ArrowDownTrayIcon,
   DocumentTextIcon,
   CreditCardIcon,
-} from "@heroicons/react/24/outline";
+} from "@heroicons/react/24/solid";
 import toast from "react-hot-toast";
 import InvoiceCreationModal from "../../components/superAdmin/invoices/InvoiceCreationModal";
 import InvoicesTable from "../../components/superAdmin/invoices/InvoicesTable";

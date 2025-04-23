@@ -11,9 +11,9 @@ import {
   ChevronRightIcon,
   MagnifyingGlassIcon,
   XMarkIcon,
-} from "@heroicons/react/24/outline";
+} from "@heroicons/react/24/solid";
 import dayjs from "dayjs";
-import { FunnelIcon } from "@heroicons/react/24/outline";
+import { FunnelIcon } from "@heroicons/react/24/solid";
 import LoadingApp from "../../../../../../presentation/components/shared/loaders/LoadingApp";
 
 // Función para truncar la descripción a 120 caracteres

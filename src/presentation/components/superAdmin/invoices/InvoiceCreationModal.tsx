@@ -1,6 +1,6 @@
 import React, { Fragment, useState, useEffect } from "react";
 import { Dialog, Transition } from "@headlessui/react";
-import { XMarkIcon, DocumentPlusIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon, DocumentPlusIcon } from "@heroicons/react/24/solid";
 import { useDropzone } from "react-dropzone";
 import toast from "react-hot-toast";
 import useSuperAdminStore from "../../../../store/superAdmin/SuperAdminStore";

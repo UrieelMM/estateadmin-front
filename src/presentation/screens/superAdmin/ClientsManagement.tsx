@@ -5,7 +5,7 @@ import {
   PlusIcon,
   EyeIcon,
   MagnifyingGlassIcon,
-} from "@heroicons/react/24/outline";
+} from "@heroicons/react/24/solid";
 import toast from "react-hot-toast";
 import { executeSuperAdminOperation } from "../../../services/superAdminService";
 import useSuperAdminStore from "../../../store/superAdmin/SuperAdminStore";

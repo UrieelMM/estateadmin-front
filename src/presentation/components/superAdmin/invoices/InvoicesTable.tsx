@@ -7,7 +7,7 @@ import {
   ArrowDownTrayIcon,
   EyeIcon,
   ArrowPathIcon,
-} from "@heroicons/react/24/outline";
+} from "@heroicons/react/24/solid";
 import useBillingStore, {
   InvoiceRecord,
 } from "../../../../store/superAdmin/BillingStore";

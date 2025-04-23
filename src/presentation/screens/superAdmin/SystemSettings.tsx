@@ -4,7 +4,7 @@ import {
   EnvelopeIcon,
   ServerIcon,
   CurrencyDollarIcon,
-} from "@heroicons/react/24/outline";
+} from "@heroicons/react/24/solid";
 import toast from "react-hot-toast";
 
 interface SystemSettings {

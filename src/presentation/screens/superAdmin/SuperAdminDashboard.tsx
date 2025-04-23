@@ -4,7 +4,7 @@ import {
   BuildingOffice2Icon,
   CreditCardIcon,
   ServerIcon,
-} from "@heroicons/react/24/outline";
+} from "@heroicons/react/24/solid";
 
 interface DashboardStat {
   name: string;

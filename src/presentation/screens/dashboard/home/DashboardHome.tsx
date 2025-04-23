@@ -1,13 +1,11 @@
-import { useEffect } from 'react';
-import CardsHomeSummary from '../../../components/CardsHomeSummary'
-import DirectAccess from '../../../components/shared/DirectAccess'
+import { useEffect } from "react";
+import CardsHomeSummary from "../../../components/CardsHomeSummary";
+import DirectAccess from "../../../components/shared/DirectAccess";
 import { Card } from "@heroui/react";
-import {
-  CalendarIcon,
-} from '@heroicons/react/24/outline';
-import { useCalendarEventsStore } from '../../../../store/useReservationStore';
-import dayjs from 'dayjs';
-import { Link } from 'react-router-dom';
+import { CalendarIcon } from "@heroicons/react/24/solid";
+import { useCalendarEventsStore } from "../../../../store/useReservationStore";
+import dayjs from "dayjs";
+import { Link } from "react-router-dom";
 
 const NextEvents = () => {
   const { events, fetchEvents } = useCalendarEventsStore();
@@ -17,11 +15,11 @@ const NextEvents = () => {
   }, [fetchEvents]);
 
   // Obtener eventos de la semana actual
-  const startWeek = dayjs().startOf('week');
-  const endWeek = dayjs().endOf('week');
+  const startWeek = dayjs().startOf("week");
+  const endWeek = dayjs().endOf("week");
 
   const weekEvents = events
-    .filter(event => {
+    .filter((event) => {
       const eventDate = dayjs(event.eventDay);
       return eventDate.isAfter(startWeek) && eventDate.isBefore(endWeek);
     })
@@ -30,7 +28,9 @@ const NextEvents = () => {
   return (
     <div className="space-y-3 px-2 max-h-[200px] overflow-auto shadow-lg py-4">
       {weekEvents.length === 0 ? (
-        <p className="text-gray-500 dark:text-gray-400 text-sm">No hay eventos esta semana</p>
+        <p className="text-gray-500 dark:text-gray-400 text-sm">
+          No hay eventos esta semana
+        </p>
       ) : (
         weekEvents.map((event) => (
           <div
@@ -39,10 +39,10 @@ const NextEvents = () => {
           >
             <div className="min-w-[50px] text-center">
               <p className="text-sm font-semibold text-gray-900 dark:text-white">
-                {dayjs(event.eventDay).format('DD')}
+                {dayjs(event.eventDay).format("DD")}
               </p>
               <p className="text-xs text-gray-500 dark:text-gray-400">
-                {dayjs(event.eventDay).format('MMM')}
+                {dayjs(event.eventDay).format("MMM")}
               </p>
             </div>
             <div className="flex-1">
@@ -62,32 +62,33 @@ const NextEvents = () => {
 
 const DashboardHome = () => {
   return (
-    <div className='flex flex-col gap-6 px-4 md:px-8'>
+    <div className="flex flex-col gap-6 px-4 md:px-8">
       {/* Resumen Financiero */}
       <section>
         <CardsHomeSummary />
       </section>
 
       {/* Grid de información relevante */}
-        <Card className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <CalendarIcon className="h-5 w-5 text-indigo-600" />
-              <h3 className="text-lg font-semibold dark:text-white">Eventos de la Semana</h3>
-            </div>
-            <Link
-              to="/dashboard/calendar"
-              className="text-sm text-indigo-600 hover:text-indigo-500 transition-colors border-b border-indigo-600 dark:text-indigo-400 dark:hover:text-indigo-500 dark:border-indigo-400"
-            >
-              Ver calendario
-            </Link>
+      <Card className="p-6">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <CalendarIcon className="h-5 w-5 text-indigo-600" />
+            <h3 className="text-lg font-semibold dark:text-white">
+              Eventos de la Semana
+            </h3>
           </div>
-          <NextEvents />
-        </Card>
-        <DirectAccess />
-  
+          <Link
+            to="/dashboard/calendar"
+            className="text-sm text-indigo-600 hover:text-indigo-500 transition-colors border-b border-indigo-600 dark:text-indigo-400 dark:hover:text-indigo-500 dark:border-indigo-400"
+          >
+            Ver calendario
+          </Link>
+        </div>
+        <NextEvents />
+      </Card>
+      <DirectAccess />
     </div>
-  )
-}
+  );
+};
 
-export default DashboardHome
+export default DashboardHome;

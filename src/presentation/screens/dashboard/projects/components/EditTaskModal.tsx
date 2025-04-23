@@ -1,14 +1,14 @@
-import React, { Fragment, useState, useEffect } from 'react';
-import { Dialog, Transition } from '@headlessui/react';
-import { XMarkIcon } from '@heroicons/react/24/outline';
-import { 
+import React, { Fragment, useState, useEffect } from "react";
+import { Dialog, Transition } from "@headlessui/react";
+import { XMarkIcon } from "@heroicons/react/24/solid";
+import {
   ProjectTask,
-  ProjectTaskCreateInput, 
-  TaskPriority, 
-  TaskStatus, 
-  useProjectTaskStore 
-} from '../../../../../store/projectTaskStore';
-import { toast } from 'react-hot-toast';
+  ProjectTaskCreateInput,
+  TaskPriority,
+  TaskStatus,
+  useProjectTaskStore,
+} from "../../../../../store/projectTaskStore";
+import { toast } from "react-hot-toast";
 
 interface EditTaskModalProps {
   isOpen: boolean;
@@ -18,35 +18,37 @@ interface EditTaskModalProps {
 
 // Task tags
 const TASK_TAGS = [
-  'diseño',
-  'construcción',
-  'electricidad',
-  'plomería',
-  'compras',
-  'documentación',
-  'permisos',
-  'legal',
-  'financiero',
-  'marketing',
+  "diseño",
+  "construcción",
+  "electricidad",
+  "plomería",
+  "compras",
+  "documentación",
+  "permisos",
+  "legal",
+  "financiero",
+  "marketing",
 ];
 
-const EditTaskModal: React.FC<EditTaskModalProps> = ({ 
-  isOpen, 
-  onClose, 
-  task 
+const EditTaskModal: React.FC<EditTaskModalProps> = ({
+  isOpen,
+  onClose,
+  task,
 }) => {
   const { updateProjectTask, loading } = useProjectTaskStore();
-  
-  const [formData, setFormData] = useState<Omit<ProjectTaskCreateInput, 'projectId'>>({
-    title: '',
-    description: '',
+
+  const [formData, setFormData] = useState<
+    Omit<ProjectTaskCreateInput, "projectId">
+  >({
+    title: "",
+    description: "",
     status: TaskStatus.BACKLOG,
     priority: TaskPriority.MEDIUM,
-    dueDate: '',
+    dueDate: "",
     tags: [],
     assignedTo: [],
   });
-  
+
   // Load task data when modal opens
   useEffect(() => {
     if (task) {
@@ -55,58 +57,66 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({
         description: task.description,
         status: task.status,
         priority: task.priority,
-        dueDate: task.dueDate || '',
+        dueDate: task.dueDate || "",
         tags: task.tags || [],
         assignedTo: task.assignedTo || [],
       });
     }
   }, [task]);
-  
+
   // Handle form field changes
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
+  ) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
   };
-  
+
   // Handle tag selection
   const handleTagChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { value, checked } = e.target;
-    
+
     if (checked) {
       setFormData({
         ...formData,
-        tags: [...formData.tags, value]
+        tags: [...formData.tags, value],
       });
     } else {
       setFormData({
         ...formData,
-        tags: formData.tags.filter(tag => tag !== value)
+        tags: formData.tags.filter((tag) => tag !== value),
       });
     }
   };
-  
+
   // Process form submission
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    
+
     // Basic validation
     if (!formData.title.trim()) {
-      toast.error('El título es obligatorio');
+      toast.error("El título es obligatorio");
       return;
     }
-    
+
     try {
       await updateProjectTask(task.id, formData);
-      toast.success('Tarea actualizada exitosamente');
+      toast.success("Tarea actualizada exitosamente");
       onClose();
     } catch (error) {
-      toast.error('Error al actualizar la tarea');
+      toast.error("Error al actualizar la tarea");
     }
   };
-  
+
   return (
     <Transition.Root show={isOpen} as={Fragment}>
-      <Dialog as="div" className="relative z-50" onClose={() => !loading && onClose()}>
+      <Dialog
+        as="div"
+        className="relative z-50"
+        onClose={() => !loading && onClose()}
+      >
         <div className="fixed inset-0" />
         <div className="fixed inset-0 overflow-hidden">
           <div className="overlay-forms absolute inset-0 overflow-hidden">
@@ -145,11 +155,17 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({
                         </p>
                       </div>
                     </div>
-                    
-                    <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6">
+
+                    <form
+                      onSubmit={handleSubmit}
+                      className="flex-1 overflow-y-auto p-6"
+                    >
                       <div className="space-y-6">
                         <div>
-                          <label htmlFor="title" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                          <label
+                            htmlFor="title"
+                            className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                          >
                             Título *
                           </label>
                           <input
@@ -162,9 +178,12 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({
                             required
                           />
                         </div>
-                        
+
                         <div>
-                          <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                          <label
+                            htmlFor="description"
+                            className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                          >
                             Descripción
                           </label>
                           <textarea
@@ -176,10 +195,13 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({
                             className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                           />
                         </div>
-                        
+
                         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                           <div>
-                            <label htmlFor="status" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            <label
+                              htmlFor="status"
+                              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                            >
                               Estado
                             </label>
                             <select
@@ -189,16 +211,27 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({
                               onChange={handleChange}
                               className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                             >
-                              <option value={TaskStatus.BACKLOG}>Pendientes</option>
+                              <option value={TaskStatus.BACKLOG}>
+                                Pendientes
+                              </option>
                               <option value={TaskStatus.TODO}>Por hacer</option>
-                              <option value={TaskStatus.IN_PROGRESS}>En progreso</option>
-                              <option value={TaskStatus.REVIEW}>Revisión</option>
-                              <option value={TaskStatus.DONE}>Completado</option>
+                              <option value={TaskStatus.IN_PROGRESS}>
+                                En progreso
+                              </option>
+                              <option value={TaskStatus.REVIEW}>
+                                Revisión
+                              </option>
+                              <option value={TaskStatus.DONE}>
+                                Completado
+                              </option>
                             </select>
                           </div>
-                          
+
                           <div>
-                            <label htmlFor="priority" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            <label
+                              htmlFor="priority"
+                              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                            >
                               Prioridad
                             </label>
                             <select
@@ -211,13 +244,18 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({
                               <option value={TaskPriority.LOW}>Baja</option>
                               <option value={TaskPriority.MEDIUM}>Media</option>
                               <option value={TaskPriority.HIGH}>Alta</option>
-                              <option value={TaskPriority.URGENT}>Urgente</option>
+                              <option value={TaskPriority.URGENT}>
+                                Urgente
+                              </option>
                             </select>
                           </div>
                         </div>
-                        
+
                         <div>
-                          <label htmlFor="dueDate" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                          <label
+                            htmlFor="dueDate"
+                            className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                          >
                             Fecha límite
                           </label>
                           <input
@@ -229,7 +267,7 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({
                             className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                           />
                         </div>
-                        
+
                         <div>
                           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                             Etiquetas
@@ -246,7 +284,10 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({
                                   onChange={handleTagChange}
                                   className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
                                 />
-                                <label htmlFor={`tag-${tag}`} className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                                <label
+                                  htmlFor={`tag-${tag}`}
+                                  className="ml-2 block text-sm text-gray-700 dark:text-gray-300"
+                                >
                                   {tag}
                                 </label>
                               </div>
@@ -254,7 +295,7 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({
                           </div>
                         </div>
                       </div>
-                      
+
                       <div className="mt-6 flex justify-end space-x-3">
                         <button
                           type="button"
@@ -269,7 +310,7 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({
                           className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                           disabled={loading}
                         >
-                          {loading ? 'Guardando...' : 'Guardar Cambios'}
+                          {loading ? "Guardando..." : "Guardar Cambios"}
                         </button>
                       </div>
                     </form>

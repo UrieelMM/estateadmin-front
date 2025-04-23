@@ -5,7 +5,7 @@ import {
   PresentationChartBarIcon,
   Cog6ToothIcon,
   BanknotesIcon,
-} from "@heroicons/react/24/outline";
+} from "@heroicons/react/24/solid";
 import { Link } from "react-router-dom";
 import { Card } from "@heroui/react";
 
