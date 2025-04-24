@@ -102,7 +102,7 @@ const InvoicesByCondominiums = () => {
           </h1>
           <p className="mt-2 text-xs font-medium px-3 py-2 rounded-lg bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white shadow-lg inline-block dark:from-indigo-700 dark:via-purple-700 dark:to-pink-700">
             Lista de comprobantes enviados a través del{" "}
-            <span className="font-bold">Chatbot de EstateAdmin</span>
+            <span className="font-bold">ChatBot de EstateAdmin</span>
           </p>
         </div>
         <div className="mt-4 sm:ml-16 sm:mt-0 sm:flex gap-4">

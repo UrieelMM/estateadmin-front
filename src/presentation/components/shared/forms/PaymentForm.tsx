@@ -566,6 +566,7 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                                   type="text"
                                   name="amountPaid"
                                   id="amountPaid"
+                                  placeholder="$100.00"
                                   className="px-8 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-50"
                                   value={amountPaidDisplay}
                                   onChange={(e) => {
@@ -751,7 +752,7 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                                                 min="0"
                                                 step="0.01"
                                                 className="w-18 rounded-md ring-0 focus:ring-0 outline-none border border-solid border-indigo-300 pl-5 h-8 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
-                                                placeholder="$ Monto a aplicar"
+                                                placeholder="$100.00"
                                                 value={
                                                   chargeDisplayValues[
                                                     charge.id
@@ -779,21 +780,12 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                                                   );
                                                 }}
                                                 onFocus={() => {
-                                                  const selected =
-                                                    selectedCharges.find(
-                                                      (sc) =>
-                                                        sc.chargeId ===
-                                                        charge.id
-                                                    );
-                                                  if (selected) {
-                                                    setChargeDisplayValues(
-                                                      (prev) => ({
-                                                        ...prev,
-                                                        [charge.id]:
-                                                          selected.amount.toString(),
-                                                      })
-                                                    );
-                                                  }
+                                                  setChargeDisplayValues(
+                                                    (prev) => ({
+                                                      ...prev,
+                                                      [charge.id]: "",
+                                                    })
+                                                  );
                                                 }}
                                                 onBlur={() => {
                                                   const selected =
@@ -802,7 +794,10 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                                                         sc.chargeId ===
                                                         charge.id
                                                     );
-                                                  if (selected) {
+                                                  if (
+                                                    selected &&
+                                                    selected.amount > 0
+                                                  ) {
                                                     setChargeDisplayValues(
                                                       (prev) => ({
                                                         ...prev,
@@ -810,6 +805,13 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                                                           formatCurrency(
                                                             selected.amount
                                                           ),
+                                                      })
+                                                    );
+                                                  } else {
+                                                    setChargeDisplayValues(
+                                                      (prev) => ({
+                                                        ...prev,
+                                                        [charge.id]: "",
                                                       })
                                                     );
                                                   }
@@ -870,7 +872,7 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                                   id="comments"
                                   name="comments"
                                   rows={4}
-                                  className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
+                                  className="block w-full rounded-md py-1.5 border border-gray-300 text-gray-900 shadow-sm ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
                                   value={comments}
                                 />
                               </div>
