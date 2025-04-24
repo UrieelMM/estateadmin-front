@@ -145,7 +145,7 @@ const ChargeForm = () => {
   return (
     <div className="bg-white p-6 rounded-xl shadow-lg dark:bg-gray-800 dark:text-gray-100 transition-all duration-300 border border-gray-100 dark:border-gray-700">
       <div className="flex items-center justify-between mb-6 border-b border-gray-100 dark:border-gray-700 pb-4">
-        <h2 className="text-2xl font-bold text-gray-600 dark:text-gray-100">
+        <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">
           Asignar Cargo
         </h2>
         <DocumentTextIcon className="h-7 w-7 text-indigo-600 dark:text-indigo-400" />

@@ -16,6 +16,7 @@ import {
   PettyCashCategory,
   PettyCashTransactionType,
 } from "../../../../../../store/pettyCashStore";
+import useProviderStore from "../../../../../../store/providerStore";
 
 moment.locale("es"); // Establecer español como idioma
 
@@ -23,13 +24,14 @@ const PettyCashExpenseForm: React.FC = () => {
   const navigate = useNavigate();
   const { addTransaction, currentBalance, fetchConfig, fetchTransactions } =
     usePettyCashStore();
+  const { providers, fetchProviders } = useProviderStore();
 
   // Estados para el formulario
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState<PettyCashCategory | "">("");
   const [description, setDescription] = useState("");
-  const [date, setDate] = useState(moment().format("YYYY-MM-DD"));
-  const [provider, setProvider] = useState("");
+  const [expenseDate, setExpenseDate] = useState(moment().format("YYYY-MM-DD"));
+  const [selectedProviderId, setSelectedProviderId] = useState<string>("");
   const [file, setFile] = useState<File | null>(null);
   const [filePreview, setFilePreview] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -41,10 +43,11 @@ const PettyCashExpenseForm: React.FC = () => {
     const loadData = async () => {
       await fetchConfig();
       await fetchTransactions();
+      await fetchProviders();
     };
 
     loadData();
-  }, [fetchConfig, fetchTransactions]);
+  }, [fetchConfig, fetchTransactions, fetchProviders]);
 
   // Lista de categorías para el selector
   const categories = [
@@ -88,7 +91,7 @@ const PettyCashExpenseForm: React.FC = () => {
 
     try {
       // Validar campos
-      if (!amount || !description || !date || !category) {
+      if (!amount || !description || !expenseDate || !category) {
         throw new Error("Por favor completa todos los campos requeridos");
       }
 
@@ -111,17 +114,17 @@ const PettyCashExpenseForm: React.FC = () => {
         amount: amountValue,
         category: category as PettyCashCategory,
         description,
-        date: moment(date).format("YYYY-MM-DDTHH:mm:ss"),
-        provider: provider || undefined,
-        receiptFile: file || undefined,
+        expenseDate: moment(expenseDate).format("YYYY-MM-DDTHH:mm:ss"),
+        providerId: selectedProviderId || undefined,
+        file: file || undefined,
       });
 
       // Limpiar formulario después de enviar
       setAmount("");
       setCategory("");
       setDescription("");
-      setDate(moment().format("YYYY-MM-DD"));
-      setProvider("");
+      setExpenseDate(moment().format("YYYY-MM-DD"));
+      setSelectedProviderId("");
       setFile(null);
       setFilePreview(null);
       setSuccess(true);
@@ -275,17 +278,17 @@ const PettyCashExpenseForm: React.FC = () => {
 
           <div>
             <label
-              htmlFor="date"
+              htmlFor="expenseDate"
               className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
             >
               Fecha *
             </label>
             <input
               type="date"
-              id="date"
-              name="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
+              id="expenseDate"
+              name="expenseDate"
+              value={expenseDate}
+              onChange={(e) => setExpenseDate(e.target.value)}
               required
               max={moment().format("YYYY-MM-DD")}
               className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500  dark:bg-gray-800 text-gray-900 dark:text-white"
@@ -299,15 +302,20 @@ const PettyCashExpenseForm: React.FC = () => {
             >
               Proveedor o beneficiario
             </label>
-            <input
-              type="text"
+            <select
               id="provider"
               name="provider"
-              value={provider}
-              onChange={(e) => setProvider(e.target.value)}
-              className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500  dark:bg-gray-800 text-gray-900 dark:text-white"
-              placeholder="Nombre del proveedor"
-            />
+              value={selectedProviderId}
+              onChange={(e) => setSelectedProviderId(e.target.value)}
+              className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-800 text-gray-900 dark:text-white"
+            >
+              <option value="">Seleccionar proveedor</option>
+              {providers.map((provider) => (
+                <option key={provider.id} value={provider.id}>
+                  {provider.name}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="md:col-span-2">

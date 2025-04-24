@@ -64,10 +64,13 @@ export interface PettyCashTransaction {
   amount: number; // En centavos
   category?: PettyCashCategory;
   description: string;
-  date: string; // ISO format
+  expenseDate: string; // ISO format
   createdAt: string; // ISO format
   receiptUrl?: string;
-  provider?: string;
+  provider?: {
+    id: string;
+    name: string;
+  };
   auditId?: string; // Referencia al Cierre relacionado
   expenseId?: string; // Referencia al egreso registrado (si aplica)
   userId: string; // Usuario que realizó la transacción
@@ -125,9 +128,9 @@ export interface PettyCashTransactionCreateInput {
   amount: number; // En pesos (será convertido a centavos)
   category?: PettyCashCategory;
   description: string;
-  date: string; // ISO format
-  provider?: string;
-  receiptFile?: File; // Archivo de comprobante
+  expenseDate: string; // ISO format
+  providerId?: string; // ID del proveedor
+  file?: File; // Archivo de comprobante
   auditId?: string;
   cashBoxId?: string; // ID de la caja a la que pertenece
   previousCashBoxId?: string; // ID de la caja anterior (solo para transacciones iniciales)
@@ -371,7 +374,7 @@ export const usePettyCashStore = create<PettyCashState>()((set, get) => ({
         type: PettyCashTransactionType.INITIAL,
         amount: configData.initialAmount,
         description: "Saldo inicial de caja chica",
-        date: configData.startDate || new Date().toISOString(),
+        expenseDate: configData.startDate || new Date().toISOString(),
         createdAt: new Date().toISOString(),
         userId: user.uid,
         userName: user.displayName || user.email || "Usuario",
@@ -476,8 +479,8 @@ export const usePettyCashStore = create<PettyCashState>()((set, get) => ({
         if (filter.startDate && filter.endDate) {
           q = query(
             q,
-            where("date", ">=", filter.startDate),
-            where("date", "<=", filter.endDate)
+            where("expenseDate", ">=", filter.startDate),
+            where("expenseDate", "<=", filter.endDate)
           );
         }
 
@@ -501,7 +504,7 @@ export const usePettyCashStore = create<PettyCashState>()((set, get) => ({
           amount: data.amount,
           category: data.category,
           description: data.description,
-          date: data.date,
+          expenseDate: data.expenseDate,
           createdAt: data.createdAt,
           receiptUrl: data.receiptUrl,
           provider: data.provider,
@@ -516,7 +519,8 @@ export const usePettyCashStore = create<PettyCashState>()((set, get) => ({
 
       // Ordenar por fecha (más reciente primero)
       transactions.sort(
-        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+        (a, b) =>
+          new Date(b.expenseDate).getTime() - new Date(a.expenseDate).getTime()
       );
 
       set({ transactions, loading: false });
@@ -635,13 +639,13 @@ export const usePettyCashStore = create<PettyCashState>()((set, get) => ({
 
       // Subir comprobante si existe
       let receiptUrl = "";
-      if (data.receiptFile) {
+      if (data.file) {
         const storage = getStorage();
         const fileRef = ref(
           storage,
-          `clients/${clientId}/condominiums/${condominiumId}/petty-cash/${transactionId}/${data.receiptFile.name}`
+          `clients/${clientId}/condominiums/${condominiumId}/petty-cash/${transactionId}/${data.file.name}`
         );
-        await uploadBytes(fileRef, data.receiptFile);
+        await uploadBytes(fileRef, data.file);
         receiptUrl = await getDownloadURL(fileRef);
       }
 
@@ -651,7 +655,7 @@ export const usePettyCashStore = create<PettyCashState>()((set, get) => ({
         type: data.type,
         amount: pesosToCents(data.amount),
         description: data.description,
-        date: data.date,
+        expenseDate: data.expenseDate,
         createdAt: new Date().toISOString(),
         userId: user.uid,
         userName: user.displayName || user.email || "Usuario",
@@ -667,8 +671,8 @@ export const usePettyCashStore = create<PettyCashState>()((set, get) => ({
         transaction.receiptUrl = receiptUrl;
       }
 
-      if (data.provider) {
-        transaction.provider = data.provider;
+      if (data.providerId) {
+        transaction.providerId = data.providerId;
       }
 
       if (data.auditId) {
@@ -709,14 +713,15 @@ export const usePettyCashStore = create<PettyCashState>()((set, get) => ({
           amount: data.amount,
           concept: conceptName,
           paymentType: "Efectivo",
-          expenseDate: data.date,
+          expenseDate: data.expenseDate,
           description: `Gasto de caja chica: ${data.description}`,
           financialAccountId: config.accountId,
+          providerId: data.providerId,
         };
 
         // Añadir file solo si existe
-        if (data.receiptFile) {
-          expenseData.file = data.receiptFile;
+        if (data.file) {
+          expenseData.file = data.file;
         }
 
         await expenseStore.addExpense(expenseData);
@@ -834,7 +839,7 @@ export const usePettyCashStore = create<PettyCashState>()((set, get) => ({
             audit.difference > 0
               ? "Ajuste positivo por Cierre de caja"
               : "Ajuste negativo por Cierre de caja",
-          date: new Date().toISOString(),
+          expenseDate: new Date().toISOString(),
           auditId: auditId,
         };
 
@@ -910,7 +915,7 @@ export const usePettyCashStore = create<PettyCashState>()((set, get) => ({
         type: PettyCashTransactionType.REPLENISHMENT,
         amount,
         description,
-        date,
+        expenseDate: date,
       });
 
       // Actualizar estado
@@ -935,7 +940,8 @@ export const usePettyCashStore = create<PettyCashState>()((set, get) => ({
 
     // Ordenar transacciones por fecha (más recientes primero)
     const sortedTransactions = [...transactions].sort(
-      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+      (a, b) =>
+        new Date(b.expenseDate).getTime() - new Date(a.expenseDate).getTime()
     );
 
     // Filtrar transacciones de la caja actual
@@ -1075,7 +1081,7 @@ export const usePettyCashStore = create<PettyCashState>()((set, get) => ({
         description: `Saldo inicial (transferido de caja anterior ${
           currentConfig.period || "sin periodo"
         })`,
-        date: endDate,
+        expenseDate: endDate,
         createdAt: endDate,
         userId: user.uid,
         userName: user.displayName || user.email || "Usuario",
@@ -1241,7 +1247,7 @@ export const usePettyCashStore = create<PettyCashState>()((set, get) => ({
             amount: data.amount,
             category: data.category,
             description: data.description,
-            date: data.date,
+            expenseDate: data.expenseDate,
             createdAt: data.createdAt,
             receiptUrl: data.receiptUrl,
             provider: data.provider,
