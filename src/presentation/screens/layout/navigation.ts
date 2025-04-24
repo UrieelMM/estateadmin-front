@@ -25,9 +25,9 @@ export const navigation = [
     current: false,
     children: [
       { name: "Ingresos", href: "/dashboard/income" },
+      { name: "Caja Chica", href: "/dashboard/pettycash" },
       { name: "Egresos", href: "/dashboard/expenses" },
       { name: "Balance General", href: "/dashboard/balance" },
-      { name: "Caja Chica", href: "/dashboard/pettycash" },
       { name: "Cargos", href: "/dashboard/charges" },
       {
         name: "Recibos y Comprobantes",
@@ -44,7 +44,7 @@ export const navigation = [
     children: [
       { name: "Áreas comunes", href: "/dashboard/events" },
       { name: "Calendario", href: "/dashboard/calendar" },
-      { name: "Publicaciones", href: "/dasboard/publications" },
+      { name: "Publicaciones", href: "/dashboard/publications" },
     ],
   },
   {

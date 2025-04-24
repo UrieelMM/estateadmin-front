@@ -188,7 +188,7 @@ const PettyCashHistory: React.FC = () => {
                       {formatCurrency(cashBox.initialAmount / 100)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                      {cashBox.finalBalance
+                      {cashBox.finalBalance !== undefined
                         ? formatCurrency(cashBox.finalBalance / 100)
                         : "N/A"}
                     </td>

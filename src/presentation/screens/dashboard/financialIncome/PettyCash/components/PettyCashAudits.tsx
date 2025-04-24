@@ -44,6 +44,11 @@ const PettyCashAudits: React.FC = () => {
     fetchAudits();
   }, [fetchAudits]);
 
+  // Ordenar cierres por fecha (más reciente primero)
+  const sortedAudits = [...audits].sort(
+    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+  );
+
   // Manejar aprobación
   const handleApprove = async () => {
     if (!selectedAudit) return;
@@ -227,6 +232,9 @@ const PettyCashAudits: React.FC = () => {
                     Fecha
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    Periodo
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Usuario
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
@@ -247,13 +255,16 @@ const PettyCashAudits: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
-                {audits.map((audit) => (
+                {sortedAudits.map((audit) => (
                   <tr
                     key={audit.id}
                     className="hover:bg-gray-50 dark:hover:bg-gray-800/50"
                   >
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
                       {moment(audit.date).format("DD/MM/YYYY")}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
+                      {audit.cashBoxPeriod || "Sin periodo"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
                       {audit.userName || "Usuario"}

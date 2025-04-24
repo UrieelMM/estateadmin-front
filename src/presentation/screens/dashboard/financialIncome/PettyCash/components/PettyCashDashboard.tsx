@@ -34,6 +34,7 @@ const PettyCashDashboard: React.FC = () => {
   const { fetchFinancialAccounts, financialAccounts } = usePaymentStore();
   const [loading, setLoading] = useState(true);
   const [noAccount, setNoAccount] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   // Ya no necesitamos el estado del modal, usamos navegación directa
 
   // Usamos useState en lugar de useRef para manejar el estado de inicialización
@@ -249,54 +250,100 @@ const PettyCashDashboard: React.FC = () => {
           </div>
 
           {/* Botones de acción rápida */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-            <button
-              className="flex text-sm items-center justify-center px-1 py-2 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:hover:bg-indigo-800/30 text-indigo-700 dark:text-indigo-300 rounded-lg transition duration-150"
-              onClick={() => navigate("expense")}
-            >
-              <ArrowDownTrayIcon className="h-5 w-5 mr-2" />
-              <span>Registrar Gasto</span>
-            </button>
+          <div className="flex justify-end">
+            <div className="relative inline-block text-left">
+              <button
+                type="button"
+                className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-100 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                onClick={() => setIsMenuOpen(!isMenuOpen)}
+              >
+                Acciones
+                <svg
+                  className="-mr-1 ml-2 h-5 w-5"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </button>
 
-            <button
-              className="flex text-sm items-center justify-center px-1 py-2 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:hover:bg-emerald-800/30 text-emerald-700 dark:text-emerald-300 rounded-lg transition duration-150"
-              onClick={() => navigate("audit")}
-            >
-              <CheckCircleIcon className="h-5 w-5 mr-2" />
-              <span>Realizar Cierre</span>
-            </button>
+              {isMenuOpen && (
+                <div className="origin-top-right absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white dark:bg-gray-900 ring-1 ring-black ring-opacity-5 dark:ring-white dark:ring-opacity-10 focus:outline-none">
+                  <div className="py-1">
+                    <button
+                      className="flex w-full items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800"
+                      onClick={() => {
+                        navigate("expense");
+                        setIsMenuOpen(false);
+                      }}
+                    >
+                      <ArrowDownTrayIcon className="h-5 w-5 mr-2 text-indigo-700 dark:text-indigo-400" />
+                      <span>Registrar Gasto</span>
+                    </button>
 
-            <button
-              className="flex text-sm items-center justify-center px-1 py-2 bg-amber-50 hover:bg-amber-100 dark:bg-amber-900/30 dark:hover:bg-amber-800/30 text-amber-700 dark:text-amber-300 rounded-lg transition duration-150"
-              onClick={() => navigate("replenish")}
-            >
-              <BanknotesIcon className="h-5 w-5 mr-2" />
-              <span>Reponer Fondos</span>
-            </button>
+                    <button
+                      className="flex w-full items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800"
+                      onClick={() => {
+                        navigate("audit");
+                        setIsMenuOpen(false);
+                      }}
+                    >
+                      <CheckCircleIcon className="h-5 w-5 mr-2 text-emerald-700 dark:text-emerald-400" />
+                      <span>Realizar Cierre</span>
+                    </button>
 
-            <button
-              className="flex text-sm items-center justify-center px-1 py-2 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/30 dark:hover:bg-blue-800/30 text-blue-700 dark:text-blue-300 rounded-lg transition duration-150"
-              onClick={() => navigate("audits")}
-            >
-              <ClipboardDocumentListIcon className="h-5 w-5 mr-2" />
-              <span>Administrar Cierres</span>
-            </button>
+                    <button
+                      className="flex w-full items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800"
+                      onClick={() => {
+                        navigate("replenish");
+                        setIsMenuOpen(false);
+                      }}
+                    >
+                      <BanknotesIcon className="h-5 w-5 mr-2 text-amber-700 dark:text-amber-400" />
+                      <span>Reponer Fondos</span>
+                    </button>
 
-            <button
-              className="flex text-sm items-center justify-center px-1 py-2 bg-purple-50 hover:bg-purple-100 dark:bg-purple-900/30 dark:hover:bg-purple-800/30 text-purple-700 dark:text-purple-300 rounded-lg transition duration-150"
-              onClick={() => navigate("history")}
-            >
-              <ClockIcon className="h-5 w-5 mr-2" />
-              <span>Historial de Cajas</span>
-            </button>
+                    <button
+                      className="flex w-full items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800"
+                      onClick={() => {
+                        navigate("audits");
+                        setIsMenuOpen(false);
+                      }}
+                    >
+                      <ClipboardDocumentListIcon className="h-5 w-5 mr-2 text-blue-700 dark:text-blue-400" />
+                      <span>Administrar Cierres</span>
+                    </button>
 
-            <button
-              className="flex text-sm items-center justify-center px-1 py-2 bg-teal-50 hover:bg-teal-100 dark:bg-teal-900/30 dark:hover:bg-teal-800/30 text-teal-700 dark:text-teal-300 rounded-lg transition duration-150"
-              onClick={() => navigate("finalize")}
-            >
-              <ArrowUturnRightIcon className="h-5 w-5 mr-2" />
-              <span>Finalizar Caja</span>
-            </button>
+                    <button
+                      className="flex w-full items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800"
+                      onClick={() => {
+                        navigate("history");
+                        setIsMenuOpen(false);
+                      }}
+                    >
+                      <ClockIcon className="h-5 w-5 mr-2 text-purple-700 dark:text-purple-400" />
+                      <span>Historial de Cajas</span>
+                    </button>
+
+                    <button
+                      className="flex w-full items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800"
+                      onClick={() => {
+                        navigate("finalize");
+                        setIsMenuOpen(false);
+                      }}
+                    >
+                      <ArrowUturnRightIcon className="h-5 w-5 mr-2 text-teal-700 dark:text-teal-400" />
+                      <span>Finalizar Caja</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 

@@ -93,6 +93,7 @@ export interface PettyCashAudit {
   approvedBy?: string;
   approvedAt?: string;
   adjustmentTransactionId?: string; // ID de la transacción de ajuste (si fue necesario)
+  cashBoxPeriod?: string; // Periodo de la caja a la que pertenece el cierre
 }
 
 /**
@@ -584,6 +585,7 @@ export const usePettyCashStore = create<PettyCashState>()((set, get) => ({
           approvedBy: data.approvedBy,
           approvedAt: data.approvedAt,
           adjustmentTransactionId: data.adjustmentTransactionId,
+          cashBoxPeriod: data.cashBoxPeriod,
         };
       });
 
@@ -760,6 +762,10 @@ export const usePettyCashStore = create<PettyCashState>()((set, get) => ({
         `clients/${clientId}/condominiums/${condominiumId}/pettyCashAudits`
       );
 
+      // Obtener el periodo de la caja actual
+      const currentConfig = get().config;
+      const cashBoxPeriod = currentConfig?.period || "Sin periodo";
+
       // Crear objeto base de Cierre sin campos undefined
       const audit: any = {
         id: "", // Se asignará después
@@ -771,6 +777,7 @@ export const usePettyCashStore = create<PettyCashState>()((set, get) => ({
         status: PettyCashAuditStatus.PENDING,
         userId: user.uid,
         userName: user.displayName || user.email || "Usuario",
+        cashBoxPeriod: cashBoxPeriod,
       };
 
       // Añadir campos opcionales solo si tienen valor
@@ -979,10 +986,16 @@ export const usePettyCashStore = create<PettyCashState>()((set, get) => ({
         throw new Error("No hay configuración de caja chica activa");
       }
 
+      // Validar que se proporcione un nombre de periodo
+      if (!newPeriodName) {
+        throw new Error("Debe proporcionar un nombre para el nuevo periodo");
+      }
+
       // Logs para depuración
       console.log("🔄 Iniciando proceso de finalización de caja...");
       console.log("📝 Periodo actual:", currentConfig.period);
       console.log("📝 Nuevo nombre de periodo:", newPeriodName);
+      console.log("📝 Notas de cierre:", notes);
 
       // Calcular el saldo final
       const finalBalanceAmount = get().calculateBalance();
@@ -1006,13 +1019,17 @@ export const usePettyCashStore = create<PettyCashState>()((set, get) => ({
         active: false,
         endDate,
         finalBalance: finalBalanceCents,
-        notes: notes || "",
         updatedAt: serverTimestamp(),
       };
 
       // Asignar periodo si no existe
       if (!currentConfig.period) {
         updateData.period = periodName;
+      }
+
+      // Asignar las notas de cierre solo si existen
+      if (notes) {
+        updateData.notes = notes;
       }
 
       await updateDoc(currentConfigRef, updateData);
@@ -1024,18 +1041,6 @@ export const usePettyCashStore = create<PettyCashState>()((set, get) => ({
         `clients/${clientId}/condominiums/${condominiumId}/pettyCashConfig`
       );
 
-      // Determinar el nombre del nuevo periodo en español con primera letra en mayúscula
-      let nextPeriodName;
-      if (newPeriodName) {
-        nextPeriodName = newPeriodName;
-      } else {
-        // Generar un nombre de periodo en español con la primera letra en mayúscula
-        const monthYear = moment().format("MMMM YYYY");
-        nextPeriodName = `Caja Chica ${
-          monthYear.charAt(0).toUpperCase() + monthYear.slice(1)
-        }`;
-      }
-
       // Crear la nueva configuración
       const newConfigData: any = {
         initialAmount: finalBalanceCents, // Saldo final de la caja anterior
@@ -1043,7 +1048,7 @@ export const usePettyCashStore = create<PettyCashState>()((set, get) => ({
         accountId: currentConfig.accountId,
         accountName: currentConfig.accountName,
         active: true,
-        period: nextPeriodName,
+        period: newPeriodName,
         startDate: endDate,
         previousCashBoxId: currentConfig.id,
         createdAt: serverTimestamp(),

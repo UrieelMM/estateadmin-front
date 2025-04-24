@@ -52,6 +52,7 @@ const LayoutDashboard = ({ children }: Props) => {
   const logoutUser = useAuthStore((state) => state.logoutUser);
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isDesktopMenuCollapsed, setIsDesktopMenuCollapsed] = useState(false);
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [loadingSession, setLoadingSession] = useState(true);
   const [showInitialSetup, setShowInitialSetup] = useState<boolean | null>(
@@ -187,13 +188,28 @@ const LayoutDashboard = ({ children }: Props) => {
       <div className="hidden xl:block">
         <aside
           className={classNames(
-            "fixed inset-y-0 left-0 w-52 md:w-56 border-r bg-gray-50 border-gray-200 dark:border-gray-700 dark:bg-gray-800",
-            "h-screen flex flex-col"
+            "fixed inset-y-0 left-0 border-r bg-gray-50 border-gray-200 dark:border-gray-700 dark:bg-gray-800",
+            "h-screen flex flex-col transition-all duration-300 ease-in-out",
+            isDesktopMenuCollapsed ? "w-16" : "w-52 md:w-56"
           )}
         >
           {/* Header fijo */}
-          <div className="flex-none h-16 border-b border-gray-200 dark:border-gray-700 p-4">
-            <img className="h-8 w-auto" src={logo} alt="Your Company" />
+          <div className="flex-none h-16 border-b border-gray-200 dark:border-gray-700 p-4 flex items-center justify-between">
+            <img
+              className={classNames(
+                "h-8 w-auto",
+                isDesktopMenuCollapsed ? "hidden" : "block"
+              )}
+              src={logo}
+              alt="Your Company"
+            />
+            <button
+              onClick={() => setIsDesktopMenuCollapsed(!isDesktopMenuCollapsed)}
+              className="text-gray-500 hover:text-gray-600 focus:outline-none dark:text-gray-400 dark:hover:text-gray-300"
+            >
+              <span className="sr-only">Toggle menu</span>
+              <Bars3Icon className="h-6 w-6" aria-hidden="true" />
+            </button>
           </div>
 
           {/* Contenido con scroll */}
@@ -208,14 +224,19 @@ const LayoutDashboard = ({ children }: Props) => {
                         item.current
                           ? "bg-indigo-100"
                           : "hover:bg-indigo-100 dark:hover:bg-gray-700",
-                        "group flex items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md"
+                        "group flex items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md",
+                        isDesktopMenuCollapsed ? "justify-center" : ""
                       )}
+                      title={isDesktopMenuCollapsed ? item.name : undefined}
                     >
                       <item.icon
-                        className="mr-3 h-6 w-6 text-gray-400 dark:text-gray-300"
+                        className={classNames(
+                          "text-gray-400 dark:text-gray-300",
+                          isDesktopMenuCollapsed ? "h-6 w-6" : "mr-3 h-6 w-6"
+                        )}
                         aria-hidden="true"
                       />
-                      {item.name}
+                      {!isDesktopMenuCollapsed && item.name}
                     </Link>
                   ) : (
                     <Disclosure as="div" className="space-y-1">
@@ -226,32 +247,52 @@ const LayoutDashboard = ({ children }: Props) => {
                               item.current
                                 ? "bg-indigo-100"
                                 : "hover:bg-indigo-100 dark:hover:bg-gray-700",
-                              "group w-full flex items-center px-4 py-2 text-left text-sm font-medium text-gray-600 dark:text-gray-100 rounded-md focus:outline-none"
+                              "group w-full flex items-center px-4 py-2 text-left text-sm font-medium text-gray-600 dark:text-gray-100 rounded-md focus:outline-none",
+                              isDesktopMenuCollapsed ? "justify-center" : ""
                             )}
+                            title={
+                              isDesktopMenuCollapsed ? item.name : undefined
+                            }
+                            onClick={() => {
+                              if (isDesktopMenuCollapsed) {
+                                setIsDesktopMenuCollapsed(false);
+                              }
+                            }}
                           >
                             <item.icon
-                              className="mr-3 h-6 w-6 text-gray-400 dark:text-gray-300"
+                              className={classNames(
+                                "text-gray-400 dark:text-gray-300",
+                                isDesktopMenuCollapsed
+                                  ? "h-6 w-6"
+                                  : "mr-3 h-6 w-6"
+                              )}
                               aria-hidden="true"
                             />
-                            {item.name}
-                            <ChevronRightIcon
-                              className={`${
-                                open ? "transform rotate-90" : ""
-                              } ml-auto h-5 w-5 transition-transform`}
-                            />
+                            {!isDesktopMenuCollapsed && (
+                              <>
+                                {item.name}
+                                <ChevronRightIcon
+                                  className={`${
+                                    open ? "transform rotate-90" : ""
+                                  } ml-auto h-5 w-5 transition-transform`}
+                                />
+                              </>
+                            )}
                           </Disclosure.Button>
-                          <Disclosure.Panel className="space-y-1">
-                            {item.children.map((subItem) => (
-                              <Disclosure.Button
-                                key={subItem.name}
-                                as={Link}
-                                to={subItem.href}
-                                className="group w-full flex items-center pl-11 pr-2 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md hover:bg-indigo-100 dark:hover:bg-gray-700"
-                              >
-                                {subItem.name}
-                              </Disclosure.Button>
-                            ))}
-                          </Disclosure.Panel>
+                          {!isDesktopMenuCollapsed && (
+                            <Disclosure.Panel className="space-y-1">
+                              {item.children.map((subItem) => (
+                                <Disclosure.Button
+                                  key={subItem.name}
+                                  as={Link}
+                                  to={subItem.href}
+                                  className="group w-full flex items-center pl-11 pr-2 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md hover:bg-indigo-100 dark:hover:bg-gray-700"
+                                >
+                                  {subItem.name}
+                                </Disclosure.Button>
+                              ))}
+                            </Disclosure.Panel>
+                          )}
                         </>
                       )}
                     </Disclosure>
@@ -264,42 +305,72 @@ const LayoutDashboard = ({ children }: Props) => {
           {/* Footer fijo */}
           <div className="flex-none py-6">
             <ul>
-              <li className="w-40 h-36 mb-8 bg-gradient-to-tr from-[#9f86f81c] to-[#746dfc17] shadow-lg flex justify-center items-center rounded-lg mx-auto">
-                <div className="group flex-col justify-center items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md">
+              <li
+                className={classNames(
+                  "bg-gradient-to-tr from-[#9f86f81c] to-[#746dfc17] shadow-lg flex justify-center items-center rounded-lg mx-auto",
+                  isDesktopMenuCollapsed ? "w-12 h-12" : "w-40 h-36 mb-8"
+                )}
+              >
+                <div
+                  className={classNames(
+                    "group flex-col justify-center items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md",
+                    isDesktopMenuCollapsed ? "p-0" : ""
+                  )}
+                >
                   <div className="flex justify-center items-center">
                     <ShieldExclamationIcon
                       className="h-6 w-6 text-indigo-400"
                       aria-hidden="true"
                     />
                   </div>
-                  <p className="text-xs mt-2 mb-2 text-center">
-                    ¿Necesitas ayuda?
-                  </p>
-                  <button className="bg-indigo-400 text-xs text-center m-0 text-white rounded-md p-1">
-                    <span className="block mb-0.5">Contacta a soporte</span>
-                  </button>
+                  {!isDesktopMenuCollapsed && (
+                    <>
+                      <p className="text-xs mt-2 mb-2 text-center">
+                        ¿Necesitas ayuda?
+                      </p>
+                      <button className="bg-indigo-400 text-xs text-center m-0 text-white rounded-md p-1">
+                        <span className="block mb-0.5">Contacta a soporte</span>
+                      </button>
+                    </>
+                  )}
                 </div>
               </li>
               <li>
                 <Link
                   to="/dashboard/client-config"
-                  className="group flex items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md"
+                  className={classNames(
+                    "group flex items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md",
+                    isDesktopMenuCollapsed ? "justify-center" : ""
+                  )}
+                  title={isDesktopMenuCollapsed ? "Configuración" : undefined}
                 >
                   <Cog6ToothIcon
-                    className="mr-3 h-6 w-6 text-gray-400 dark:text-gray-300"
+                    className={classNames(
+                      "text-gray-400 dark:text-gray-300",
+                      isDesktopMenuCollapsed ? "h-6 w-6" : "mr-3 h-6 w-6"
+                    )}
                     aria-hidden="true"
                   />
-                  Configuración
+                  {!isDesktopMenuCollapsed && "Configuración"}
                 </Link>
               </li>
               <li>
                 <button
                   type="button"
                   onClick={handleLogout}
-                  className="group flex items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md"
+                  className={classNames(
+                    "group flex items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md",
+                    isDesktopMenuCollapsed ? "justify-center" : ""
+                  )}
+                  title={isDesktopMenuCollapsed ? "Cerrar sesión" : undefined}
                 >
-                  <ArrowLeftEndOnRectangleIcon className="mr-3 h-6 w-6 text-gray-400 dark:text-gray-300" />
-                  Cerrar sesión
+                  <ArrowLeftEndOnRectangleIcon
+                    className={classNames(
+                      "text-gray-400 dark:text-gray-300",
+                      isDesktopMenuCollapsed ? "h-6 w-6" : "mr-3 h-6 w-6"
+                    )}
+                  />
+                  {!isDesktopMenuCollapsed && "Cerrar sesión"}
                 </button>
               </li>
             </ul>
@@ -451,7 +522,12 @@ const LayoutDashboard = ({ children }: Props) => {
         -------------------
         - En pantallas grandes tiene margin-left para dejar espacio al sidebar fijo.
       */}
-      <div className="xl:ml-52">
+      <div
+        className={classNames(
+          "transition-all duration-300 ease-in-out",
+          isDesktopMenuCollapsed ? "xl:ml-16" : "xl:ml-52"
+        )}
+      >
         <Navbar />
         <main className="p-4 bg-gray-50 dark:bg-gray-800 min-h-screen pl-6">
           {children}
