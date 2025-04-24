@@ -1,6 +1,5 @@
 import { useState, useEffect, FormEvent } from "react";
 import toast from "react-hot-toast";
-import { Modal } from "antd";
 import useUserStore from "../../../../store/UserDataStore";
 import { useCalendarEventsStore } from "../../../../store/useReservationStore";
 import {
@@ -9,6 +8,7 @@ import {
   CalendarIcon,
   ClockIcon,
   PencilIcon,
+  XMarkIcon,
 } from "@heroicons/react/24/solid";
 import { useCondominiumStore } from "../../../../store/useCondominiumStore";
 import { commonAreas } from "../../../../utils/commonAreas";
@@ -25,6 +25,7 @@ interface CalendarEvent {
   endTime: string;
   comments?: string;
   email: string;
+  folio: string;
 }
 
 interface FormCalendarProps {
@@ -54,7 +55,7 @@ const FormCalendar = ({ isOpen, onClose }: FormCalendarProps) => {
   const [confirmModalVisible, setConfirmModalVisible] = useState(false);
   const [pendingEventData, setPendingEventData] = useState<Omit<
     CalendarEvent,
-    "id"
+    "id" | "folio"
   > | null>(null);
   const [unpaidCharges, setUnpaidCharges] = useState<any[]>([]);
 
@@ -91,7 +92,7 @@ const FormCalendar = ({ isOpen, onClose }: FormCalendarProps) => {
     }
 
     // Construir el objeto del evento sin incluir 'comments' si está vacío
-    const eventData: Omit<CalendarEvent, "id"> = {
+    const eventData: Omit<CalendarEvent, "id" | "folio"> = {
       name: resident.name,
       number: resident.number || "",
       phone: resident.phone || "",
@@ -328,42 +329,56 @@ const FormCalendar = ({ isOpen, onClose }: FormCalendarProps) => {
         </div>
       </div>
 
-      {/* Modal para confirmar creación forzada en caso de adeudos pendientes */}
-      <Modal
-        open={confirmModalVisible}
-        title="Adeudos Pendientes"
-        onCancel={() => setConfirmModalVisible(false)}
-        footer={[
-          <button
-            key="cancel"
-            onClick={() => setConfirmModalVisible(false)}
-            className="btn-secundary"
-          >
-            Cancelar
-          </button>,
-          <button
-            key="confirm"
-            onClick={handleConfirm}
-            className="btn-primary ml-2"
-          >
-            Guardar
-          </button>,
-        ]}
-      >
-        <p>El condómino tiene los siguientes adeudos pendientes:</p>
-        <ul className="list-disc pl-5 my-2">
-          {unpaidCharges.map((charge) => (
-            <li key={charge.id}>
-              Concepto: <span className="font-bold">{charge.concept}</span>{" "}
-              Monto:{" "}
-              <span className="font-bold">
-                {formatCentsToMXN(charge.amount)}
-              </span>
-            </li>
-          ))}
-        </ul>
-        <p>¿Desea confirmar la reservación?</p>
-      </Modal>
+      {/* Modal para confirmar creación forzada en caso de adeudos pendientes - Reemplazado con Tailwind */}
+      {confirmModalVisible && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+          <div className="bg-white min-w-[500px] dark:bg-gray-800 p-6 rounded-lg max-w-md shadow-xl">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Adeudos Pendientes
+              </h3>
+              <button
+                onClick={() => setConfirmModalVisible(false)}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white"
+              >
+                <XMarkIcon className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="mb-6">
+              <p className="text-gray-700 dark:text-gray-300">
+                El condómino tiene los siguientes adeudos pendientes:
+              </p>
+              <ul className="list-disc pl-5 my-2 text-gray-700 dark:text-gray-300">
+                {unpaidCharges.map((charge) => (
+                  <li key={charge.id} className="mb-1">
+                    Concepto:{" "}
+                    <span className="font-bold">{charge.concept}</span> Monto:{" "}
+                    <span className="font-bold">
+                      {formatCentsToMXN(charge.amount)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              <p className="text-gray-700 dark:text-gray-300">
+                ¿Desea confirmar la reservación?
+              </p>
+            </div>
+
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => setConfirmModalVisible(false)}
+                className="btn-secundary"
+              >
+                Cancelar
+              </button>
+              <button onClick={handleConfirm} className="btn-primary">
+                Guardar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };

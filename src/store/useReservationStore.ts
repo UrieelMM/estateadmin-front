@@ -25,6 +25,7 @@ export interface CalendarEvent {
   endTime: string; // Fin del evento (hora, e.g., "HH:mm")
   comments?: string; // Comentarios (opcional)
   email: string; // Email del usuario que crea el evento
+  folio: string; // Folio único de la reserva
 }
 
 export interface Resident {
@@ -58,6 +59,16 @@ const timeOverlap = (
   return s1 < e2 && s2 < e1;
 };
 
+// Función auxiliar para generar un folio aleatorio
+const generateFolio = (): string => {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  let result = "EA-";
+  for (let i = 0; i < 12; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+};
+
 type CalendarEventsState = {
   events: CalendarEvent[];
   residents: Resident[];
@@ -66,7 +77,7 @@ type CalendarEventsState = {
   fetchEvents: () => Promise<void>;
   updateEvent: (
     id: string,
-    data: Partial<Omit<CalendarEvent, "id" | "email">>
+    data: Partial<Omit<CalendarEvent, "id" | "email" | "folio">>
   ) => Promise<void>;
   deleteEvent: (id: string) => Promise<void>;
   /**
@@ -78,7 +89,7 @@ type CalendarEventsState = {
    * En caso de tener adeudos, se lanza un error que incluye la propiedad "unpaidCharges".
    */
   createEvent: (
-    data: Omit<CalendarEvent, "id">,
+    data: Omit<CalendarEvent, "id" | "folio">,
     options?: { force?: boolean }
   ) => Promise<void>;
   fetchResidents: () => Promise<void>;
@@ -133,7 +144,7 @@ export const useCalendarEventsStore = create<CalendarEventsState>()(
     },
 
     createEvent: async (
-      data: Omit<CalendarEvent, "id">,
+      data: Omit<CalendarEvent, "id" | "folio">,
       options?: { force?: boolean }
     ) => {
       set({ loading: true, error: null });
@@ -229,12 +240,16 @@ export const useCalendarEventsStore = create<CalendarEventsState>()(
           throw errorObj;
         }
 
+        // Generar un folio aleatorio para la reserva
+        const folio = generateFolio();
+
         // Si pasa todas las validaciones, se crea el evento usando el email proporcionado desde el formulario
+        // y se añade el folio generado
         const eventsRef = collection(
           db,
           `clients/${clientId}/condominiums/${condominiumId}/calendarEvents`
         );
-        await addDoc(eventsRef, data);
+        await addDoc(eventsRef, { ...data, folio });
 
         // Refrescar la lista de eventos
         await get().fetchEvents();
@@ -311,7 +326,7 @@ export const useCalendarEventsStore = create<CalendarEventsState>()(
 
     updateEvent: async (
       id: string,
-      data: Partial<Omit<CalendarEvent, "id" | "email">>
+      data: Partial<Omit<CalendarEvent, "id" | "email" | "folio">>
     ) => {
       set({ loading: true, error: null });
       try {
@@ -333,7 +348,7 @@ export const useCalendarEventsStore = create<CalendarEventsState>()(
             obj[key as keyof typeof updateData] = value;
           }
           return obj;
-        }, {} as Partial<Omit<CalendarEvent, "id" | "email">>);
+        }, {} as Partial<Omit<CalendarEvent, "id" | "email" | "folio">>);
 
         const auth = getAuth();
         const user = auth.currentUser;
