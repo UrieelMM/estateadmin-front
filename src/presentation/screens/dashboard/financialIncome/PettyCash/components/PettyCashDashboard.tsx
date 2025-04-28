@@ -430,7 +430,7 @@ const PettyCashDashboard: React.FC = () => {
                         className="hover:bg-gray-50 dark:hover:bg-gray-800/50"
                       >
                         <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
-                          {moment(transaction.date).format("DD/MM/YYYY")}
+                          {moment(transaction.expenseDate).format("DD/MM/YYYY")}
                         </td>
                         <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
                           {transaction.description}

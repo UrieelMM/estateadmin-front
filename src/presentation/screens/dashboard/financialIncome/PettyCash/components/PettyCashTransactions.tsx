@@ -55,14 +55,15 @@ const PettyCashTransactions: React.FC = () => {
     // Filtrar por rango de fechas
     if (dateRange.startDate && dateRange.endDate) {
       filtered = filtered.filter((tx) => {
-        const txDate = moment(tx.date).format("YYYY-MM-DD");
+        const txDate = moment(tx.expenseDate).format("YYYY-MM-DD");
         return txDate >= dateRange.startDate && txDate <= dateRange.endDate;
       });
     }
 
     // Ordenar por fecha (más reciente primero)
     filtered.sort(
-      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+      (a, b) =>
+        new Date(b.expenseDate).getTime() - new Date(a.expenseDate).getTime()
     );
 
     setFilteredTransactions(filtered);
@@ -317,7 +318,7 @@ const PettyCashTransactions: React.FC = () => {
                       className="hover:bg-gray-50 dark:hover:bg-gray-800/50"
                     >
                       <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
-                        {moment(transaction.date).format("DD/MM/YYYY")}
+                        {moment(transaction.expenseDate).format("DD/MM/YYYY")}
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap text-sm">
                         <span
