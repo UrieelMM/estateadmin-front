@@ -11,7 +11,38 @@ function App() {
       <ThemeProvider>
         <AppRouterPage />
         <Notifications />
-        <Toaster position="top-right" />
+        <Toaster 
+          position="top-center"
+          toastOptions={{
+            duration: 5000,
+            style: {
+              padding: '12px',
+              borderRadius: '8px',
+              fontSize: '14px',
+              maxWidth: '500px',
+            },
+            success: {
+              style: {
+                background: '#4caf50',
+                color: '#fff',
+              },
+              iconTheme: {
+                primary: 'white',
+                secondary: '#4caf50',
+              },
+            },
+            error: {
+              style: {
+                background: '#d32f2f',
+                color: '#fff',
+              },
+              iconTheme: {
+                primary: 'white',
+                secondary: '#d32f2f',
+              },
+            },
+          }}
+        />
       </ThemeProvider>
     </HelmetProvider>
   );

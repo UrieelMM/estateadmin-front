@@ -25,6 +25,7 @@ import { getAuth, getIdTokenResult } from "firebase/auth";
 import { getFirestore, doc, getDoc } from "firebase/firestore";
 import { useSyncClientPlan } from "../../../hooks/useSyncClientPlan";
 import { useClientPlanStore } from "../../../store/clientPlanStore";
+import SupportModal from "../../components/shared/forms/SupportModal";
 
 // Función global de diagnóstico (accesible desde la consola del navegador)
 declare global {
@@ -58,6 +59,7 @@ const LayoutDashboard = ({ children }: Props) => {
   const [showInitialSetup, setShowInitialSetup] = useState<boolean | null>(
     null
   );
+  const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
 
   useSyncClientPlan();
 
@@ -164,6 +166,10 @@ const LayoutDashboard = ({ children }: Props) => {
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100 overflow-x-hidden">
       <ChatBot />
+      <SupportModal 
+        isOpen={isSupportModalOpen} 
+        onClose={() => setIsSupportModalOpen(false)} 
+      />
 
       {/* Botón móvil (arriba a la izquierda) para abrir/cerrar sidebar */}
       <div className="xl:hidden px-1 py-4">
@@ -213,7 +219,7 @@ const LayoutDashboard = ({ children }: Props) => {
           </div>
 
           {/* Contenido con scroll */}
-          <nav className="flex-1 overflow-y-auto" aria-label="Sidebar">
+          <nav className="flex-1 overflow-y-auto custom-scrollbar" aria-label="Sidebar">
             <ul className="py-6 space-y-2">
               {navigation.map((item) => (
                 <li key={item.name}>
@@ -328,7 +334,10 @@ const LayoutDashboard = ({ children }: Props) => {
                       <p className="text-xs mt-2 mb-2 text-center">
                         ¿Necesitas ayuda?
                       </p>
-                      <button className="bg-indigo-400 text-xs text-center m-0 text-white rounded-md p-1">
+                      <button 
+                        className="bg-indigo-400 text-xs text-center m-0 text-white rounded-md p-1"
+                        onClick={() => setIsSupportModalOpen(true)}
+                      >
                         <span className="block mb-0.5">Contacta a soporte</span>
                       </button>
                     </>
@@ -404,7 +413,7 @@ const LayoutDashboard = ({ children }: Props) => {
           </div>
 
           {/* Contenido con scroll */}
-          <nav className="flex-1 overflow-y-auto" aria-label="Sidebar">
+          <nav className="flex-1 overflow-y-auto custom-scrollbar" aria-label="Sidebar">
             <ul className="py-6 space-y-2">
               {navigation.map((item) => (
                 <li key={item.name}>
@@ -481,7 +490,10 @@ const LayoutDashboard = ({ children }: Props) => {
                   <p className="text-xs mt-2 mb-2 text-center">
                     ¿Necesitas ayuda?
                   </p>
-                  <button className="bg-indigo-400 text-xs text-center m-0 text-white rounded-md p-1">
+                  <button 
+                    className="bg-indigo-400 text-xs text-center m-0 text-white rounded-md p-1"
+                    onClick={() => setIsSupportModalOpen(true)}
+                  >
                     <span className="block mb-0.5">Contacta a soporte</span>
                   </button>
                 </div>

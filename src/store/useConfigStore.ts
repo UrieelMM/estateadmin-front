@@ -9,7 +9,7 @@ import {
   getDocs,
   setDoc,
 } from "firebase/firestore";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import * as Sentry from "@sentry/react";
 
 /** Config general en clients/{clientId}. (Incluyendo darkMode) */
@@ -36,10 +36,24 @@ export interface PaymentMessageInfo {
   updatedAt: Date;
 }
 
+/** Información de un documento público */
+export interface PublicDocument {
+  id: string;
+  name: string;
+  fileUrl: string;
+  fileType: string;
+  fileSize: number;
+  uploadedAt: Date;
+  description?: string;
+  fileName?: string;
+}
+
 type ConfigState = {
   config: Config | null;
   paymentMessageInfo: PaymentMessageInfo | null;
+  publicDocuments: Record<string, PublicDocument>;
   loading: boolean;
+  uploading: Record<string, boolean>;
   error: string | null;
   fetchConfig: () => Promise<void>;
   updateConfig: (
@@ -50,12 +64,17 @@ type ConfigState = {
   ) => Promise<void>;
   updatePaymentMessageInfo: (data: Omit<PaymentMessageInfo, "updatedAt">) => Promise<void>;
   fetchPaymentMessageInfo: () => Promise<void>;
+  fetchPublicDocuments: () => Promise<void>;
+  uploadPublicDocument: (documentId: string, file: File, documentName: string, description?: string) => Promise<void>;
+  deletePublicDocument: (documentId: string) => Promise<void>;
 };
 
 export const useConfigStore = create<ConfigState>()((set, get) => ({
   config: null,
   paymentMessageInfo: null,
+  publicDocuments: {},
   loading: false,
+  uploading: {},
   error: null,
 
   /**
@@ -324,4 +343,277 @@ export const useConfigStore = create<ConfigState>()((set, get) => ({
       Sentry.captureException(err);
     }
   },
+
+  /**
+   * Obtiene los documentos públicos almacenados en Firestore
+   * Estos datos se leen de clients/{clientId}/condominiums/{condominiumId}/publicDocuments/config
+   */
+  fetchPublicDocuments: async () => {
+    set({ loading: true, error: null });
+    try {
+      // Obtenemos condominiumId
+      const condominiumId = localStorage.getItem("condominiumId");
+      if (!condominiumId) {
+        set({ error: "Condominio no seleccionado", loading: false });
+        return;
+      }
+
+      // Obtenemos user y clientId
+      const auth = getAuth();
+      const user = auth.currentUser;
+      if (!user) throw new Error("Usuario no autenticado");
+
+      const tokenResult = await getIdTokenResult(user);
+      const clientId = tokenResult.claims["clientId"] as string;
+      if (!clientId) throw new Error("clientId no disponible en el token");
+
+      const db = getFirestore();
+      
+      // Leemos el documento de la colección publicDocuments
+      const publicDocsRef = doc(
+        db, 
+        "clients", 
+        clientId, 
+        "condominiums", 
+        condominiumId, 
+        "publicDocuments", 
+        "config"
+      );
+      
+      const docSnap = await getDoc(publicDocsRef);
+      
+      if (docSnap.exists()) {
+        const data = docSnap.data() as Record<string, PublicDocument>;
+        
+        // Aseguramos que uploadedAt sea un objeto Date en cada documento
+        Object.keys(data).forEach(key => {
+          if (data[key].uploadedAt && typeof data[key].uploadedAt !== 'object') {
+            data[key].uploadedAt = (data[key].uploadedAt as any).toDate();
+          }
+          // Extraer el nombre del archivo de la URL si existe
+          if (data[key].fileUrl && !data[key].fileName) {
+            const urlParts = data[key].fileUrl.split('/').pop()?.split('_') || [];
+            if (urlParts.length > 2) {
+              data[key].fileName = urlParts.slice(2).join('_');
+            }
+          }
+        });
+        
+        set({ publicDocuments: data, loading: false });
+      } else {
+        // Si no existe, establecemos un objeto vacío
+        set({ publicDocuments: {}, loading: false });
+      }
+    } catch (err: any) {
+      set({ error: err.message, loading: false });
+      Sentry.captureException(err);
+    }
+  },
+
+  /**
+   * Sube un documento público a Firebase Storage y guarda su referencia en Firestore
+   * @param documentId Identificador único del tipo de documento
+   * @param file Archivo a subir
+   * @param documentName Nombre para mostrar del documento
+   * @param description Descripción opcional del documento
+   */
+  uploadPublicDocument: async (documentId, file, documentName, description) => {
+    set(state => ({ 
+      uploading: { ...state.uploading, [documentId]: true },
+      error: null 
+    }));
+    try {
+      // Obtenemos condominiumId
+      const condominiumId = localStorage.getItem("condominiumId");
+      if (!condominiumId) {
+        set({ error: "Condominio no seleccionado", uploading: {} });
+        return;
+      }
+
+      // Obtenemos user y clientId
+      const auth = getAuth();
+      const user = auth.currentUser;
+      if (!user) throw new Error("Usuario no autenticado");
+
+      const tokenResult = await getIdTokenResult(user);
+      const clientId = tokenResult.claims["clientId"] as string;
+      if (!clientId) throw new Error("clientId no disponible en el token");
+
+      const storage = getStorage();
+      const db = getFirestore();
+      
+      // Crear referencia al archivo en Storage
+      const fileRef = ref(
+        storage,
+        `clients/${clientId}/condominiums/${condominiumId}/publicDocuments/${documentId}_${Date.now()}_${file.name}`
+      );
+      
+      // Subir archivo
+      await uploadBytes(fileRef, file);
+      const fileUrl = await getDownloadURL(fileRef);
+      
+      // Preparar datos del documento
+      const docInfo: PublicDocument = {
+        id: documentId,
+        name: documentName,
+        fileUrl,
+        fileType: file.type,
+        fileSize: file.size,
+        uploadedAt: new Date(),
+        description,
+        fileName: file.name
+      };
+      
+      // Obtener documento actual o crear uno nuevo
+      const docRef = doc(
+        db,
+        "clients",
+        clientId,
+        "condominiums",
+        condominiumId,
+        "publicDocuments",
+        "config"
+      );
+      
+      const docSnap = await getDoc(docRef);
+      let currentData: Record<string, PublicDocument> = {};
+      
+      if (docSnap.exists()) {
+        currentData = docSnap.data() as Record<string, PublicDocument>;
+        
+        // Si ya existe un documento con este ID, intentar eliminar el archivo anterior
+        if (currentData[documentId] && currentData[documentId].fileUrl) {
+          try {
+            const oldFileRef = ref(storage, currentData[documentId].fileUrl);
+            await deleteObject(oldFileRef);
+          } catch (error) {
+            console.warn("Error al eliminar archivo anterior:", error);
+            // Continuamos aunque falle la eliminación del archivo anterior
+          }
+        }
+      }
+      
+      // Actualizar datos
+      currentData[documentId] = docInfo;
+      
+      // Guardar en Firestore
+      if (docSnap.exists()) {
+        await updateDoc(docRef, currentData);
+      } else {
+        await setDoc(docRef, currentData);
+      }
+      
+      // Actualizar estado local
+      set(state => ({ 
+        publicDocuments: {
+          ...state.publicDocuments,
+          [documentId]: docInfo
+        },
+        uploading: { ...state.uploading, [documentId]: false }
+      }));
+      
+    } catch (err: any) {
+      set(state => ({ 
+        error: err.message, 
+        uploading: { ...state.uploading, [documentId]: false } 
+      }));
+      Sentry.captureException(err);
+      throw err;
+    }
+  },
+
+  /**
+   * Elimina un documento público de Firebase Storage y su referencia en Firestore
+   * @param documentId Identificador único del documento a eliminar
+   */
+  deletePublicDocument: async (documentId) => {
+    set(state => ({ 
+      uploading: { ...state.uploading, [documentId]: true },
+      error: null 
+    }));
+    try {
+      // Verificar que exista el documento
+      const currentDocs = get().publicDocuments;
+      if (!currentDocs[documentId]?.fileUrl) {
+        set({ uploading: {} });
+        return;
+      }
+      
+      // Obtenemos condominiumId
+      const condominiumId = localStorage.getItem("condominiumId");
+      if (!condominiumId) {
+        set({ error: "Condominio no seleccionado", uploading: {} });
+        return;
+      }
+
+      // Obtenemos user y clientId
+      const auth = getAuth();
+      const user = auth.currentUser;
+      if (!user) throw new Error("Usuario no autenticado");
+
+      const tokenResult = await getIdTokenResult(user);
+      const clientId = tokenResult.claims["clientId"] as string;
+      if (!clientId) throw new Error("clientId no disponible en el token");
+
+      const storage = getStorage();
+      const db = getFirestore();
+      
+      // Eliminar archivo de Storage
+      try {
+        const fileRef = ref(storage, currentDocs[documentId].fileUrl);
+        await deleteObject(fileRef);
+      } catch (error) {
+        console.warn("Error al eliminar archivo de Storage:", error);
+        // Continuamos aunque falle la eliminación del archivo
+      }
+      
+      // Actualizar documento en Firestore
+      const docRef = doc(
+        db,
+        "clients",
+        clientId,
+        "condominiums",
+        condominiumId,
+        "publicDocuments",
+        "config"
+      );
+      
+      const docSnap = await getDoc(docRef);
+      
+      if (docSnap.exists()) {
+        const data = docSnap.data() as Record<string, PublicDocument>;
+        
+        if (data[documentId]) {
+          // Mantener el documento pero limpiar la información del archivo
+          data[documentId] = {
+            ...data[documentId],
+            fileUrl: "",
+            fileType: "",
+            fileSize: 0,
+            uploadedAt: new Date(),
+            fileName: ""
+          };
+          
+          await updateDoc(docRef, data);
+          
+          // Actualizar estado local
+          set(state => ({ 
+            publicDocuments: {
+              ...state.publicDocuments,
+              [documentId]: data[documentId]
+            },
+            uploading: { ...state.uploading, [documentId]: false }
+          }));
+        }
+      }
+      
+    } catch (err: any) {
+      set(state => ({ 
+        error: err.message, 
+        uploading: { ...state.uploading, [documentId]: false } 
+      }));
+      Sentry.captureException(err);
+      throw err;
+    }
+  }
 }));

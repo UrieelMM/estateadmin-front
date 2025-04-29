@@ -128,7 +128,7 @@ const EditUserModal = ({
                 leaveTo="translate-x-full"
               >
                 <Dialog.Panel className="pointer-events-auto w-screen max-w-2xl">
-                  <div className="flex h-full flex-col overflow-y-scroll bg-white shadow-xl dark:bg-gray-800">
+                  <div className="flex h-full flex-col overflow-y-hidden bg-white shadow-xl dark:bg-gray-800">
                     <div className="px-4 py-6 sm:px-6 dark:bg-gray-900">
                       <div className="flex items-start justify-between">
                         <Dialog.Title className="text-base font-semibold leading-6 text-gray-900 dark:text-gray-100">

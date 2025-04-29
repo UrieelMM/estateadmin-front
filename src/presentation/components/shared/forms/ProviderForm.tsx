@@ -51,6 +51,7 @@ const FormProvider = ({ open, setOpen, providerToEdit }: FormProviderProps) => {
     phone: providerToEdit?.phone || "",
     email: providerToEdit?.email || "",
     comments: providerToEdit?.comments || "",
+    isRecommended: providerToEdit?.isRecommended || false,
   });
 
   const { addProvider, updateProvider, loading } = useProviderStore();

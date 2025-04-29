@@ -54,12 +54,14 @@ const InitialSetupSteps = () => {
   });
   const [logoReportsFile, setLogoReportsFile] = useState<File | null>(null);
   const [signReportsFile, setSignReportsFile] = useState<File | null>(null);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoReportsPreview, setLogoReportsPreview] = useState<string | null>(
     null
   );
   const [signReportsPreview, setSignReportsPreview] = useState<string | null>(
     null
   );
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [accountData, setAccountData] = useState({
     name: "",
     type: "",
@@ -147,6 +149,13 @@ const InitialSetupSteps = () => {
     }
   };
 
+  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setLogoFile(e.target.files[0]);
+      setLogoPreview(URL.createObjectURL(e.target.files[0]));
+    }
+  };
+
   // Handler para el formulario del paso 4
   const handleAccountInputChange = (
     e: React.ChangeEvent<
@@ -210,7 +219,7 @@ const InitialSetupSteps = () => {
           ...userData,
           darkMode: isDarkMode,
         },
-        undefined,
+        logoFile || undefined,
         undefined,
         logoReportsFile || undefined
       );
@@ -448,6 +457,32 @@ const InitialSetupSteps = () => {
           <div className="space-y-4 text-center md:text-left">
             <div>
               <label className="block text-gray-700 dark:text-gray-300 mb-1 font-medium">
+                Logo Coorporativo
+              </label>
+              <label className="inline-flex items-center space-x-2 cursor-pointer bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-md transition-colors">
+                {logoFile ? (
+                  <CheckIcon className="h-5 w-5" />
+                ) : (
+                  <PhotoIcon className="h-5 w-5" />
+                )}
+                <span>{logoFile ? "Cambiar Logo" : "Seleccionar"}</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleLogoChange}
+                  className="hidden"
+                />
+              </label>
+              {logoPreview && (
+                <img
+                  src={logoPreview}
+                  alt="Logo Preview"
+                  className="mt-2 h-20 w-auto rounded"
+                />
+              )}
+            </div>
+            <div>
+              <label className="block text-gray-700 dark:text-gray-300 mb-1 font-medium">
                 Logo para Reportes
               </label>
               <label className="inline-flex items-center space-x-2 cursor-pointer bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-md transition-colors">
@@ -498,6 +533,9 @@ const InitialSetupSteps = () => {
                 />
               )}
             </div>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                Se recomienda usar formato PNG con fondo transparente para mejor calidad.
+              </p>
           </div>
         );
       case 4:

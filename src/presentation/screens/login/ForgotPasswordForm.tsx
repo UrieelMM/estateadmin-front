@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { usePasswordResetStore } from '../../../store/usePasswordResetStore';
+import toast from 'react-hot-toast';
+import axios from 'axios';
 
 interface ForgotPasswordFormProps {
   onBack: () => void;
@@ -8,32 +10,53 @@ interface ForgotPasswordFormProps {
 export const ForgotPasswordForm = ({ onBack }: ForgotPasswordFormProps) => {
   const [email, setEmail] = useState('');
   const [emailSent, setEmailSent] = useState(false);
-  const { sendPasswordResetEmail, loading } = usePasswordResetStore();
+  const [apiMessage, setApiMessage] = useState('');
+  const { loading } = usePasswordResetStore();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const success = await sendPasswordResetEmail(email);
-    if (success) {
-      setEmailSent(true);
+    
+    try {
+      // Implementación directa para tener control total del proceso
+      const response = await axios.post(
+        `${import.meta.env.VITE_URL_SERVER}/users-auth/reset-password`,
+        { email }
+      );
+
+      // La API responde con { status, code, message } en caso de éxito
+      if (response.data.status === true || response.data.code === 200) {
+        // Usar el mensaje exacto que proporciona la API
+        const message = response.data.message || "Se ha enviado un correo con las instrucciones para restablecer tu contraseña";
+        toast.success(message);
+        setApiMessage(message);
+        setEmailSent(true);
+      } else {
+        // Toast de error para mensajes de error
+        toast.error(response.data.message || "No se pudo enviar el correo de recuperación");
+      }
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || "Error al enviar el correo de recuperación";
+      toast.error(errorMessage);
     }
   };
 
   if (emailSent) {
     return (
       <div className="space-y-6 text-center">
-        <div className="rounded-md bg-blue-50 p-4">
+        <div className="rounded-md bg-green-50 p-4 border border-green-200">
           <div className="flex">
             <div className="flex-shrink-0">
-              <svg className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+              <svg className="h-5 w-5 text-green-500" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
               </svg>
             </div>
             <div className="ml-3">
-              <h3 className="text-sm font-medium text-blue-800">
-                Correo enviado
+              <h3 className="text-sm font-medium text-green-800">
+                ¡Correo enviado correctamente!
               </h3>
-              <div className="mt-2 text-sm text-blue-700">
-                <p>Hemos enviado un correo a <span className="font-semibold">{email}</span> con las instrucciones para restablecer tu contraseña.</p>
+              <div className="mt-2 text-sm text-green-700">
+                <p>{apiMessage}</p>
+                <p className="mt-2">Se ha enviado a: <span className="font-semibold">{email}</span></p>
                 <p className="mt-2">Por favor, revisa tu bandeja de entrada y sigue los pasos indicados en el correo.</p>
               </div>
             </div>

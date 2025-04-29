@@ -7,6 +7,7 @@ import {
   UserCircleIcon,
   PlusIcon,
 } from "@heroicons/react/20/solid";
+import { motion, AnimatePresence } from "framer-motion";
 import ProviderForm from "../../../components/shared/forms/ProviderForm";
 import DeleteConfirmationModal from "../../../components/shared/modals/DeleteConfirmationModal";
 import useProviderStore from "../../../../store/providerStore";
@@ -30,6 +31,7 @@ const ProvidersList = () => {
     deleteProvider,
     searchProviders,
     searchTerm,
+    toggleRecommendation,
   } = useProviderStore();
 
   useEffect(() => {
@@ -49,6 +51,11 @@ const ProvidersList = () => {
     searchProviders(e.target.value);
   };
 
+  const handleToggleRecommendation = async (e: React.MouseEvent, providerId: string) => {
+    e.stopPropagation();
+    await toggleRecommendation(providerId);
+  };
+
   return (
     <>
       <header className="bg-gradient-to-r ml-2  shadow-lg flex w-full justify-between px-6 py-4 rounded-lg items-center mb-6 dark:shadow-2xl">
@@ -59,7 +66,7 @@ const ProvidersList = () => {
           </h1>
         </div>
         <button
-          className="flex items-center px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-medium rounded-lg  shadow-md hover:shadow-lg focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50 active:scale-95"
+          className="flex items-center px-2 py-2 text-sm bg-gradient-to-r bg-indigo-600  hover:bg-indigo-700  text-white font-medium rounded-lg  shadow-md hover:shadow-lg focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50 active:scale-95"
           onClick={() => {
             setSelectedProviderId(null);
             setOpen(true);
@@ -173,6 +180,35 @@ const ProvidersList = () => {
                         )
                       }
                     >
+                      {/* Botón de recomendación en la esquina superior izquierda */}
+                      <button
+                        onClick={(e) => handleToggleRecommendation(e, provider.id)}
+                        className="absolute top-2 left-2 px-2 py-1 rounded-md text-sm font-medium transition-colors duration-200"
+                      >
+                        <AnimatePresence mode="wait">
+                          <motion.div
+                            key={provider.isRecommended ? "recommended" : "not-recommended"}
+                            initial={{ scale: 0.8, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.8, opacity: 0 }}
+                            transition={{ 
+                              type: "spring",
+                              stiffness: 500,
+                              damping: 30,
+                              duration: 0.2
+                            }}
+                          >
+                            <motion.span 
+                              className={`${provider.isRecommended ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-400 dark:text-gray-500 opacity-100'}`}
+                              whileHover={{ scale: 1.05 }}
+                              whileTap={{ scale: 0.95 }}
+                            >
+                              {provider.isRecommended ? 'Recomendado' : 'Recomendar'}
+                            </motion.span>
+                          </motion.div>
+                        </AnimatePresence>
+                      </button>
+
                       <div className="absolute top-2 right-2">
                         <span className="inline-flex items-center rounded-full bg-green-50 dark:bg-green-900/30 px-2 py-1 text-xs font-medium text-green-700 dark:text-green-400 ring-1 ring-inset ring-green-600/20 dark:ring-green-500/40">
                           {provider.serviceLabel || provider.service}

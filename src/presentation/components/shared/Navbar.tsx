@@ -1,11 +1,13 @@
 import { Fragment, useState, useEffect } from "react";
 import { Disclosure, Menu, Transition } from "@headlessui/react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import ConboBox from "./ComboBox";
 import { getCurrentDateWithGreeting } from "../../../utils/getCurrentDate";
 import useUserStore from "../../../store/UserDataStore";
 import { UserData } from "../../../interfaces/UserData";
 import NotificationBell from "./notifications/NotificationsBell";
+import { useTheme } from "../../../context/Theme/ThemeContext";
+import useAuthStore from "../../../store/AuthStore";
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(" ");
@@ -18,10 +20,13 @@ const Navbar = () => {
     user: state.user,
     fetchUserData: state.fetchUserData,
   }));
+  const { isDarkMode } = useTheme();
+  const navigate = useNavigate();
+  const { logoutUser } = useAuthStore();
 
   useEffect(() => {
-    setCurrentDate(getCurrentDateWithGreeting());
-  }, []);
+    setCurrentDate(getCurrentDateWithGreeting(isDarkMode));
+  }, [isDarkMode]);
 
   useEffect(() => {
     fetchUserData();
@@ -29,6 +34,15 @@ const Navbar = () => {
       setUserData(user);
     }
   }, [fetchUserData, user]);
+
+  const handleLogout = async () => {
+    try {
+      await logoutUser();
+      navigate("/login");
+    } catch (error) {
+      console.error("Error al cerrar sesión:", error);
+    }
+  };
 
   return (
     <Disclosure
@@ -79,19 +93,6 @@ const Navbar = () => {
                   <Menu.Items className="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md bg-white dark:bg-gray-800 py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
                     <Menu.Item>
                       {({ active }) => (
-                        <a
-                          href="#"
-                          className={classNames(
-                            active ? "bg-gray-100 dark:bg-gray-700" : "",
-                            "block px-4 py-2 text-sm text-gray-700 dark:text-gray-200"
-                          )}
-                        >
-                          Perfil
-                        </a>
-                      )}
-                    </Menu.Item>
-                    <Menu.Item>
-                      {({ active }) => (
                         <Link
                           to="/dashboard/client-config"
                           className={classNames(
@@ -105,15 +106,15 @@ const Navbar = () => {
                     </Menu.Item>
                     <Menu.Item>
                       {({ active }) => (
-                        <a
-                          href="#"
+                        <button
+                          onClick={handleLogout}
                           className={classNames(
                             active ? "bg-gray-100 dark:bg-gray-700" : "",
-                            "block px-4 py-2 text-sm text-gray-700 dark:text-gray-200"
+                            "block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200"
                           )}
                         >
                           Cerrar sesión
-                        </a>
+                        </button>
                       )}
                     </Menu.Item>
                   </Menu.Items>

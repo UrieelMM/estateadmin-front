@@ -62,16 +62,20 @@ const SearchProviders: React.FC = () => {
   } | null>(null);
   const [map, setMap] = useState<any>(null);
   const [markers, setMarkers] = useState<any[]>([]);
+  const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
+  const [showMap, setShowMap] = useState(false);
   const mapRef = useRef<HTMLDivElement>(null);
   const { places, loading, error, searchPlaces, getPlaceDetails } =
     usePlacesStore();
+  const [_mapInitialized, setMapInitialized] = useState(false);
 
   useEffect(() => {
     // Cargar coordenadas guardadas
     const savedCoords = localStorage.getItem("userCoordinates");
     if (savedCoords) {
-      setUserCoordinates(JSON.parse(savedCoords));
-      initMap(JSON.parse(savedCoords));
+      const coords = JSON.parse(savedCoords);
+      setUserCoordinates(coords);
+      initMap(coords);
     }
   }, []);
 
@@ -106,10 +110,12 @@ const SearchProviders: React.FC = () => {
         ],
       });
       setMap(initialMap);
+      setMapInitialized(true);
     }
   };
 
   const obtenerUbicacion = () => {
+    setShowMap(true);
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
@@ -117,21 +123,11 @@ const SearchProviders: React.FC = () => {
             lat: position.coords.latitude,
             lng: position.coords.longitude,
           };
-          setUserCoordinates(coords);
           localStorage.setItem("userCoordinates", JSON.stringify(coords));
-          if (map) {
-            map.setCenter(coords);
-          } else {
-            initMap(coords);
-          }
+          initMap(coords);
         },
         (err) => {
           console.error("Error obteniendo la ubicación:", err);
-        },
-        {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 0,
         }
       );
     }
@@ -453,7 +449,44 @@ const SearchProviders: React.FC = () => {
         {/* Columna derecha: Mapa */}
         <div className="lg:sticky lg:top-4 lg:h-[calc(100vh-2rem)]">
           <div className="h-full rounded-lg overflow-hidden shadow-lg">
-            <div ref={mapRef} className="w-full h-full" />
+            {!showMap ? (
+              <div className="w-full h-full bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-gray-800 dark:to-gray-900 flex flex-col items-center justify-center p-8 text-center">
+                <div className="w-24 h-24 mb-6 rounded-full bg-white dark:bg-gray-700 flex items-center justify-center shadow-lg">
+                  <svg className="w-12 h-12 text-indigo-500 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-2">
+                  Obtén tu ubicación
+                </h3>
+                <p className="text-gray-600 dark:text-gray-300 mb-6 max-w-md">
+                  Para encontrar proveedores cercanos, necesitamos tu ubicación. Haz clic en el botón "Obtener mi ubicación" para comenzar.
+                </p>
+                <button
+                  onClick={obtenerUbicacion}
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+                >
+                  Obtener mi ubicación
+                </button>
+                <div className="flex flex-col items-center space-y-4 mt-6">
+                  <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
+                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Tu ubicación se usa solo para esta búsqueda
+                  </div>
+                  <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
+                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                    No almacenamos tu ubicación
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div ref={mapRef} className="w-full h-full" />
+            )}
           </div>
         </div>
       </div>
@@ -742,12 +775,19 @@ const SearchProviders: React.FC = () => {
                                 className="border-b border-gray-200 dark:border-gray-700 pb-4"
                               >
                                 <div className="flex items-center mb-2">
-                                  {review.profile_photo_url && (
+                                  {review.profile_photo_url && !imageErrors[`review-${index}`] ? (
                                     <img
                                       src={review.profile_photo_url}
                                       alt={review.author_name}
                                       className="w-8 h-8 rounded-full mr-2"
+                                      onError={() => setImageErrors(prev => ({ ...prev, [`review-${index}`]: true }))}
                                     />
+                                  ) : (
+                                    <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center mr-2">
+                                      <span className="text-sm font-medium text-indigo-600 dark:text-indigo-300">
+                                        {review.author_name.charAt(0).toUpperCase()}
+                                      </span>
+                                    </div>
                                   )}
                                   <div>
                                     <span className="font-medium text-gray-900 dark:text-gray-100">

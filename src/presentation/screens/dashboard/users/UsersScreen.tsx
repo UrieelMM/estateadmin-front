@@ -23,6 +23,7 @@ const UsersScreen = () => {
   const [userDetails, setUserDetails] = useState<UserData | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
+  const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
 
   // New UI/UX enhancement states
   const [isLoading, setIsLoading] = useState(false);
@@ -49,7 +50,7 @@ const UsersScreen = () => {
     (state) => state.selectedCondominium?.id
   );
 
-  const pageSize = 10; // Cantidad de usuarios por página
+  const pageSize = 30; // Cantidad de usuarios por página
 
   const fetchUserDetails = useUserStore((state) => state.fetchUserDetails);
   const fetchPaginatedCondominiumsUsers = useUserStore(
@@ -426,7 +427,16 @@ const UsersScreen = () => {
                       <td className="px-4 py-3.5">
                         <div className="flex items-center">
                           <div className="flex-shrink-0 h-10 w-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-500 dark:text-gray-400 overflow-hidden">
-                            <UserCircleIcon className="h-7 w-7" />
+                            {user.photoURL && user.photoURL.trim() !== "" && !imageErrors[user.uid || ''] ? (
+                              <img 
+                                src={user.photoURL} 
+                                alt="User Photo" 
+                                className="w-full h-full object-cover"
+                                onError={() => setImageErrors(prev => ({ ...prev, [user.uid || '']: true }))}
+                              />
+                            ) : (
+                              <UserCircleIcon className="h-7 w-7" />
+                            )}
                           </div>
                           <div className="ml-4">
                             <div className="text-sm font-medium text-gray-900 dark:text-gray-100">

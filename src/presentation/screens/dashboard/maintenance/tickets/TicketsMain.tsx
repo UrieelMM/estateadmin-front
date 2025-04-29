@@ -17,7 +17,7 @@ const TicketsMain: React.FC = () => {
       <div className="mb-8">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h2 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-indigo-800 dark:from-indigo-400 dark:to-indigo-600 mb-2">
+            <h2 className="text-2xl font-bold text-indigo-600 dark:text-indigo-500">
               Gestión de Tickets
             </h2>
             <p className="text-gray-600 dark:text-gray-400 text-sm">
@@ -28,7 +28,7 @@ const TicketsMain: React.FC = () => {
 
           {!showNewForm && (
             <button
-              className="flex items-center bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white px-2 py-1.5 rounded-lg shadow-md hover:shadow-lg focus:outline-none focus:ring-2 text-md focus:ring-indigo-500 focus:ring-opacity-50 font-medium "
+              className="flex items-center bg-gradient-to-r bg-indigo-600  hover:bg-indigo-700  text-white px-2 py-1.5 rounded-lg shadow-md hover:shadow-lg focus:outline-none focus:ring-2 text-sm focus:ring-indigo-500 focus:ring-opacity-50 font-medium "
               onClick={() => setShowNewForm(true)}
             >
               <svg

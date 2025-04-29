@@ -192,7 +192,7 @@ const ConfigForm = () => {
               }`}
               onClick={() => setActiveTab("mensaje-pago")}
             >
-              Mensaje de Pago
+              Mensajes y Documentos
             </button>
             <button
               className={`py-2 px-4 ${
@@ -202,7 +202,7 @@ const ConfigForm = () => {
               }`}
               onClick={() => setActiveTab("users")}
             >
-              Usuarios
+              Usuarios Administrativos
             </button>
           </>
         )}

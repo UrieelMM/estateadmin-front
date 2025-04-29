@@ -103,10 +103,6 @@ const EditUserModal = ({
           // Buscar el condominio en la lista para obtener su clientId
           const condominio = condominiums.find((c) => c.id === condominiumId);
           if (!condominio) {
-            console.error(
-              "No se encontró el condominio original con ID:",
-              condominiumId
-            );
             failedOperations++;
             continue;
           }
@@ -131,11 +127,6 @@ const EditUserModal = ({
           );
           updatedUsers++;
         } catch (error) {
-          console.error(
-            "Error actualizando condominiumUids en condominio existente:",
-            condominiumId,
-            error
-          );
           failedOperations++;
         }
       }
@@ -148,10 +139,6 @@ const EditUserModal = ({
             // Buscar el condominio en la lista para obtener su clientId
             const condominio = condominiums.find((c) => c.id === condominiumId);
             if (!condominio) {
-              console.error(
-                "No se encontró el condominio con ID:",
-                condominiumId
-              );
               failedOperations++;
               continue; // Pasar al siguiente condominio
             }
@@ -263,7 +250,6 @@ const EditUserModal = ({
 
       onClose();
     } catch (error) {
-      console.error("Error al actualizar usuario:", error);
       toast.error("Error al actualizar el usuario");
     } finally {
       setProcessingChange(false);
@@ -553,10 +539,7 @@ const AdminUsers = () => {
       // Asegurarnos de que los condominios tengan la propiedad clientId
       // Esto es crítico para poder crear usuarios en los condominios correctamente
       if (condominiums.length > 0 && !condominiums[0].clientId) {
-        console.error("Los condominios no tienen clientId asignado");
         toast.error("Error: Información de condominios incompleta");
-      } else {
-        console.log("Condominios cargados:");
       }
     };
 

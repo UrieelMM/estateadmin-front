@@ -18,6 +18,7 @@ export interface Provider {
   phone?: string;
   email?: string;
   comments?: string;
+  isRecommended: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -37,6 +38,7 @@ interface ProviderStore {
   deleteProvider: (id: string) => Promise<boolean>;
   setSelectedProvider: (provider: Provider | null) => void;
   searchProviders: (term: string) => void;
+  toggleRecommendation: (id: string) => Promise<boolean>;
 }
 
 const useProviderStore = create<ProviderStore>()((set, get) => ({
@@ -111,6 +113,7 @@ const useProviderStore = create<ProviderStore>()((set, get) => ({
 
       const newProvider = {
         ...provider,
+        isRecommended: false,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -233,6 +236,56 @@ const useProviderStore = create<ProviderStore>()((set, get) => ({
       filteredProviders: filtered,
       searchTerm: term,
     });
+  },
+
+  toggleRecommendation: async (id: string) => {
+    try {
+      set({ loading: true, error: null });
+      const auth = getAuth();
+      const user = auth.currentUser;
+      if (!user) {
+        throw new Error("Usuario no autenticado");
+      }
+      const tokenResult = await getIdTokenResult(user);
+      const clientId = tokenResult.claims["clientId"] as string;
+      const condominiumId = localStorage.getItem("condominiumId");
+      if (!condominiumId) {
+        throw new Error("Condominio no seleccionado");
+      }
+
+      const db = getFirestore();
+      const providerRef = doc(
+        db,
+        `clients/${clientId}/condominiums/${condominiumId}/providersList`,
+        id
+      );
+
+      const provider = get().providers.find((p) => p.id === id);
+      if (!provider) throw new Error("Proveedor no encontrado");
+
+      const newRecommendationStatus = !provider.isRecommended;
+
+      await updateDoc(providerRef, {
+        isRecommended: newRecommendationStatus,
+        updatedAt: new Date(),
+      });
+
+      set((state) => ({
+        providers: state.providers.map((p) =>
+          p.id === id ? { ...p, isRecommended: newRecommendationStatus } : p
+        ),
+        filteredProviders: state.filteredProviders.map((p) =>
+          p.id === id ? { ...p, isRecommended: newRecommendationStatus } : p
+        ),
+      }));
+
+      return true;
+    } catch (error) {
+      set({ error: (error as Error).message });
+      return false;
+    } finally {
+      set({ loading: false });
+    }
   },
 }));
 
