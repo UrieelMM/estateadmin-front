@@ -224,7 +224,7 @@ const PettyCashAudits: React.FC = () => {
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto custom-scrollbar">
             <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
               <thead className="bg-gray-50 dark:bg-gray-800">
                 <tr>
@@ -306,7 +306,7 @@ const PettyCashAudits: React.FC = () => {
                       <div className="flex justify-end space-x-3">
                         <button
                           onClick={() => openDetailsModal(audit)}
-                          className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300"
+                          className="text-indigo-600 bg-indigo-50 rounded-md text-sm px-1 py-2 hover:text-indigo-900 dark:text-indigo-600 dark:hover:text-indigo-800"
                         >
                           Ver detalles
                         </button>
@@ -314,13 +314,13 @@ const PettyCashAudits: React.FC = () => {
                           <>
                             <button
                               onClick={() => openApprovalModal(audit)}
-                              className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300"
+                              className="text-green-600 bg-green-50 rounded-md text-sm px-1 py-2 hover:text-green-900 dark:text-green-600 dark:hover:text-green-800"
                             >
                               Aprobar
                             </button>
                             <button
                               onClick={() => openRejectionModal(audit)}
-                              className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                              className="text-red-600 bg-red-50 rounded-md text-sm px-1 py-2 hover:text-red-900 dark:text-red-600 dark:hover:text-red-800"
                             >
                               Rechazar
                             </button>

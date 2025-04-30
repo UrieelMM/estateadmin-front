@@ -13,6 +13,7 @@ import {
   usePettyCashStore,
   PettyCashTransactionType,
 } from "../../../../../../store/pettyCashStore";
+import PettyCashExcelExport from "./PettyCashExcelExport";
 
 moment.locale("es");
 
@@ -144,13 +145,6 @@ const PettyCashTransactions: React.FC = () => {
     }
   };
 
-  // Exportar transacciones a Excel (simulación)
-  const exportToExcel = () => {
-    alert(
-      "Funcionalidad de exportación a Excel no implementada en esta versión"
-    );
-  };
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -176,13 +170,18 @@ const PettyCashTransactions: React.FC = () => {
           </button>
         </div>
         <div className="flex flex-col md:flex-row justify-end md:items-center">
-          <button
-            onClick={exportToExcel}
-            className="inline-flex items-center px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/20 dark:hover:bg-indigo-800/30 text-indigo-700 dark:text-indigo-300 text-sm rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400"
-          >
-            <DocumentArrowDownIcon className="h-4 w-4 mr-1.5" />
-            Exportar
-          </button>
+          <PettyCashExcelExport 
+            transactions={filteredTransactions}
+            renderButton={(onClick) => (
+              <button
+                onClick={onClick}
+                className="inline-flex items-center px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/20 dark:hover:bg-indigo-800/30 text-indigo-700 dark:text-indigo-300 text-sm rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400"
+              >
+                <DocumentArrowDownIcon className="h-4 w-4 mr-1.5" />
+                Exportar
+              </button>
+            )}
+          />
         </div>
       </div>
 

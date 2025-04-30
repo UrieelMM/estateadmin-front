@@ -196,13 +196,13 @@ const PettyCashHistory: React.FC = () => {
                       <div className="flex justify-end space-x-3">
                         <button
                           onClick={() => handleViewDetails(cashBox)}
-                          className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300"
+                          className="text-indigo-700 bg-indigo-50 rounded-md text-sm px-1 py-2 hover:text-indigo-900 dark:text-indigo-700 dark:hover:text-indigo-800"
                         >
                           Detalles
                         </button>
                         <button
                           onClick={() => handleLoadCashBox(cashBox.id!)}
-                          className="text-emerald-600 hover:text-emerald-900 dark:text-emerald-400 dark:hover:text-emerald-300"
+                          className="text-emerald-700 bg-emerald-50 rounded-md text-sm px-1 py-2 hover:text-emerald-900 dark:text-emerald-700 dark:hover:text-emerald-800"
                         >
                           Ver Transacciones
                         </button>

@@ -14,6 +14,23 @@ import "moment/locale/es";
 import { usePettyCashStore } from "../../../../../../store/pettyCashStore";
 import { usePaymentStore } from "../../../../../../store/usePaymentStore";
 
+// Objeto con los nombres de los meses en español
+const spanishMonths: Record<number, string> = {
+  0: "Enero",
+  1: "Febrero",
+  2: "Marzo",
+  3: "Abril",
+  4: "Mayo",
+  5: "Junio",
+  6: "Julio",
+  7: "Agosto",
+  8: "Septiembre",
+  9: "Octubre",
+  10: "Noviembre",
+  11: "Diciembre"
+};
+
+// Asegurar que moment use el idioma español
 moment.locale("es");
 
 const PettyCashSetupForm: React.FC<{ onSuccess?: () => void }> = ({
@@ -29,7 +46,7 @@ const PettyCashSetupForm: React.FC<{ onSuccess?: () => void }> = ({
   const [thresholdAmount, setThresholdAmount] = useState("");
   const [accountId, setAccountId] = useState("");
   const [periodName, setPeriodName] = useState(
-    `Caja Chica ${moment().format("MMMM YYYY")}`
+    `Caja Chica ${spanishMonths[new Date().getMonth()]} ${new Date().getFullYear()}`
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);

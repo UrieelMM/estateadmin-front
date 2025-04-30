@@ -127,10 +127,10 @@ const ExpensesByProvider = () => {
             </h3>
           </div>
           <div className="border-t border-gray-200 dark:border-gray-700">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead className="bg-gray-50 dark:bg-gray-700">
-                  <tr>
+            <div className="overflow-x-auto custom-scrollbar overflow-y-hidden">
+              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700 ">
+                <thead className="bg-gray-50 dark:bg-gray-700 ">
+                  <tr className="overflow-y-hidden">
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                       Proveedor
                     </th>

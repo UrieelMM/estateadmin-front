@@ -14,6 +14,22 @@ import "moment/locale/es";
 import { usePettyCashStore } from "../../../../../../store/pettyCashStore";
 import { useFinancialAccountsStore } from "../../../../../../store/useAccountsStore";
 
+// Objeto con los nombres de los meses en español
+const spanishMonths: Record<number, string> = {
+  0: "Enero",
+  1: "Febrero",
+  2: "Marzo",
+  3: "Abril",
+  4: "Mayo",
+  5: "Junio",
+  6: "Julio",
+  7: "Agosto",
+  8: "Septiembre",
+  9: "Octubre",
+  10: "Noviembre",
+  11: "Diciembre"
+};
+
 moment.locale("es");
 
 const PettyCashReplenishForm: React.FC = () => {
@@ -33,7 +49,9 @@ const PettyCashReplenishForm: React.FC = () => {
   // Estados del formulario
   const [date, setDate] = useState(moment().format("YYYY-MM-DD"));
   const [amount, setAmount] = useState("");
-  const [description, setDescription] = useState("");
+  const [description, setDescription] = useState(
+    `Reposición de fondos a caja chica - ${spanishMonths[new Date().getMonth()]} ${new Date().getFullYear()}`
+  );
   const [sourceAccountId, setSourceAccountId] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -48,7 +66,7 @@ const PettyCashReplenishForm: React.FC = () => {
 
       // Inicializar la descripción con un valor predeterminado
       setDescription(
-        `Reposición de fondos a caja chica - ${moment().format("MMMM YYYY")}`
+        `Reposición de fondos a caja chica - ${spanishMonths[new Date().getMonth()]} ${new Date().getFullYear()}`
       );
     };
 
@@ -94,7 +112,7 @@ const PettyCashReplenishForm: React.FC = () => {
       // Limpiar formulario
       setAmount("");
       setDescription(
-        `Reposición de fondos a caja chica - ${moment().format("MMMM YYYY")}`
+        `Reposición de fondos a caja chica - ${spanishMonths[new Date().getMonth()]} ${new Date().getFullYear()}`
       );
       setSuccess(true);
 
@@ -272,10 +290,7 @@ const PettyCashReplenishForm: React.FC = () => {
               <option value="">-- Seleccionar cuenta --</option>
               {availableAccounts.map((account) => (
                 <option key={account.id} value={account.id}>
-                  {account.name} - $
-                  {account.initialBalance.toLocaleString("es-MX", {
-                    minimumFractionDigits: 2,
-                  })}
+                  {account.name}
                 </option>
               ))}
             </select>

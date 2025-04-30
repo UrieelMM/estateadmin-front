@@ -15,6 +15,22 @@ import {
 import { usePettyCashStore } from "../../../../../../store/pettyCashStore";
 import { formatCurrency } from "../../../../../../utils/curreyncy";
 
+// Objeto con los nombres de los meses en español
+const spanishMonths: Record<number, string> = {
+  0: "Enero",
+  1: "Febrero",
+  2: "Marzo",
+  3: "Abril",
+  4: "Mayo",
+  5: "Junio",
+  6: "Julio",
+  7: "Agosto",
+  8: "Septiembre",
+  9: "Octubre",
+  10: "Noviembre",
+  11: "Diciembre"
+};
+
 // Configurar moment.js para usar el idioma español
 moment.locale("es");
 
@@ -23,13 +39,12 @@ const PettyCashFinalize: React.FC = () => {
 
   // Asegurar que los nombres de los meses estén en español
   const currentMonth = moment().format("MMMM YYYY");
-  const nextMonth = moment().add(1, "month").format("MMMM YYYY");
 
   const [currentPeriodName, setCurrentPeriodName] = useState(
     `Caja Chica ${currentMonth.charAt(0).toUpperCase() + currentMonth.slice(1)}`
   );
   const [newPeriodName, setNewPeriodName] = useState(
-    `Caja Chica ${nextMonth.charAt(0).toUpperCase() + nextMonth.slice(1)}`
+    `Caja Chica ${spanishMonths[new Date().getMonth() + 1]} ${new Date().getFullYear()}`
   );
   const [notes, setNotes] = useState("");
   const [showConfirmModal, setShowConfirmModal] = useState(false);

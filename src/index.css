@@ -46,6 +46,10 @@ span.bg-indigo-500.rounded-lg.p-2.text-white.text-xs.ml-2 {
     /* thumb y track respectivamente */
 }
 
+.custom-overflow-hidden {
+    overflow: hidden !important;
+}
+
 /* Para navegadores basados en Webkit (Chrome, Edge, Safari) */
 .custom-scrollbar::-webkit-scrollbar {
     width: 8px;
