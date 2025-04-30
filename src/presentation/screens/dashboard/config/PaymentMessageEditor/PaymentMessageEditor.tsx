@@ -9,7 +9,8 @@ import {
   BookOpenIcon,
   UsersIcon,
   DocumentIcon,
-  ExclamationCircleIcon
+  ExclamationCircleIcon,
+  XMarkIcon
 } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 import { useConfigStore } from "../../../../../store/useConfigStore";
@@ -66,6 +67,10 @@ const PaymentMessageEditor: React.FC = () => {
   // Estado para la sección de documentos públicos
   const [activeTab, setActiveTab] = useState<'payment' | 'documents'>('payment');
   const [documentPreview, setDocumentPreview] = useState<{ [key: string]: string }>({});
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [replaceModalOpen, setReplaceModalOpen] = useState(false);
+  const [selectedDocument, setSelectedDocument] = useState<{ id: string; name: string } | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   // Módulos de React-Quill
   const modules = {
@@ -222,10 +227,10 @@ const PaymentMessageEditor: React.FC = () => {
       // Verificar si ya existe un documento
       const existingDoc = publicDocuments[documentId];
       if (existingDoc?.fileUrl) {
-        // Mostrar confirmación
-        if (!window.confirm(`¿Está seguro que desea reemplazar el documento "${docType.name}"?`)) {
-          return;
-        }
+        setSelectedDocument({ id: documentId, name: docType.name });
+        setSelectedFile(file);
+        setReplaceModalOpen(true);
+        return;
       }
       
       await uploadPublicDocument(documentId, file, docType.name, docType.description);
@@ -235,20 +240,43 @@ const PaymentMessageEditor: React.FC = () => {
     }
   };
 
-  const handleDeleteDocument = async (documentId: string) => {
+  const handleReplaceConfirm = async () => {
+    if (!selectedDocument || !selectedFile) return;
+    
     try {
-      const docType = DOCUMENT_TYPES.find(d => d.id === documentId);
+      const docType = DOCUMENT_TYPES.find(d => d.id === selectedDocument.id);
       if (!docType) return;
       
-      // Mostrar confirmación
-      if (!window.confirm(`¿Está seguro que desea eliminar el documento "${docType.name}"?`)) {
-        return;
-      }
-      
-      await deletePublicDocument(documentId);
+      await uploadPublicDocument(selectedDocument.id, selectedFile, docType.name, docType.description);
+      toast.success("Documento reemplazado correctamente");
+    } catch (error: any) {
+      toast.error(error.message || "Error al reemplazar documento");
+    } finally {
+      setReplaceModalOpen(false);
+      setSelectedDocument(null);
+      setSelectedFile(null);
+    }
+  };
+
+  const handleDeleteDocument = async (documentId: string) => {
+    const docType = DOCUMENT_TYPES.find(d => d.id === documentId);
+    if (!docType) return;
+    
+    setSelectedDocument({ id: documentId, name: docType.name });
+    setDeleteModalOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!selectedDocument) return;
+    
+    try {
+      await deletePublicDocument(selectedDocument.id);
       toast.success("Documento eliminado correctamente");
     } catch (error: any) {
       toast.error(error.message || "Error al eliminar documento");
+    } finally {
+      setDeleteModalOpen(false);
+      setSelectedDocument(null);
     }
   };
 
@@ -620,6 +648,106 @@ const PaymentMessageEditor: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Modal de Confirmación de Eliminación */}
+      <div className={`fixed inset-0 z-50 overflow-y-auto ${deleteModalOpen ? 'block' : 'hidden'}`}>
+        <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+          <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" />
+          <div className="relative transform overflow-hidden rounded-lg bg-white dark:bg-gray-800 px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6">
+            <div className="absolute right-0 top-0 pr-4 pt-4">
+              <button
+                type="button"
+                className="rounded-md bg-white dark:bg-gray-800 text-gray-400 hover:text-gray-500 focus:outline-none"
+                onClick={() => setDeleteModalOpen(false)}
+              >
+                <span className="sr-only">Cerrar</span>
+                <XMarkIcon className="h-6 w-6" aria-hidden="true" />
+              </button>
+            </div>
+            <div className="sm:flex sm:items-start">
+              <div className="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-red-100 dark:bg-red-900 sm:mx-0 sm:h-10 sm:w-10">
+                <ExclamationCircleIcon className="h-6 w-6 text-red-600 dark:text-red-400" aria-hidden="true" />
+              </div>
+              <div className="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
+                <h3 className="text-base font-semibold leading-6 text-gray-900 dark:text-gray-100">
+                  Eliminar Documento
+                </h3>
+                <div className="mt-2">
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    ¿Estás seguro de que deseas eliminar el documento "{selectedDocument?.name}"? Esta acción no se puede deshacer.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
+              <button
+                type="button"
+                className="inline-flex w-full justify-center rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 sm:ml-3 sm:w-auto"
+                onClick={handleDeleteConfirm}
+              >
+                Eliminar
+              </button>
+              <button
+                type="button"
+                className="mt-3 inline-flex w-full justify-center rounded-md bg-white dark:bg-gray-800 px-3 py-2 text-sm font-semibold text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 sm:mt-0 sm:w-auto"
+                onClick={() => setDeleteModalOpen(false)}
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Modal de Confirmación de Reemplazo */}
+      <div className={`fixed inset-0 z-50 overflow-y-auto ${replaceModalOpen ? 'block' : 'hidden'}`}>
+        <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+          <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" />
+          <div className="relative transform overflow-hidden rounded-lg bg-white dark:bg-gray-800 px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6">
+            <div className="absolute right-0 top-0 pr-4 pt-4">
+              <button
+                type="button"
+                className="rounded-md bg-white dark:bg-gray-800 text-gray-400 hover:text-gray-500 focus:outline-none"
+                onClick={() => setReplaceModalOpen(false)}
+              >
+                <span className="sr-only">Cerrar</span>
+                <XMarkIcon className="h-6 w-6" aria-hidden="true" />
+              </button>
+            </div>
+            <div className="sm:flex sm:items-start">
+              <div className="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-yellow-100 dark:bg-yellow-900 sm:mx-0 sm:h-10 sm:w-10">
+                <ExclamationCircleIcon className="h-6 w-6 text-yellow-600 dark:text-yellow-400" aria-hidden="true" />
+              </div>
+              <div className="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
+                <h3 className="text-base font-semibold leading-6 text-gray-900 dark:text-gray-100">
+                  Reemplazar Documento
+                </h3>
+                <div className="mt-2">
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    ¿Estás seguro de que deseas reemplazar el documento "{selectedDocument?.name}"? El documento actual será eliminado.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
+              <button
+                type="button"
+                className="inline-flex w-full justify-center rounded-md bg-yellow-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-yellow-500 sm:ml-3 sm:w-auto"
+                onClick={handleReplaceConfirm}
+              >
+                Reemplazar
+              </button>
+              <button
+                type="button"
+                className="mt-3 inline-flex w-full justify-center rounded-md bg-white dark:bg-gray-800 px-3 py-2 text-sm font-semibold text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 sm:mt-0 sm:w-auto"
+                onClick={() => setReplaceModalOpen(false)}
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

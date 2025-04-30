@@ -12,7 +12,7 @@ export const getCurrentDateWithGreeting = (isDarkMode: boolean = false) => {
         emoji = isDarkMode ? "☀️" : "☀️";
     } else if (hours >= 12 && hours < 18) {
         greeting = "Buenas tardes";
-        emoji = isDarkMode ? "🌙" : "🌠";
+        emoji = isDarkMode ? "☀️" : "☀️";
     } else {
         greeting = "Buenas noches";
         emoji = isDarkMode ? "🌙" : "🌙";

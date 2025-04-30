@@ -23,12 +23,14 @@ export type Parcel = {
   comments?: string;
   status: "pending" | "delivered";
   attachmentUrl?: string;
+  attachmentParcelReception?: string;
   deliveryDate?: string;
   deliveryHour?: string;
   deliveryPerson?: string;
   deliveredTo?: string;
   deliveryNotes?: string;
   deliveryAttachmentUrl?: string;
+  attachmentParcelDelivery?: string;
 };
 
 type ParcelReception = {
@@ -130,6 +132,7 @@ export const useParcelReceptionStore = create<ParcelState>()((set, get) => ({
           comments: data.comments || "",
           status: data.status || "pending",
           attachmentUrl: data.attachmentUrl || "",
+          attachmentParcelReception: data.attachmentParcelReception || data.attachmentUrl || "",
           deliveryDate:
             typeof deliveryDate === "string"
               ? deliveryDate
@@ -139,6 +142,7 @@ export const useParcelReceptionStore = create<ParcelState>()((set, get) => ({
           deliveredTo: data.deliveredTo || "",
           deliveryNotes: data.deliveryNotes || "",
           deliveryAttachmentUrl: data.deliveryAttachmentUrl || "",
+          attachmentParcelDelivery: data.attachmentParcelDelivery || data.deliveryAttachmentUrl || "",
         } as Parcel;
       });
 
@@ -203,6 +207,7 @@ export const useParcelReceptionStore = create<ParcelState>()((set, get) => ({
         comments: data.comments || "",
         status: data.status || "pending",
         attachmentUrl: data.attachmentUrl || "",
+        attachmentParcelReception: data.attachmentParcelReception || data.attachmentUrl || "",
         deliveryDate:
           typeof deliveryDate === "string"
             ? deliveryDate
@@ -212,6 +217,7 @@ export const useParcelReceptionStore = create<ParcelState>()((set, get) => ({
         deliveredTo: data.deliveredTo || "",
         deliveryNotes: data.deliveryNotes || "",
         deliveryAttachmentUrl: data.deliveryAttachmentUrl || "",
+        attachmentParcelDelivery: data.attachmentParcelDelivery || data.deliveryAttachmentUrl || "",
       } as Parcel;
 
       set({ isLoading: false });
@@ -261,6 +267,17 @@ export const useParcelReceptionStore = create<ParcelState>()((set, get) => ({
       if (parcelReception.file) {
         formData.append("attachments", parcelReception.file as Blob);
       }
+
+      // Enviar los datos al servidor
+      await axios.post(
+        `${import.meta.env.VITE_URL_SERVER}/parcel/create`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
 
       // Actualizar la lista de paquetes después de agregar uno nuevo
       await get().getParcels();

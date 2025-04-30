@@ -243,7 +243,7 @@ const NewProjectModal: React.FC<NewProjectModalProps> = ({
               </select>
             </div>
 
-            <div className="pt-4 border-t border-gray-200 flex justify-end space-x-3">
+            <div className="pt-4 flex justify-end space-x-3">
               <button
                 type="button"
                 onClick={onClose}

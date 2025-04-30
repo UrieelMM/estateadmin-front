@@ -72,7 +72,6 @@ const ParcelReception = () => {
   };
 
   const handleDeliverySuccess = () => {
-    toast.success("Paquete entregado exitosamente");
     getParcels();
   };
 
@@ -607,199 +606,63 @@ const ParcelReception = () => {
                                   </div>
                                 )}
 
-                                {/* Sección de fotos y archivos */}
-                                {(selectedParcel.attachmentUrl ||
-                                  selectedParcel.deliveryAttachmentUrl) && (
+                                {/* Sección de fotos y evidencias */}
+                                {(selectedParcel.attachmentParcelReception ||
+                                  selectedParcel.attachmentParcelDelivery) && (
                                   <div className="py-4 sm:py-5 sm:px-6">
                                     <dt className="text-base font-medium text-gray-900 dark:text-white mb-4">
                                       Fotos y evidencias
                                     </dt>
 
-                                    <div className="grid grid-cols-1 gap-y-6 sm:grid-cols-2 sm:gap-x-4">
-                                      {/* Foto del paquete (recepción) */}
-                                      {selectedParcel.attachmentUrl ? (
-                                        <div className="bg-gray-50 dark:bg-gray-700 rounded-lg overflow-hidden shadow">
-                                          <div className="px-4 py-3 bg-indigo-50 dark:bg-indigo-900/30 border-b border-gray-200 dark:border-gray-600">
-                                            <h3 className="text-sm font-medium text-indigo-800 dark:text-indigo-200">
-                                              Foto del paquete al recibirlo
-                                            </h3>
-                                          </div>
-                                          <div className="p-4">
-                                            <div className="aspect-w-3 aspect-h-2 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800">
-                                              {/* Verificamos si la URL es válida antes de mostrar la imagen */}
-                                              {selectedParcel.attachmentUrl.startsWith(
-                                                "http"
-                                              ) ? (
-                                                <img
-                                                  src={
-                                                    selectedParcel.attachmentUrl
-                                                  }
-                                                  alt="Foto del paquete"
-                                                  className="object-cover object-center w-full h-full cursor-pointer"
-                                                  onClick={() =>
-                                                    window.open(
-                                                      selectedParcel.attachmentUrl,
-                                                      "_blank"
-                                                    )
-                                                  }
-                                                  onError={(e) => {
-                                                    // Si hay error al cargar la imagen, mostrar un mensaje
-                                                    e.currentTarget.style.display =
-                                                      "none";
-                                                    e.currentTarget.parentElement?.classList.add(
-                                                      "flex",
-                                                      "items-center",
-                                                      "justify-center"
-                                                    );
-                                                    const errorMsg =
-                                                      document.createElement(
-                                                        "div"
-                                                      );
-                                                    errorMsg.className =
-                                                      "text-sm text-gray-500 dark:text-gray-400 text-center";
-                                                    errorMsg.innerText =
-                                                      "No se pudo cargar la imagen";
-                                                    e.currentTarget.parentElement?.appendChild(
-                                                      errorMsg
-                                                    );
-                                                  }}
-                                                />
-                                              ) : (
-                                                <div className="flex items-center justify-center h-full">
-                                                  <span className="text-sm text-gray-500 dark:text-gray-400">
-                                                    No hay imagen disponible
-                                                  </span>
-                                                </div>
-                                              )}
-                                            </div>
-                                            {selectedParcel.attachmentUrl.startsWith(
-                                              "http"
-                                            ) && (
-                                              <div className="mt-2">
-                                                <a
-                                                  href={
-                                                    selectedParcel.attachmentUrl
-                                                  }
-                                                  target="_blank"
-                                                  rel="noopener noreferrer"
-                                                  className="text-sm text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300 flex items-center"
-                                                >
-                                                  <svg
-                                                    xmlns="http://www.w3.org/2000/svg"
-                                                    className="h-4 w-4 mr-1"
-                                                    fill="none"
-                                                    viewBox="0 0 24 24"
-                                                    stroke="currentColor"
-                                                  >
-                                                    <path
-                                                      strokeLinecap="round"
-                                                      strokeLinejoin="round"
-                                                      strokeWidth={2}
-                                                      d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                                                    />
-                                                  </svg>
-                                                  Ver en tamaño completo
-                                                </a>
-                                              </div>
-                                            )}
-                                          </div>
-                                        </div>
-                                      ) : null}
+                                    <div className="space-y-4">
+                                      {/* Botón para foto del paquete (recepción) */}
+                                      {selectedParcel.attachmentParcelReception && (
+                                        <button
+                                          onClick={() => window.open(selectedParcel.attachmentParcelReception, "_blank")}
+                                          className="w-full flex items-center justify-center gap-x-2 rounded-md bg-indigo-50 px-3 py-2 text-sm font-medium text-indigo-700 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-300 dark:hover:bg-indigo-900/50 transition-colors"
+                                        >
+                                          <svg
+                                            className="h-5 w-5"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                          >
+                                            <path
+                                              strokeLinecap="round"
+                                              strokeLinejoin="round"
+                                              strokeWidth="2"
+                                              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                                            />
+                                          </svg>
+                                          Ver foto del paquete al recibirlo
+                                        </button>
+                                      )}
 
-                                      {/* Foto de evidencia de entrega */}
-                                      {selectedParcel.deliveryAttachmentUrl ? (
-                                        <div className="bg-gray-50 dark:bg-gray-700 rounded-lg overflow-hidden shadow">
-                                          <div className="px-4 py-3 bg-green-50 dark:bg-green-900/30 border-b border-gray-200 dark:border-gray-600">
-                                            <h3 className="text-sm font-medium text-green-800 dark:text-green-200">
-                                              Evidencia de entrega
-                                            </h3>
-                                          </div>
-                                          <div className="p-4">
-                                            <div className="aspect-w-3 aspect-h-2 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800">
-                                              {/* Verificamos si la URL es válida antes de mostrar la imagen */}
-                                              {selectedParcel.deliveryAttachmentUrl.startsWith(
-                                                "http"
-                                              ) ? (
-                                                <img
-                                                  src={
-                                                    selectedParcel.deliveryAttachmentUrl
-                                                  }
-                                                  alt="Evidencia de entrega"
-                                                  className="object-cover object-center w-full h-full cursor-pointer"
-                                                  onClick={() =>
-                                                    window.open(
-                                                      selectedParcel.deliveryAttachmentUrl,
-                                                      "_blank"
-                                                    )
-                                                  }
-                                                  onError={(e) => {
-                                                    // Si hay error al cargar la imagen, mostrar un mensaje
-                                                    e.currentTarget.style.display =
-                                                      "none";
-                                                    e.currentTarget.parentElement?.classList.add(
-                                                      "flex",
-                                                      "items-center",
-                                                      "justify-center"
-                                                    );
-                                                    const errorMsg =
-                                                      document.createElement(
-                                                        "div"
-                                                      );
-                                                    errorMsg.className =
-                                                      "text-sm text-gray-500 dark:text-gray-400 text-center";
-                                                    errorMsg.innerText =
-                                                      "No se pudo cargar la imagen";
-                                                    e.currentTarget.parentElement?.appendChild(
-                                                      errorMsg
-                                                    );
-                                                  }}
-                                                />
-                                              ) : (
-                                                <div className="flex items-center justify-center h-full">
-                                                  <span className="text-sm text-gray-500 dark:text-gray-400">
-                                                    No hay imagen disponible
-                                                  </span>
-                                                </div>
-                                              )}
-                                            </div>
-                                            {selectedParcel.deliveryAttachmentUrl.startsWith(
-                                              "http"
-                                            ) && (
-                                              <div className="mt-2">
-                                                <a
-                                                  href={
-                                                    selectedParcel.deliveryAttachmentUrl
-                                                  }
-                                                  target="_blank"
-                                                  rel="noopener noreferrer"
-                                                  className="text-sm text-green-600 hover:text-green-500 dark:text-green-400 dark:hover:text-green-300 flex items-center"
-                                                >
-                                                  <svg
-                                                    xmlns="http://www.w3.org/2000/svg"
-                                                    className="h-4 w-4 mr-1"
-                                                    fill="none"
-                                                    viewBox="0 0 24 24"
-                                                    stroke="currentColor"
-                                                  >
-                                                    <path
-                                                      strokeLinecap="round"
-                                                      strokeLinejoin="round"
-                                                      strokeWidth={2}
-                                                      d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                                                    />
-                                                  </svg>
-                                                  Ver en tamaño completo
-                                                </a>
-                                              </div>
-                                            )}
-                                          </div>
-                                        </div>
-                                      ) : null}
-                                    </div>
+                                      {/* Botón para foto de evidencia de entrega */}
+                                      {selectedParcel.attachmentParcelDelivery && (
+                                        <button
+                                          onClick={() => window.open(selectedParcel.attachmentParcelDelivery, "_blank")}
+                                          className="w-full flex items-center justify-center gap-x-2 rounded-md bg-green-50 px-3 py-2 text-sm font-medium text-green-700 hover:bg-green-100 dark:bg-green-900/30 dark:text-green-300 dark:hover:bg-green-900/50 transition-colors"
+                                        >
+                                          <svg
+                                            className="h-5 w-5"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                          >
+                                            <path
+                                              strokeLinecap="round"
+                                              strokeLinejoin="round"
+                                              strokeWidth="2"
+                                              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                                            />
+                                          </svg>
+                                          Ver foto de evidencia de entrega
+                                        </button>
+                                      )}
 
-                                    {/* Mensaje si no hay ninguna imagen disponible */}
-                                    {!selectedParcel.attachmentUrl &&
-                                      !selectedParcel.deliveryAttachmentUrl && (
+                                      {/* Mensaje si no hay ninguna imagen disponible */}
+                                      {(!selectedParcel.attachmentParcelReception && !selectedParcel.attachmentParcelDelivery) && (
                                         <div className="text-center py-6 text-gray-500 dark:text-gray-400">
                                           <svg
                                             className="mx-auto h-12 w-12 text-gray-400"
@@ -820,6 +683,7 @@ const ParcelReception = () => {
                                           </p>
                                         </div>
                                       )}
+                                    </div>
                                   </div>
                                 )}
 
@@ -843,7 +707,7 @@ const ParcelReception = () => {
                   <div className="mt-5 sm:mt-6 sm:grid sm:grid-flow-row-dense sm:grid-cols-2 sm:gap-3">
                     <button
                       type="button"
-                      className="inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:col-start-1 dark:bg-gray-700 dark:text-white dark:ring-gray-600 dark:hover:bg-gray-600"
+                      className="inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:col-start-2 dark:bg-gray-700 dark:text-white dark:ring-gray-600 dark:hover:bg-gray-600"
                       onClick={() => setDetailOpen(false)}
                     >
                       Cerrar
@@ -851,11 +715,11 @@ const ParcelReception = () => {
                     {selectedParcel && selectedParcel.status === "pending" && (
                       <button
                         type="button"
-                        className="inline-flex w-full justify-center rounded-md bg-green-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-green-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-600 sm:col-start-2"
+                        className="inline-flex w-full justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 sm:col-start-2"
                         onClick={() => {
                           setDetailOpen(false);
                           handleDeliveryRequest(selectedParcel);
-                        }}
+                        }}  
                       >
                         Registrar entrega
                       </button>

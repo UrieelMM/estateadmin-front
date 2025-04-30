@@ -68,6 +68,12 @@ const ParcelReceptionForm = ({ open, setOpen }: FormParcelReceptionProps) => {
     }
   }, [open]);
 
+  // Cuando el usuario avanza al paso 3, debemos prevenir el envío automático
+  useEffect(() => {
+    // Si estamos en el paso 3, evitar que se envíe el formulario automáticamente
+    // pero no hace nada, solo para aclarar que es intencional
+  }, [currentStep]);
+
   const handleRecipientChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const uid = e.target.value;
     const user = users.find((user) => user.uid === uid);
@@ -107,8 +113,14 @@ const ParcelReceptionForm = ({ open, setOpen }: FormParcelReceptionProps) => {
   };
 
   const nextStep = () => {
+    // Validamos el paso actual
     if (validateStep(currentStep)) {
-      setCurrentStep((prev) => prev + 1);
+      // Si estamos en el paso 2, asegurarse de no enviar el formulario
+      if (currentStep === 2) {
+        setCurrentStep(3);
+      } else {
+        setCurrentStep((prev) => prev + 1);
+      }
     }
   };
 
@@ -130,33 +142,46 @@ const ParcelReceptionForm = ({ open, setOpen }: FormParcelReceptionProps) => {
     setCurrentStep(1);
   };
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setLoading(true);
-
-    if (!validateStep(currentStep)) {
-      setLoading(false);
+  const handleConfirmRegistration = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    
+    if (!validateStep(3)) {
       return;
     }
-
-    try {
-      await addParcelReception({
-        receptor,
-        email,
-        recipientName,
-        dateReception,
-        hourReception,
-        comments,
-        file,
-      });
-
+    
+    setLoading(true);
+    
+    addParcelReception({
+      receptor,
+      email,
+      recipientName,
+      dateReception,
+      hourReception,
+      comments,
+      file,
+    })
+    .then(() => {
       resetForm();
       setOpen(false);
-    } catch (error) {
+    })
+    .catch((error) => {
       console.error(error);
-    } finally {
+    })
+    .finally(() => {
       setLoading(false);
+    });
+  };
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    
+    // Solo procesar el envío si estamos en el paso 3
+    if (currentStep !== 3) {
+      return;
     }
+    
+    // No hacemos nada aquí, porque ahora usamos handleConfirmRegistration
+    // para manejar la confirmación con un evento de clic
   };
 
   const dropzoneOptions = {
@@ -228,7 +253,11 @@ const ParcelReceptionForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                   </button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="space-y-8">
+                <form 
+                  onSubmit={handleSubmit} 
+                  className="space-y-8"
+                  noValidate
+                >
                   <div>
                     <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-indigo-100 dark:bg-indigo-900">
                       {currentStep === 1 && (
@@ -349,7 +378,7 @@ const ParcelReceptionForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                                 id="recipient"
                                 name="recipient"
                                 onChange={handleRecipientChange}
-                                className={`block w-full rounded-md shadow-sm py-2 px-3 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm border ${
+                                className={`block w-full custom-scrollbar rounded-md shadow-sm py-2 px-3 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm border ${
                                   formErrors.recipientName
                                     ? "border-red-500 dark:border-red-500"
                                     : "border-gray-300 dark:border-gray-600"
@@ -647,9 +676,10 @@ const ParcelReceptionForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                       </button>
                     ) : (
                       <button
-                        type="submit"
+                        type="button"
                         className="inline-flex w-full justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 sm:col-start-2"
                         disabled={isLoading || loading}
+                        onClick={handleConfirmRegistration}
                       >
                         {isLoading || loading ? (
                           <div className="flex items-center justify-center">
