@@ -23,6 +23,7 @@ import ClientInvoicesTable from "../../../../components/client/invoices/ClientIn
 import { ClientInvoice } from "../../../../../store/useClientInvoicesStore";
 import useClientInvoicesStore from "../../../../../store/useClientInvoicesStore";
 import PaymentMessageEditor from "../PaymentMessageEditor/PaymentMessageEditor";
+import CommitteeManagement from "../committee/CommitteeManagement";
 
 const ConfigForm = () => {
   const { config, loading, error, fetchConfig, updateConfig } =
@@ -151,9 +152,9 @@ const ConfigForm = () => {
       {error && <p className="text-red-600 dark:text-red-400">{error}</p>}
 
       {/* Layout de pestañas */}
-      <div className="flex mb-6 border-b border-gray-200 dark:border-gray-700">
+      <div className="flex mb-6 border-b border-gray-200 dark:border-gray-700 overflow-x-auto">
         <button
-          className={`mr-4 py-2 px-4 ${
+          className={`mr-4 py-2 px-4 whitespace-nowrap ${
             activeTab === "config"
               ? "border-b-2 border-indigo-600 text-indigo-600 dark:text-gray-100"
               : "text-gray-500 dark:text-gray-400"
@@ -163,7 +164,7 @@ const ConfigForm = () => {
           Configuración
         </button>
         <button
-          className={`mr-4 py-2 px-4 ${
+          className={`mr-4 py-2 px-4 whitespace-nowrap ${
             activeTab === "payments"
               ? "border-b-2 border-indigo-600 text-indigo-600 dark:text-gray-100"
               : "text-gray-500 dark:text-gray-400"
@@ -175,7 +176,7 @@ const ConfigForm = () => {
         {userRole === "admin" && (
           <>
             <button
-              className={`mr-4 py-2 px-4 ${
+              className={`mr-4 py-2 px-4 whitespace-nowrap ${
                 activeTab === "cuentas"
                   ? "border-b-2 border-indigo-600 text-indigo-600 dark:text-gray-100"
                   : "text-gray-500 dark:text-gray-400"
@@ -185,7 +186,7 @@ const ConfigForm = () => {
               Cuentas Bancarias
             </button>
             <button
-              className={`mr-4 py-2 px-4 ${
+              className={`mr-4 py-2 px-4 whitespace-nowrap ${
                 activeTab === "mensaje-pago"
                   ? "border-b-2 border-indigo-600 text-indigo-600 dark:text-gray-100"
                   : "text-gray-500 dark:text-gray-400"
@@ -195,7 +196,7 @@ const ConfigForm = () => {
               Mensajes y Documentos
             </button>
             <button
-              className={`py-2 px-4 ${
+              className={`mr-4 py-2 px-4 whitespace-nowrap ${
                 activeTab === "users"
                   ? "border-b-2 border-indigo-600 text-indigo-600 dark:text-gray-100"
                   : "text-gray-500 dark:text-gray-400"
@@ -203,6 +204,16 @@ const ConfigForm = () => {
               onClick={() => setActiveTab("users")}
             >
               Usuarios Administrativos
+            </button>
+            <button
+              className={`py-2 px-4 whitespace-nowrap ${
+                activeTab === "committee"
+                  ? "border-b-2 border-indigo-600 text-indigo-600 dark:text-gray-100"
+                  : "text-gray-500 dark:text-gray-400"
+              }`}
+              onClick={() => setActiveTab("committee")}
+            >
+              Comité y Reportes
             </button>
           </>
         )}
@@ -596,6 +607,7 @@ const ConfigForm = () => {
         <PaymentMessageEditor />
       )}
       {userRole === "admin" && activeTab === "users" && <AdminUsers />}
+      {userRole === "admin" && activeTab === "committee" && <CommitteeManagement />}
     </div>
   );
 };
