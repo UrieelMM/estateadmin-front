@@ -23,6 +23,7 @@ const EditUserModal = ({
     lastName: "",
     phone: "",
     email: "",
+    number: "",
     taxResidence: "",
     RFC: "",
     taxtRegime: "",
@@ -41,6 +42,7 @@ const EditUserModal = ({
         lastName: userDetails.lastName || "",
         phone: String(userDetails.phone || ""),
         email: userDetails.email || "",
+        number: String(userDetails.number || ""),
         taxResidence: userDetails.taxResidence || "",
         RFC: userDetails.RFC || "",
         taxtRegime: userDetails.taxtRegime || "",
@@ -85,8 +87,8 @@ const EditUserModal = ({
         ...prev,
         [name]: checked,
       }));
-    } else if (name === "phone") {
-      // Asegurar que phone siempre sea string
+    } else if (name === "phone" || name === "number") {
+      // Asegurar que phone y number siempre sean string
       setFormData((prev) => ({
         ...prev,
         [name]: String(value),
@@ -181,6 +183,23 @@ const EditUserModal = ({
                               name="lastName"
                               id="lastName"
                               value={formData.lastName}
+                              onChange={handleChange}
+                              className="px-2 mt-1 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none"
+                            />
+                          </div>
+
+                          <div className="sm:col-span-3">
+                            <label
+                              htmlFor="number"
+                              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                            >
+                              Número de departamento
+                            </label>
+                            <input
+                              type="text"
+                              name="number"
+                              id="number"
+                              value={formData.number}
                               onChange={handleChange}
                               className="px-2 mt-1 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none"
                             />
