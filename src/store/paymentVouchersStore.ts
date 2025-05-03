@@ -61,6 +61,17 @@ const vouchersCache: Record<
   { vouchers: PaymentVoucher[]; lastDoc: any }
 > = {};
 
+// Verificar si se debe ignorar el caché según localStorage
+const shouldSkipCache = () => {
+  const lastInvalidation = localStorage.getItem("vouchers_cache_invalidation");
+  if (!lastInvalidation) return false;
+
+  // Si se ha invalidado el caché en los últimos 5 segundos, ignorarlo
+  const invalidationTime = parseInt(lastInvalidation, 10);
+  const now = Date.now();
+  return now - invalidationTime < 5000; // 5 segundos
+};
+
 export const usePaymentVouchersStore = create<PaymentVouchersState>()(
   (set, get) => ({
     vouchers: [],
@@ -95,8 +106,11 @@ export const usePaymentVouchersStore = create<PaymentVouchersState>()(
           startAfter: startAfter ? startAfter.id : "first",
         });
 
-        // Usar caché solo si no se aplican filtros
-        if (!filters.status && vouchersCache[cacheKey]) {
+        // Verificar si debemos ignorar el caché por completo (por una recarga forzada)
+        const forceReload = shouldSkipCache();
+
+        // Usar caché solo si no se aplican filtros y no estamos forzando recarga
+        if (!forceReload && !filters.status && vouchersCache[cacheKey]) {
           const cached = vouchersCache[cacheKey];
           set({
             vouchers: cached.vouchers,
@@ -105,6 +119,13 @@ export const usePaymentVouchersStore = create<PaymentVouchersState>()(
             totalVouchers: cached.vouchers.length,
           });
           return cached.vouchers.length;
+        }
+
+        // Si se solicita forzar recarga, limpiar todo el caché
+        if (forceReload) {
+          Object.keys(vouchersCache).forEach((key) => {
+            delete vouchersCache[key];
+          });
         }
 
         // Consulta base
@@ -181,8 +202,8 @@ export const usePaymentVouchersStore = create<PaymentVouchersState>()(
           lastDoc = docSnap;
         }
 
-        // Guardar en caché solo si no se aplican filtros
-        if (!filters.status) {
+        // Guardar en caché solo si no se aplican filtros y no forzamos recarga
+        if (!forceReload && !filters.status) {
           vouchersCache[cacheKey] = {
             vouchers,
             lastDoc,
@@ -237,6 +258,12 @@ export const usePaymentVouchersStore = create<PaymentVouchersState>()(
         Object.keys(vouchersCache).forEach((key) => {
           delete vouchersCache[key];
         });
+
+        // Marcar invalidación en localStorage
+        localStorage.setItem(
+          "vouchers_cache_invalidation",
+          Date.now().toString()
+        );
 
         // Recargar los vouchers
         await get().fetchVouchers();

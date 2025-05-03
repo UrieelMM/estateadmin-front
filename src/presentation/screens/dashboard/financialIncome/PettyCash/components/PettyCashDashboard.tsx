@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 
 import {
   LightBulbIcon,
-  ArrowPathIcon,
   BanknotesIcon,
   ArrowDownTrayIcon,
   ExclamationTriangleIcon,
@@ -19,6 +18,7 @@ import {
   PettyCashTransactionType,
 } from "../../../../../../store/pettyCashStore";
 import { usePaymentStore } from "../../../../../../store/usePaymentStore";
+import LoadingApp from "../../../../../components/shared/loaders/LoadingApp";
 
 const PettyCashDashboard: React.FC = () => {
   // Hook de navegación para redireccionar a la página de configuración
@@ -149,11 +149,7 @@ const PettyCashDashboard: React.FC = () => {
 
   // Si está cargando, mostrar estado de carga
   if (loading) {
-    return (
-      <div className="bg-white dark:bg-gray-900 shadow-md rounded-lg p-6 flex justify-center items-center h-64">
-        <ArrowPathIcon className="h-8 w-8 text-indigo-500 animate-spin" />
-      </div>
-    );
+    return <LoadingApp />;
   }
 
   // Si no hay configuración, mostrar pantalla de configuración inicial

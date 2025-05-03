@@ -1,5 +1,10 @@
 import { useState, useEffect } from "react";
-import { EyeIcon, CheckIcon } from "@heroicons/react/24/solid";
+import {
+  EyeIcon,
+  CheckIcon,
+  ArrowPathIcon,
+  DocumentIcon,
+} from "@heroicons/react/24/solid";
 import { usePaymentVouchersStore } from "../../../../../store/paymentVouchersStore";
 import LoadingApp from "../../../../components/shared/loaders/LoadingApp";
 import {
@@ -9,6 +14,14 @@ import {
 
 const ITEMS_PER_PAGE = 20;
 
+// Función para vaciar el caché de vouchersCache
+// Esto es un workaround ya que no podemos modificar directamente el store
+const clearVouchersCache = () => {
+  // Podemos usar localStorage como señal para indicar al store que debe invalidar su caché
+  const timestamp = Date.now();
+  localStorage.setItem("vouchers_cache_invalidation", timestamp.toString());
+};
+
 const InvoicesByCondominiums = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageCursors, setPageCursors] = useState<any[]>([null]);
@@ -17,6 +30,7 @@ const InvoicesByCondominiums = () => {
   const [showImageModal, setShowImageModal] = useState(false);
   const [selectedImage, setSelectedImage] = useState("");
   const [filters, setFilters] = useState<{ status?: string }>({});
+  const [reloadCounter, setReloadCounter] = useState(0);
 
   const { vouchers, fetchVouchers, applyVoucher, loading, lastVoucherDoc } =
     usePaymentVouchersStore((state) => ({
@@ -27,11 +41,66 @@ const InvoicesByCondominiums = () => {
       lastVoucherDoc: state.lastVoucherDoc,
     }));
 
-  // Cargar la primera página al montar
+  // Función para determinar el tipo de archivo
+  const getFileType = (url: string): "image" | "pdf" | "other" => {
+    if (!url) return "other";
+
+    const extension = url.split(".").pop()?.toLowerCase();
+
+    if (extension === "pdf") {
+      return "pdf";
+    } else if (
+      ["jpg", "jpeg", "png", "gif", "webp", "bmp"].includes(extension || "")
+    ) {
+      return "image";
+    }
+
+    // Para URLs que no tienen una extensión clara, intentamos adivinar por la URL
+    if (url.includes("image") || url.includes("img")) {
+      return "image";
+    } else if (url.includes("pdf")) {
+      return "pdf";
+    }
+
+    return "other";
+  };
+
+  // Función para recargar los datos
+  const handleRefresh = async () => {
+    if (loadingPayments || loading) return;
+
+    setLoadingPayments(true);
+    try {
+      // Forzar invalidación del caché antes de recargar
+      clearVouchersCache();
+
+      // Forzar recarga completa limpiando el cursor y volviendo a la primera página
+      setPageCursors([null]);
+      setCurrentPage(1);
+
+      // Incrementar el contador de recarga para forzar el efecto
+      setReloadCounter((prev) => prev + 1);
+
+      // Limpiar filtros para forzar recarga completa
+      const tempFilters = { ...filters };
+      await fetchVouchers(ITEMS_PER_PAGE, null, tempFilters);
+    } catch (error) {
+      console.error("Error al recargar comprobantes:", error);
+    } finally {
+      setLoadingPayments(false);
+    }
+  };
+
+  // Cargar la primera página al montar o cuando cambian los filtros o se solicita una recarga
   useEffect(() => {
     const loadInitialVouchers = async () => {
       setLoadingPayments(true);
       try {
+        // Si es una recarga forzada por el botón, invalidar caché primero
+        if (reloadCounter > 0) {
+          clearVouchersCache();
+        }
+
         const count = await fetchVouchers(ITEMS_PER_PAGE, null, filters);
         setHasMore(count === ITEMS_PER_PAGE);
         if (lastVoucherDoc) {
@@ -47,7 +116,7 @@ const InvoicesByCondominiums = () => {
       }
     };
     loadInitialVouchers();
-  }, [fetchVouchers, filters]);
+  }, [fetchVouchers, filters, reloadCounter]);
 
   // Manejo de cambio de página
   const handlePageChange = async (newPage: number) => {
@@ -81,14 +150,23 @@ const InvoicesByCondominiums = () => {
   const handleApplyVoucher = async (voucherId: string) => {
     try {
       await applyVoucher(voucherId);
+      // Recargar la lista después de aplicar
+      handleRefresh();
     } catch (error) {
       console.error("Error al aplicar el comprobante:", error);
     }
   };
 
-  const handleViewImage = (imageUrl: string) => {
-    setSelectedImage(imageUrl);
-    setShowImageModal(true);
+  const handleViewFile = (fileUrl: string) => {
+    const fileType = getFileType(fileUrl);
+
+    if (fileType === "image") {
+      setSelectedImage(fileUrl);
+      setShowImageModal(true);
+    } else {
+      // Para PDFs y otros tipos de archivos, abrir en una nueva pestaña
+      window.open(fileUrl, "_blank");
+    }
   };
 
   const totalPages = hasMore ? currentPage + 1 : currentPage;
@@ -119,11 +197,32 @@ const InvoicesByCondominiums = () => {
             <option value="pending_review">Pendiente de revisión</option>
             <option value="applied">Aplicado</option>
           </select>
+
+          <button
+            onClick={handleRefresh}
+            disabled={loading || loadingPayments}
+            className="inline-flex items-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-50"
+          >
+            <ArrowPathIcon
+              className={`h-4 w-4 mr-1.5 ${
+                loadingPayments ? "animate-spin" : ""
+              }`}
+              aria-hidden="true"
+            />
+            Recargar
+          </button>
         </div>
       </div>
 
-      {/* Tabla */}
-      {!loading && vouchers.length > 0 && (
+      {/* Estado de carga */}
+      {(loading || loadingPayments) && (
+        <div className="flex justify-center items-center py-8">
+          <LoadingApp />
+        </div>
+      )}
+
+      {/* Tabla de datos cuando no está cargando */}
+      {!loading && !loadingPayments && vouchers.length > 0 && (
         <div className="mt-8 flow-root">
           <div className="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
             <div className="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
@@ -226,11 +325,16 @@ const InvoicesByCondominiums = () => {
                           <div className="flex gap-2">
                             <button
                               onClick={() =>
-                                handleViewImage(voucher.paymentProofUrl)
+                                handleViewFile(voucher.paymentProofUrl)
                               }
                               className="flex items-center bg-indigo-600 dark:bg-indigo-500 text-white px-3 py-1 rounded-md hover:bg-indigo-700 dark:hover:bg-indigo-600"
                             >
-                              <EyeIcon className="h-3 w-3 mr-1" />
+                              {getFileType(voucher.paymentProofUrl) ===
+                              "image" ? (
+                                <EyeIcon className="h-3 w-3 mr-1" />
+                              ) : (
+                                <DocumentIcon className="h-3 w-3 mr-1" />
+                              )}
                               Ver
                             </button>
                             {voucher.status !== "applied" && (
@@ -239,7 +343,7 @@ const InvoicesByCondominiums = () => {
                                 className="flex items-center bg-green-600 dark:bg-green-600 text-white px-3 py-1 rounded-md hover:bg-green-700 dark:hover:bg-green-700"
                               >
                                 <CheckIcon className="h-3 w-3 mr-1" />
-                                Aplicar
+                                Aplicado
                               </button>
                             )}
                           </div>
@@ -254,75 +358,80 @@ const InvoicesByCondominiums = () => {
         </div>
       )}
 
-      {loading && (
-        <div className="flex justify-center items-center py-8">
-          <LoadingApp />
+      {/* No hay resultados */}
+      {!loading && !loadingPayments && vouchers.length === 0 && (
+        <div className="text-center py-10">
+          <p className="text-gray-500 dark:text-gray-400">
+            No hay comprobantes disponibles.
+          </p>
         </div>
       )}
 
       {/* Paginación */}
-      <div className="mt-4 flex items-center justify-between">
-        <div className="flex flex-1 justify-between sm:hidden">
-          <button
-            onClick={() => handlePageChange(currentPage - 1)}
-            disabled={currentPage === 1 || loadingPayments}
-            className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
-          >
-            Anterior
-          </button>
-          <button
-            onClick={() => handlePageChange(currentPage + 1)}
-            disabled={loadingPayments || !hasMore}
-            className="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
-          >
-            Siguiente
-          </button>
-        </div>
-        <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
-          <div>
-            <p className="text-sm text-gray-700 dark:text-gray-300">
-              Página <span className="font-medium">{currentPage}</span> de{" "}
-              <span className="font-medium">{totalPages}</span>
-            </p>
-          </div>
-          <div>
-            <nav
-              className="isolate inline-flex rounded-md shadow-sm"
-              aria-label="Pagination"
+      {!loading && !loadingPayments && vouchers.length > 0 && (
+        <div className="mt-4 flex items-center justify-between">
+          <div className="flex flex-1 justify-between sm:hidden">
+            <button
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1 || loadingPayments}
+              className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
             >
-              <button
-                onClick={() => handlePageChange(currentPage - 1)}
-                disabled={currentPage === 1 || loadingPayments}
-                className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 disabled:opacity-50 mr-2"
+              Anterior
+            </button>
+            <button
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={loadingPayments || !hasMore}
+              className="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+            >
+              Siguiente
+            </button>
+          </div>
+          <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm text-gray-700 dark:text-gray-300">
+                Página <span className="font-medium">{currentPage}</span> de{" "}
+                <span className="font-medium">{totalPages}</span>
+              </p>
+            </div>
+            <div>
+              <nav
+                className="isolate inline-flex rounded-md shadow-sm"
+                aria-label="Pagination"
               >
-                Anterior
-              </button>
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                (page) => (
-                  <button
-                    key={page}
-                    onClick={() => handlePageChange(page)}
-                    className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${
-                      page === currentPage
-                        ? "z-10 bg-indigo-700 border-2 text-white border-indigo-700 rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 dark:text-gray-100"
-                        : "z-10 border-2 border-indigo-700 rounded-md text-indigo-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 dark:text-gray-100"
-                    }`}
-                  >
-                    {page}
-                  </button>
-                )
-              )}
-              <button
-                onClick={() => handlePageChange(currentPage + 1)}
-                disabled={loadingPayments || !hasMore}
-                className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 disabled:opacity-50 ml-2"
-              >
-                Siguiente
-              </button>
-            </nav>
+                <button
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1 || loadingPayments}
+                  className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 disabled:opacity-50 mr-2"
+                >
+                  Anterior
+                </button>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                  (page) => (
+                    <button
+                      key={page}
+                      onClick={() => handlePageChange(page)}
+                      className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${
+                        page === currentPage
+                          ? "z-10 bg-indigo-700 border-2 text-white border-indigo-700 rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 dark:text-gray-100"
+                          : "z-10 border-2 border-indigo-700 rounded-md text-indigo-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 dark:text-gray-100"
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  )
+                )}
+                <button
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={loadingPayments || !hasMore}
+                  className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 disabled:opacity-50 ml-2"
+                >
+                  Siguiente
+                </button>
+              </nav>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Modal para ver la imagen */}
       {showImageModal && (

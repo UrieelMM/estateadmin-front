@@ -196,16 +196,6 @@ const ConfigForm = () => {
               Mensajes y Documentos
             </button>
             <button
-              className={`mr-4 py-2 px-4 whitespace-nowrap ${
-                activeTab === "users"
-                  ? "border-b-2 border-indigo-600 text-indigo-600 dark:text-gray-100"
-                  : "text-gray-500 dark:text-gray-400"
-              }`}
-              onClick={() => setActiveTab("users")}
-            >
-              Usuarios Administrativos
-            </button>
-            <button
               className={`py-2 px-4 whitespace-nowrap ${
                 activeTab === "committee"
                   ? "border-b-2 border-indigo-600 text-indigo-600 dark:text-gray-100"
@@ -214,6 +204,16 @@ const ConfigForm = () => {
               onClick={() => setActiveTab("committee")}
             >
               Comité y Reportes
+            </button>
+            <button
+              className={`mr-4 py-2 px-4 whitespace-nowrap ${
+                activeTab === "users"
+                  ? "border-b-2 border-indigo-600 text-indigo-600 dark:text-gray-100"
+                  : "text-gray-500 dark:text-gray-400"
+              }`}
+              onClick={() => setActiveTab("users")}
+            >
+              Usuarios Administrativos
             </button>
           </>
         )}
@@ -607,7 +607,9 @@ const ConfigForm = () => {
         <PaymentMessageEditor />
       )}
       {userRole === "admin" && activeTab === "users" && <AdminUsers />}
-      {userRole === "admin" && activeTab === "committee" && <CommitteeManagement />}
+      {userRole === "admin" && activeTab === "committee" && (
+        <CommitteeManagement />
+      )}
     </div>
   );
 };
