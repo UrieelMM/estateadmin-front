@@ -24,6 +24,7 @@ const PettyCashTransactions: React.FC = () => {
     fetchTransactions,
     loading,
     error: storeError,
+    config,
   } = usePettyCashStore();
 
   const [filteredTransactions, setFilteredTransactions] =
@@ -35,16 +36,39 @@ const PettyCashTransactions: React.FC = () => {
     startDate: string;
     endDate: string;
   }>({
-    startDate: moment().startOf("month").format("YYYY-MM-DD"),
+    startDate: moment()
+      .subtract(6, "months")
+      .startOf("month")
+      .format("YYYY-MM-DD"),
     endDate: moment().endOf("month").format("YYYY-MM-DD"),
   });
 
+  // Ajustar el rango de fechas según la configuración de la caja
   useEffect(() => {
-    // Cargar transacciones
+    if (config) {
+      const newStartDate = config.startDate
+        ? moment(config.startDate).format("YYYY-MM-DD")
+        : moment().subtract(6, "months").startOf("month").format("YYYY-MM-DD");
+
+      const newEndDate = config.endDate
+        ? moment(config.endDate).format("YYYY-MM-DD")
+        : moment().endOf("month").format("YYYY-MM-DD");
+
+      setDateRange({
+        startDate: newStartDate,
+        endDate: newEndDate,
+      });
+    }
+  }, [config]);
+
+  useEffect(() => {
+    // Cargar transacciones cuando el componente se monte
+    console.log("Cargando transacciones...");
     fetchTransactions();
   }, [fetchTransactions]);
 
   useEffect(() => {
+    console.log(`Transacciones cargadas: ${transactions.length}`);
     // Aplicar filtros a las transacciones
     let filtered = [...transactions];
 
@@ -53,19 +77,23 @@ const PettyCashTransactions: React.FC = () => {
       filtered = filtered.filter((tx) => selectedTypes.includes(tx.type));
     }
 
-    // Filtrar por rango de fechas
+    // Filtrar por rango de fechas - Solo aplicar si hay fechas definidas
     if (dateRange.startDate && dateRange.endDate) {
       filtered = filtered.filter((tx) => {
+        if (!tx.expenseDate) return true; // Incluir transacciones sin fecha
         const txDate = moment(tx.expenseDate).format("YYYY-MM-DD");
         return txDate >= dateRange.startDate && txDate <= dateRange.endDate;
       });
     }
 
     // Ordenar por fecha (más reciente primero)
-    filtered.sort(
-      (a, b) =>
+    filtered.sort((a, b) => {
+      if (!a.expenseDate) return 1;
+      if (!b.expenseDate) return -1;
+      return (
         new Date(b.expenseDate).getTime() - new Date(a.expenseDate).getTime()
-    );
+      );
+    });
 
     setFilteredTransactions(filtered);
   }, [transactions, selectedTypes, dateRange]);
@@ -145,6 +173,22 @@ const PettyCashTransactions: React.FC = () => {
     }
   };
 
+  // Título dinámico para la página
+  const getPageTitle = () => {
+    if (config) {
+      if (config.active) {
+        return `Transacciones de Caja Chica${
+          config.period ? ` - ${config.period}` : ""
+        }`;
+      } else {
+        return `Transacciones Históricas - ${
+          config.period || "Periodo sin nombre"
+        }`;
+      }
+    }
+    return "Transacciones de Caja Chica";
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -157,7 +201,7 @@ const PettyCashTransactions: React.FC = () => {
         <div className="flex justify-between items-center mb-2">
           <div className="flex flex-col sm:flex-row sm:items-center mb-3 md:mb-0">
             <h2 className="text-xl font-bold text-gray-800 dark:text-white">
-              Transacciones de Caja Chica
+              {getPageTitle()}
             </h2>
           </div>
           <button
@@ -170,7 +214,7 @@ const PettyCashTransactions: React.FC = () => {
           </button>
         </div>
         <div className="flex flex-col md:flex-row justify-end md:items-center">
-          <PettyCashExcelExport 
+          <PettyCashExcelExport
             transactions={filteredTransactions}
             renderButton={(onClick) => (
               <button
@@ -260,6 +304,38 @@ const PettyCashTransactions: React.FC = () => {
       {storeError && (
         <div className="p-4 bg-red-50 dark:bg-red-900/20 m-4 rounded-lg border border-red-200 dark:border-red-800">
           <p className="text-red-700 dark:text-red-300">{storeError}</p>
+        </div>
+      )}
+
+      {/* Información de la caja actual o histórica */}
+      {config && !loading && (
+        <div className="p-4 bg-indigo-50 dark:bg-indigo-900/10 m-4 rounded-lg border border-indigo-100 dark:border-indigo-800">
+          <div className="flex flex-wrap justify-between">
+            <p className="text-sm text-indigo-700 dark:text-indigo-300">
+              <span className="font-medium">Periodo:</span>{" "}
+              {config.period || "Sin nombre"}
+            </p>
+            {config.startDate && (
+              <p className="text-sm text-indigo-700 dark:text-indigo-300">
+                <span className="font-medium">Fecha inicio:</span>{" "}
+                {moment(config.startDate).format("DD/MM/YYYY")}
+              </p>
+            )}
+            {config.endDate && (
+              <p className="text-sm text-indigo-700 dark:text-indigo-300">
+                <span className="font-medium">Fecha fin:</span>{" "}
+                {moment(config.endDate).format("DD/MM/YYYY")}
+              </p>
+            )}
+            {config.finalBalance !== undefined && !config.active && (
+              <p className="text-sm text-indigo-700 dark:text-indigo-300">
+                <span className="font-medium">Saldo final:</span> $
+                {(config.finalBalance / 100).toLocaleString("es-MX", {
+                  minimumFractionDigits: 2,
+                })}
+              </p>
+            )}
+          </div>
         </div>
       )}
 
@@ -372,8 +448,9 @@ const PettyCashTransactions: React.FC = () => {
                     colSpan={6}
                     className="px-4 py-4 text-sm text-center text-gray-500 dark:text-gray-400"
                   >
-                    No hay transacciones que coincidan con los filtros
-                    seleccionados
+                    {loading
+                      ? "Cargando transacciones..."
+                      : "No hay transacciones que coincidan con los filtros seleccionados"}
                   </td>
                 </tr>
               )}

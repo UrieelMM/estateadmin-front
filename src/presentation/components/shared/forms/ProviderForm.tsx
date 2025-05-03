@@ -1,6 +1,6 @@
 import { Transition, Dialog } from "@headlessui/react";
 import { XMarkIcon } from "@heroicons/react/24/solid";
-import { Fragment, useState } from "react";
+import { Fragment, useState, useEffect } from "react";
 import useProviderStore from "../../../../store/providerStore";
 import { toast } from "react-hot-toast";
 
@@ -45,14 +45,40 @@ const services = [
 
 const FormProvider = ({ open, setOpen, providerToEdit }: FormProviderProps) => {
   const [formData, setFormData] = useState({
-    name: providerToEdit?.name || "",
-    service: providerToEdit?.service || "",
-    serviceLabel: providerToEdit?.serviceLabel || "",
-    phone: providerToEdit?.phone || "",
-    email: providerToEdit?.email || "",
-    comments: providerToEdit?.comments || "",
-    isRecommended: providerToEdit?.isRecommended || false,
+    name: "",
+    service: "",
+    serviceLabel: "",
+    phone: "",
+    email: "",
+    comments: "",
+    isRecommended: false,
   });
+
+  // Actualizar el formulario cuando cambie providerToEdit o se abra el formulario
+  useEffect(() => {
+    if (providerToEdit) {
+      setFormData({
+        name: providerToEdit.name || "",
+        service: providerToEdit.service || "",
+        serviceLabel: providerToEdit.serviceLabel || "",
+        phone: providerToEdit.phone || "",
+        email: providerToEdit.email || "",
+        comments: providerToEdit.comments || "",
+        isRecommended: providerToEdit.isRecommended || false,
+      });
+    } else {
+      // Resetear el formulario si no hay providerToEdit
+      setFormData({
+        name: "",
+        service: "",
+        serviceLabel: "",
+        phone: "",
+        email: "",
+        comments: "",
+        isRecommended: false,
+      });
+    }
+  }, [providerToEdit, open]);
 
   const { addProvider, updateProvider, loading } = useProviderStore();
 
