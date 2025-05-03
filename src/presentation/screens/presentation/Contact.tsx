@@ -1,4 +1,56 @@
+import { useState } from "react";
+import { toast } from "react-hot-toast";
+import * as Sentry from "@sentry/react";
+
 const Contact = () => {
+  const [email, setEmail] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      toast.error("Por favor, ingresa un correo electrónico válido");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const formData = {
+        name: "No name",
+        email: email,
+        phone: "",
+        message: "Correo envado desde el footer de estate-admin.com",
+      };
+
+      const response = await fetch(
+        `${import.meta.env.VITE_URL_SERVER}/tools/contact-form`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(formData),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Error al enviar el formulario");
+      }
+
+      toast.success("¡Tu solicitud ha sido enviada con éxito!");
+      setEmail("");
+    } catch (error) {
+      Sentry.captureException(error);
+      toast.error(
+        "Error al enviar la solicitud. Por favor, inténtalo de nuevo."
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <section className="py-12 bg-transparent sm:py-16 lg:py-20" id="contact">
       <div className="px-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
@@ -26,7 +78,7 @@ const Contact = () => {
             ></div>
           </div>
 
-          <form action="#" method="POST" className="relative">
+          <form onSubmit={handleSubmit} className="relative">
             <input
               type="email"
               name="email"
@@ -34,14 +86,20 @@ const Contact = () => {
               placeholder="Ingresa tu correo electrónico"
               className="block w-full px-5 py-6 text-base font-normal text-gray-800 placeholder-gray-600 bg-white border border-gray-300 rounded-xl focus:border-indigo-300 font-pj focus:outline-none"
               required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              disabled={isSubmitting}
             />
 
             <div className="mt-4 sm:mt-0 sm:absolute sm:inset-y-0 sm:right-0 sm:flex sm:items-center sm:pr-3">
               <button
                 type="submit"
-                className="inline-flex items-center justify-center w-full px-8 py-4 text-base font-bold text-white transition-all duration-200 bg-indigo-600 border border-transparent sm:w-auto sm:py-3 focus:outline-none font-pj hover:bg-indigo-700 rounded-xl"
+                disabled={isSubmitting}
+                className={`inline-flex items-center justify-center w-full px-8 py-4 text-base font-bold text-white transition-all duration-200 bg-indigo-600 border border-transparent sm:w-auto sm:py-3 focus:outline-none font-pj hover:bg-indigo-700 rounded-xl ${
+                  isSubmitting ? "opacity-70 cursor-not-allowed" : ""
+                }`}
               >
-                Solicitar información
+                {isSubmitting ? "Enviando..." : "Solicitar información"}
               </button>
             </div>
           </form>

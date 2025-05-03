@@ -206,7 +206,7 @@ const PrivacyPolicy = () => {
                   <strong>Email:</strong> privacidad@estate-admin.com
                 </li>
                 <li>
-                  <strong>Dirección:</strong> 43815 Guerreo Tizayuca Hidalgo,
+                  <strong>Dirección:</strong> 43815 Guerreo 11 Tizayuca Hidalgo,
                   México
                 </li>
               </ul>

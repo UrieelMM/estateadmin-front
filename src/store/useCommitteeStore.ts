@@ -32,7 +32,14 @@ export interface CommitteeMember {
   condominiumId: string;
   condominiumName: string;
   frequency: "daily" | "weekly" | "monthly";
-  scheduleDay: "monday" | "tuesday" | "wednesday" | "thursday" | "friday" | "saturday" | "sunday";
+  scheduleDay:
+    | "monday"
+    | "tuesday"
+    | "wednesday"
+    | "thursday"
+    | "friday"
+    | "saturday"
+    | "sunday";
   scheduleTime: string;
   receiveReports: boolean;
   createdAt?: Date;
@@ -45,8 +52,43 @@ interface CommitteeStore {
   isLoading: boolean;
   error: string | null;
   fetchCommitteeMembers: () => Promise<void>;
-  addCommitteeMember: (member: Omit<CommitteeMember, "id" | "createdAt" | "updatedAt" | "clientId" | "condominiumId" | "condominiumName" | "frequency" | "scheduleDay" | "scheduleTime" | "receiveReports">) => Promise<void>;
-  updateCommitteeMember: (id: string, member: Partial<Omit<CommitteeMember, "id" | "createdAt" | "updatedAt" | "clientId" | "condominiumId" | "condominiumName">>) => Promise<void>;
+  addCommitteeMember: (
+    member: Omit<
+      CommitteeMember,
+      | "id"
+      | "createdAt"
+      | "updatedAt"
+      | "clientId"
+      | "condominiumId"
+      | "condominiumName"
+    > & {
+      frequency?: "daily" | "weekly" | "monthly";
+      scheduleDay?:
+        | "monday"
+        | "tuesday"
+        | "wednesday"
+        | "thursday"
+        | "friday"
+        | "saturday"
+        | "sunday";
+      scheduleTime?: string;
+      receiveReports?: boolean;
+    }
+  ) => Promise<void>;
+  updateCommitteeMember: (
+    id: string,
+    member: Partial<
+      Omit<
+        CommitteeMember,
+        | "id"
+        | "createdAt"
+        | "updatedAt"
+        | "clientId"
+        | "condominiumId"
+        | "condominiumName"
+      >
+    >
+  ) => Promise<void>;
   deleteCommitteeMember: (id: string) => Promise<void>;
   resetCommitteeData: () => void;
 }
@@ -62,26 +104,29 @@ export const useCommitteeStore = create<CommitteeStore>()((set, get) => ({
 
       const auth = getAuth();
       const user = auth.currentUser;
-      
+
       if (!user) {
         throw new Error("Usuario no autenticado");
       }
 
       const tokenResult = await getIdTokenResult(user);
       const clientId = tokenResult.claims["clientId"] as string;
-      
+
       if (!clientId) {
         throw new Error("ID de cliente no disponible");
       }
 
-      const condominiumId = useCondominiumStore.getState().getCurrentCondominiumId();
-      
+      const condominiumId = useCondominiumStore
+        .getState()
+        .getCurrentCondominiumId();
+
       if (!condominiumId) {
         throw new Error("ID de condominio no disponible");
       }
 
       // Obtener el nombre del condominio actual
-      const condominiumData = useCondominiumStore.getState().selectedCondominium;
+      const condominiumData =
+        useCondominiumStore.getState().selectedCondominium;
       const condominiumName = condominiumData?.name || "Condominio";
 
       const db = getFirestore();
@@ -89,23 +134,27 @@ export const useCommitteeStore = create<CommitteeStore>()((set, get) => ({
         db,
         `clients/${clientId}/condominiums/${condominiumId}/reportsForCommitteeMembers`
       );
-      
+
       const snapshot = await getDocs(committeeRef);
-      
-      const committeeMembers: CommitteeMember[] = snapshot.docs.map(doc => {
+
+      const committeeMembers: CommitteeMember[] = snapshot.docs.map((doc) => {
         const data = doc.data();
-        
+
         // Convertir los reportes antiguos al nuevo formato si es necesario
         let maintenance = data.reportsPreferences?.maintenance || false;
         let financialReports = false;
-        
+
         // Si tenemos datos en el formato antiguo, hacer la conversión
         if (data.reportsPreferences) {
-          if (data.reportsPreferences.expenses || data.reportsPreferences.income || data.reportsPreferences.globalAccountStatus) {
+          if (
+            data.reportsPreferences.expenses ||
+            data.reportsPreferences.income ||
+            data.reportsPreferences.globalAccountStatus
+          ) {
             financialReports = true;
           }
         }
-        
+
         return {
           id: doc.id,
           firstName: data.firstName || "",
@@ -116,9 +165,10 @@ export const useCommitteeStore = create<CommitteeStore>()((set, get) => ({
           role: data.role || "",
           reportsPreferences: {
             maintenance: maintenance,
-            financialReports: data.reportsPreferences?.financialReports !== undefined 
-              ? data.reportsPreferences.financialReports 
-              : financialReports
+            financialReports:
+              data.reportsPreferences?.financialReports !== undefined
+                ? data.reportsPreferences.financialReports
+                : financialReports,
           },
           clientId: data.clientId || clientId,
           condominiumId: data.condominiumId || condominiumId,
@@ -126,9 +176,10 @@ export const useCommitteeStore = create<CommitteeStore>()((set, get) => ({
           frequency: data.frequency || "weekly",
           scheduleDay: data.scheduleDay || "monday",
           scheduleTime: data.scheduleTime || "06:00",
-          receiveReports: data.receiveReports !== undefined ? data.receiveReports : true,
+          receiveReports:
+            data.receiveReports !== undefined ? data.receiveReports : true,
           createdAt: data.createdAt?.toDate(),
-          updatedAt: data.updatedAt?.toDate()
+          updatedAt: data.updatedAt?.toDate(),
         };
       });
 
@@ -138,7 +189,8 @@ export const useCommitteeStore = create<CommitteeStore>()((set, get) => ({
         error: null,
       });
     } catch (error: any) {
-      const errorMessage = error.message || "Error al cargar miembros del comité";
+      const errorMessage =
+        error.message || "Error al cargar miembros del comité";
       toast.error(errorMessage);
       set({
         error: errorMessage,
@@ -154,26 +206,29 @@ export const useCommitteeStore = create<CommitteeStore>()((set, get) => ({
 
       const auth = getAuth();
       const user = auth.currentUser;
-      
+
       if (!user) {
         throw new Error("Usuario no autenticado");
       }
 
       const tokenResult = await getIdTokenResult(user);
       const clientId = tokenResult.claims["clientId"] as string;
-      
+
       if (!clientId) {
         throw new Error("ID de cliente no disponible");
       }
 
-      const condominiumId = useCondominiumStore.getState().getCurrentCondominiumId();
-      
+      const condominiumId = useCondominiumStore
+        .getState()
+        .getCurrentCondominiumId();
+
       if (!condominiumId) {
         throw new Error("ID de condominio no disponible");
       }
-      
+
       // Obtener el nombre del condominio actual
-      const condominiumData = useCondominiumStore.getState().selectedCondominium;
+      const condominiumData =
+        useCondominiumStore.getState().selectedCondominium;
       const condominiumName = condominiumData?.name || "Condominio";
 
       const db = getFirestore();
@@ -181,13 +236,18 @@ export const useCommitteeStore = create<CommitteeStore>()((set, get) => ({
         db,
         `clients/${clientId}/condominiums/${condominiumId}/reportsForCommitteeMembers`
       );
-      
+
       // Verificar si ya existe un miembro con el mismo correo
-      const emailQuery = query(committeeRef, where("email", "==", member.email));
+      const emailQuery = query(
+        committeeRef,
+        where("email", "==", member.email)
+      );
       const emailSnapshot = await getDocs(emailQuery);
-      
+
       if (!emailSnapshot.empty) {
-        throw new Error("Ya existe un miembro del comité con este correo electrónico");
+        throw new Error(
+          "Ya existe un miembro del comité con este correo electrónico"
+        );
       }
 
       await addDoc(committeeRef, {
@@ -195,21 +255,23 @@ export const useCommitteeStore = create<CommitteeStore>()((set, get) => ({
         clientId,
         condominiumId,
         condominiumName,
-        frequency: "weekly",
-        scheduleDay: "monday",
-        scheduleTime: "06:00",
-        receiveReports: true,
+        frequency: member.frequency || "weekly",
+        scheduleDay: member.scheduleDay || "monday",
+        scheduleTime: member.scheduleTime || "06:00",
+        receiveReports:
+          member.receiveReports !== undefined ? member.receiveReports : true,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
 
       // Refrescar la lista después de agregar
       await get().fetchCommitteeMembers();
-      
+
       toast.success("Miembro del comité agregado correctamente");
       set({ isLoading: false });
     } catch (error: any) {
-      const errorMessage = error.message || "Error al agregar miembro del comité";
+      const errorMessage =
+        error.message || "Error al agregar miembro del comité";
       toast.error(errorMessage);
       set({
         error: errorMessage,
@@ -224,20 +286,22 @@ export const useCommitteeStore = create<CommitteeStore>()((set, get) => ({
 
       const auth = getAuth();
       const user = auth.currentUser;
-      
+
       if (!user) {
         throw new Error("Usuario no autenticado");
       }
 
       const tokenResult = await getIdTokenResult(user);
       const clientId = tokenResult.claims["clientId"] as string;
-      
+
       if (!clientId) {
         throw new Error("ID de cliente no disponible");
       }
 
-      const condominiumId = useCondominiumStore.getState().getCurrentCondominiumId();
-      
+      const condominiumId = useCondominiumStore
+        .getState()
+        .getCurrentCondominiumId();
+
       if (!condominiumId) {
         throw new Error("ID de condominio no disponible");
       }
@@ -247,7 +311,7 @@ export const useCommitteeStore = create<CommitteeStore>()((set, get) => ({
         db,
         `clients/${clientId}/condominiums/${condominiumId}/reportsForCommitteeMembers/${id}`
       );
-      
+
       // Si el correo cambió, verificar que no exista otro miembro con ese correo
       if (memberUpdate.email) {
         const committeeRef = collection(
@@ -255,13 +319,15 @@ export const useCommitteeStore = create<CommitteeStore>()((set, get) => ({
           `clients/${clientId}/condominiums/${condominiumId}/reportsForCommitteeMembers`
         );
         const emailQuery = query(
-          committeeRef, 
+          committeeRef,
           where("email", "==", memberUpdate.email)
         );
         const emailSnapshot = await getDocs(emailQuery);
-        
+
         if (!emailSnapshot.empty && emailSnapshot.docs[0].id !== id) {
-          throw new Error("Ya existe un miembro del comité con este correo electrónico");
+          throw new Error(
+            "Ya existe un miembro del comité con este correo electrónico"
+          );
         }
       }
 
@@ -272,11 +338,12 @@ export const useCommitteeStore = create<CommitteeStore>()((set, get) => ({
 
       // Refrescar la lista después de actualizar
       await get().fetchCommitteeMembers();
-      
+
       toast.success("Miembro del comité actualizado correctamente");
       set({ isLoading: false });
     } catch (error: any) {
-      const errorMessage = error.message || "Error al actualizar miembro del comité";
+      const errorMessage =
+        error.message || "Error al actualizar miembro del comité";
       toast.error(errorMessage);
       set({
         error: errorMessage,
@@ -291,20 +358,22 @@ export const useCommitteeStore = create<CommitteeStore>()((set, get) => ({
 
       const auth = getAuth();
       const user = auth.currentUser;
-      
+
       if (!user) {
         throw new Error("Usuario no autenticado");
       }
 
       const tokenResult = await getIdTokenResult(user);
       const clientId = tokenResult.claims["clientId"] as string;
-      
+
       if (!clientId) {
         throw new Error("ID de cliente no disponible");
       }
 
-      const condominiumId = useCondominiumStore.getState().getCurrentCondominiumId();
-      
+      const condominiumId = useCondominiumStore
+        .getState()
+        .getCurrentCondominiumId();
+
       if (!condominiumId) {
         throw new Error("ID de condominio no disponible");
       }
@@ -314,18 +383,18 @@ export const useCommitteeStore = create<CommitteeStore>()((set, get) => ({
         db,
         `clients/${clientId}/condominiums/${condominiumId}/reportsForCommitteeMembers/${id}`
       );
-      
+
       await deleteDoc(memberRef);
 
       // Actualizar el estado eliminando el miembro
       const currentMembers = get().members;
       set({
-        members: currentMembers.filter(member => member.id !== id),
+        members: currentMembers.filter((member) => member.id !== id),
         isLoading: false,
       });
-      
     } catch (error: any) {
-      const errorMessage = error.message || "Error al eliminar miembro del comité";
+      const errorMessage =
+        error.message || "Error al eliminar miembro del comité";
       toast.error(errorMessage);
       set({
         error: errorMessage,
@@ -343,4 +412,4 @@ export const useCommitteeStore = create<CommitteeStore>()((set, get) => ({
   },
 }));
 
-export default useCommitteeStore; 
+export default useCommitteeStore;

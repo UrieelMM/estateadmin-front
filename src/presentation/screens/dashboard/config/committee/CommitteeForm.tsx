@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { toast } from "react-hot-toast";
-import useCommitteeStore, { CommitteeMember } from "../../../../../store/useCommitteeStore";
+import useCommitteeStore, {
+  CommitteeMember,
+} from "../../../../../store/useCommitteeStore";
 import {
   UserIcon,
   UserPlusIcon,
@@ -9,6 +11,8 @@ import {
   HomeIcon,
   CheckIcon,
   XMarkIcon,
+  CalendarDaysIcon,
+  ClockIcon,
 } from "@heroicons/react/24/solid";
 
 // Lista de roles comunes para miembros de comité de condominio
@@ -35,14 +39,43 @@ const COMMITTEE_ROLES = [
   "Comisario",
 ];
 
+// Días de la semana
+const DAYS_OF_WEEK = [
+  { value: "monday", label: "Lunes" },
+  { value: "tuesday", label: "Martes" },
+  { value: "wednesday", label: "Miércoles" },
+  { value: "thursday", label: "Jueves" },
+  { value: "friday", label: "Viernes" },
+  { value: "saturday", label: "Sábado" },
+  { value: "sunday", label: "Domingo" },
+];
+
+// Horas del día (formato 24 horas)
+const generateTimeOptions = () => {
+  const options = [];
+  for (let hour = 0; hour < 24; hour++) {
+    const formattedHour = hour.toString().padStart(2, "0");
+    options.push(`${formattedHour}:00`);
+    options.push(`${formattedHour}:30`);
+  }
+  return options;
+};
+
+const TIME_OPTIONS = generateTimeOptions();
+
 interface MemberFormProps {
   memberToEdit?: CommitteeMember | null;
   onSubmitSuccess: () => void;
   onCancel: () => void;
 }
 
-const CommitteeForm = ({ memberToEdit, onSubmitSuccess, onCancel }: MemberFormProps) => {
-  const { addCommitteeMember, updateCommitteeMember, isLoading } = useCommitteeStore();
+const CommitteeForm = ({
+  memberToEdit,
+  onSubmitSuccess,
+  onCancel,
+}: MemberFormProps) => {
+  const { addCommitteeMember, updateCommitteeMember, isLoading } =
+    useCommitteeStore();
 
   // Estados locales para el formulario
   const [firstName, setFirstName] = useState("");
@@ -55,6 +88,20 @@ const CommitteeForm = ({ memberToEdit, onSubmitSuccess, onCancel }: MemberFormPr
     maintenance: false,
     financialReports: false,
   });
+  const [scheduleDay, setScheduleDay] = useState<
+    | "monday"
+    | "tuesday"
+    | "wednesday"
+    | "thursday"
+    | "friday"
+    | "saturday"
+    | "sunday"
+  >("monday");
+  const [scheduleTime, setScheduleTime] = useState("06:00");
+  const [receiveReports, setReceiveReports] = useState(true);
+  const [frequency, setFrequency] = useState<"daily" | "weekly" | "monthly">(
+    "weekly"
+  );
 
   // Cargar datos si estamos editando
   useEffect(() => {
@@ -66,6 +113,10 @@ const CommitteeForm = ({ memberToEdit, onSubmitSuccess, onCancel }: MemberFormPr
       setDepartment(memberToEdit.department);
       setRole(memberToEdit.role);
       setReportsPreferences(memberToEdit.reportsPreferences);
+      setScheduleDay(memberToEdit.scheduleDay);
+      setScheduleTime(memberToEdit.scheduleTime);
+      setReceiveReports(memberToEdit.receiveReports);
+      setFrequency(memberToEdit.frequency);
     }
   }, [memberToEdit]);
 
@@ -94,6 +145,10 @@ const CommitteeForm = ({ memberToEdit, onSubmitSuccess, onCancel }: MemberFormPr
         department,
         role,
         reportsPreferences,
+        scheduleDay,
+        scheduleTime,
+        receiveReports,
+        frequency,
       };
 
       if (memberToEdit) {
@@ -122,9 +177,15 @@ const CommitteeForm = ({ memberToEdit, onSubmitSuccess, onCancel }: MemberFormPr
       maintenance: false,
       financialReports: false,
     });
+    setScheduleDay("monday");
+    setScheduleTime("06:00");
+    setReceiveReports(true);
+    setFrequency("weekly");
   };
 
-  const handleReportPreferenceChange = (key: keyof typeof reportsPreferences) => {
+  const handleReportPreferenceChange = (
+    key: keyof typeof reportsPreferences
+  ) => {
     setReportsPreferences({
       ...reportsPreferences,
       [key]: !reportsPreferences[key],
@@ -134,7 +195,9 @@ const CommitteeForm = ({ memberToEdit, onSubmitSuccess, onCancel }: MemberFormPr
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-8">
       <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-6">
-        {memberToEdit ? "Editar miembro del comité" : "Agregar nuevo miembro al comité"}
+        {memberToEdit
+          ? "Editar miembro del comité"
+          : "Agregar nuevo miembro al comité"}
       </h2>
 
       <form onSubmit={handleSubmit}>
@@ -336,6 +399,116 @@ const CommitteeForm = ({ memberToEdit, onSubmitSuccess, onCancel }: MemberFormPr
           </div>
         </div>
 
+        {/* Programación de envío de reportes */}
+        <div className="mt-6">
+          <h3 className="text-lg font-medium text-gray-800 dark:text-white mb-3">
+            Programación de reportes
+          </h3>
+
+          <div className="flex items-center mb-4">
+            <button
+              type="button"
+              onClick={() => setReceiveReports(!receiveReports)}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
+                receiveReports
+                  ? "bg-indigo-600"
+                  : "bg-gray-200 dark:bg-gray-700"
+              }`}
+            >
+              <span
+                className={`${
+                  receiveReports ? "translate-x-6" : "translate-x-1"
+                } inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
+              />
+            </button>
+            <span className="ml-3 text-sm text-gray-700 dark:text-gray-300">
+              Recibir reportes automáticos
+            </span>
+          </div>
+
+          {receiveReports && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+              {/* Frecuencia */}
+              <div>
+                <label
+                  htmlFor="frequency"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >
+                  Frecuencia
+                </label>
+                <select
+                  id="frequency"
+                  value={frequency}
+                  onChange={(e) =>
+                    setFrequency(
+                      e.target.value as "daily" | "weekly" | "monthly"
+                    )
+                  }
+                  className="bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg py-2 px-3 w-full focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:text-white"
+                >
+                  <option value="daily">Diario</option>
+                  <option value="weekly">Semanal</option>
+                  <option value="monthly">Mensual</option>
+                </select>
+              </div>
+
+              {/* Día de envío */}
+              <div>
+                <label
+                  htmlFor="scheduleDay"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >
+                  Día de envío
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <CalendarDaysIcon className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <select
+                    id="scheduleDay"
+                    value={scheduleDay}
+                    onChange={(e) => setScheduleDay(e.target.value as any)}
+                    className="bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg py-2 pl-10 pr-3 w-full focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:text-white"
+                  >
+                    {DAYS_OF_WEEK.map((day) => (
+                      <option key={day.value} value={day.value}>
+                        {day.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Hora de envío */}
+              <div>
+                <label
+                  htmlFor="scheduleTime"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >
+                  Hora de envío
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <ClockIcon className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <select
+                    id="scheduleTime"
+                    value={scheduleTime}
+                    onChange={(e) => setScheduleTime(e.target.value)}
+                    className="bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg py-2 pl-10 pr-3 w-full focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:text-white"
+                  >
+                    {TIME_OPTIONS.map((time) => (
+                      <option key={time} value={time}>
+                        {time}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* Botones de acción */}
         <div className="mt-8 flex justify-end space-x-3">
           <button
@@ -364,4 +537,4 @@ const CommitteeForm = ({ memberToEdit, onSubmitSuccess, onCancel }: MemberFormPr
   );
 };
 
-export default CommitteeForm; 
+export default CommitteeForm;

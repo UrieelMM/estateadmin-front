@@ -109,11 +109,11 @@ const Footer = () => {
         <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-3 sm:gap-8 sm:mt-12">
           <div className="text-center">
             <h3 className="text-lg font-semibold text-gray-900">
-              WhatsApp Business
+              WhatsApp Bot
             </h3>
             <p className="mt-2 text-gray-600">
               <a
-                href="https://wa.me/+527711953837"
+                href="https://wa.me/+525633449827"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-indigo-600 hover:text-indigo-700"
@@ -148,7 +148,7 @@ const Footer = () => {
         <ul className="flex items-center justify-center mt-8 space-x-4 sm:space-x-6 sm:mt-12">
           <li>
             <a
-              href="https://wa.me/+527711953837"
+              href="https://wa.me/+525633449827"
               target="_blank"
               title="WhatsApp Business"
               className="inline-flex items-center justify-center w-10 h-10 text-gray-900 transition-all duration-200 rounded-full hover:bg-gray-100 focus:outline-none focus:bg-gray-200 focus:ring-2 focus:ring-offset-2 focus:ring-gray-200"
@@ -230,13 +230,13 @@ const Footer = () => {
         </ul>
 
         <p className="text-center mt-8 text-gray-600">
-          43815 Guerreo Tizayuca Hidalgo, México
+          43815 Guerreo 11 Tizayuca Hidalgo, México
         </p>
 
         <p className="text-base font-normal text-center text-gray-600 mt-7 font-pj">
           © Copyright 2025, Todos los derechos reservados
           <br />
-          Un servicio de <span className="font-bold">Omnipixel</span>
+          Un servicio de <span className="font-bold">EstateAdmin</span>
         </p>
       </div>
     </footer>

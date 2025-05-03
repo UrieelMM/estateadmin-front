@@ -140,7 +140,7 @@ const DataDeletion = () => {
               <p className="ml-6 mt-2 mb-4">
                 EstateAdmin - Departamento de Privacidad
                 <br />
-                43815 Guerreo Tizayuca Hidalgo
+                43815 Guerreo 11 Tizayuca Hidalgo
                 <br />
                 México
               </p>
@@ -226,10 +226,7 @@ const DataDeletion = () => {
                   <strong>Email:</strong> privacidad@estate-admin.com
                 </li>
                 <li>
-                  <strong>Teléfono:</strong> +52 771 195 3837
-                </li>
-                <li>
-                  <strong>Dirección:</strong> 43815 Guerreo Tizayuca Hidalgo,
+                  <strong>Dirección:</strong> 43815 Guerreo 11 Tizayuca Hidalgo,
                   México
                 </li>
               </ul>
