@@ -3,7 +3,7 @@ import {
   ArrowDownTrayIcon,
   QrCodeIcon,
   EnvelopeIcon,
-} from "@heroicons/react/24/solid";
+} from "@heroicons/react/24/outline";
 
 const DataControl = () => {
   return (

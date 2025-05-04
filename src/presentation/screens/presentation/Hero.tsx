@@ -11,10 +11,11 @@ import ProjectDetails from "./ProjectDetails";
 import AreaReservation from "./AreaReservation";
 import DataControl from "./DataControl";
 import MaintenanceTickets from "./MaintenanceTickets";
+import FeatureDetails from "./FeatureDetails";
 
 const navigation = [
   { name: "Características", href: "#features" },
-  { name: "Sobre nosotros", href: "#about" },
+  { name: "Sobre nosotros", href: "/about-us" },
   { name: "Contacto", href: "/contact" },
 ];
 
@@ -261,6 +262,26 @@ const Hero = () => {
                 Ver características <span aria-hidden="true">→</span>
               </a>
             </div>
+            <div className="mt-6">
+              <a
+                href="/ai-features"
+                className="inline-flex items-center text-sm font-medium px-4 py-2 rounded-full transition-colors duration-300 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white dark:from-indigo-700 dark:via-purple-700 dark:to-pink-700"
+              >
+                Conoce en lo que hemos estado trabajando para ti
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                  className="w-5 h-5 ml-1"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M2 10a.75.75 0 01.75-.75h12.59l-2.1-1.95a.75.75 0 111.02-1.1l3.5 3.25a.75.75 0 010 1.1l-3.5 3.25a.75.75 0 11-1.02-1.1l2.1-1.95H2.75A.75.75 0 012 10z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </a>
+            </div>
           </div>
         </div>
         <div className="absolute inset-x-0 top-[calc(100%-13rem)] -z-10 transform-gpu overflow-hidden blur-3xl sm:top-[calc(100%-30rem)]">
@@ -279,6 +300,7 @@ const Hero = () => {
       <AreaReservation />
       <MaintenanceTickets />
       <DataControl />
+      <FeatureDetails />
       <Contact />
       <Footer />
     </div>

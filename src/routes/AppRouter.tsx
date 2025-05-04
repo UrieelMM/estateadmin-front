@@ -20,6 +20,8 @@ import SuperAdminLayout from "../presentation/screens/layout/SuperAdminLayout";
 import ContactForm from "../presentation/screens/public/ContactForm";
 import DataDeletion from "../presentation/screens/presentation/DataDeletion";
 import PrivacyPolicy from "../presentation/screens/presentation/PrivacyPolicy";
+import AboutUs from "../presentation/screens/presentation/AboutUs";
+import AIFeatures from "../presentation/screens/presentation/AIFeatures";
 
 export const AppRouterPage = () => {
   return (
@@ -33,6 +35,8 @@ export const AppRouterPage = () => {
         <Route path="/contact" element={<ContactForm />} />
         <Route path="/privacy" element={<PrivacyPolicy />} />
         <Route path="/data-deletion" element={<DataDeletion />} />
+        <Route path="/about-us" element={<AboutUs />} />
+        <Route path="/ai-features" element={<AIFeatures />} />
         <Route
           path="/unidentified-payments/:qrId"
           element={<UnidentifiedPaymentsPublic />}
