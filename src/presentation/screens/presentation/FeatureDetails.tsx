@@ -46,7 +46,7 @@ const FeatureDetails = () => {
       description:
         "Administra eficientemente los gastos menores del día a día. Registra movimientos, realiza arqueos y mantén un control preciso de los fondos disponibles para imprevistos.",
       icon: BanknotesIcon,
-      color: "gray",
+      color: "sky",
     },
     {
       title: "Tickets de mantenimiento",
@@ -105,12 +105,12 @@ const FeatureDetails = () => {
         return "text-blue-600";
       case "orange":
         return "text-orange-600";
+      case "sky":
+        return "text-sky-600";
       case "green":
         return "text-green-600";
       case "purple":
         return "text-purple-600";
-      case "purple":
-        return "text-gray-600";
       case "red":
         return "text-red-600";
       case "rose":

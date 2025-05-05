@@ -225,12 +225,12 @@ const AIFeatures = () => {
         {/* Tech Visualization */}
         <section className="py-16 bg-gradient-to-b from-white to-indigo-50">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="lg:grid lg:grid-cols-2 lg:gap-8 items-center">
+            <div className="lg:grid lg:grid-cols-1 lg:gap-8 items-center">
               <div>
-                <h2 className="text-3xl font-extrabold text-gray-900 sm:text-4xl">
+                <h2 className="text-3xl font-extrabold text-gray-900 sm:text-4xl text-center">
                   Tecnología de vanguardia
                 </h2>
-                <p className="mt-4 text-lg text-gray-500">
+                <p className="mt-4 text-lg text-gray-500 text-center">
                   Estamos trabajando en integrar capacidades avanzadas de
                   Inteligencia Artificial para revolucionar la forma en que
                   gestionas tu condominio.
@@ -264,17 +264,6 @@ const AIFeatures = () => {
                       </li>
                     ))}
                   </ul>
-                </div>
-              </div>
-              <div className="mt-10 lg:mt-0">
-                <div className="rounded-xl overflow-hidden">
-                  <div className="h-full w-full bg-white shadow-xl rounded-lg flex items-center justify-center p-6">
-                    <img
-                      src="https://res.cloudinary.com/dz5tntwl1/image/upload/v1746336141/OmniPixel/ChatGPT_Image_3_may_2025_11_21_02_p.m._1_zpebsd.png"
-                      alt="Interfaz de IA de EstateAdmin"
-                      className="h-full w-full rounded-lg"
-                    />
-                  </div>
                 </div>
               </div>
             </div>
