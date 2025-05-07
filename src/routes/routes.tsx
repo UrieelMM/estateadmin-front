@@ -25,6 +25,11 @@ import PettyCashTransactions from "../presentation/screens/dashboard/financialIn
 import PettyCashAudits from "../presentation/screens/dashboard/financialIncome/PettyCash/components/PettyCashAudits";
 import PettyCashHistory from "../presentation/screens/dashboard/financialIncome/PettyCash/components/PettyCashHistory";
 import PettyCashFinalize from "../presentation/screens/dashboard/financialIncome/PettyCash/components/PettyCashFinalize";
+import InventoryCategories from "../presentation/screens/dashboard/inventory/InventoryCategories";
+import InventoryItemDetail from "../presentation/screens/dashboard/inventory/InventoryItemDetail";
+import InventoryList from "../presentation/screens/dashboard/inventory/InventoryList";
+import InventoryMovements from "../presentation/screens/dashboard/inventory/InventoryMovements";
+import InventoryAlerts from "../presentation/screens/dashboard/inventory/InventoryAlerts";
 
 export const routesApp = [
   {
@@ -215,5 +220,40 @@ export const routesApp = [
     title: "Finalizar Caja",
     description: "Finalizar caja actual y crear nueva",
     component: <PettyCashFinalize />,
+  },
+  {
+    to: "/dashboard/inventory",
+    icon: "fa-solid fa-boxes-stacked",
+    title: "Inventario",
+    description: "Gestión de inventario del condominio",
+    component: <InventoryList />,
+  },
+  {
+    to: "/dashboard/inventory/categories",
+    icon: "fa-solid fa-tags",
+    title: "Categorías de Inventario",
+    description: "Gestión de categorías de inventario",
+    component: <InventoryCategories />,
+  },
+  {
+    to: "/dashboard/inventory/item/:id",
+    icon: "fa-solid fa-box",
+    title: "Detalle de Item",
+    description: "Información detallada del ítem",
+    component: <InventoryItemDetail />,
+  },
+  {
+    to: "/dashboard/inventory/movements",
+    icon: "fa-solid fa-arrows-rotate",
+    title: "Movimientos de Inventario",
+    description: "Historial de movimientos de inventario",
+    component: <InventoryMovements />,
+  },
+  {
+    to: "/dashboard/inventory/alerts",
+    icon: "fa-solid fa-triangle-exclamation",
+    title: "Alertas de Stock",
+    description: "Items con stock bajo",
+    component: <InventoryAlerts />,
   },
 ];
