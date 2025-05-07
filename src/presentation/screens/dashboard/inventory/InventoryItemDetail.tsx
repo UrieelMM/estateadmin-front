@@ -2,13 +2,14 @@ import React, { useEffect } from "react";
 import { useParams, useNavigate, Link, useLocation } from "react-router-dom";
 import useInventoryStore, {
   ItemStatus,
-  InventoryItem,
+  InventoryItemFormData,
 } from "../../../../store/inventoryStore";
 import Modal from "../../../../components/Modal";
 import StockOperationModal from "./components/StockOperationModal";
 import StatusBadge from "./components/StatusBadge";
 import TypeBadge from "./components/TypeBadge";
 import InventoryItemForm from "./components/InventoryItemForm";
+import { formatCurrencyInventory } from "../../../../utils/curreyncy";
 
 const InventoryItemDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -61,6 +62,11 @@ const InventoryItemDetail: React.FC = () => {
     }
   }, [id, items, setSelectedItem, fetchMovements, navigate]);
 
+  // Monitorear los movimientos cargados
+  useEffect(() => {
+    console.log("Movimientos actualizados:", movements);
+  }, [movements]);
+
   // Limpiar el ítem seleccionado al desmontar el componente
   useEffect(() => {
     return () => {
@@ -107,7 +113,7 @@ const InventoryItemDetail: React.FC = () => {
     }
   };
 
-  const handleEditItem = async (data: Partial<InventoryItem>) => {
+  const handleEditItem = async (data: Partial<InventoryItemFormData>) => {
     if (!selectedItem) return;
     setSubmitLoading(true);
     const success = await updateItem(selectedItem.id, data);
@@ -131,6 +137,12 @@ const InventoryItemDetail: React.FC = () => {
 
   return (
     <div className="container mx-auto px-4 py-6">
+      <style>{`
+        .image-modal-hidden {
+          display: none !important;
+        }
+      `}</style>
+
       {/* Cabecera con botones de acción */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4">
         <div>
@@ -287,8 +299,8 @@ const InventoryItemDetail: React.FC = () => {
                   className={`text-xl font-bold ${
                     selectedItem.stock <= selectedItem.minStock
                       ? "text-red-500"
-                      : selectedItem.stock <= selectedItem.minStock * 1.2
-                      ? "text-yellow-500"
+                      : selectedItem.stock <= selectedItem.minStock * 1.5
+                      ? "text-yellow-400"
                       : "text-white"
                   }`}
                 >
@@ -299,25 +311,34 @@ const InventoryItemDetail: React.FC = () => {
                     </span>
                   )}
                 </p>
+              </div>
+
+              <div>
+                <h3 className="text-sm font-medium text-gray-400 mb-1">
+                  Precio
+                </h3>
+                <p className="text-xl font-bold text-white">
+                  {formatCurrencyInventory(selectedItem.price)}
+                </p>
                 <p className="text-sm text-gray-400">
                   Mínimo: {selectedItem.minStock}
                 </p>
               </div>
 
-              {selectedItem.price !== undefined && (
-                <div>
-                  <h3 className="text-sm font-medium text-gray-400 mb-1">
-                    Precio unitario
-                  </h3>
-                  <p className="text-white">
-                    ${selectedItem.price.toFixed(2)}
-                    <span className="text-green-500 ml-2">
-                      (Total: $
-                      {(selectedItem.price * selectedItem.stock).toFixed(2)})
-                    </span>
-                  </p>
-                </div>
-              )}
+              {selectedItem.price !== undefined &&
+                selectedItem.price !== null && (
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-400 mb-1">
+                      Precio unitario
+                    </h3>
+                    <p className="text-white">
+                      {formatCurrencyInventory(selectedItem.price)}
+                      <span className="text-green-500 ml-2">
+                        (Total: {formatCurrencyInventory(selectedItem.price * selectedItem.stock)})
+                      </span>
+                    </p>
+                  </div>
+                )}
 
               {selectedItem.purchaseDate && (
                 <div>
@@ -380,6 +401,64 @@ const InventoryItemDetail: React.FC = () => {
               </div>
             )}
           </div>
+
+          {/* Galería de Imágenes */}
+          {selectedItem.images && selectedItem.images.length > 0 && (
+            <div className="dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
+              <h2 className="text-xl font-semibold text-white mb-4 pb-2 border-b border-gray-700">
+                Imágenes del producto
+              </h2>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {selectedItem.images.map((image, index) => (
+                  <div key={index} className="relative group">
+                    <img
+                      src={image}
+                      alt={`${selectedItem.name} - Imagen ${index + 1}`}
+                      className="h-40 w-full object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                      onClick={() => {
+                        // Abrir modal con imagen ampliada
+                        document
+                          .getElementById(`modal-image-${index}`)
+                          ?.classList.remove("image-modal-hidden");
+                      }}
+                    />
+
+                    {/* Modal para imagen ampliada */}
+                    <div
+                      id={`modal-image-${index}`}
+                      className="image-modal-hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80"
+                      onClick={(e) => {
+                        // Cerrar modal al hacer clic fuera de la imagen
+                        if (e.target === e.currentTarget) {
+                          document
+                            .getElementById(`modal-image-${index}`)
+                            ?.classList.add("image-modal-hidden");
+                        }
+                      }}
+                    >
+                      <div className="relative max-w-4xl max-h-[90vh]">
+                        <img
+                          src={image}
+                          alt={`${selectedItem.name} - Imagen ${index + 1}`}
+                          className="max-h-[90vh] max-w-full object-contain"
+                        />
+                        <button
+                          className="absolute top-4 right-4 bg-white bg-opacity-20 hover:bg-opacity-30 text-white rounded-full p-2 transition-all"
+                          onClick={() =>
+                            document
+                              .getElementById(`modal-image-${index}`)
+                              ?.classList.add("image-modal-hidden")
+                          }
+                        >
+                          <i className="fas fa-times"></i>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Movimientos recientes */}
           <div className="dark:bg-gray-800 rounded-lg shadow-lg p-6">

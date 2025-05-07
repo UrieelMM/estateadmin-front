@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { InventoryItem, ItemStatus } from "../../../../../store/inventoryStore";
 import TypeBadge from "./TypeBadge";
 import StatusBadge from "./StatusBadge";
+import { formatCurrencyInventory } from "../../../../../utils/curreyncy";
 
 interface Column {
   id: string;
@@ -42,14 +43,7 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
         id: "name",
         label: "Nombre",
         sortable: true,
-        render: (item) => (
-          <Link
-            to={`/dashboard/inventory/item/${item.id}`}
-            className="font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300"
-          >
-            {item.name}
-          </Link>
-        ),
+        render: (item) => item.name,
       },
       {
         id: "type",
@@ -98,86 +92,18 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
         ),
       },
       {
+        id: "price",
+        label: "Precio",
+        sortable: true,
+        render: (item) => formatCurrencyInventory(item.price),
+      },
+      {
         id: "status",
         label: "Estado",
         sortable: true,
         render: (item) => <StatusBadge status={item.status} />,
       },
-      {
-        id: "actions",
-        label: "Acciones",
-        sortable: false,
-        render: (item) => (
-          <div className="flex space-x-2">
-            <button
-              onClick={() => onEdit(item)}
-              className="text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300"
-              title="Editar"
-            >
-              <i className="fas fa-edit"></i>
-            </button>
 
-            <button
-              onClick={() => onAddStock(item.id)}
-              className="text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300"
-              title="Agregar stock"
-            >
-              <i className="fas fa-plus-circle"></i>
-            </button>
-
-            <button
-              onClick={() => onConsumeStock(item.id)}
-              className="text-yellow-600 hover:text-yellow-700 dark:text-yellow-400 dark:hover:text-yellow-300"
-              title="Consumir stock"
-              disabled={item.stock <= 0}
-            >
-              <i className="fas fa-minus-circle"></i>
-            </button>
-
-            <div className="relative group">
-              <button
-                className="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white"
-                title="Más opciones"
-              >
-                <i className="fas fa-ellipsis-v"></i>
-              </button>
-              <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg py-1 z-10 hidden group-hover:block">
-                <button
-                  onClick={() =>
-                    onChangeStatus(
-                      item.id,
-                      item.status === ItemStatus.ACTIVE
-                        ? ItemStatus.INACTIVE
-                        : ItemStatus.ACTIVE
-                    )
-                  }
-                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700 w-full text-left"
-                >
-                  {item.status === ItemStatus.ACTIVE ? "Desactivar" : "Activar"}
-                </button>
-
-                {item.status !== ItemStatus.MAINTENANCE && (
-                  <button
-                    onClick={() =>
-                      onChangeStatus(item.id, ItemStatus.MAINTENANCE)
-                    }
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700 w-full text-left"
-                  >
-                    Marcar en mantenimiento
-                  </button>
-                )}
-
-                <button
-                  onClick={() => onDelete(item.id)}
-                  className="block px-4 py-2 text-sm text-red-600 hover:bg-gray-100 dark:text-red-400 dark:hover:bg-gray-700 w-full text-left"
-                >
-                  Eliminar
-                </button>
-              </div>
-            </div>
-          </div>
-        ),
-      },
     ],
     [onEdit, onDelete, onChangeStatus, onAddStock, onConsumeStock]
   );
@@ -272,13 +198,15 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
                 paginatedItems.map((item) => (
                   <tr
                     key={item.id}
-                    className="border-b border-gray-200 dark:border-gray-700 bg-white hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-100"
+                    className="border-b border-gray-200 dark:border-gray-700 bg-white hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-100 cursor-pointer"
                   >
+                    <Link to={`/dashboard/inventory/item/${item.id}`} className="contents">
                     {columns.map((column) => (
                       <td key={`${item.id}-${column.id}`} className="px-6 py-4">
                         {column.render(item)}
                       </td>
                     ))}
+                    </Link>
                   </tr>
                 ))
               ) : (

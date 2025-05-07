@@ -1,15 +1,16 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import {
   InventoryItem,
   ItemType,
   ItemStatus,
   Category,
+  InventoryItemFormData,
 } from "../../../../../store/inventoryStore";
 
 interface InventoryItemFormProps {
   item?: Partial<InventoryItem>;
   categories: Category[];
-  onSubmit: (data: Partial<InventoryItem>) => void;
+  onSubmit: (data: Partial<InventoryItemFormData>) => void;
   onCancel: () => void;
   loading: boolean;
 }
@@ -24,6 +25,8 @@ const InventoryItemForm: React.FC<InventoryItemFormProps> = ({
   // Estado para el formulario multi-step
   const [step, setStep] = useState(1);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [uploadedImages, setUploadedImages] = useState<File[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Estado para el formulario
   const [formData, setFormData] = useState<Partial<InventoryItem>>({
@@ -64,9 +67,16 @@ const InventoryItemForm: React.FC<InventoryItemFormProps> = ({
     const { name, value, type } = e.target;
 
     if (type === "number") {
-      setFormData({ ...formData, [name]: parseFloat(value) || 0 });
+      setFormData({ ...formData, [name]: value ? parseFloat(value) : 0 });
     } else if (type === "date") {
-      setFormData({ ...formData, [name]: value ? new Date(value) : undefined });
+      // Si el valor está vacío, simplemente no incluimos esta propiedad
+      if (value) {
+        setFormData({ ...formData, [name]: new Date(value) });
+      } else {
+        const newFormData = { ...formData };
+        delete newFormData[name as keyof typeof newFormData];
+        setFormData(newFormData);
+      }
     } else {
       setFormData({ ...formData, [name]: value });
     }
@@ -115,10 +125,72 @@ const InventoryItemForm: React.FC<InventoryItemFormProps> = ({
 
   // Manejar envío del formulario
   const handleSubmit = (e: React.FormEvent | React.MouseEvent) => {
-    if (e) e.preventDefault();
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation(); // Detener cualquier propagación del evento
+    }
+
+    console.log("Intentando enviar formulario...");
 
     if (validateForm(step)) {
-      onSubmit(formData);
+      console.log("Formulario validado correctamente");
+
+      // Procesar fechas antes de enviar para evitar valores undefined en Firestore
+      const processedData: Record<string, any> = { ...formData };
+
+      // Convertir fechas vacías a null (Firestore acepta null pero no undefined)
+      if (!processedData.purchaseDate) {
+        processedData.purchaseDate = null;
+      }
+
+      if (!processedData.expirationDate) {
+        processedData.expirationDate = null;
+      }
+
+      // Asegurarse que otros valores opcionales no sean undefined
+      if (processedData.price === undefined) {
+        processedData.price = null;
+      }
+
+      if (processedData.location === undefined) {
+        processedData.location = "";
+      }
+
+      if (processedData.description === undefined) {
+        processedData.description = "";
+      }
+
+      if (processedData.serialNumber === undefined) {
+        processedData.serialNumber = "";
+      }
+
+      if (processedData.model === undefined) {
+        processedData.model = "";
+      }
+
+      if (processedData.brand === undefined) {
+        processedData.brand = "";
+      }
+
+      if (processedData.supplier === undefined) {
+        processedData.supplier = "";
+      }
+
+      if (processedData.notes === undefined) {
+        processedData.notes = "";
+      }
+
+      // En lugar de crear URLs locales, enviamos los archivos File directamente
+      // para que sean procesados por el store
+      const dataToSubmit = {
+        ...processedData,
+        images: uploadedImages,
+      };
+
+      console.log("Datos a enviar:", dataToSubmit);
+      onSubmit(dataToSubmit);
+    } else {
+      console.log("Error de validación en el formulario");
     }
   };
 
@@ -137,6 +209,39 @@ const InventoryItemForm: React.FC<InventoryItemFormProps> = ({
   const formatDateForInput = (date?: Date): string => {
     if (!date) return "";
     return date instanceof Date ? date.toISOString().split("T")[0] : "";
+  };
+
+  // Manejar carga de imágenes
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files) return;
+
+    const files = Array.from(e.target.files);
+    setUploadedImages((prev) => [...prev, ...files]);
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const files = Array.from(e.dataTransfer.files);
+      setUploadedImages((prev) => [...prev, ...files]);
+    }
+  };
+
+  const handleSelectFiles = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  const removeImage = (index: number) => {
+    setUploadedImages((prev) => prev.filter((_, i) => i !== index));
   };
 
   return (
@@ -168,7 +273,7 @@ const InventoryItemForm: React.FC<InventoryItemFormProps> = ({
         </div>
       </div>
 
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={(e) => e.preventDefault()}>
         {/* Paso 1: Información básica */}
         {step === 1 && (
           <div className="space-y-4">
@@ -478,12 +583,15 @@ const InventoryItemForm: React.FC<InventoryItemFormProps> = ({
               ></textarea>
             </div>
 
-            {/* Aquí se podría implementar un cargador de imágenes */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Imágenes
               </label>
-              <div className="border border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center">
+              <div
+                className="border border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center"
+                onDragOver={handleDragOver}
+                onDrop={handleDrop}
+              >
                 <i className="fas fa-cloud-upload-alt text-gray-400 text-3xl mb-3"></i>
                 <p className="text-gray-600 dark:text-gray-400">
                   Arrastra imágenes aquí o haz clic para seleccionar archivos
@@ -491,13 +599,44 @@ const InventoryItemForm: React.FC<InventoryItemFormProps> = ({
                 <p className="text-gray-500 dark:text-gray-500 text-xs mt-1">
                   PNG, JPG o JPEG (máx. 5MB)
                 </p>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileChange}
+                  multiple
+                  accept="image/png, image/jpeg, image/jpg"
+                  className="hidden"
+                />
                 <button
                   type="button"
+                  onClick={handleSelectFiles}
                   className="mt-3 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600"
                 >
                   Seleccionar archivos
                 </button>
               </div>
+
+              {/* Mostrar imágenes cargadas */}
+              {uploadedImages.length > 0 && (
+                <div className="mt-4 grid grid-cols-2 md:grid-cols-3 gap-4">
+                  {uploadedImages.map((file, index) => (
+                    <div key={index} className="relative group">
+                      <img
+                        src={URL.createObjectURL(file)}
+                        alt={`Imagen ${index + 1}`}
+                        className="h-24 w-full object-cover rounded-lg"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeImage(index)}
+                        className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <i className="fas fa-times"></i>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         )}

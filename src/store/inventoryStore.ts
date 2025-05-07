@@ -13,6 +13,13 @@ import {
   orderBy,
 } from "firebase/firestore";
 import { getAuth, getIdTokenResult } from "firebase/auth";
+import {
+  getStorage,
+  ref as storageRef,
+  uploadBytes,
+  getDownloadURL,
+} from "firebase/storage";
+import toast from "react-hot-toast";
 
 // Tipos de item
 export enum ItemType {
@@ -61,6 +68,15 @@ export interface InventoryItem {
   updatedAt: Date;
   createdBy: string;
   updatedBy: string;
+}
+
+// Interfaz extendida para permitir archivos File en las imágenes al crear/actualizar
+export interface InventoryItemFormData
+  extends Omit<
+    InventoryItem,
+    "images" | "id" | "createdAt" | "updatedAt" | "createdBy" | "updatedBy"
+  > {
+  images?: Array<string | File>;
 }
 
 // Movimientos de inventario (audit log)
@@ -119,13 +135,11 @@ interface InventoryStore {
 
   // Métodos para items
   fetchItems: () => Promise<void>;
-  addItem: (
-    item: Omit<
-      InventoryItem,
-      "id" | "createdAt" | "updatedAt" | "createdBy" | "updatedBy"
-    >
-  ) => Promise<string | null>;
-  updateItem: (id: string, updates: Partial<InventoryItem>) => Promise<boolean>;
+  addItem: (item: InventoryItemFormData) => Promise<string | null>;
+  updateItem: (
+    id: string,
+    updates: Partial<InventoryItemFormData>
+  ) => Promise<boolean>;
   deleteItem: (id: string) => Promise<boolean>;
   setSelectedItem: (item: InventoryItem | null) => void;
 
@@ -206,13 +220,11 @@ const useInventoryStore = create<InventoryStore>()((set, get) => ({
       }
 
       const db = getFirestore();
-      // Usamos doc para inventory para que sea un documento y no una colección
-      const inventoryDoc = doc(
+      // Corregimos la estructura para que sea una colección válida (número impar de segmentos)
+      const itemsRef = collection(
         db,
-        `clients/${clientId}/condominiums/${condominiumId}/inventory`,
-        "data"
+        `clients/${clientId}/condominiums/${condominiumId}/inventory_items`
       );
-      const itemsRef = collection(inventoryDoc, "items");
 
       const q = query(itemsRef, orderBy("createdAt", "desc"));
       const snapshot = await getDocs(q);
@@ -233,6 +245,7 @@ const useInventoryStore = create<InventoryStore>()((set, get) => ({
       // Verificar alertas de stock
       get().checkStockAlerts();
     } catch (error) {
+      console.error("Error al cargar items:", error);
       set({ error: (error as Error).message });
     } finally {
       set({ loading: false });
@@ -256,16 +269,17 @@ const useInventoryStore = create<InventoryStore>()((set, get) => ({
       }
 
       const db = getFirestore();
-      // Usamos doc para inventory para que sea un documento y no una colección
-      const inventoryDoc = doc(
+      // Corregimos la estructura para que sea una colección válida (número impar de segmentos)
+      const itemsRef = collection(
         db,
-        `clients/${clientId}/condominiums/${condominiumId}/inventory`,
-        "data"
+        `clients/${clientId}/condominiums/${condominiumId}/inventory_items`
       );
-      const itemsRef = collection(inventoryDoc, "items");
 
       // Obtener el nombre de la categoría
-      const categoriesRef = collection(inventoryDoc, "categories");
+      const categoriesRef = collection(
+        db,
+        `clients/${clientId}/condominiums/${condominiumId}/inventory_categories`
+      );
       const categoryRef = doc(categoriesRef, item.category);
       const categorySnapshot = await getDoc(categoryRef);
       const categoryName = categorySnapshot.exists()
@@ -273,21 +287,133 @@ const useInventoryStore = create<InventoryStore>()((set, get) => ({
         : "Categoría desconocida";
 
       const now = new Date();
-      const newItem = {
-        ...item,
+
+      // Preparamos el item para Firestore, asegurándonos que no haya valores undefined
+      // Asegurándonos de mantener la compatibilidad con la interfaz InventoryItem
+      const newItem: Omit<InventoryItem, "id"> = {
+        name: item.name || "",
+        description: item.description || "",
+        type: item.type,
+        category: item.category,
         categoryName,
+        location: item.location || "",
+        status: item.status,
+        stock: item.stock || 0,
+        minStock: item.minStock || 0,
+        price: item.price, // Mantenemos undefined si no existe, para compatibilidad con el tipo
+        purchaseDate: item.purchaseDate, // Mantenemos undefined si no existe
+        expirationDate: item.expirationDate, // Mantenemos undefined si no existe
+        serialNumber: item.serialNumber || "",
+        model: item.model || "",
+        brand: item.brand || "",
+        supplier: item.supplier || "",
+        notes: item.notes || "",
+        images: [], // Inicializamos con array vacío, luego añadiremos las URLs
         createdAt: now,
         updatedAt: now,
         createdBy: user.uid,
         updatedBy: user.uid,
       };
 
-      const docRef = await addDoc(itemsRef, newItem);
-      const addedItem = { id: docRef.id, ...newItem };
+      // Para Firestore, convertimos undefined a null
+      const firestoreItem: Record<string, any> = { ...newItem };
+      if (firestoreItem.price === undefined) firestoreItem.price = null;
+      if (firestoreItem.purchaseDate === undefined)
+        firestoreItem.purchaseDate = null;
+      if (firestoreItem.expirationDate === undefined)
+        firestoreItem.expirationDate = null;
+
+      // Crear el documento primero para obtener el ID
+      console.log("Creando documento de inventario...");
+      const docRef = await addDoc(itemsRef, firestoreItem);
+      const itemId = docRef.id;
+      console.log("Item guardado con ID:", itemId);
+
+      // Si hay archivos de imagen, los subimos a Storage
+      const imageUrls: string[] = [];
+      if (item.images && item.images.length > 0) {
+        console.log(`Subiendo ${item.images.length} imágenes al Storage...`);
+        const storage = getStorage();
+
+        try {
+          // Subir cada imagen y obtener la URL
+          const imageUploads = item.images.map(async (imageFile, index) => {
+            // Si ya es una URL (string), lo añadimos directamente
+            if (typeof imageFile === "string") {
+              return imageFile;
+            }
+
+            // Si es un archivo, lo subimos
+            if (imageFile instanceof File) {
+              const basePath = `clients/${clientId}/condominiums/${condominiumId}/inventory_items/${itemId}`;
+              const imagePath = `${basePath}/${index}_${Date.now()}_${
+                imageFile.name
+              }`;
+              const imageRef = storageRef(storage, imagePath);
+
+              // Subir el archivo
+              await uploadBytes(imageRef, imageFile);
+
+              // Obtener la URL pública
+              const downloadUrl = await getDownloadURL(imageRef);
+              console.log(`Imagen ${index} subida. URL:`, downloadUrl);
+              return downloadUrl;
+            }
+
+            return null;
+          });
+
+          // Esperar a que todas las imágenes se suban
+          const uploadedUrls = await Promise.all(imageUploads);
+          // Filtrar posibles valores null y añadir a imageUrls
+          imageUrls.push(
+            ...(uploadedUrls.filter((url) => url !== null) as string[])
+          );
+        } catch (error: any) {
+          console.error("Error al subir imágenes:", error);
+
+          // Mostrar error específico según el código de error
+          if (error.code === "storage/unauthorized") {
+            toast.error("No tienes permisos para subir archivos al inventario");
+          } else if (error.code === "storage/object-too-large") {
+            toast.error(
+              "Una o más imágenes son demasiado grandes. El límite es de 15MB"
+            );
+          } else if (error.code === "storage/retry-limit-exceeded") {
+            toast.error("Error de conexión al intentar subir las imágenes");
+          } else {
+            toast.error(
+              `Error al subir imágenes: ${error.message || "Error desconocido"}`
+            );
+          }
+
+          // Lanzamos el error sin usar toast.error otra vez en el siguiente catch
+          set({ error: error.message || "Error desconocido" });
+          return null;
+        }
+      }
+
+      // Actualizar el documento con las URLs de las imágenes
+      if (imageUrls.length > 0) {
+        console.log("Actualizando documento con URLs de imágenes:", imageUrls);
+        const itemRef = doc(itemsRef, itemId);
+        await updateDoc(itemRef, {
+          images: imageUrls,
+        });
+
+        // Actualizar también nuestro objeto newItem
+        newItem.images = imageUrls;
+      }
+
+      // Creamos el objeto con ID para actualizar el estado
+      const addedItem: InventoryItem = {
+        ...newItem,
+        id: itemId,
+      };
 
       // Registrar movimiento de creación
       await get().addMovement({
-        itemId: docRef.id,
+        itemId: itemId,
         itemName: item.name,
         type: MovementType.CREATED,
         newQuantity: item.stock,
@@ -303,9 +429,25 @@ const useInventoryStore = create<InventoryStore>()((set, get) => ({
       // Verificar alertas de stock
       get().checkStockAlerts();
 
-      return docRef.id;
-    } catch (error) {
-      set({ error: (error as Error).message });
+      return itemId;
+    } catch (error: any) {
+      console.error("Error al añadir item:", error);
+
+      // Verificar si ya se mostró un toast desde el bloque catch interno
+      if (error.code && error.code.startsWith("storage/")) {
+        // Si es un error de storage, ya se mostró un toast en el catch interno
+        set({ error: (error as Error).message });
+      } else {
+        // Para otros tipos de errores, mostrar toast
+        if (!toast.error) {
+          set({ error: (error as Error).message });
+        } else {
+          toast.error(
+            `Error al añadir item: ${error.message || "Error desconocido"}`
+          );
+        }
+      }
+
       return null;
     } finally {
       set({ loading: false });
@@ -329,13 +471,10 @@ const useInventoryStore = create<InventoryStore>()((set, get) => ({
       }
 
       const db = getFirestore();
-      // Usamos doc para inventory para que sea un documento y no una colección
-      const inventoryDoc = doc(
+      const itemsRef = collection(
         db,
-        `clients/${clientId}/condominiums/${condominiumId}/inventory`,
-        "data"
+        `clients/${clientId}/condominiums/${condominiumId}/inventory_items`
       );
-      const itemsRef = collection(inventoryDoc, "items");
       const itemRef = doc(itemsRef, id);
 
       // Obtener el item actual para comparar cambios
@@ -347,7 +486,10 @@ const useInventoryStore = create<InventoryStore>()((set, get) => ({
       // Si se actualiza la categoría, obtener el nuevo nombre
       let categoryName = oldItem.categoryName;
       if (updates.category && updates.category !== oldItem.category) {
-        const categoriesRef = collection(inventoryDoc, "categories");
+        const categoriesRef = collection(
+          db,
+          `clients/${clientId}/condominiums/${condominiumId}/inventory_categories`
+        );
         const categoryRef = doc(categoriesRef, updates.category);
         const categorySnapshot = await getDoc(categoryRef);
         if (categorySnapshot.exists()) {
@@ -356,12 +498,89 @@ const useInventoryStore = create<InventoryStore>()((set, get) => ({
         }
       }
 
-      const updatedItem = {
+      // Crear una copia de las actualizaciones para trabajar con ella
+      const updatedItem: Record<string, any> = {
         ...updates,
         updatedAt: new Date(),
         updatedBy: user.uid,
       };
 
+      // Si hay nuevas imágenes para subir
+      if (updates.images && Array.isArray(updates.images)) {
+        const imageUrls: string[] = [];
+
+        // Filtrar imágenes que ya son URLs (existentes) y archivos nuevos
+        const existingUrls = updates.images.filter(
+          (img) => typeof img === "string"
+        ) as string[];
+        const newImages = updates.images.filter(
+          (img) => img instanceof File
+        ) as File[];
+
+        // Añadir URLs existentes directamente
+        imageUrls.push(...existingUrls);
+
+        // Subir nuevas imágenes si las hay
+        if (newImages.length > 0) {
+          console.log(`Subiendo ${newImages.length} imágenes nuevas...`);
+          const storage = getStorage();
+
+          try {
+            const imageUploads = newImages.map(async (imageFile, index) => {
+              const basePath = `clients/${clientId}/condominiums/${condominiumId}/inventory_items/${id}`;
+              const imagePath = `${basePath}/${index}_${Date.now()}_${
+                imageFile.name
+              }`;
+              const imageRef = storageRef(storage, imagePath);
+
+              // Subir el archivo
+              await uploadBytes(imageRef, imageFile);
+
+              // Obtener la URL pública
+              return await getDownloadURL(imageRef);
+            });
+
+            // Esperar a que todas las imágenes se suban
+            const newUrls = await Promise.all(imageUploads);
+            imageUrls.push(...newUrls);
+          } catch (error: any) {
+            console.error("Error al subir imágenes:", error);
+
+            // Mostrar error específico según el código de error
+            if (error.code === "storage/unauthorized") {
+              toast.error(
+                "No tienes permisos para subir archivos al inventario"
+              );
+            } else if (error.code === "storage/object-too-large") {
+              toast.error(
+                "Una o más imágenes son demasiado grandes. El límite es de 15MB"
+              );
+            } else if (error.code === "storage/retry-limit-exceeded") {
+              toast.error("Error de conexión al intentar subir las imágenes");
+            } else {
+              toast.error(
+                `Error al subir imágenes: ${
+                  error.message || "Error desconocido"
+                }`
+              );
+            }
+
+            // Lanzamos el error sin usar toast.error otra vez en el siguiente catch
+            set({ error: error.message || "Error desconocido" });
+            return false;
+          }
+        }
+
+        // Actualizar la propiedad images con todas las URLs
+        if (imageUrls.length > 0) {
+          updatedItem.images = imageUrls;
+        }
+      }
+
+      // Eliminar propiedades que no deben ir a Firestore
+      delete updatedItem._id; // Por si acaso viene del front
+
+      // Actualizar el documento en Firestore
       await updateDoc(itemRef, updatedItem);
 
       // Registrar cambios importantes en el log de movimientos
@@ -414,8 +633,24 @@ const useInventoryStore = create<InventoryStore>()((set, get) => ({
       get().checkStockAlerts();
 
       return true;
-    } catch (error) {
-      set({ error: (error as Error).message });
+    } catch (error: any) {
+      console.error("Error al actualizar item:", error);
+
+      // Verificar si ya se mostró un toast desde el bloque catch interno
+      if (error.code && error.code.startsWith("storage/")) {
+        // Si es un error de storage, ya se mostró un toast en el catch interno
+        set({ error: (error as Error).message });
+      } else {
+        // Para otros tipos de errores, mostrar toast
+        if (!toast.error) {
+          set({ error: (error as Error).message });
+        } else {
+          toast.error(
+            `Error al actualizar item: ${error.message || "Error desconocido"}`
+          );
+        }
+      }
+
       return false;
     } finally {
       set({ loading: false });
@@ -439,15 +674,12 @@ const useInventoryStore = create<InventoryStore>()((set, get) => ({
       }
 
       const db = getFirestore();
-      // Usamos doc para inventory para que sea un documento y no una colección
-      const inventoryDoc = doc(
-        db,
-        `clients/${clientId}/condominiums/${condominiumId}/inventory`,
-        "data"
-      );
 
       // Verificar si hay movimientos asociados a este ítem
-      const movementsRef = collection(inventoryDoc, "movements");
+      const movementsRef = collection(
+        db,
+        `clients/${clientId}/condominiums/${condominiumId}/inventory_movements`
+      );
       const q = query(movementsRef, where("itemId", "==", id));
       const movementsSnapshot = await getDocs(q);
 
@@ -458,7 +690,10 @@ const useInventoryStore = create<InventoryStore>()((set, get) => ({
 
       // Si hay movimientos, solo lo inactivamos
       if (!movementsSnapshot.empty) {
-        const itemsRef = collection(inventoryDoc, "items");
+        const itemsRef = collection(
+          db,
+          `clients/${clientId}/condominiums/${condominiumId}/inventory_items`
+        );
         const itemRef = doc(itemsRef, id);
 
         await updateDoc(itemRef, {
@@ -492,7 +727,10 @@ const useInventoryStore = create<InventoryStore>()((set, get) => ({
         }));
       } else {
         // Si no hay movimientos, eliminamos el ítem
-        const itemsRef = collection(inventoryDoc, "items");
+        const itemsRef = collection(
+          db,
+          `clients/${clientId}/condominiums/${condominiumId}/inventory_items`
+        );
         const itemRef = doc(itemsRef, id);
 
         await deleteDoc(itemRef);
@@ -507,8 +745,18 @@ const useInventoryStore = create<InventoryStore>()((set, get) => ({
       get().checkStockAlerts();
 
       return true;
-    } catch (error) {
-      set({ error: (error as Error).message });
+    } catch (error: any) {
+      console.error("Error al eliminar item:", error);
+
+      // Mostrar notificación amigable al usuario
+      if (!toast.error) {
+        set({ error: (error as Error).message });
+      } else {
+        toast.error(
+          `Error al eliminar item: ${error.message || "Error desconocido"}`
+        );
+      }
+
       return false;
     } finally {
       set({ loading: false });
@@ -536,12 +784,11 @@ const useInventoryStore = create<InventoryStore>()((set, get) => ({
       }
 
       const db = getFirestore();
-      const inventoryDoc = doc(
+      // Corregimos la estructura para que sea una colección válida (número impar de segmentos)
+      const categoriesRef = collection(
         db,
-        `clients/${clientId}/condominiums/${condominiumId}/inventory`,
-        "data"
+        `clients/${clientId}/condominiums/${condominiumId}/inventory_categories`
       );
-      const categoriesRef = collection(inventoryDoc, "categories");
 
       const snapshot = await getDocs(categoriesRef);
       const categories = snapshot.docs.map((doc) => ({
@@ -551,6 +798,7 @@ const useInventoryStore = create<InventoryStore>()((set, get) => ({
 
       set({ categories });
     } catch (error) {
+      console.error("Error al cargar categorías:", error);
       set({ error: (error as Error).message });
     } finally {
       set({ loading: false });
@@ -573,16 +821,15 @@ const useInventoryStore = create<InventoryStore>()((set, get) => ({
       }
 
       const db = getFirestore();
-      const inventoryDoc = doc(
+      // Corregimos la estructura para que sea una colección válida (número impar de segmentos)
+      const categoriesRef = collection(
         db,
-        `clients/${clientId}/condominiums/${condominiumId}/inventory`,
-        "data"
+        `clients/${clientId}/condominiums/${condominiumId}/inventory_categories`
       );
-      const categoriesRef = collection(inventoryDoc, "categories");
 
       console.log(
         "Intentando guardar categoría en:",
-        `clients/${clientId}/condominiums/${condominiumId}/inventory/data/categories`
+        `clients/${clientId}/condominiums/${condominiumId}/inventory_categories`
       );
       const docRef = await addDoc(categoriesRef, category);
       const addedCategory = { id: docRef.id, ...category };
@@ -617,12 +864,12 @@ const useInventoryStore = create<InventoryStore>()((set, get) => ({
       }
 
       const db = getFirestore();
-      const inventoryDoc = doc(
+      // Corregir la ruta para acceder directamente a categories
+      const categoriesRef = collection(
         db,
-        `clients/${clientId}/condominiums/${condominiumId}/inventory`,
-        "data"
+        `clients/${clientId}/condominiums/${condominiumId}/inventory_categories`
       );
-      const categoryRef = doc(collection(inventoryDoc, "categories"), id);
+      const categoryRef = doc(categoriesRef, id);
 
       await updateDoc(categoryRef, updates);
 
@@ -632,18 +879,14 @@ const useInventoryStore = create<InventoryStore>()((set, get) => ({
         if (oldCategory && oldCategory.name !== updates.name) {
           const itemsRef = collection(
             db,
-            `clients/${clientId}/condominiums/${condominiumId}/inventory/items`
+            `clients/${clientId}/condominiums/${condominiumId}/inventory_items`
           );
           const q = query(itemsRef, where("category", "==", id));
           const itemsSnapshot = await getDocs(q);
 
           // Actualizar el nombre de la categoría en cada ítem
           const batch = itemsSnapshot.docs.map(async (itemDoc) => {
-            const itemRef = doc(
-              db,
-              `clients/${clientId}/condominiums/${condominiumId}/inventory/items`,
-              itemDoc.id
-            );
+            const itemRef = doc(itemsRef, itemDoc.id);
             await updateDoc(itemRef, {
               categoryName: updates.name,
               updatedAt: new Date(),
@@ -685,6 +928,7 @@ const useInventoryStore = create<InventoryStore>()((set, get) => ({
 
       return true;
     } catch (error) {
+      console.error("Error al actualizar categoría:", error);
       set({ error: (error as Error).message });
       return false;
     } finally {
@@ -712,7 +956,7 @@ const useInventoryStore = create<InventoryStore>()((set, get) => ({
       // Verificar si hay ítems usando esta categoría
       const itemsRef = collection(
         db,
-        `clients/${clientId}/condominiums/${condominiumId}/inventory/items`
+        `clients/${clientId}/condominiums/${condominiumId}/inventory_items`
       );
       const q = query(itemsRef, where("category", "==", id));
       const itemsSnapshot = await getDocs(q);
@@ -723,13 +967,12 @@ const useInventoryStore = create<InventoryStore>()((set, get) => ({
         );
       }
 
-      // Usamos doc para inventory para que sea un documento y no una colección
-      const inventoryDoc = doc(
+      // Corregir la ruta para acceder directamente a categories
+      const categoriesRef = collection(
         db,
-        `clients/${clientId}/condominiums/${condominiumId}/inventory`,
-        "data"
+        `clients/${clientId}/condominiums/${condominiumId}/inventory_categories`
       );
-      const categoryRef = doc(collection(inventoryDoc, "categories"), id);
+      const categoryRef = doc(categoriesRef, id);
 
       await deleteDoc(categoryRef);
 
@@ -739,6 +982,7 @@ const useInventoryStore = create<InventoryStore>()((set, get) => ({
 
       return true;
     } catch (error) {
+      console.error("Error al eliminar categoría:", error);
       set({ error: (error as Error).message });
       return false;
     } finally {
@@ -763,13 +1007,13 @@ const useInventoryStore = create<InventoryStore>()((set, get) => ({
       }
 
       const db = getFirestore();
-      // Usamos doc para inventory para que sea un documento y no una colección
-      const inventoryDoc = doc(
+      // Corregimos la estructura para que sea una colección válida (número impar de segmentos)
+      const movementsRef = collection(
         db,
-        `clients/${clientId}/condominiums/${condominiumId}/inventory`,
-        "data"
+        `clients/${clientId}/condominiums/${condominiumId}/inventory_movements`
       );
-      const movementsRef = collection(inventoryDoc, "movements");
+
+      console.log("Buscando movimientos para itemId:", itemId);
 
       let q = query(movementsRef, orderBy("createdAt", "desc"));
 
@@ -783,14 +1027,22 @@ const useInventoryStore = create<InventoryStore>()((set, get) => ({
       }
 
       const snapshot = await getDocs(q);
-      const movements = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate(),
-      })) as InventoryMovement[];
+      console.log(`Se encontraron ${snapshot.docs.length} movimientos`);
 
+      const movements = snapshot.docs.map((doc) => {
+        const data = doc.data();
+        console.log("Datos del movimiento:", data);
+        return {
+          id: doc.id,
+          ...data,
+          createdAt: data.createdAt?.toDate(),
+        };
+      }) as InventoryMovement[];
+
+      console.log("Movimientos procesados:", movements);
       set({ movements });
     } catch (error) {
+      console.error("Error al cargar movimientos:", error);
       set({ error: (error as Error).message });
     } finally {
       set({ loadingMovements: false });
@@ -812,13 +1064,11 @@ const useInventoryStore = create<InventoryStore>()((set, get) => ({
       }
 
       const db = getFirestore();
-      // Usamos doc para inventory para que sea un documento y no una colección
-      const inventoryDoc = doc(
+      // Corregimos la estructura para que sea una colección válida (número impar de segmentos)
+      const movementsRef = collection(
         db,
-        `clients/${clientId}/condominiums/${condominiumId}/inventory`,
-        "data"
+        `clients/${clientId}/condominiums/${condominiumId}/inventory_movements`
       );
-      const movementsRef = collection(inventoryDoc, "movements");
 
       // Obtener el nombre del usuario
       const userDisplayName =
@@ -840,6 +1090,7 @@ const useInventoryStore = create<InventoryStore>()((set, get) => ({
 
       return true;
     } catch (error) {
+      console.error("Error al añadir movimiento:", error);
       set({ error: (error as Error).message });
       return false;
     }
@@ -877,7 +1128,16 @@ const useInventoryStore = create<InventoryStore>()((set, get) => ({
         return true;
       }
       return false;
-    } catch (error) {
+    } catch (error: any) {
+      console.error("Error al consumir item:", error);
+
+      // Mostrar notificación amigable al usuario
+      if (toast.error) {
+        toast.error(
+          `Error al consumir item: ${error.message || "Error desconocido"}`
+        );
+      }
+
       set({ error: (error as Error).message });
       return false;
     } finally {
@@ -911,7 +1171,16 @@ const useInventoryStore = create<InventoryStore>()((set, get) => ({
         return true;
       }
       return false;
-    } catch (error) {
+    } catch (error: any) {
+      console.error("Error al añadir stock:", error);
+
+      // Mostrar notificación amigable al usuario
+      if (toast.error) {
+        toast.error(
+          `Error al añadir stock: ${error.message || "Error desconocido"}`
+        );
+      }
+
       set({ error: (error as Error).message });
       return false;
     } finally {
@@ -943,7 +1212,16 @@ const useInventoryStore = create<InventoryStore>()((set, get) => ({
         return true;
       }
       return false;
-    } catch (error) {
+    } catch (error: any) {
+      console.error("Error al transferir item:", error);
+
+      // Mostrar notificación amigable al usuario
+      if (toast.error) {
+        toast.error(
+          `Error al transferir item: ${error.message || "Error desconocido"}`
+        );
+      }
+
       set({ error: (error as Error).message });
       return false;
     } finally {
@@ -975,7 +1253,16 @@ const useInventoryStore = create<InventoryStore>()((set, get) => ({
         return true;
       }
       return false;
-    } catch (error) {
+    } catch (error: any) {
+      console.error("Error al cambiar estado del item:", error);
+
+      // Mostrar notificación amigable al usuario
+      if (toast.error) {
+        toast.error(
+          `Error al cambiar estado: ${error.message || "Error desconocido"}`
+        );
+      }
+
       set({ error: (error as Error).message });
       return false;
     } finally {

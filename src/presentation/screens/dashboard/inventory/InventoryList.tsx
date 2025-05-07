@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from "react";
-import useInventoryStore from "../../../../store/inventoryStore";
-import { ItemStatus, InventoryItem } from "../../../../store/inventoryStore";
+import useInventoryStore, {
+  ItemStatus,
+  InventoryItem,
+  InventoryItemFormData,
+} from "../../../../store/inventoryStore";
 import FilterBar from "./components/FilterBar";
 import InventoryTable from "./components/InventoryTable";
 import InventoryItemForm from "./components/InventoryItemForm";
@@ -9,6 +12,8 @@ import Modal from "../../../../components/Modal";
 import KPICard from "./components/KPICard";
 import { Link, useLocation } from "react-router-dom";
 import ModalButton from "./components/ModalButton";
+import { formatCurrencyInventory } from "../../../../utils/curreyncy";
+
 
 const InventoryList: React.FC = () => {
   const {
@@ -52,11 +57,11 @@ const InventoryList: React.FC = () => {
   }, [isAddModalOpen]);
 
   // Handlers para modales
-  const handleAddItem = async (data: Partial<InventoryItem>) => {
+  const handleAddItem = async (data: Partial<InventoryItemFormData>) => {
     setSubmitLoading(true);
     const success = await addItem(
       data as Omit<
-        InventoryItem,
+        InventoryItemFormData,
         "id" | "createdAt" | "updatedAt" | "createdBy" | "updatedBy"
       >
     );
@@ -66,7 +71,7 @@ const InventoryList: React.FC = () => {
     }
   };
 
-  const handleEditItem = async (data: Partial<InventoryItem>) => {
+  const handleEditItem = async (data: Partial<InventoryItemFormData>) => {
     if (!selectedItem) return;
     setSubmitLoading(true);
     const success = await updateItem(selectedItem.id, data);
@@ -252,7 +257,7 @@ const InventoryList: React.FC = () => {
           />
           <KPICard
             title="Valor total"
-            value={`$${totalValue.toFixed(2)}`}
+            value={formatCurrencyInventory(totalValue)}
             icon="fa-dollar-sign"
             color="border-yellow-500"
           />
@@ -303,31 +308,19 @@ const InventoryList: React.FC = () => {
       </div>
 
       {/* Modales */}
-      {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-indigo-100 bg-opacity-20 dark:bg-indigo-100 dark:bg-opacity-20">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl overflow-hidden max-w-4xl w-full">
-            <div className="flex justify-between items-center border-b border-gray-200 dark:border-gray-700 p-4">
-              <h3 className="text-xl font-medium text-gray-800 dark:text-white">
-                Añadir ítem de inventario
-              </h3>
-              <button
-                onClick={() => setIsAddModalOpen(false)}
-                className="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white"
-              >
-                <i className="fas fa-times"></i>
-              </button>
-            </div>
-            <div>
-              <InventoryItemForm
-                categories={categories}
-                onSubmit={handleAddItem}
-                onCancel={() => setIsAddModalOpen(false)}
-                loading={submitLoading}
-              />
-            </div>
-          </div>
-        </div>
-      )}
+      <Modal
+        title="Añadir ítem de inventario"
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        size="xl"
+      >
+        <InventoryItemForm
+          categories={categories}
+          onSubmit={handleAddItem}
+          onCancel={() => setIsAddModalOpen(false)}
+          loading={submitLoading}
+        />
+      </Modal>
 
       <Modal
         title="Editar ítem de inventario"

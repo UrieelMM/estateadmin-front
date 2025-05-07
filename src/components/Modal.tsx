@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 
 interface ModalProps {
   title: string;
@@ -15,6 +15,25 @@ const Modal: React.FC<ModalProps> = ({
   size = "md",
   children,
 }) => {
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  // Añadir evento para cerrar modal con Escape
+  useEffect(() => {
+    const handleEscapeKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener("keydown", handleEscapeKey);
+    }
+
+    return () => {
+      document.removeEventListener("keydown", handleEscapeKey);
+    };
+  }, [isOpen, onClose]);
+
   // Mapeo de tamaños
   const sizeClasses = {
     sm: "max-w-md",
@@ -26,13 +45,21 @@ const Modal: React.FC<ModalProps> = ({
 
   if (!isOpen) return null;
 
+  // Cierra el modal cuando se hace clic en el overlay
+  const handleOverlayClick = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
+
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-indigo-100 bg-opacity-20 dark:bg-indigo-100 dark:bg-opacity-20"
-      onClick={() => onClose()}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50 dark:bg-black dark:bg-opacity-60 backdrop-blur-sm transition-opacity"
+      onClick={handleOverlayClick}
     >
       <div
-        className={`${sizeClasses[size]} w-full dark:bg-gray-800 rounded-lg shadow-xl overflow-hidden`}
+        ref={modalRef}
+        className={`${sizeClasses[size]} w-full bg-white dark:bg-gray-800 rounded-lg shadow-xl overflow-hidden transform transition-all`}
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-title"
@@ -42,14 +69,14 @@ const Modal: React.FC<ModalProps> = ({
         <div className="flex justify-between items-center border-b dark:border-gray-700 p-4">
           <h3
             id="modal-title"
-            className="text-xl font-medium text-gray-600 dark:text-gray-100"
+            className="text-xl font-medium text-gray-800 dark:text-gray-100"
           >
             {title}
           </h3>
           <button
             type="button"
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-100"
+            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors rounded-full p-2 hover:bg-gray-100 dark:hover:bg-gray-700"
             aria-label="Cerrar"
           >
             <i className="fas fa-times"></i>

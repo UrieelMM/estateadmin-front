@@ -188,7 +188,7 @@ const InventoryCategories: React.FC = () => {
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full ps-10 p-2.5"
+            className="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full ps-2 p-2.5"
             placeholder="Buscar categorías..."
           />
           {searchTerm && (
