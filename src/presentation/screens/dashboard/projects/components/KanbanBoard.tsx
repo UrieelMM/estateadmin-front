@@ -1,5 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { PlusIcon, PencilIcon, TrashIcon } from "@heroicons/react/24/solid";
+import {
+  PlusIcon,
+  PencilIcon,
+  TrashIcon,
+  UserCircleIcon,
+} from "@heroicons/react/24/solid";
 import {
   ProjectTask,
   TaskPriority,
@@ -23,11 +28,10 @@ interface KanbanBoardProps {
 
 // Map of status to readable Spanish names
 const statusLabels: Record<TaskStatus, string> = {
-  [TaskStatus.BACKLOG]: "Pendientes",
-  [TaskStatus.TODO]: "Por hacer",
+  [TaskStatus.PENDING]: "Pendientes",
   [TaskStatus.IN_PROGRESS]: "En progreso",
   [TaskStatus.REVIEW]: "Revisión",
-  [TaskStatus.DONE]: "Completado",
+  [TaskStatus.COMPLETED]: "Completado",
 };
 
 // Map of priority to colors and names
@@ -59,15 +63,17 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
     loading,
     error,
     fetchProjectTasks,
-    updateProjectTask,
     deleteProjectTask,
+    updateTaskStatus,
+    reorderTasks,
   } = useProjectTaskStore();
   const [isNewTaskModalOpen, setIsNewTaskModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<ProjectTask | null>(null);
-  const [_projectTasks, setProjectTasks] = useState<ProjectTask[]>([]);
+  const [_projectTasks, _setProjectTasks] = useState<ProjectTask[]>([]);
+  // Usamos useState con una función para inicializar solo una vez
   const [tasksByPriorities, setTasksByPriorities] = useState<
     Record<TaskStatus, ProjectTask[]>
-  >({} as Record<TaskStatus, ProjectTask[]>);
+  >(() => ({} as Record<TaskStatus, ProjectTask[]>));
   // Estado para filtro de prioridad
   const [priorityFilter, setPriorityFilter] = useState<TaskPriority | "all">(
     "all"
@@ -83,57 +89,45 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
 
   // Organiza tareas por estado
   useEffect(() => {
-    if (tasks) {
-      const filteredTasks = tasks.filter(
-        (task) => task.projectId === projectId
-      );
-      setProjectTasks(filteredTasks);
+    // Cada vez que cambian las tareas, reorganizamos por estado
+    const tasksByStatus: Record<TaskStatus, ProjectTask[]> = {
+      [TaskStatus.PENDING]: [],
+      [TaskStatus.IN_PROGRESS]: [],
+      [TaskStatus.REVIEW]: [],
+      [TaskStatus.COMPLETED]: [],
+    };
 
-      // Organizamos las tareas por estado (columnas)
-      const tasksByStatus: Record<TaskStatus, ProjectTask[]> = {} as Record<
-        TaskStatus,
-        ProjectTask[]
-      >;
+    // Organizar tareas por estado
+    tasks.forEach((task) => {
+      if (tasksByStatus[task.status]) {
+        tasksByStatus[task.status].push({ ...task });
+      }
+    });
 
-      // Inicializa la estructura para todos los estados
-      Object.values(TaskStatus).forEach((status) => {
-        tasksByStatus[status] = [];
-      });
-
-      // Asigna cada tarea a su columna correspondiente
-      filteredTasks.forEach((task) => {
-        if (tasksByStatus[task.status]) {
-          // Ordenamos las tareas por prioridad (de más alta a más baja)
-          tasksByStatus[task.status].push(task);
+    // Ordenar tareas dentro de cada columna según su orden (determinado por la API) o fecha de creación
+    Object.keys(tasksByStatus).forEach((status) => {
+      const statusEnum = status as TaskStatus;
+      tasksByStatus[statusEnum].sort((a, b) => {
+        // Si ambas tareas tienen un orden definido, usamos ese orden
+        if (typeof a.order === "number" && typeof b.order === "number") {
+          return a.order - b.order;
         }
+        // Si no, ordenamos por fecha de creación (más reciente primero)
+        return (
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
       });
+    });
 
-      // Ordenamos las tareas por prioridad dentro de cada estado
-      Object.keys(tasksByStatus).forEach((status) => {
-        tasksByStatus[status as TaskStatus].sort((a, b) => {
-          // Las prioridades más altas (URGENT, HIGH) deben aparecer primero
-          const priorities = [
-            TaskPriority.URGENT,
-            TaskPriority.HIGH,
-            TaskPriority.MEDIUM,
-            TaskPriority.LOW,
-          ];
-          return (
-            priorities.indexOf(a.priority) - priorities.indexOf(b.priority)
-          );
-        });
-      });
-
-      // Actualizamos el estado con las tareas organizadas
-      setTasksByPriorities({ ...tasksByStatus } as any);
-    }
-  }, [tasks, projectId]);
+    // Actualizamos el estado con las tareas organizadas
+    setTasksByPriorities(tasksByStatus);
+  }, [tasks]);
 
   // Maneja el cambio de estado cuando se arrastra una tarea
   const onDragEnd = async (result: DropResult) => {
     const { source, destination, draggableId } = result;
 
-    // Si no hay destino o es el mismo, no hacemos nada
+    // Si no hay destino o es el mismo punto exacto, no hacemos nada
     if (
       !destination ||
       (source.droppableId === destination.droppableId &&
@@ -143,18 +137,76 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
     }
 
     try {
+      const sourceStatus = source.droppableId as TaskStatus;
+      const destStatus = destination.droppableId as TaskStatus;
       const taskId = draggableId;
-      const newStatus = destination.droppableId as TaskStatus;
 
-      // Actualiza la tarea en el servidor
-      await updateProjectTask(taskId, {
-        status: newStatus,
-        projectId: projectId,
+      // Actualizar el estado local inmediatamente para una mejor UX
+      setTasksByPriorities((prevTasksByStatus) => {
+        // Crear copias profundas para evitar mutar el estado previo
+        const newTasksByStatus = JSON.parse(JSON.stringify(prevTasksByStatus));
+
+        // Encuentra la tarea en la columna de origen
+        const taskIndex = newTasksByStatus[sourceStatus].findIndex(
+          (t: ProjectTask) => t.id === taskId
+        );
+        if (taskIndex === -1) return prevTasksByStatus; // Si no encontramos la tarea, no hacemos nada
+
+        // Extraemos la tarea de la columna origen
+        const [movedTask] = newTasksByStatus[sourceStatus].splice(taskIndex, 1);
+
+        // Si la columna de destino es diferente, actualizamos el estado de la tarea
+        if (sourceStatus !== destStatus) {
+          movedTask.status = destStatus;
+        }
+
+        // Insertamos la tarea en la nueva posición en la columna de destino
+        newTasksByStatus[destStatus].splice(destination.index, 0, movedTask);
+
+        return newTasksByStatus;
       });
 
-      toast.success("Tarea actualizada con éxito");
+      // Calculamos el nuevo orden basado en la posición en la columna destino
+      const newOrder = destination.index;
+
+      // Actualiza la tarea en el servidor con el nuevo estado y orden
+      await updateTaskStatus(taskId, destStatus, newOrder);
+
+      // Si arrastramos dentro de la misma columna pero cambiamos el orden
+      if (
+        source.droppableId === destination.droppableId &&
+        source.index !== destination.index
+      ) {
+        // Obtenemos el orden actual de tareas en la columna
+        let tasksToReorder = [...tasksByPriorities[sourceStatus]].map(
+          (task) => task.id
+        );
+
+        // Simulamos el reordenamiento que el usuario acaba de hacer
+        const [movedId] = tasksToReorder.splice(source.index, 1);
+        tasksToReorder.splice(destination.index, 0, movedId);
+
+        // Actualizamos el orden en el servidor
+        await reorderTasks(projectId, sourceStatus, tasksToReorder);
+      }
+
+      // Mostramos un mensaje de éxito solo si hay un cambio de estado
+      if (source.droppableId !== destination.droppableId) {
+        toast.success("Estado de la tarea actualizado");
+      }
+
+      // No refrescamos las tareas inmediatamente para evitar que el usuario vea un parpadeo
+      // Este refresh después del timeout asegura que los datos estén sincronizados, pero permite
+      // que el usuario vea la animación de drag and drop completa primero
+      setTimeout(() => {
+        fetchProjectTasks(projectId);
+      }, 300);
     } catch (error) {
+      console.error("Error al actualizar la tarea:", error);
       toast.error("Error al actualizar el estado de la tarea");
+      // En caso de error, refrescamos las tareas para volver al estado correcto
+      toast.error("Error al actualizar la tarea. Reiniciando...");
+      fetchProjectTasks(projectId);
     }
   };
 
@@ -172,16 +224,27 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
   const renderTaskCard = (task: ProjectTask, index: number) => {
     const priority = task.priority;
     const dueDate = task.dueDate ? new Date(task.dueDate) : null;
+    const hasAttachments = task.attachments && task.attachments.length > 0;
 
     return (
       <Draggable key={task.id} draggableId={task.id} index={index}>
-        {(provided) => (
+        {(provided, snapshot) => (
           <div
             ref={provided.innerRef}
             {...provided.draggableProps}
             {...provided.dragHandleProps}
-            className="mb-2 bg-white dark:bg-gray-800 rounded-lg shadow-sm"
+            className={`mb-2 bg-white dark:bg-gray-800 rounded-lg shadow-sm transition-all duration-200 ${
+              snapshot.isDragging
+                ? "shadow-md scale-105 rotate-1 cursor-grabbing"
+                : "hover:shadow-md hover:translate-y-[-2px]"
+            }`}
+            style={{
+              // Es importante mantener el estilo proporcionado por react-beautiful-dnd
+              ...provided.draggableProps.style,
+            }}
           >
+            {/* Drag handle indicator at the top of the card */}
+            <div className="h-1 w-12 mx-auto mt-1 bg-gray-300 dark:bg-gray-600 rounded-full opacity-60"></div>
             <div
               className="p-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg"
               onClick={() => handleEditTask(task)}
@@ -231,6 +294,21 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
                 </p>
               )}
 
+              {/* Mostrar responsable asignado */}
+              {task.assignedTo && (
+                <div className="flex items-center gap-2 mb-2">
+                  <div
+                    className="flex-shrink-0 h-6 w-6 rounded-full bg-indigo-600 flex items-center justify-center"
+                    title="Responsable"
+                  >
+                    <UserCircleIcon className="h-5 w-5 text-white" />
+                  </div>
+                  <span className="text-sm text-gray-700 dark:text-gray-300">
+                    {task.assignedTo}
+                  </span>
+                </div>
+              )}
+
               <div className="flex flex-wrap gap-1 mt-2">
                 {dueDate && (
                   <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center">
@@ -239,6 +317,26 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
                       day: "2-digit",
                       month: "short",
                     })}
+                  </span>
+                )}
+
+                {hasAttachments && (
+                  <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-3 w-3 mr-1"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
+                      />
+                    </svg>
+                    {task.attachments?.length}
                   </span>
                 )}
 
@@ -259,6 +357,43 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
                     )}
                   </div>
                 )}
+
+                {/* Preview of first attachment if it's an image */}
+                {task.attachments &&
+                  task.attachments.length > 0 &&
+                  task.attachments.some((url) =>
+                    /\.(jpg|jpeg|png|gif|webp)$/i.test(url)
+                  ) && (
+                    <div className="w-full mt-2">
+                      <div className="relative w-full h-16 bg-gray-100 dark:bg-gray-700 rounded overflow-hidden">
+                        {task.attachments
+                          .filter((url) =>
+                            /\.(jpg|jpeg|png|gif|webp)$/i.test(url)
+                          )
+                          .slice(0, 1)
+                          .map((url, idx) => (
+                            <img
+                              key={idx}
+                              src={url}
+                              alt="Preview"
+                              className="w-full h-full object-cover"
+                            />
+                          ))}
+                        {task.attachments.filter((url) =>
+                          /\.(jpg|jpeg|png|gif|webp)$/i.test(url)
+                        ).length > 1 && (
+                          <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center">
+                            <span className="text-white text-sm font-medium">
+                              +
+                              {task.attachments.filter((url) =>
+                                /\.(jpg|jpeg|png|gif|webp)$/i.test(url)
+                              ).length - 1}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
               </div>
             </div>
           </div>
@@ -347,7 +482,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
       {/* React Beautiful DnD Kanban Board */}
       <div className="kanban-wrapper">
         <DragDropContext onDragEnd={onDragEnd}>
-          <div className="grid grid-cols-5 gap-4">
+          <div className="grid grid-cols-4 gap-4">
             {/* Para cada estado (columna) */}
             {Object.entries(tasksByPriorities).map(([status, tasks]) => {
               // Filtrar tareas según el filtro de prioridad seleccionado
@@ -368,11 +503,15 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
 
                   {/* Lista de tareas (droppable) */}
                   <Droppable droppableId={status}>
-                    {(provided) => (
+                    {(provided, snapshot) => (
                       <div
                         ref={provided.innerRef}
                         {...provided.droppableProps}
-                        className="min-h-[400px] p-2"
+                        className={`min-h-[400px] p-2 transition-all duration-200 ${
+                          snapshot.isDraggingOver
+                            ? "bg-indigo-50 dark:bg-indigo-900/30 scale-[1.01]"
+                            : ""
+                        }`}
                       >
                         {filteredTasks.map((task, index) =>
                           renderTaskCard(task, index)

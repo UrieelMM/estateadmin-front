@@ -22,6 +22,8 @@ import ProjectSummaryCard from "./components/ProjectSummaryCard";
 import KanbanBoardModal from "./components/KanbanBoardModal";
 import ProjectExportMenu from "./components/ProjectExportMenu";
 import { usePaymentSummaryStore } from "../../../../store/paymentSummaryStore";
+import NewMilestoneModal from "./components/NewMilestoneModal";
+import MilestonesList from "./components/MilestonesList";
 
 interface ProjectDashboardProps {
   project: Project;
@@ -35,6 +37,7 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ project }) => {
   const [isNewExpenseModalOpen, setIsNewExpenseModalOpen] = useState(false);
   const [isEditProjectModalOpen, setIsEditProjectModalOpen] = useState(false);
   const [isKanbanModalOpen, setIsKanbanModalOpen] = useState(false);
+  const [isNewMilestoneModalOpen, setIsNewMilestoneModalOpen] = useState(false);
 
   // Calcular días transcurridos y restantes
   const today = new Date();
@@ -205,6 +208,22 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ project }) => {
         />
       </div>
 
+      {/* Sección de Hitos */}
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow dark:shadow-lg">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+            Hitos del Proyecto
+          </h3>
+          <button
+            onClick={() => setIsNewMilestoneModalOpen(true)}
+            className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-500"
+          >
+            Nuevo Hito
+          </button>
+        </div>
+        <MilestonesList projectId={project.id} />
+      </div>
+
       {/* Gráficas */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 dark:shadow-lg">
@@ -242,27 +261,28 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ project }) => {
         <ProjectExpensesTable expenses={projectExpenses} />
       </div>
 
-      {/* Modal para registrar nuevo gasto */}
+      {/* Modals adicionales */}
       <NewExpenseModal
         isOpen={isNewExpenseModalOpen}
         onClose={() => setIsNewExpenseModalOpen(false)}
         projectId={project.id}
         projectName={project.name}
       />
-
-      {/* Modal para editar proyecto */}
       <EditProjectModal
         isOpen={isEditProjectModalOpen}
         onClose={() => setIsEditProjectModalOpen(false)}
         project={project}
       />
-
-      {/* Modal Kanban para gestionar tareas */}
       <KanbanBoardModal
         isOpen={isKanbanModalOpen}
         onClose={() => setIsKanbanModalOpen(false)}
         projectId={project.id}
         projectName={project.name}
+      />
+      <NewMilestoneModal
+        isOpen={isNewMilestoneModalOpen}
+        onClose={() => setIsNewMilestoneModalOpen(false)}
+        projectId={project.id}
       />
     </div>
   );

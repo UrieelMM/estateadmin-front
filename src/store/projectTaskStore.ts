@@ -14,14 +14,20 @@ import {
   orderBy,
   where,
 } from "firebase/firestore";
+import {
+  getStorage,
+  ref as storageRef,
+  uploadBytes,
+  getDownloadURL,
+  deleteObject,
+} from "firebase/storage";
 
 // Define task status options
 export enum TaskStatus {
-  BACKLOG = "backlog",
-  TODO = "todo",
+  PENDING = "pending",
   IN_PROGRESS = "in_progress",
   REVIEW = "review",
-  DONE = "done",
+  COMPLETED = "completed",
 }
 
 // Define task priority options
@@ -40,12 +46,14 @@ export interface ProjectTask {
   description: string;
   status: TaskStatus;
   priority: TaskPriority;
-  assignedTo?: string[];
+  assignedTo?: string; // Nombre del responsable
   dueDate?: string;
   createdAt: string;
   updatedAt: string;
   tags: string[];
   order: number;
+  attachments?: string[]; // URLs of images or files
+  notes?: string; // Additional notes
 }
 
 // Input for creating a new task
@@ -55,9 +63,11 @@ export interface ProjectTaskCreateInput {
   description: string;
   status: TaskStatus;
   priority: TaskPriority;
-  assignedTo?: string[];
+  assignedTo?: string; // Nombre del responsable
   dueDate?: string;
   tags: string[];
+  attachments?: string[];
+  notes?: string;
 }
 
 // Store state interface
@@ -93,6 +103,20 @@ interface ProjectTaskState {
     projectId: string,
     status: TaskStatus,
     reorderedTaskIds: string[]
+  ) => Promise<void>;
+  
+  // Upload attachments for a task
+  uploadAttachments: (
+    projectId: string, 
+    taskId: string, 
+    files: File[]
+  ) => Promise<string[]>;
+  
+  // Delete attachment
+  deleteAttachment: (
+    projectId: string, 
+    taskId: string, 
+    attachmentUrl: string
   ) => Promise<void>;
 }
 
@@ -193,7 +217,7 @@ export const useProjectTaskStore = create<ProjectTaskState>()((set, get) => ({
         description: data.description,
         status: data.status,
         priority: data.priority,
-        assignedTo: data.assignedTo || [],
+        assignedTo: data.assignedTo || "",
         dueDate: data.dueDate,
         createdAt: timestamp,
         updatedAt: timestamp,
@@ -408,6 +432,147 @@ export const useProjectTaskStore = create<ProjectTaskState>()((set, get) => ({
       set({
         loading: false,
         error: error.message || "Error al reordenar tareas",
+      });
+    }
+  },
+  
+  uploadAttachments: async (projectId: string, taskId: string, files: File[]) => {
+    set({ loading: true, error: null });
+    try {
+      const auth = getAuth();
+      const user = auth.currentUser;
+      if (!user) throw new Error("Usuario no autenticado");
+
+      const tokenResult = await getIdTokenResult(user);
+      const clientId = tokenResult.claims["clientId"] as string;
+      if (!clientId) throw new Error("No se encontró clientId en los claims");
+
+      const condominiumId = localStorage.getItem("condominiumId");
+      if (!condominiumId) throw new Error("Condominio no seleccionado");
+
+      const storage = getStorage();
+      const db = getFirestore();
+      
+      // Prepare the base path for storage
+      const basePath = `clients/${clientId}/condominiums/${condominiumId}/projects/${projectId}/tasks/${taskId}/attachments`;
+      
+      // Upload all files and collect their download URLs
+      const uploadPromises = files.map(async (file) => {
+        // Create a unique file name with timestamp and original name
+        const timestamp = new Date().getTime();
+        const fileName = `${timestamp}_${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
+        const filePath = `${basePath}/${fileName}`;
+        
+        // Upload file to Storage
+        const fileRef = storageRef(storage, filePath);
+        await uploadBytes(fileRef, file);
+        
+        // Get the download URL
+        return await getDownloadURL(fileRef);
+      });
+      
+      // Wait for all uploads to complete
+      const downloadURLs = await Promise.all(uploadPromises);
+      
+      // Get current task to append new attachments
+      const tasks = get().tasks;
+      const task = tasks.find((t) => t.id === taskId);
+      if (!task) throw new Error("Tarea no encontrada");
+      
+      // Update task with new attachment URLs
+      const taskRef = createDoc(
+        db,
+        `clients/${clientId}/condominiums/${condominiumId}/projects/${projectId}/tasks/${taskId}`
+      );
+      
+      // Combine existing attachments with new ones
+      const existingAttachments = task.attachments || [];
+      const allAttachments = [...existingAttachments, ...downloadURLs];
+      
+      await updateDoc(taskRef, {
+        attachments: allAttachments,
+        updatedAt: new Date().toISOString(),
+      });
+      
+      // Refresh tasks
+      await get().fetchProjectTasks(projectId);
+      
+      set({ loading: false, error: null });
+      return downloadURLs;
+    } catch (error: any) {
+      console.error("Error al subir archivos adjuntos:", error);
+      set({
+        loading: false,
+        error: error.message || "Error al subir archivos adjuntos",
+      });
+      return [];
+    }
+  },
+  
+  deleteAttachment: async (projectId: string, taskId: string, attachmentUrl: string) => {
+    set({ loading: true, error: null });
+    try {
+      const auth = getAuth();
+      const user = auth.currentUser;
+      if (!user) throw new Error("Usuario no autenticado");
+
+      const tokenResult = await getIdTokenResult(user);
+      const clientId = tokenResult.claims["clientId"] as string;
+      if (!clientId) throw new Error("No se encontró clientId en los claims");
+
+      const condominiumId = localStorage.getItem("condominiumId");
+      if (!condominiumId) throw new Error("Condominio no seleccionado");
+
+      const storage = getStorage();
+      const db = getFirestore();
+      
+      // Get the file reference from the URL
+      // The URL format is like: https://firebasestorage.googleapis.com/v0/b/[bucket]/o/[encodedFilePath]?token=[token]
+      const decodedUrl = decodeURIComponent(attachmentUrl);
+      const filePathMatch = decodedUrl.match(/o\/([^?]+)/);
+      
+      if (filePathMatch && filePathMatch[1]) {
+        const filePath = filePathMatch[1];
+        try {
+          // Delete the file from storage
+          const fileRef = storageRef(storage, filePath);
+          await deleteObject(fileRef);
+        } catch (deleteError) {
+          console.warn("Error al eliminar archivo de storage, continuando con la eliminación de referencia:", deleteError);
+          // Continue even if storage deletion fails (file might be already deleted)
+        }
+      }
+      
+      // Get current task to remove the attachment URL
+      const tasks = get().tasks;
+      const task = tasks.find((t) => t.id === taskId);
+      if (!task) throw new Error("Tarea no encontrada");
+      
+      // Filter out the deleted attachment URL
+      const updatedAttachments = (task.attachments || []).filter(
+        (url) => url !== attachmentUrl
+      );
+      
+      // Update task document
+      const taskRef = createDoc(
+        db,
+        `clients/${clientId}/condominiums/${condominiumId}/projects/${projectId}/tasks/${taskId}`
+      );
+      
+      await updateDoc(taskRef, {
+        attachments: updatedAttachments,
+        updatedAt: new Date().toISOString(),
+      });
+      
+      // Refresh tasks
+      await get().fetchProjectTasks(projectId);
+      
+      set({ loading: false, error: null });
+    } catch (error: any) {
+      console.error("Error al eliminar archivo adjunto:", error);
+      set({
+        loading: false,
+        error: error.message || "Error al eliminar archivo adjunto",
       });
     }
   },

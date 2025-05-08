@@ -1,6 +1,6 @@
-import React, { useState, Fragment } from "react";
+import React, { useState, Fragment, useRef } from "react";
 import { Dialog, Transition } from "@headlessui/react";
-import { XMarkIcon } from "@heroicons/react/24/solid";
+import { XMarkIcon, PaperClipIcon, DocumentIcon, XCircleIcon } from "@heroicons/react/24/solid";
 import {
   ProjectTaskCreateInput,
   TaskPriority,
@@ -29,24 +29,32 @@ const TASK_TAGS = [
   "marketing",
 ];
 
+
+
 const NewTaskModal: React.FC<NewTaskModalProps> = ({
   isOpen,
   onClose,
   projectId,
 }) => {
-  const { addProjectTask, loading } = useProjectTaskStore();
+  const { addProjectTask, uploadAttachments, loading } = useProjectTaskStore();
 
   const [formData, setFormData] = useState<
     Omit<ProjectTaskCreateInput, "projectId">
   >({
     title: "",
     description: "",
-    status: TaskStatus.BACKLOG,
+    status: TaskStatus.PENDING,
     priority: TaskPriority.MEDIUM,
     dueDate: "",
     tags: [],
-    assignedTo: [],
+    assignedTo: "",
+    notes: "",
+    attachments: [],
   });
+  
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
 
   // Handle form field changes
   const handleChange = (
@@ -56,6 +64,19 @@ const NewTaskModal: React.FC<NewTaskModalProps> = ({
   ) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
+  };
+  
+  // Handle file selection
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const fileList = Array.from(e.target.files);
+      setSelectedFiles(prev => [...prev, ...fileList]);
+    }
+  };
+  
+  // Process file removal from selection
+  const removeSelectedFile = (index: number) => {
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
   };
 
   // Handle tag selection
@@ -86,12 +107,28 @@ const NewTaskModal: React.FC<NewTaskModalProps> = ({
     }
 
     try {
+      // First create the task without attachments
       const taskData: ProjectTaskCreateInput = {
         ...formData,
         projectId,
       };
-
-      await addProjectTask(taskData);
+      
+      // Create task and get its ID
+      const taskId = await addProjectTask(taskData);
+      
+      // If files selected, upload them
+      if (selectedFiles.length > 0 && taskId) {
+        setIsUploading(true);
+        try {
+          await uploadAttachments(projectId, taskId, selectedFiles);
+        } catch (uploadError) {
+          console.error("Error al subir archivos:", uploadError);
+          toast.error("La tarea se creó pero hubo un error al subir los archivos");
+        } finally {
+          setIsUploading(false);
+        }
+      }
+      
       toast.success("Tarea creada exitosamente");
       onClose();
 
@@ -99,14 +136,18 @@ const NewTaskModal: React.FC<NewTaskModalProps> = ({
       setFormData({
         title: "",
         description: "",
-        status: TaskStatus.BACKLOG,
+        status: TaskStatus.PENDING,
         priority: TaskPriority.MEDIUM,
         dueDate: "",
         tags: [],
-        assignedTo: [],
+        assignedTo: "",
+        notes: "",
+        attachments: [],
       });
+      setSelectedFiles([]);
     } catch (error) {
       toast.error("Error al crear la tarea");
+      setIsUploading(false);
     }
   };
 
@@ -211,13 +252,12 @@ const NewTaskModal: React.FC<NewTaskModalProps> = ({
                         onChange={handleChange}
                         className="px-2 mt-1 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
                       >
-                        <option value={TaskStatus.BACKLOG}>Pendientes</option>
-                        <option value={TaskStatus.TODO}>Por hacer</option>
+                        <option value={TaskStatus.PENDING}>Pendientes</option>
                         <option value={TaskStatus.IN_PROGRESS}>
                           En progreso
                         </option>
                         <option value={TaskStatus.REVIEW}>Revisión</option>
-                        <option value={TaskStatus.DONE}>Completado</option>
+                        <option value={TaskStatus.COMPLETED}>Completado</option>
                       </select>
                     </div>
 
@@ -261,6 +301,24 @@ const NewTaskModal: React.FC<NewTaskModalProps> = ({
                   </div>
 
                   <div>
+                    <label
+                      htmlFor="assignedTo"
+                      className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                    >
+                      Responsable / Asignación
+                    </label>
+                    <input
+                      type="text"
+                      name="assignedTo"
+                      id="assignedTo"
+                      value={formData.assignedTo || ''}
+                      onChange={handleChange}
+                      placeholder="Nombre del responsable"
+                      className="px-2 mt-1 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
+                    />
+                  </div>
+
+                  <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Etiquetas
                     </label>
@@ -286,14 +344,98 @@ const NewTaskModal: React.FC<NewTaskModalProps> = ({
                       ))}
                     </div>
                   </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Notas adicionales
+                    </label>
+                    <textarea
+                      name="notes"
+                      id="notes"
+                      rows={2}
+                      value={formData.notes || ""}
+                      onChange={handleChange}
+                      className="px-2 mt-1 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
+                      placeholder="Notas o comentarios adicionales..."
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Archivos adjuntos
+                    </label>
+                    
+                    {/* File Selection */}
+                    <div className="mt-2">
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleFileChange}
+                        className="hidden"
+                        multiple
+                        accept="image/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/plain"
+                      />
+                      
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                      >
+                        <PaperClipIcon className="-ml-0.5 mr-2 h-4 w-4" aria-hidden="true" />
+                        Agregar archivos
+                      </button>
+                    </div>
+
+                    {/* Preview of Selected Files */}
+                    {selectedFiles.length > 0 && (
+                      <div className="mt-3">
+                        <h4 className="text-xs text-gray-500 dark:text-gray-400 font-medium mb-2">Archivos seleccionados:</h4>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                          {selectedFiles.map((file, idx) => {
+                            const isImage = file.type.startsWith('image/');
+                            
+                            return (
+                              <div key={idx} className="relative group border border-gray-200 dark:border-gray-700 rounded-lg p-2 bg-gray-50 dark:bg-gray-800">
+                                {isImage ? (
+                                  <div className="flex flex-col items-center space-y-1">
+                                    <div className="w-full h-16 relative rounded overflow-hidden bg-gray-100 dark:bg-gray-700">
+                                      <img 
+                                        src={URL.createObjectURL(file)} 
+                                        alt={file.name} 
+                                        className="w-full h-full object-cover"
+                                      />
+                                    </div>
+                                    <p className="text-xs text-gray-600 dark:text-gray-400 truncate w-full">{file.name}</p>
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center">
+                                    <DocumentIcon className="h-6 w-6 text-gray-400 mr-2" />
+                                    <span className="text-xs text-gray-700 dark:text-gray-300 truncate">{file.name}</span>
+                                  </div>
+                                )}
+                                
+                                <button 
+                                  type="button" 
+                                  onClick={() => removeSelectedFile(idx)}
+                                  className="absolute top-1 right-1 text-gray-400 hover:text-red-500"
+                                >
+                                  <XCircleIcon className="h-5 w-5" />
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
 
                   <div className="mt-8 sm:grid sm:grid-flow-row-dense sm:grid-cols-2 sm:gap-3">
                     <button
                       type="submit"
-                      disabled={loading}
+                      disabled={loading || isUploading}
                       className="inline-flex w-full justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-70 disabled:cursor-not-allowed sm:col-start-2"
                     >
-                      {loading ? "Guardando..." : "Guardar Tarea"}
+                      {loading || isUploading ? "Guardando..." : "Guardar Tarea"}
                     </button>
                     <button
                       type="button"
