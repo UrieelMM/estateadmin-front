@@ -1,9 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { Dialog } from "@headlessui/react";
 import {
   XMarkIcon,
-  CalendarDaysIcon,
-  UserGroupIcon,
   TagIcon,
   CurrencyDollarIcon,
   ExclamationCircleIcon,
@@ -14,8 +11,6 @@ import {
   PlanningType,
 } from "../../../../../store/planningStore";
 import useUserDataStore from "../../../../../store/UserDataStore";
-import moment from "moment";
-import { formatDateToDisplay } from "../../../../../utils/dates";
 
 interface EditPlanningModalProps {
   isOpen: boolean;
@@ -30,7 +25,7 @@ const EditPlanningModal: React.FC<EditPlanningModalProps> = ({
   planning,
   onSuccess,
 }) => {
-  const { updatePlanning, loading, error } = usePlanningStore();
+  const { updatePlanning } = usePlanningStore();
   const { condominiumsUsers, fetchCondominiumsUsers, getUserById } =
     useUserDataStore();
   const [userCache, setUserCache] = useState<Record<string, any>>({});
@@ -50,10 +45,16 @@ const EditPlanningModal: React.FC<EditPlanningModalProps> = ({
   const [budget, setBudget] = useState<string>(
     planning.budget ? planning.budget.toString() : ""
   );
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const [formErrors, setFormErrors] = useState<{
     title?: string;
     dates?: string;
     budget?: string;
+    description?: string;
+    type?: string;
+    assignedTo?: string;
+    tags?: string;
   }>({});
 
   useEffect(() => {
@@ -93,7 +94,15 @@ const EditPlanningModal: React.FC<EditPlanningModalProps> = ({
   }, [planning.assignedTo, getUserById, isOpen, userCache]);
 
   const validateForm = () => {
-    const errors: { title?: string; dates?: string; budget?: string } = {};
+    const errors: {
+      title?: string;
+      dates?: string;
+      budget?: string;
+      description?: string;
+      type?: string;
+      assignedTo?: string;
+      tags?: string;
+    } = {};
     let isValid = true;
 
     if (!title.trim()) {
@@ -132,7 +141,10 @@ const EditPlanningModal: React.FC<EditPlanningModalProps> = ({
     setLoading(true);
     setError("");
 
-    if (!validateForm()) return;
+    if (!validateForm()) {
+      setLoading(false);
+      return;
+    }
 
     const planningData = {
       title,
