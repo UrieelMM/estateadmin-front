@@ -10,30 +10,43 @@ export function formatCurrencyInventory(
 ): string {
   // Si el valor es nulo, undefined o después de parsear es NaN, retornamos $0.00
   if (val === null || val === undefined) return "$0.00";
-  
+
   // Si es string, eliminamos cualquier formato previo (comas, símbolos de moneda)
-  let numValue = typeof val === "string" ? 
-    parseFloat(val.replace(/[$,\s]/g, "")) : 
-    Number(val);
-  
+  let numValue =
+    typeof val === "string"
+      ? parseFloat(val.replace(/[$,\s]/g, ""))
+      : Number(val);
+
   // Si después de parsear es NaN, retornamos $0.00
   if (isNaN(numValue)) return "$0.00";
-  
+
   // Formateamos manualmente para asegurar que tenga comas
-  const parts = numValue.toFixed(2).split('.');
-  
+  const parts = numValue.toFixed(2).split(".");
+
   // Agregamos las comas a la parte entera cada 3 dígitos
-  parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-  
+  parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+
   // Retornamos con el símbolo de pesos al inicio
-  return `$${parts.join('.')}`;
+  return `$${parts.join(".")}`;
 }
 
 export const formatCentsToMXN = (cents: number): string => {
+  const pesos = cents / 100;
   return new Intl.NumberFormat("es-MX", {
     style: "currency",
     currency: "MXN",
-  }).format(cents / 100);
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(pesos);
+};
+
+export const formatMXNToCents = (mxn: string): number => {
+  // Remover cualquier carácter que no sea número o punto decimal
+  const cleanValue = mxn.replace(/[^\d.]/g, "");
+
+  // Convertir a número y multiplicar por 100 para obtener centavos
+  const pesosValue = parseFloat(cleanValue) || 0;
+  return Math.round(pesosValue * 100);
 };
 
 export const centsToPesos = (val: any): number => {

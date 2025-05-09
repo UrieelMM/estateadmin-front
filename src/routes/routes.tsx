@@ -30,6 +30,7 @@ import InventoryItemDetail from "../presentation/screens/dashboard/inventory/Inv
 import InventoryList from "../presentation/screens/dashboard/inventory/InventoryList";
 import InventoryMovements from "../presentation/screens/dashboard/inventory/InventoryMovements";
 import InventoryAlerts from "../presentation/screens/dashboard/inventory/InventoryAlerts";
+import CommonAreas from "../presentation/screens/dashboard/commonAreas/CommonAreas";
 
 export const routesApp = [
   {
@@ -255,5 +256,12 @@ export const routesApp = [
     title: "Alertas de Stock",
     description: "Items con stock bajo",
     component: <InventoryAlerts />,
+  },
+  {
+    to: "/dashboard/common-areas",
+    icon: "fa-solid fa-person-swimming",
+    title: "Áreas Comunes",
+    description: "Gestión de áreas comunes del condominio",
+    component: <CommonAreas />,
   },
 ];

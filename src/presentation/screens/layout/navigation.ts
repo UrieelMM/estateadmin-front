@@ -43,7 +43,7 @@ export const navigation = [
     icon: UserGroupIcon,
     current: false,
     children: [
-      { name: "Áreas comunes", href: "/dashboard/events" },
+      { name: "Áreas comunes", href: "/dashboard/common-areas" },
       { name: "Calendario", href: "/dashboard/calendar" },
       { name: "Publicaciones", href: "/dashboard/publications" },
     ],
