@@ -85,6 +85,7 @@ export type Ticket = {
   status: "abierto" | "en_progreso" | "cerrado";
   createdAt: Date;
   updatedAt: Date;
+  closedAt?: Date; // Fecha en que se cerró el ticket
   createdBy: string;
   createdByEmail?: string;
   assignedTo?: string;
@@ -241,7 +242,7 @@ export const useTicketsStore = create<TicketState>()((set, get) => ({
         "ticketsMaintenance",
         mainTicketId
       );
-      
+
       // Preparar datos de actualización evitando valores undefined
       const updateData: any = {
         history: mergedHistories,
@@ -250,7 +251,7 @@ export const useTicketsStore = create<TicketState>()((set, get) => ({
         mergedFrom,
         updatedAt: new Date(),
       };
-      
+
       // Solo incluir área si hay un valor válido para evitar error de undefined
       if (mergedAreas.length > 0) {
         updateData.area = mergedAreas[0];
@@ -258,7 +259,7 @@ export const useTicketsStore = create<TicketState>()((set, get) => ({
         updateData.area = main.area;
       }
       // No incluimos el campo area si no hay un valor válido
-      
+
       await updateDoc(ticketDocRef, updateData);
       // Eliminar los tickets fusionados (menos el principal)
       for (const t of merged) {
@@ -280,16 +281,17 @@ export const useTicketsStore = create<TicketState>()((set, get) => ({
     } catch (error: any) {
       set({ loading: false });
       let errorMsg = error.message || "Error al procesar el ticket";
-      
+
       // Detectar errores específicos de Firebase Storage
       if (error.code === "storage/unauthorized") {
         errorMsg = "No tienes permisos para subir archivos";
       } else if (error.code === "storage/object-too-large") {
-        errorMsg = "Uno o más archivos son demasiado grandes. El límite es de 15MB por archivo";
+        errorMsg =
+          "Uno o más archivos son demasiado grandes. El límite es de 15MB por archivo";
       } else if (error.code === "storage/retry-limit-exceeded") {
         errorMsg = "Error de conexión al intentar subir los archivos";
       }
-      
+
       toast.error(errorMsg);
       throw error;
     }
@@ -376,6 +378,11 @@ export const useTicketsStore = create<TicketState>()((set, get) => ({
           area: data.area,
           tags: data.tags || [],
           providerId: data.providerId,
+          closedAt: data.closedAt?.toDate
+            ? data.closedAt.toDate()
+            : data.closedAt
+            ? new Date(data.closedAt)
+            : undefined,
         });
       });
       set({
@@ -550,16 +557,17 @@ export const useTicketsStore = create<TicketState>()((set, get) => ({
     } catch (error: any) {
       set({ loading: false });
       let errorMsg = error.message || "Error al procesar el ticket";
-      
+
       // Detectar errores específicos de Firebase Storage
       if (error.code === "storage/unauthorized") {
         errorMsg = "No tienes permisos para subir archivos";
       } else if (error.code === "storage/object-too-large") {
-        errorMsg = "Uno o más archivos son demasiado grandes. El límite es de 15MB por archivo";
+        errorMsg =
+          "Uno o más archivos son demasiado grandes. El límite es de 15MB por archivo";
       } else if (error.code === "storage/retry-limit-exceeded") {
         errorMsg = "Error de conexión al intentar subir los archivos";
       }
-      
+
       toast.error(errorMsg);
       throw error;
     }
@@ -611,8 +619,15 @@ export const useTicketsStore = create<TicketState>()((set, get) => ({
           user: userName,
           previousValue: currentTicket.status,
           newValue: data.status,
-          comment: `Estado cambiado de ${formatStatus(currentTicket.status)} a ${formatStatus(data.status)}`,
+          comment: `Estado cambiado de ${formatStatus(
+            currentTicket.status
+          )} a ${formatStatus(data.status)}`,
         });
+
+        // Si el ticket se cierra, establecer la fecha de cierre
+        if (data.status === "cerrado" && currentTicket.status !== "cerrado") {
+          data.closedAt = now;
+        }
       }
 
       // Registrar cambio de prioridad
@@ -625,7 +640,9 @@ export const useTicketsStore = create<TicketState>()((set, get) => ({
           previousValue: currentTicket.priority || "no definida",
           newValue: data.priority,
           comment: `Prioridad cambiada de ${
-            currentTicket.priority ? formatPriority(currentTicket.priority) : "No definida"
+            currentTicket.priority
+              ? formatPriority(currentTicket.priority)
+              : "No definida"
           } a ${formatPriority(data.priority)}`,
         });
       }
@@ -750,7 +767,8 @@ export const useTicketsStore = create<TicketState>()((set, get) => ({
       // Si no hay cambios específicos pero hay una actualización general
       if (
         historyUpdates.length === 0 &&
-        (data.title !== currentTicket.title || data.description !== currentTicket.description)
+        (data.title !== currentTicket.title ||
+          data.description !== currentTicket.description)
       ) {
         historyUpdates.push({
           date: now,
@@ -796,16 +814,17 @@ export const useTicketsStore = create<TicketState>()((set, get) => ({
     } catch (error: any) {
       set({ loading: false });
       let errorMsg = error.message || "Error al procesar el ticket";
-      
+
       // Detectar errores específicos de Firebase Storage
       if (error.code === "storage/unauthorized") {
         errorMsg = "No tienes permisos para subir archivos";
       } else if (error.code === "storage/object-too-large") {
-        errorMsg = "Uno o más archivos son demasiado grandes. El límite es de 15MB por archivo";
+        errorMsg =
+          "Uno o más archivos son demasiado grandes. El límite es de 15MB por archivo";
       } else if (error.code === "storage/retry-limit-exceeded") {
         errorMsg = "Error de conexión al intentar subir los archivos";
       }
-      
+
       toast.error(errorMsg);
       throw error;
     }
@@ -850,16 +869,17 @@ export const useTicketsStore = create<TicketState>()((set, get) => ({
     } catch (error: any) {
       set({ loading: false });
       let errorMsg = error.message || "Error al procesar el ticket";
-      
+
       // Detectar errores específicos de Firebase Storage
       if (error.code === "storage/unauthorized") {
         errorMsg = "No tienes permisos para subir archivos";
       } else if (error.code === "storage/object-too-large") {
-        errorMsg = "Uno o más archivos son demasiado grandes. El límite es de 15MB por archivo";
+        errorMsg =
+          "Uno o más archivos son demasiado grandes. El límite es de 15MB por archivo";
       } else if (error.code === "storage/retry-limit-exceeded") {
         errorMsg = "Error de conexión al intentar subir los archivos";
       }
-      
+
       toast.error(errorMsg);
       throw error;
     }
@@ -932,6 +952,11 @@ export const useTicketsStore = create<TicketState>()((set, get) => ({
           area: data.area,
           tags: data.tags || [],
           providerId: data.providerId,
+          closedAt: data.closedAt?.toDate
+            ? data.closedAt.toDate()
+            : data.closedAt
+            ? new Date(data.closedAt)
+            : undefined,
         });
       });
 
