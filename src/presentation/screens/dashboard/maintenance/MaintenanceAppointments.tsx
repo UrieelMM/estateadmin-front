@@ -388,7 +388,7 @@ const MaintenanceAppointments: React.FC = () => {
                   {filteredAppointments.map((appointment) => (
                     <div
                       key={appointment.id}
-                      className="p-4 transition-colors hover:bg-gray-50 dark:hover:bg-gray-750"
+                      className="p-4 transition-colors hover:bg-gray-50 dark:hover:bg-gray-900"
                     >
                       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                         <div>
@@ -476,7 +476,7 @@ const MaintenanceAppointments: React.FC = () => {
                       </div>
 
                       {appointment.notes && (
-                        <p className="text-sm text-gray-600 dark:text-gray-300 mt-2 bg-gray-50 dark:bg-gray-750 p-2 rounded">
+                        <p className="text-sm text-gray-600 dark:text-gray-300 mt-2 bg-gray-50 dark:bg-gray-700 p-2 rounded">
                           {appointment.notes}
                         </p>
                       )}
@@ -485,7 +485,8 @@ const MaintenanceAppointments: React.FC = () => {
                         <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
                           {appointment.ticketId && (
                             <span className="inline-flex items-center mr-2 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 px-2 py-1 rounded">
-                              Ticket relacionado: {appointment.ticketId}
+                              Ticket relacionado:{" "}
+                              {appointment.ticketFolio || appointment.ticketId}
                             </span>
                           )}
                           {appointment.contractId && (
@@ -831,7 +832,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
                   <option value="">Ninguno</option>
                   {tickets.map((ticket) => (
                     <option key={ticket.id} value={ticket.id}>
-                      {ticket.title.substring(0, 30)}
+                      {ticket.title.substring(0, 30)} - {ticket.folio}
                       {ticket.title.length > 30 ? "..." : ""}
                     </option>
                   ))}

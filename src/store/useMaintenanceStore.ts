@@ -66,6 +66,7 @@ export type MaintenanceAppointment = {
   contractId?: string;
   contract?: MaintenanceContract;
   notes?: string;
+  ticketFolio?: string;
 };
 
 type MaintenanceReportState = {
@@ -667,6 +668,7 @@ export const useMaintenanceAppointmentStore =
             technician: data.technician,
             contactPhone: data.contactPhone || "",
             ticketId: data.ticketId || "",
+            ticketFolio: data.ticketFolio || "",
             contractId: data.contractId || "",
             notes: data.notes || "",
           };
@@ -686,10 +688,16 @@ export const useMaintenanceAppointmentStore =
               const ticketSnap = await getDoc(ticketDocRef);
 
               if (ticketSnap.exists()) {
+                const ticketData = ticketSnap.data();
                 appointment.ticket = {
                   id: ticketSnap.id,
-                  ...ticketSnap.data(),
+                  ...ticketData,
                 } as Ticket;
+
+                // Asegurar que tenemos el folio
+                if (!appointment.ticketFolio && ticketData.folio) {
+                  appointment.ticketFolio = ticketData.folio;
+                }
               }
             } catch (error) {
               console.error("Error al obtener ticket asociado:", error);
@@ -884,6 +892,7 @@ export const useMaintenanceAppointmentStore =
             technician: data.technician,
             contactPhone: data.contactPhone || "",
             ticketId: data.ticketId || "",
+            ticketFolio: data.ticketFolio || "",
             contractId: data.contractId || "",
             notes: data.notes || "",
           });
@@ -952,6 +961,7 @@ export const useMaintenanceAppointmentStore =
           contactPhone:
             appointmentData.contactPhone || ticketData.contactPhone || "",
           ticketId: ticketId,
+          ticketFolio: ticketData.folio || "",
           contractId: appointmentData.contractId || "",
           notes: appointmentData.notes || "",
         };

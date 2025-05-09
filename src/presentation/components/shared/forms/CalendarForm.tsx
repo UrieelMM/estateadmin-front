@@ -9,9 +9,11 @@ import {
   ClockIcon,
   PencilIcon,
   XMarkIcon,
+  ExclamationTriangleIcon,
+  CurrencyDollarIcon,
 } from "@heroicons/react/24/solid";
 import { useCondominiumStore } from "../../../../store/useCondominiumStore";
-import { commonAreas } from "../../../../utils/commonAreas";
+import { useCommonAreasStore } from "../../../../store/useCommonAreasStore";
 import { formatCentsToMXN } from "../../../../utils/curreyncy";
 
 interface CalendarEvent {
@@ -21,6 +23,7 @@ interface CalendarEvent {
   phone: string;
   eventDay: string;
   commonArea: string;
+  commonAreaId?: string;
   startTime: string;
   endTime: string;
   comments?: string;
@@ -42,10 +45,12 @@ const FormCalendar = ({ isOpen, onClose }: FormCalendarProps) => {
   const currentCondominiumId = useCondominiumStore(
     (state) => state.selectedCondominium?.id
   );
+  const { commonAreas, fetchCommonAreas } = useCommonAreasStore();
 
   // Estados locales para los campos del formulario
   const [selectedResidentId, setSelectedResidentId] = useState("");
   const [commonArea, setCommonArea] = useState("");
+  const [commonAreaId, setCommonAreaId] = useState("");
   const [eventDate, setEventDate] = useState("");
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
@@ -59,13 +64,100 @@ const FormCalendar = ({ isOpen, onClose }: FormCalendarProps) => {
   > | null>(null);
   const [unpaidCharges, setUnpaidCharges] = useState<any[]>([]);
 
+  // Estado para alerta de horario
+  const [timeRangeModalVisible, setTimeRangeModalVisible] = useState(false);
+  const [selectedArea, setSelectedArea] = useState<any>(null);
+
+  // Nuevo estado para calcular el costo
+  const [reservationCost, setReservationCost] = useState<number | null>(null);
+  const [reservationHours, setReservationHours] = useState<number>(0);
+
   useEffect(() => {
     if (isOpen) {
       fetchCondominiumsUsers();
+      fetchCommonAreas();
       // Resetear el residente seleccionado al abrir el formulario o cambiar de condominio
       setSelectedResidentId("");
+      setCommonArea("");
+      setCommonAreaId("");
     }
-  }, [fetchCondominiumsUsers, isOpen, currentCondominiumId]);
+  }, [fetchCondominiumsUsers, fetchCommonAreas, isOpen, currentCondominiumId]);
+
+  // Calcular el costo cuando cambia el área común o los horarios
+  useEffect(() => {
+    calculateReservationCost();
+  }, [startTime, endTime, selectedArea]);
+
+  const calculateReservationCost = () => {
+    if (!selectedArea || !startTime || !endTime || selectedArea.rate === 0) {
+      setReservationCost(null);
+      setReservationHours(0);
+      return;
+    }
+
+    // Calcular duración en horas
+    const convertToMinutes = (time: string) => {
+      const [hours, minutes] = time.split(":").map(Number);
+      return hours * 60 + minutes;
+    };
+
+    const startMinutes = convertToMinutes(startTime);
+    const endMinutes = convertToMinutes(endTime);
+
+    // Si el fin es antes que el inicio, asumimos que es para el día siguiente
+    let durationMinutes = endMinutes - startMinutes;
+    if (durationMinutes < 0) {
+      durationMinutes += 24 * 60; // Añadir 24 horas en minutos
+    }
+
+    // Convertir a horas y redondear hacia arriba
+    const durationHours = Math.ceil(durationMinutes / 60);
+    setReservationHours(durationHours);
+
+    // Calcular costo total (tarifa por hora * horas redondeadas hacia arriba)
+    const totalCost = selectedArea.rate * durationHours;
+    setReservationCost(totalCost);
+  };
+
+  const handleCommonAreaChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedId = e.target.value;
+
+    if (selectedId) {
+      const selectedArea = commonAreas.find(
+        (area) => area.uid === selectedId || area.id === selectedId
+      );
+      if (selectedArea) {
+        setCommonArea(selectedArea.name);
+        setCommonAreaId(selectedArea.uid || selectedArea.id || "");
+        setSelectedArea(selectedArea);
+      }
+    } else {
+      setCommonArea("");
+      setCommonAreaId("");
+      setSelectedArea(null);
+    }
+  };
+
+  const validateTimeRange = () => {
+    if (!selectedArea || !startTime || !endTime) return true;
+
+    const openTime = selectedArea.openTime || "00:00";
+    const closeTime = selectedArea.closeTime || "23:59";
+
+    // Convertir a minutos para facilitar la comparación
+    const convertToMinutes = (time: string) => {
+      const [hours, minutes] = time.split(":").map(Number);
+      return hours * 60 + minutes;
+    };
+
+    const openMinutes = convertToMinutes(openTime);
+    const closeMinutes = convertToMinutes(closeTime);
+    const startMinutes = convertToMinutes(startTime);
+    const endMinutes = convertToMinutes(endTime);
+
+    // Comprobar si el inicio y fin de la reserva están dentro del horario del área
+    return startMinutes >= openMinutes && endMinutes <= closeMinutes;
+  };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -91,6 +183,17 @@ const FormCalendar = ({ isOpen, onClose }: FormCalendarProps) => {
       return;
     }
 
+    // Verificar rango de horario
+    if (!validateTimeRange()) {
+      setTimeRangeModalVisible(true);
+      return;
+    }
+
+    // Continuar con la creación del evento
+    proceedWithEventCreation(resident);
+  };
+
+  const proceedWithEventCreation = async (resident: any) => {
     // Construir el objeto del evento sin incluir 'comments' si está vacío
     const eventData: Omit<CalendarEvent, "id" | "folio"> = {
       name: resident.name,
@@ -98,6 +201,7 @@ const FormCalendar = ({ isOpen, onClose }: FormCalendarProps) => {
       phone: resident.phone || "",
       eventDay: eventDate,
       commonArea,
+      commonAreaId,
       startTime,
       endTime,
       email: resident.email,
@@ -113,12 +217,7 @@ const FormCalendar = ({ isOpen, onClose }: FormCalendarProps) => {
       await createEvent(eventData);
       toast.success("Evento creado con éxito.");
       // Limpiar los campos y cerrar el modal
-      setSelectedResidentId("");
-      setCommonArea("");
-      setEventDate("");
-      setStartTime("");
-      setEndTime("");
-      setComments("");
+      resetForm();
       onClose();
     } catch (error: any) {
       console.error("Error al crear el evento:", error);
@@ -135,6 +234,18 @@ const FormCalendar = ({ isOpen, onClose }: FormCalendarProps) => {
     }
   };
 
+  const resetForm = () => {
+    setSelectedResidentId("");
+    setCommonArea("");
+    setCommonAreaId("");
+    setEventDate("");
+    setStartTime("");
+    setEndTime("");
+    setComments("");
+    setTimeRangeModalVisible(false);
+    setSelectedArea(null);
+  };
+
   // Función para forzar la creación del evento (opción confirmada)
   const handleConfirm = async () => {
     if (!pendingEventData) return;
@@ -142,13 +253,7 @@ const FormCalendar = ({ isOpen, onClose }: FormCalendarProps) => {
       await createEvent(pendingEventData, { force: true });
       toast.success("Evento creado con éxito.");
       // Limpiar campos y cerrar el modal
-      setSelectedResidentId("");
-      setCommonArea("");
-      setEventDate("");
-      setStartTime("");
-      setEndTime("");
-      setComments("");
-      setPendingEventData(null);
+      resetForm();
       setConfirmModalVisible(false);
       onClose();
     } catch (error) {
@@ -158,6 +263,18 @@ const FormCalendar = ({ isOpen, onClose }: FormCalendarProps) => {
           ? error.message
           : "Ocurrió un error al crear el evento.";
       toast.error(errorMessage);
+    }
+  };
+
+  // Función para proceder con la creación a pesar de estar fuera del rango horario
+  const handleForceTimeRange = () => {
+    setTimeRangeModalVisible(false);
+    // Buscar el residente seleccionado para continuar con la creación
+    const resident = condominiumsUsers.find(
+      (user) => user.uid === selectedResidentId
+    );
+    if (resident) {
+      proceedWithEventCreation(resident);
     }
   };
 
@@ -220,19 +337,25 @@ const FormCalendar = ({ isOpen, onClose }: FormCalendarProps) => {
                 </div>
                 <select
                   id="commonArea"
-                  value={commonArea}
-                  onChange={(e) => setCommonArea(e.target.value)}
+                  value={commonAreaId}
+                  onChange={handleCommonAreaChange}
                   className="w-full pl-10 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
                   required
                 >
                   <option value="">Seleccione un área</option>
                   {commonAreas.map((area) => (
-                    <option key={area} value={area}>
-                      {area}
+                    <option key={area.id} value={area.uid || area.id}>
+                      {area.name}
                     </option>
                   ))}
                 </select>
               </div>
+              {selectedArea && (
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  Horario disponible: {selectedArea.openTime} -{" "}
+                  {selectedArea.closeTime}
+                </p>
+              )}
             </div>
             <div>
               <label
@@ -297,6 +420,46 @@ const FormCalendar = ({ isOpen, onClose }: FormCalendarProps) => {
                 />
               </div>
             </div>
+            {reservationCost !== null &&
+              selectedArea?.rate > 0 &&
+              startTime &&
+              endTime && (
+                <div className="md:col-span-2">
+                  <div className="rounded-md bg-blue-50 dark:bg-blue-900/20 p-4 mt-2">
+                    <div className="flex">
+                      <div className="flex-shrink-0">
+                        <CurrencyDollarIcon
+                          className="h-5 w-5 text-blue-400"
+                          aria-hidden="true"
+                        />
+                      </div>
+                      <div className="ml-3">
+                        <h3 className="text-sm font-medium text-blue-800 dark:text-blue-300">
+                          Información de Costo
+                        </h3>
+                        <div className="mt-2 text-sm text-blue-700 dark:text-blue-200">
+                          <p>
+                            Duración de la reserva:{" "}
+                            <span className="font-semibold">
+                              {reservationHours} hora
+                              {reservationHours !== 1 ? "s" : ""}
+                            </span>
+                          </p>
+                          <p>
+                            Costo total estimado:{" "}
+                            <span className="font-semibold">
+                              {formatCentsToMXN(reservationCost)}
+                            </span>
+                          </p>
+                          <p className="mt-2 text-xs italic">
+                            Recuerda generar el cargo correspondiente.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             <div className="md:col-span-2">
               <label
                 htmlFor="comments"
@@ -329,7 +492,7 @@ const FormCalendar = ({ isOpen, onClose }: FormCalendarProps) => {
         </div>
       </div>
 
-      {/* Modal para confirmar creación forzada en caso de adeudos pendientes - Reemplazado con Tailwind */}
+      {/* Modal para confirmar creación forzada en caso de adeudos pendientes */}
       {confirmModalVisible && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
           <div className="bg-white min-w-[500px] dark:bg-gray-800 p-6 rounded-lg max-w-md shadow-xl">
@@ -374,6 +537,52 @@ const FormCalendar = ({ isOpen, onClose }: FormCalendarProps) => {
               </button>
               <button onClick={handleConfirm} className="btn-primary">
                 Guardar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal para confirmar horario fuera de rango */}
+      {timeRangeModalVisible && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+          <div className="bg-white min-w-[500px] dark:bg-gray-800 p-6 rounded-lg max-w-md shadow-xl">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center">
+                <ExclamationTriangleIcon className="h-6 w-6 text-amber-500 mr-2" />
+                Horario fuera de rango
+              </h3>
+              <button
+                onClick={() => setTimeRangeModalVisible(false)}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white"
+              >
+                <XMarkIcon className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="mb-6">
+              <p className="text-gray-700 dark:text-gray-300">
+                El horario seleccionado ({startTime} - {endTime}) está fuera del
+                rango permitido para esta área común.
+              </p>
+              <p className="text-gray-700 dark:text-gray-300 mt-2 font-bold">
+                Horario permitido: {selectedArea?.openTime} -{" "}
+                {selectedArea?.closeTime}
+              </p>
+              <p className="text-gray-700 dark:text-gray-300 mt-4">
+                ¿Desea continuar con la reservación de todos modos?
+              </p>
+            </div>
+
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => setTimeRangeModalVisible(false)}
+                className="btn-secundary"
+              >
+                Cancelar
+              </button>
+              <button onClick={handleForceTimeRange} className="btn-primary">
+                Continuar
               </button>
             </div>
           </div>

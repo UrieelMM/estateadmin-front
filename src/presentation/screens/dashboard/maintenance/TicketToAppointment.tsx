@@ -14,16 +14,7 @@ import toast from "react-hot-toast";
 // Constantes de colores por estado para mantener consistencia en toda la UI
 const TICKET_STATUS_COLORS = {
   abierto: {
-    bg: "rgba(59, 130, 246, 0.8)", // Azul
-    border: "border-blue-400",
-    bgLight: "bg-blue-50",
-    bgDark: "dark:bg-blue-900/10",
-    borderDark: "dark:border-blue-500",
-    text: "text-blue-500",
-    textDark: "dark:text-blue-400",
-  },
-  en_progreso: {
-    bg: "rgba(251, 146, 60, 0.8)", // Naranjo/Amarillo
+    bg: "rgba(120, 53, 15, 0.8)",
     border: "border-yellow-400",
     bgLight: "bg-yellow-50",
     bgDark: "dark:bg-yellow-900/10",
@@ -31,14 +22,23 @@ const TICKET_STATUS_COLORS = {
     text: "text-yellow-500",
     textDark: "dark:text-yellow-400",
   },
+  en_progreso: {
+    bg: "rgba(59, 130, 246, 0.8) ",
+    border: "border-blue-400",
+    bgLight: "bg-blue-50",
+    bgDark: "dark:bg-blue-900/10",
+    borderDark: "dark:border-blue-500",
+    text: "text-blue-500",
+    textDark: "dark:text-blue-400",
+  },
   cerrado: {
-    bg: "rgba(107, 114, 128, 0.8)", // Gris
-    border: "border-gray-400",
-    bgLight: "bg-gray-50",
-    bgDark: "dark:bg-gray-700/30",
-    borderDark: "dark:border-gray-500",
-    text: "text-gray-500",
-    textDark: "dark:text-gray-400",
+    bg: "rgba(52, 211, 153, 0.8)",
+    border: "border-green-400",
+    bgLight: "bg-green-50",
+    bgDark: "dark:bg-green-700/30",
+    borderDark: "dark:border-green-500",
+    text: "text-green-500",
+    textDark: "dark:text-green-400",
   },
 };
 

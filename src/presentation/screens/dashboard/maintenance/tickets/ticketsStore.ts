@@ -93,6 +93,8 @@ export type Ticket = {
   attachments?: string[];
   tags?: string[];
   providerId?: string;
+  commonAreaId?: string;
+  commonAreaName?: string;
   history?: TicketHistoryItem[];
   mergedFrom?: string[];
   area?: string;

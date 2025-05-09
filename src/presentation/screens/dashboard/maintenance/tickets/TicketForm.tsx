@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useTicketsStore, Ticket } from "./ticketsStore";
 import useProviderStore from "../../../../../store/providerStore";
+import { useCommonAreasStore } from "../../../../../store/useCommonAreasStore";
 import { getAuth } from "firebase/auth";
 import toast from "react-hot-toast";
 import { componentStyles } from "./ticketFormStyles";
@@ -225,6 +226,7 @@ const FormField = ({
 
 const TicketForm: React.FC<TicketFormProps> = ({ initialTicket, onClose }) => {
   const { createTicket, updateTicket, loading } = useTicketsStore();
+  const { commonAreas, fetchCommonAreas } = useCommonAreasStore();
 
   // Estados principales del formulario con valores iniciales
   const [title, setTitle] = useState(initialTicket?.title || "");
@@ -240,6 +242,12 @@ const TicketForm: React.FC<TicketFormProps> = ({ initialTicket, onClose }) => {
   const [assignedTo, setAssignedTo] = useState(initialTicket?.assignedTo || "");
   const [providerId, setProviderId] = useState(initialTicket?.providerId || "");
   const [tags, setTags] = useState<string[]>(initialTicket?.tags || []);
+  const [commonAreaId, setCommonAreaId] = useState(
+    initialTicket?.commonAreaId || ""
+  );
+  const [commonAreaName, setCommonAreaName] = useState(
+    initialTicket?.commonAreaName || ""
+  );
 
   // Estados adicionales
   const [files, setFiles] = useState<File[]>([]);
@@ -250,12 +258,13 @@ const TicketForm: React.FC<TicketFormProps> = ({ initialTicket, onClose }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const titleInputRef = useRef<HTMLInputElement>(null);
 
-  // Cargar proveedores
+  // Cargar proveedores y áreas comunes
   const { providers, fetchProviders } = useProviderStore();
 
   // Efecto para cargar datos y configurar el formulario
   useEffect(() => {
     fetchProviders();
+    fetchCommonAreas();
 
     // Focus en el campo de título al cargar el componente para mejorar la UX
     if (titleInputRef.current && !initialTicket?.id) {
@@ -276,6 +285,20 @@ const TicketForm: React.FC<TicketFormProps> = ({ initialTicket, onClose }) => {
     }
   };
 
+  const handleCommonAreaChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedId = e.target.value;
+    setCommonAreaId(selectedId);
+
+    if (selectedId) {
+      const selectedArea = commonAreas.find((area) => area.uid === selectedId);
+      if (selectedArea) {
+        setCommonAreaName(selectedArea.name);
+      }
+    } else {
+      setCommonAreaName("");
+    }
+  };
+
   const resetForm = () => {
     setTitle("");
     setDescription("");
@@ -284,6 +307,8 @@ const TicketForm: React.FC<TicketFormProps> = ({ initialTicket, onClose }) => {
     setAssignedTo("");
     setProviderId("");
     setTags([]);
+    setCommonAreaId("");
+    setCommonAreaName("");
     setFiles([]);
     setError(null);
     setFieldErrors({});
@@ -340,6 +365,8 @@ const TicketForm: React.FC<TicketFormProps> = ({ initialTicket, onClose }) => {
             assignedTo,
             tags,
             providerId,
+            commonAreaId,
+            commonAreaName,
             // Mantenemos los valores originales si existen
             folio: initialTicket.folio,
             createdBy:
@@ -366,6 +393,8 @@ const TicketForm: React.FC<TicketFormProps> = ({ initialTicket, onClose }) => {
             assignedTo,
             tags,
             providerId,
+            commonAreaId,
+            commonAreaName,
             folio: randomId,
             createdBy: userName || "Usuario desconocido",
             createdByEmail: userEmail || "Usuario desconocido",
@@ -392,14 +421,20 @@ const TicketForm: React.FC<TicketFormProps> = ({ initialTicket, onClose }) => {
         errorMsg = "Error de autenticación: Usuario no encontrado";
       } else if (err.code === "permission-denied") {
         errorMsg = "No tienes permisos para realizar esta acción";
-      } else if (err.code === "storage/unauthorized" || err.message?.includes("unauthorized")) {
+      } else if (
+        err.code === "storage/unauthorized" ||
+        err.message?.includes("unauthorized")
+      ) {
         errorMsg = "No tienes permisos para subir archivos";
-      } else if (err.code === "storage/object-too-large" || err.message?.includes("too large")) {
+      } else if (
+        err.code === "storage/object-too-large" ||
+        err.message?.includes("too large")
+      ) {
         errorMsg = "El archivo es demasiado grande. El límite es de 15MB";
       } else if (err.message) {
         errorMsg = err.message;
       }
-      
+
       // Mostrar mensaje de error en toast en lugar de en la interfaz
       toast.error(errorMsg);
     }
@@ -620,6 +655,25 @@ const TicketForm: React.FC<TicketFormProps> = ({ initialTicket, onClose }) => {
           {providers.map((prov) => (
             <option key={prov.id} value={prov.id}>
               {prov.name}
+            </option>
+          ))}
+        </select>
+      </FormField>
+
+      {/* Common Area field - add after Provider field */}
+      <FormField
+        label="Área común"
+        helpText="Selecciona un área común si el ticket está relacionado con ella"
+      >
+        <select
+          className={componentStyles.formSelect}
+          value={commonAreaId}
+          onChange={handleCommonAreaChange}
+        >
+          <option value="">Seleccionar área común</option>
+          {commonAreas.map((area) => (
+            <option key={area.id} value={area.uid || area.id}>
+              {area.name}
             </option>
           ))}
         </select>

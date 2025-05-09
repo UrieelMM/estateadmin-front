@@ -26,6 +26,7 @@ import { v4 as uuidv4 } from "uuid";
 // Definición de tipos para el área común
 export type CommonArea = {
   id?: string;
+  uid?: string;
   name: string;
   description: string;
   capacity: number;
@@ -227,11 +228,18 @@ export const useCommonAreasStore = create<CommonAreasState>()((set, get) => ({
         newArea
       );
 
+      // Actualizar el documento con su propio ID
+      await updateDoc(docRef, { uid: docRef.id });
+
       // Actualizar el estado local
       set((state) => ({
         commonAreas: [
           ...state.commonAreas,
-          { ...newArea, id: docRef.id } as unknown as CommonArea,
+          {
+            ...newArea,
+            id: docRef.id,
+            uid: docRef.id,
+          } as unknown as CommonArea,
         ],
         loading: false,
       }));
