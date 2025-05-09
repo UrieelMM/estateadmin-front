@@ -1,15 +1,15 @@
-@import 'tailwindcss/base';
-@import 'tailwindcss/components';
-@import 'tailwindcss/utilities';
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
 
 /* Eliminar el fondo azul de autocompletado en los inputs */
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus,
 input:-webkit-autofill:active {
-    -webkit-box-shadow: 0 0 0 30px white inset !important;
-    -webkit-text-fill-color: #1f2937 !important;
-    transition: background-color 5000s ease-in-out 0s;
+  -webkit-box-shadow: 0 0 0 30px white inset !important;
+  -webkit-text-fill-color: #1f2937 !important;
+  transition: background-color 5000s ease-in-out 0s;
 }
 
 /* Para Firefox y Edge */
@@ -17,126 +17,134 @@ input:autofill,
 input:autofill:hover,
 input:autofill:focus,
 input:autofill:active {
-    background-color: white !important;
-    color: #1f2937 !important;
-    box-shadow: 0 0 0 30px white inset !important;
+  background-color: white !important;
+  color: #1f2937 !important;
+  box-shadow: 0 0 0 30px white inset !important;
+}
+
+/* Clase para el placeholder de los formularios de login */
+.login-placeholder {
+  font-size: 0.875rem !important;
+}
+
+.login-placeholder-active {
+  font-size: 0.975rem !important;
 }
 
 html {
-    @apply h-full bg-white;
+  @apply h-full bg-white;
 }
 
 body {
-    @apply h-full;
+  @apply h-full;
 }
 
 .btn-primary {
-    @apply mt-4 py-2 px-4 bg-indigo-500 text-white rounded text-xs lg:text-sm hover:bg-indigo-700 transition duration-500 ease-in-out transform hover:-translate-y-1 hover:shadow-lg;
-
+  @apply mt-4 py-2 px-4 bg-indigo-500 text-white rounded text-xs lg:text-sm hover:bg-indigo-700 transition duration-500 ease-in-out transform hover:-translate-y-1 hover:shadow-lg;
 }
 
 .btn-secundary {
-    @apply border border-indigo-500 mt-4 py-2 px-4 rounded text-xs lg:text-sm bg-white text-gray-700 transition duration-500 ease-in-out transform hover:-translate-y-1 hover:shadow-lg;
+  @apply border border-indigo-500 mt-4 py-2 px-4 rounded text-xs lg:text-sm bg-white text-gray-700 transition duration-500 ease-in-out transform hover:-translate-y-1 hover:shadow-lg;
 }
 
 .overlay-forms {
-    background-color: #6365f115;
+  background-color: #6365f115;
 }
 
 span.bg-indigo-500.rounded-lg.p-2.text-white.text-xs.ml-2 {
-    position: absolute;
-    z-index: 1;
-    left: 20px;
-    top: -30px;
+  position: absolute;
+  z-index: 1;
+  left: 20px;
+  top: -30px;
 }
 
 .fixed.inset-0.overlay-forms.flex.justify-center.items-center {
-    position: absolute;
-    z-index: 9;
+  position: absolute;
+  z-index: 9;
 }
 
 .fixed.inset-0.bg-black.bg-opacity-50.flex.justify-center.items-center {
-    z-index: 999;
+  z-index: 999;
 }
 
 .custom-scrollbar {
-    /* Para Firefox */
-    scrollbar-width: thin;
-    scrollbar-color: #9ca3af #e5e7eb;
-    /* thumb y track respectivamente */
+  /* Para Firefox */
+  scrollbar-width: thin;
+  scrollbar-color: #9ca3af #e5e7eb;
+  /* thumb y track respectivamente */
 }
 
 .custom-overflow-hidden {
-    overflow: hidden !important;
+  overflow: hidden !important;
 }
 
 /* Para navegadores basados en Webkit (Chrome, Edge, Safari) */
 .custom-scrollbar::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+  width: 8px;
+  height: 8px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
-    background: #e5e7eb;
-    /* Tailwind gray-200 */
+  background: #e5e7eb;
+  /* Tailwind gray-200 */
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-    background-color: #9ca3af;
-    /* Tailwind gray-400 */
-    border-radius: 4px;
+  background-color: #9ca3af;
+  /* Tailwind gray-400 */
+  border-radius: 4px;
 }
 
 .chat-container::-webkit-scrollbar {
-    width: 0;
-    /* Elimina el ancho del scrollbar */
-    background: transparent;
-    /* Hace el fondo transparente */
+  width: 0;
+  /* Elimina el ancho del scrollbar */
+  background: transparent;
+  /* Hace el fondo transparente */
 }
 
 /* Ocultar el scrollbar en Firefox */
 .chat-container {
-    scrollbar-width: none;
-    /* Oculta el scrollbar */
-    -ms-overflow-style: none;
-    /* Para Internet Explorer 10+ */
+  scrollbar-width: none;
+  /* Oculta el scrollbar */
+  -ms-overflow-style: none;
+  /* Para Internet Explorer 10+ */
 }
 
 /* Asegúrate de que el contenedor pueda desplazarse */
 .chat-container {
-    overflow-y: scroll;
-    /* Permite el desplazamiento vertical */
+  overflow-y: scroll;
+  /* Permite el desplazamiento vertical */
 }
 
 .tooltip-container {
-    min-width: 60px !important;
+  min-width: 60px !important;
 }
 
 select[size] {
-    height: auto;
-    overflow-y: auto;
-    max-height: 200px;
+  height: auto;
+  overflow-y: auto;
+  max-height: 200px;
 }
 
 select[size] option {
-    padding: 8px 12px;
+  padding: 8px 12px;
 }
 
 select[size] option:hover {
-    background-color: #f3f4f6;
+  background-color: #f3f4f6;
 }
 
 .dark select[size] option:hover {
-    background-color: #374151;
+  background-color: #374151;
 }
 
 select[size] optgroup {
-    position: sticky;
-    top: 0;
-    background-color: white;
-    z-index: 10;
+  position: sticky;
+  top: 0;
+  background-color: white;
+  z-index: 10;
 }
 
 .dark select[size] optgroup {
-    background-color: #1f2937;
+  background-color: #1f2937;
 }

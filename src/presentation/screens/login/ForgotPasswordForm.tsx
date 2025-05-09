@@ -1,22 +1,22 @@
-import { useState, useRef } from 'react';
-import { usePasswordResetStore } from '../../../store/usePasswordResetStore';
-import toast from 'react-hot-toast';
-import axios from 'axios';
-import { motion } from 'framer-motion';
+import { useState, useRef } from "react";
+import { usePasswordResetStore } from "../../../store/usePasswordResetStore";
+import toast from "react-hot-toast";
+import axios from "axios";
+import { motion } from "framer-motion";
 
 interface ForgotPasswordFormProps {
   onBack: () => void;
 }
 
 export const ForgotPasswordForm = ({ onBack }: ForgotPasswordFormProps) => {
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState("");
   const [emailSent, setEmailSent] = useState(false);
-  const [apiMessage, setApiMessage] = useState('');
+  const [apiMessage, setApiMessage] = useState("");
   const [focusedField, setFocusedField] = useState("");
   const { loading } = usePasswordResetStore();
-  
+
   const emailRef = useRef<HTMLInputElement>(null);
-  
+
   // Handlers para el foco del campo
   const handleFocus = () => {
     setFocusedField("email");
@@ -28,7 +28,7 @@ export const ForgotPasswordForm = ({ onBack }: ForgotPasswordFormProps) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
       // Implementación directa para tener control total del proceso
       const response = await axios.post(
@@ -39,16 +39,22 @@ export const ForgotPasswordForm = ({ onBack }: ForgotPasswordFormProps) => {
       // La API responde con { status, code, message } en caso de éxito
       if (response.data.status === true || response.data.code === 200) {
         // Usar el mensaje exacto que proporciona la API
-        const message = response.data.message || "Se ha enviado un correo con las instrucciones para restablecer tu contraseña";
+        const message =
+          response.data.message ||
+          "Se ha enviado un correo con las instrucciones para restablecer tu contraseña";
         toast.success(message);
         setApiMessage(message);
         setEmailSent(true);
       } else {
         // Toast de error para mensajes de error
-        toast.error(response.data.message || "No se pudo enviar el correo de recuperación");
+        toast.error(
+          response.data.message || "No se pudo enviar el correo de recuperación"
+        );
       }
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || "Error al enviar el correo de recuperación";
+      const errorMessage =
+        error.response?.data?.message ||
+        "Error al enviar el correo de recuperación";
       toast.error(errorMessage);
     }
   };
@@ -56,7 +62,7 @@ export const ForgotPasswordForm = ({ onBack }: ForgotPasswordFormProps) => {
   if (emailSent) {
     return (
       <div className="space-y-6 text-center">
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
@@ -64,16 +70,20 @@ export const ForgotPasswordForm = ({ onBack }: ForgotPasswordFormProps) => {
         >
           <div className="flex">
             <div className="flex-shrink-0">
-              <motion.svg 
+              <motion.svg
                 initial={{ scale: 0 }}
                 animate={{ scale: 1, rotate: [0, 20, 0] }}
                 transition={{ duration: 0.5, delay: 0.2 }}
-                className="h-5 w-5 text-green-500" 
-                viewBox="0 0 20 20" 
-                fill="currentColor" 
+                className="h-5 w-5 text-green-500"
+                viewBox="0 0 20 20"
+                fill="currentColor"
                 aria-hidden="true"
               >
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
+                <path
+                  fillRule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z"
+                  clipRule="evenodd"
+                />
               </motion.svg>
             </div>
             <div className="ml-3">
@@ -82,14 +92,20 @@ export const ForgotPasswordForm = ({ onBack }: ForgotPasswordFormProps) => {
               </h3>
               <div className="mt-2 text-sm text-green-700">
                 <p>{apiMessage}</p>
-                <p className="mt-2">Se ha enviado a: <span className="font-semibold">{email}</span></p>
-                <p className="mt-2">Por favor, revisa tu bandeja de entrada y sigue los pasos indicados en el correo.</p>
+                <p className="mt-2">
+                  Se ha enviado a:{" "}
+                  <span className="font-semibold">{email}</span>
+                </p>
+                <p className="mt-2">
+                  Por favor, revisa tu bandeja de entrada y sigue los pasos
+                  indicados en el correo.
+                </p>
               </div>
             </div>
           </div>
         </motion.div>
 
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.3, delay: 0.3 }}
@@ -133,11 +149,21 @@ export const ForgotPasswordForm = ({ onBack }: ForgotPasswordFormProps) => {
             color: focusedField === "email" ? "#4f46e5" : "#6b7280",
           }}
           transition={{ type: "tween", duration: 0.2 }}
-          className="absolute left-12 top-2.5 text-gray-500 pointer-events-none origin-left z-10"
+          className={`absolute left-12 top-2.5 text-gray-500 pointer-events-none origin-left z-10 ${
+            focusedField === "email" || email
+              ? "login-placeholder-active"
+              : "login-placeholder"
+          }`}
         >
           Correo electrónico
         </motion.div>
-        <div className={`relative rounded-xl overflow-hidden transition-all duration-300 ${focusedField === "email" ? "ring-2 ring-indigo-500 shadow-lg" : "shadow"}`}>
+        <div
+          className={`relative rounded-xl overflow-hidden transition-all duration-300 ${
+            focusedField === "email"
+              ? "ring-2 ring-indigo-500 shadow-lg"
+              : "shadow"
+          }`}
+        >
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             <motion.svg
               animate={{
@@ -173,7 +199,7 @@ export const ForgotPasswordForm = ({ onBack }: ForgotPasswordFormProps) => {
         </div>
       </motion.div>
 
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.3, delay: 0.2 }}
@@ -214,4 +240,4 @@ export const ForgotPasswordForm = ({ onBack }: ForgotPasswordFormProps) => {
       </motion.div>
     </form>
   );
-}; 
+};

@@ -178,7 +178,11 @@ const LoginScreen = () => {
                       color: focusedField === "email" ? "#4f46e5" : "#6b7280",
                     }}
                     transition={{ type: "tween", duration: 0.2 }}
-                    className="absolute left-12 top-2.5 text-gray-500 pointer-events-none origin-left z-10"
+                    className={`absolute left-12 top-2.5 text-gray-500 pointer-events-none origin-left z-10 ${
+                      focusedField === "email" || email
+                        ? "login-placeholder-active"
+                        : "login-placeholder"
+                    }`}
                   >
                     Correo electrónico
                   </motion.div>
@@ -240,7 +244,11 @@ const LoginScreen = () => {
                         focusedField === "password" ? "#4f46e5" : "#6b7280",
                     }}
                     transition={{ type: "tween", duration: 0.2 }}
-                    className="absolute left-12 top-2.5 text-gray-500 pointer-events-none origin-left z-10"
+                    className={`absolute left-12 top-2.5 text-gray-500 pointer-events-none origin-left z-10 ${
+                      focusedField === "password" || password
+                        ? "login-placeholder-active"
+                        : "login-placeholder"
+                    }`}
                   >
                     Contraseña
                   </motion.div>
