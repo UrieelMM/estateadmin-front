@@ -264,4 +264,11 @@ export const routesApp = [
     description: "Gestión de áreas comunes del condominio",
     component: <CommonAreas />,
   },
+  // {
+  //   to: "/dashboard/planning",
+  //   icon: "fa-solid fa-calendar-check",
+  //   title: "Planificación",
+  //   description: "Gestión de planificaciones del condominio",
+  //   component: <Planning />,
+  // },
 ];

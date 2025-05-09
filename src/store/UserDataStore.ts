@@ -31,6 +31,7 @@ export interface UserState {
   fetchAdminUsers: () => Promise<void>;
   fetchCondominiumsUsers: () => Promise<void>;
   fetchUserDetails: (uid: string) => Promise<UserData | null>;
+  getUserById: (uid: string) => Promise<UserData | null>;
   setAuthListenerSet: (value: boolean) => void;
   fetchPaginatedCondominiumsUsers: (
     pageSize: number,
@@ -237,6 +238,9 @@ const useUserStore = create<UserState>()((set, get) => ({
     }
     return null;
   },
+  getUserById: async (uid: string) => {
+    return get().fetchUserDetails(uid);
+  },
   fetchCondominiumsUsers: async () => {
     // Verifica si ya se han cargado los datos para evitar llamadas múltiples
     // o si se ha cambiado de condominio
@@ -358,7 +362,11 @@ const useUserStore = create<UserState>()((set, get) => ({
       return [];
     }
   },
-  searchUsersByName: async (searchTerm: string, pageSize: number, page: number) => {
+  searchUsersByName: async (
+    searchTerm: string,
+    pageSize: number,
+    page: number
+  ) => {
     const userAuth = auth.currentUser;
     if (userAuth) {
       try {
@@ -420,7 +428,7 @@ const useUserStore = create<UserState>()((set, get) => ({
           const normalizedLastName = normalizeText(user.lastName);
           const normalizedFullName = `${normalizedName} ${normalizedLastName}`;
           const normalizedNumber = normalizeText(user.number);
-          
+
           return (
             normalizedName.includes(normalizedSearchTerm) ||
             normalizedLastName.includes(normalizedSearchTerm) ||
@@ -432,7 +440,7 @@ const useUserStore = create<UserState>()((set, get) => ({
         // Paginar los resultados para mantener consistencia con la interfaz
         const startIdx = (page - 1) * pageSize;
         const endIdx = startIdx + pageSize;
-        
+
         const paginatedUsers = filteredUsers.slice(startIdx, endIdx);
         return paginatedUsers;
       } catch (error) {
@@ -484,5 +492,9 @@ const useUserStore = create<UserState>()((set, get) => ({
     }
   },
 }));
+
+export const getUserById = async (uid: string) => {
+  return useUserStore.getState().fetchUserDetails(uid);
+};
 
 export default useUserStore;

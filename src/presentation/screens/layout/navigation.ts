@@ -66,6 +66,12 @@ export const navigation = [
     icon: BuildingStorefrontIcon,
     current: false,
   },
+  // {
+  //   name: "Planificación",
+  //   href: "/dashboard/planning",
+  //   icon: CalendarDaysIcon,
+  //   current: false,
+  // },
   {
     name: "Inventario",
     href: "/dashboard/inventory",
