@@ -1,9 +1,18 @@
 import { useState, useEffect } from "react";
 import MaintenanceReportsForm from "../../../components/shared/forms/MaintenanceReportsForm";
 import MaintenanceReportsTable from "./MaintenanceReportsTable";
-import { MaintenanceReport, useMaintenanceReportStore } from "../../../../store/useMaintenanceStore";
+import {
+  MaintenanceReport,
+  useMaintenanceReportStore,
+} from "../../../../store/useMaintenanceStore";
 import TicketsMain from "./tickets/TicketsMain";
-import { WrenchScrewdriverIcon, ClipboardDocumentCheckIcon, DocumentChartBarIcon, CalendarDaysIcon, UserGroupIcon } from "@heroicons/react/24/solid";
+import {
+  WrenchScrewdriverIcon,
+  ClipboardDocumentCheckIcon,
+  DocumentChartBarIcon,
+  CalendarDaysIcon,
+  UserGroupIcon,
+} from "@heroicons/react/24/solid";
 import MaintenanceDashboard from "./MaintenanceDashboard";
 import MaintenanceAppointments from "./MaintenanceAppointments";
 import MaintenanceContracts from "./MaintenanceContracts";
@@ -13,10 +22,12 @@ const Maintenance = () => {
   // Estado para controlar la apertura del formulario
   const [open, setOpen] = useState(false);
   // Estado para almacenar el reporte seleccionado en modo edición (null para modo creación)
-  const [reportToEdit, setReportToEdit] = useState<MaintenanceReport | null>(null);
+  const [reportToEdit, setReportToEdit] = useState<MaintenanceReport | null>(
+    null
+  );
   const { fetchReports } = useMaintenanceReportStore();
   const { fetchTickets } = useTicketsStore();
-  
+
   useEffect(() => {
     // Cargar datos al iniciar el componente
     fetchReports();
@@ -35,7 +46,9 @@ const Maintenance = () => {
     setReportToEdit(null);
   };
 
-  const [tab, setTab] = useState<"dashboard" | "reportes" | "tickets" | "citas" | "contratos">("dashboard");
+  const [tab, setTab] = useState<
+    "dashboard" | "reportes" | "tickets" | "citas" | "contratos"
+  >("dashboard");
   return (
     <div className="px-4 rounded-md sm:px-6 lg:px-8">
       <header className="bg-gray-50 font-medium shadow-lg flex w-full h-16 justify-between px-2 rounded-md items-center mb-6 dark:shadow-2xl dark:bg-gray-800 dark:text-gray-100">
@@ -108,7 +121,7 @@ const Maintenance = () => {
           <MaintenanceDashboard />
         </div>
       )}
-        
+
       {tab === "reportes" && (
         <>
           <div className="-mx-4 mt-6 sm:-mx-0 py-4">
@@ -123,8 +136,17 @@ const Maintenance = () => {
                   setOpen(true);
                 }}
               >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1.5" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5 mr-1.5"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
+                    clipRule="evenodd"
+                  />
                 </svg>
                 Registrar Reporte
               </button>
@@ -138,19 +160,19 @@ const Maintenance = () => {
           />
         </>
       )}
-      
+
       {tab === "tickets" && (
         <div className="mt-6">
           <TicketsMain />
         </div>
       )}
-      
+
       {tab === "citas" && (
         <div className="mt-6">
           <MaintenanceAppointments />
         </div>
       )}
-      
+
       {tab === "contratos" && (
         <div className="mt-6">
           <MaintenanceContracts />

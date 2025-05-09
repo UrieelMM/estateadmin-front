@@ -41,12 +41,13 @@ export type MaintenanceContract = {
   description: string;
   startDate: string;
   endDate: string;
-  value: number;
+  value: number; // Ahora almacenamos en centavos
   status: "active" | "pending" | "expired" | "cancelled";
   contactName?: string;
   contactPhone?: string;
   contactEmail?: string;
   notes?: string;
+  contractFileUrl?: string; // URL del archivo del contrato
 };
 
 // Nuevo tipo para citas/visitas de mantenimiento
@@ -94,12 +95,14 @@ type MaintenanceContractState = {
   loading: boolean;
   error: string | null;
   fetchContracts: () => Promise<void>;
-  createContract: (contract: MaintenanceContract) => Promise<void>;
+  createContract: (contract: MaintenanceContract, file?: File) => Promise<void>;
   updateContract: (
     contractId: string,
-    data: Partial<MaintenanceContract>
+    data: Partial<MaintenanceContract>,
+    file?: File
   ) => Promise<void>;
   deleteContract: (contractId: string) => Promise<void>;
+  getExpiringContracts: () => MaintenanceContract[];
 };
 
 // Nuevo estado para citas/visitas de mantenimiento
@@ -401,6 +404,7 @@ export const useMaintenanceContractStore = create<MaintenanceContractState>()(
             contactPhone: data.contactPhone,
             contactEmail: data.contactEmail,
             notes: data.notes,
+            contractFileUrl: data.contractFileUrl,
           });
         });
 
@@ -427,7 +431,7 @@ export const useMaintenanceContractStore = create<MaintenanceContractState>()(
       }
     },
 
-    createContract: async (contract) => {
+    createContract: async (contract, file) => {
       set({ loading: true, error: null });
       try {
         const condominiumId = localStorage.getItem("condominiumId");
@@ -443,6 +447,27 @@ export const useMaintenanceContractStore = create<MaintenanceContractState>()(
         if (!clientId) throw new Error("clientId no disponible en el token");
 
         const db = getFirestore();
+        const storage = getStorage();
+
+        // Si se proporciona un archivo, lo subimos a Firebase Storage
+        let contractFileUrl = "";
+        if (file) {
+          const storageRef = ref(
+            storage,
+            `clients/${clientId}/condominiums/${condominiumId}/providers/contracts/${Date.now()}_${
+              file.name
+            }`
+          );
+          await uploadBytes(storageRef, file);
+          contractFileUrl = await getDownloadURL(storageRef);
+        }
+
+        // Crear el objeto de contrato con la URL del archivo si existe
+        const contractData = {
+          ...contract,
+          contractFileUrl,
+        };
+
         const contractsRef = collection(
           db,
           "clients",
@@ -452,7 +477,7 @@ export const useMaintenanceContractStore = create<MaintenanceContractState>()(
           "maintenanceContracts"
         );
 
-        await addDoc(contractsRef, contract);
+        await addDoc(contractsRef, contractData);
         set({ loading: false });
         await get().fetchContracts();
       } catch (error: any) {
@@ -461,7 +486,7 @@ export const useMaintenanceContractStore = create<MaintenanceContractState>()(
       }
     },
 
-    updateContract: async (contractId, data) => {
+    updateContract: async (contractId, data, file) => {
       set({ loading: true, error: null });
       try {
         const condominiumId = localStorage.getItem("condominiumId");
@@ -477,6 +502,22 @@ export const useMaintenanceContractStore = create<MaintenanceContractState>()(
         if (!clientId) throw new Error("clientId no disponible en el token");
 
         const db = getFirestore();
+        const storage = getStorage();
+
+        // Si se proporciona un archivo, lo subimos y actualizamos la URL
+        let updateData = { ...data };
+        if (file) {
+          const storageRef = ref(
+            storage,
+            `clients/${clientId}/condominiums/${condominiumId}/providers/contracts/${Date.now()}_${
+              file.name
+            }`
+          );
+          await uploadBytes(storageRef, file);
+          const contractFileUrl = await getDownloadURL(storageRef);
+          updateData.contractFileUrl = contractFileUrl;
+        }
+
         const contractDocRef = doc(
           db,
           "clients",
@@ -487,7 +528,7 @@ export const useMaintenanceContractStore = create<MaintenanceContractState>()(
           contractId
         );
 
-        await updateDoc(contractDocRef, data);
+        await updateDoc(contractDocRef, updateData);
         set({ loading: false });
         await get().fetchContracts();
       } catch (error: any) {
@@ -529,6 +570,22 @@ export const useMaintenanceContractStore = create<MaintenanceContractState>()(
         set({ error: error.message, loading: false });
         throw error;
       }
+    },
+
+    // Nueva función para obtener contratos próximos a vencer (30 días)
+    getExpiringContracts: () => {
+      const today = new Date();
+      const thirtyDaysFromNow = new Date();
+      thirtyDaysFromNow.setDate(today.getDate() + 30);
+
+      return get().contracts.filter((contract) => {
+        const endDate = new Date(contract.endDate);
+        return (
+          contract.status === "active" &&
+          endDate > today &&
+          endDate <= thirtyDaysFromNow
+        );
+      });
     },
   })
 );

@@ -4,11 +4,117 @@ import {
   PencilIcon,
   TrashIcon,
   DocumentTextIcon,
+  DocumentArrowDownIcon,
+  ExclamationTriangleIcon,
+  ExclamationCircleIcon,
 } from "@heroicons/react/24/outline";
 import {
   MaintenanceContract,
   useMaintenanceContractStore,
 } from "../../../../store/useMaintenanceStore";
+import {
+  formatCentsToMXN,
+  formatMXNToCents,
+} from "../../../../utils/curreyncy";
+
+// Componente para mostrar alertas de contratos próximos a vencer
+const ExpiringContractsAlert = ({
+  contracts,
+}: {
+  contracts: MaintenanceContract[];
+}) => {
+  if (contracts.length === 0) return null;
+
+  return (
+    <div className="mb-6 bg-amber-50 border-l-4 border-amber-400 p-4 dark:bg-amber-900/30 dark:border-amber-500">
+      <div className="flex">
+        <div className="flex-shrink-0">
+          <ExclamationTriangleIcon
+            className="h-5 w-5 text-amber-400"
+            aria-hidden="true"
+          />
+        </div>
+        <div className="ml-3">
+          <h3 className="text-sm font-medium text-amber-800 dark:text-amber-300">
+            Contratos próximos a vencer
+          </h3>
+          <div className="mt-2 text-sm text-amber-700 dark:text-amber-200">
+            <ul className="list-disc pl-5 space-y-1">
+              {contracts.map((contract) => (
+                <li key={contract.id}>
+                  {contract.providerName} - {contract.serviceType}: vence el{" "}
+                  {new Date(contract.endDate).toLocaleDateString()}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Componente del modal de confirmación para eliminar
+interface DeleteConfirmationModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  contractName: string;
+}
+
+const DeleteConfirmationModal = ({
+  isOpen,
+  onClose,
+  onConfirm,
+  contractName,
+}: DeleteConfirmationModalProps) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6">
+        <div className="sm:flex sm:items-start">
+          <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 dark:bg-red-900/30 sm:mx-0 sm:h-10 sm:w-10">
+            <ExclamationCircleIcon
+              className="h-6 w-6 text-red-600 dark:text-red-400"
+              aria-hidden="true"
+            />
+          </div>
+          <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+            <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-white">
+              Eliminar contrato
+            </h3>
+            <div className="mt-2">
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                ¿Estás seguro de eliminar el contrato con{" "}
+                <span className="font-medium text-gray-700 dark:text-gray-300">
+                  {contractName}
+                </span>
+                ? Esta acción no se puede deshacer.
+              </p>
+            </div>
+          </div>
+        </div>
+        <div className="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
+          <button
+            type="button"
+            className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm"
+            onClick={onConfirm}
+          >
+            Eliminar
+          </button>
+          <button
+            type="button"
+            className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:w-auto sm:text-sm dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-gray-600"
+            onClick={onClose}
+          >
+            Cancelar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 // Componente para la gestión de contratos de mantenimiento
 const MaintenanceContracts = () => {
@@ -18,9 +124,20 @@ const MaintenanceContracts = () => {
   const [isViewingContract, setIsViewingContract] = useState(false);
   const [selectedContract, setSelectedContract] =
     useState<MaintenanceContract | null>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [contractToDelete, setContractToDelete] = useState<string | null>(null);
+  const [contractToDeleteName, setContractToDeleteName] = useState<string>("");
 
-  const { contracts, loading, error, fetchContracts, deleteContract } =
-    useMaintenanceContractStore();
+  const {
+    contracts,
+    loading,
+    error,
+    fetchContracts,
+    deleteContract,
+    getExpiringContracts,
+  } = useMaintenanceContractStore();
+
+  const expiringContracts = getExpiringContracts();
 
   useEffect(() => {
     fetchContracts();
@@ -45,13 +162,22 @@ const MaintenanceContracts = () => {
     setIsViewingContract(true);
   };
 
-  const handleDeleteContract = async (contractId: string) => {
-    if (
-      window.confirm(
-        "¿Estás seguro de eliminar este contrato? Esta acción no se puede deshacer."
-      )
-    ) {
-      await deleteContract(contractId);
+  const handleOpenDeleteModal = (contractId: string, providerName: string) => {
+    setContractToDelete(contractId);
+    setContractToDeleteName(providerName);
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleCloseDeleteModal = () => {
+    setIsDeleteModalOpen(false);
+    setContractToDelete(null);
+    setContractToDeleteName("");
+  };
+
+  const handleDeleteContract = async () => {
+    if (contractToDelete) {
+      await deleteContract(contractToDelete);
+      handleCloseDeleteModal();
     }
   };
 
@@ -69,6 +195,11 @@ const MaintenanceContracts = () => {
           Nuevo Contrato
         </button>
       </div>
+
+      {/* Mostrar alertas de contratos próximos a vencer */}
+      {expiringContracts.length > 0 && (
+        <ExpiringContractsAlert contracts={expiringContracts} />
+      )}
 
       {error && (
         <div className="bg-red-50 border-l-4 border-red-400 p-4 dark:bg-red-900/30 dark:border-red-500">
@@ -158,7 +289,7 @@ const MaintenanceContracts = () => {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
-                    ${contract.value.toLocaleString()}
+                    {formatCentsToMXN(contract.value)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <div className="flex justify-end space-x-2">
@@ -169,6 +300,17 @@ const MaintenanceContracts = () => {
                       >
                         <DocumentTextIcon className="h-5 w-5" />
                       </button>
+                      {contract.contractFileUrl && (
+                        <a
+                          href={contract.contractFileUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300"
+                          title="Descargar contrato"
+                        >
+                          <DocumentArrowDownIcon className="h-5 w-5" />
+                        </a>
+                      )}
                       <button
                         onClick={() => handleOpenForm(contract)}
                         className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
@@ -177,7 +319,12 @@ const MaintenanceContracts = () => {
                         <PencilIcon className="h-5 w-5" />
                       </button>
                       <button
-                        onClick={() => handleDeleteContract(contract.id!)}
+                        onClick={() =>
+                          handleOpenDeleteModal(
+                            contract.id!,
+                            contract.providerName
+                          )
+                        }
                         className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
                         title="Eliminar"
                       >
@@ -207,6 +354,13 @@ const MaintenanceContracts = () => {
           contract={selectedContract}
         />
       )}
+
+      <DeleteConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={handleCloseDeleteModal}
+        onConfirm={handleDeleteContract}
+        contractName={contractToDeleteName}
+      />
     </div>
   );
 };
@@ -237,7 +391,13 @@ const ContractForm = ({ isOpen, onClose, contract }: ContractFormProps) => {
     contactPhone: contract?.contactPhone || "",
     contactEmail: contract?.contactEmail || "",
     notes: contract?.notes || "",
+    contractFileUrl: contract?.contractFileUrl || "",
   });
+
+  const [contractFile, setContractFile] = useState<File | null>(null);
+  const [filePreview, setFilePreview] = useState<string | null>(
+    contract?.contractFileUrl || null
+  );
 
   const handleChange = (
     e: React.ChangeEvent<
@@ -245,10 +405,38 @@ const ContractForm = ({ isOpen, onClose, contract }: ContractFormProps) => {
     >
   ) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: name === "value" ? parseFloat(value) : value,
-    }));
+
+    // Si es el campo de valor, convertir a centavos
+    if (name === "value") {
+      setFormData((prev) => ({
+        ...prev,
+        [name]: formatMXNToCents(value),
+      }));
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    setContractFile(file);
+
+    // Crear una vista previa del archivo si existe
+    if (file) {
+      // Solo para PDFs y archivos de imagen
+      if (file.type.includes("pdf") || file.type.includes("image")) {
+        const reader = new FileReader();
+        reader.onload = () => {
+          setFilePreview(reader.result as string);
+        };
+        reader.readAsDataURL(file);
+      } else {
+        setFilePreview(null);
+      }
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -256,9 +444,12 @@ const ContractForm = ({ isOpen, onClose, contract }: ContractFormProps) => {
 
     try {
       if (contract?.id) {
-        await updateContract(contract.id, formData);
+        await updateContract(contract.id, formData, contractFile || undefined);
       } else {
-        await createContract(formData as MaintenanceContract);
+        await createContract(
+          formData as MaintenanceContract,
+          contractFile || undefined
+        );
       }
       onClose();
     } catch (error) {
@@ -353,14 +544,17 @@ const ContractForm = ({ isOpen, onClose, contract }: ContractFormProps) => {
                 Valor del contrato ($)
               </label>
               <input
-                type="number"
+                type="text"
                 name="value"
-                value={formData.value}
+                value={
+                  formData.value
+                    ? formatCentsToMXN(formData.value).replace(/[^\d.,]/g, "")
+                    : ""
+                }
                 onChange={handleChange}
                 required
-                min="0"
-                step="0.01"
                 className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                placeholder="0.00"
               />
             </div>
 
@@ -417,6 +611,87 @@ const ContractForm = ({ isOpen, onClose, contract }: ContractFormProps) => {
                 onChange={handleChange}
                 className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               />
+            </div>
+
+            <div className="col-span-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Documento del contrato (PDF)
+              </label>
+              <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md dark:border-gray-600">
+                <div className="space-y-1 text-center">
+                  {filePreview || formData.contractFileUrl ? (
+                    <div className="flex flex-col items-center">
+                      <DocumentTextIcon className="h-12 w-12 text-indigo-500" />
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                        {contractFile ? contractFile.name : "Contrato cargado"}
+                      </p>
+                      {formData.contractFileUrl && !contractFile && (
+                        <a
+                          href={formData.contractFileUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-indigo-600 hover:text-indigo-500 text-sm mt-2"
+                        >
+                          Ver contrato actual
+                        </a>
+                      )}
+                      <button
+                        type="button"
+                        className="text-sm text-red-600 mt-2"
+                        onClick={() => {
+                          setContractFile(null);
+                          setFilePreview(null);
+                          if (!contract?.contractFileUrl) {
+                            setFormData((prev) => ({
+                              ...prev,
+                              contractFileUrl: "",
+                            }));
+                          }
+                        }}
+                      >
+                        Eliminar
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <svg
+                        className="mx-auto h-12 w-12 text-gray-400"
+                        stroke="currentColor"
+                        fill="none"
+                        viewBox="0 0 48 48"
+                        aria-hidden="true"
+                      >
+                        <path
+                          d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
+                          strokeWidth={2}
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                      <div className="flex text-sm text-gray-600 dark:text-gray-400">
+                        <label
+                          htmlFor="contract-file-upload"
+                          className="relative cursor-pointer bg-white dark:bg-gray-700 rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500"
+                        >
+                          <span>Subir un archivo</span>
+                          <input
+                            id="contract-file-upload"
+                            name="contract-file-upload"
+                            type="file"
+                            onChange={handleFileChange}
+                            accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                            className="sr-only"
+                          />
+                        </label>
+                        <p className="pl-1">o arrastrar y soltar</p>
+                      </div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        PDF, Word o imágenes hasta 10MB
+                      </p>
+                    </>
+                  )}
+                </div>
+              </div>
             </div>
 
             <div className="col-span-2">
@@ -585,9 +860,28 @@ const ContractViewer = ({ isOpen, onClose, contract }: ContractViewerProps) => {
                   Valor
                 </p>
                 <p className="mt-1 text-sm text-gray-900 dark:text-white">
-                  ${contract.value.toLocaleString()}
+                  {formatCentsToMXN(contract.value)}
                 </p>
               </div>
+
+              {contract.contractFileUrl && (
+                <div className="col-span-2">
+                  <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                    Documento del contrato
+                  </p>
+                  <div className="mt-2">
+                    <a
+                      href={contract.contractFileUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:bg-indigo-900/40 dark:text-indigo-300 dark:hover:bg-indigo-900/60"
+                    >
+                      <DocumentArrowDownIcon className="mr-1.5 h-5 w-5" />
+                      Ver/Descargar contrato
+                    </a>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
