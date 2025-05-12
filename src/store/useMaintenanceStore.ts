@@ -13,10 +13,12 @@ import {
   orderBy,
   Timestamp,
   getDoc,
+  writeBatch,
 } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { Ticket } from "../presentation/screens/dashboard/maintenance/tickets/ticketsStore";
 import moment from "moment";
+import { useExpenseStore } from "./expenseStore";
 
 export type MaintenanceReport = {
   id?: string;
@@ -67,6 +69,47 @@ export type MaintenanceAppointment = {
   contract?: MaintenanceContract;
   notes?: string;
   ticketFolio?: string;
+};
+
+// Nuevo tipo para costos de mantenimiento
+export type MaintenanceCost = {
+  id?: string;
+  description: string;
+  amount: number; // En centavos
+  date: string;
+  category: string; // Materiales, Mano de obra, Repuestos, Otros
+  appointmentId?: string;
+  appointment?: MaintenanceAppointment;
+  ticketId?: string;
+  ticket?: Ticket;
+  contractId?: string;
+  contract?: MaintenanceContract;
+  budgetId?: string;
+  invoiceNumber?: string;
+  invoiceFile?: string;
+  provider?: string;
+  providerId?: string; // ID del proveedor
+  status: "pending" | "paid" | "cancelled";
+  paymentDate?: string;
+  paymentMethod?: string;
+  notes?: string;
+};
+
+// Nuevo tipo para presupuestos de mantenimiento
+export type MaintenanceBudget = {
+  id?: string;
+  title: string;
+  description: string;
+  amount: number; // En centavos
+  startDate: string;
+  endDate: string;
+  year: number;
+  month?: number;
+  category: string;
+  status: "active" | "completed" | "cancelled" | "expired";
+  expenses: MaintenanceCost[];
+  progress: number; // Porcentaje de presupuesto utilizado
+  notes?: string;
 };
 
 type MaintenanceReportState = {
@@ -125,6 +168,55 @@ type MaintenanceAppointmentState = {
     ticketId: string,
     appointment: Partial<MaintenanceAppointment>
   ) => Promise<void>;
+};
+
+// Nuevo estado para costos de mantenimiento
+type MaintenanceCostState = {
+  costs: MaintenanceCost[];
+  loading: boolean;
+  error: string | null;
+  fetchCosts: (filters?: {
+    startDate?: string;
+    endDate?: string;
+    category?: string;
+  }) => Promise<void>;
+  createCost: (cost: MaintenanceCost, file?: File) => Promise<void>;
+  updateCost: (
+    costId: string,
+    data: Partial<MaintenanceCost>,
+    file?: File
+  ) => Promise<void>;
+  deleteCost: (costId: string) => Promise<void>;
+  getCostsByAppointment: (appointmentId: string) => Promise<MaintenanceCost[]>;
+  getCostsByTicket: (ticketId: string) => Promise<MaintenanceCost[]>;
+  getCostsByContract: (contractId: string) => Promise<MaintenanceCost[]>;
+  getCostSummaryByCategory: (
+    startDate?: string,
+    endDate?: string
+  ) => Promise<{ category: string; total: number }[]>;
+  getCostSummaryByMonth: (
+    year: number
+  ) => Promise<{ month: number; total: number }[]>;
+};
+
+// Nuevo estado para presupuestos de mantenimiento
+type MaintenanceBudgetState = {
+  budgets: MaintenanceBudget[];
+  loading: boolean;
+  error: string | null;
+  fetchBudgets: (year?: number) => Promise<void>;
+  createBudget: (budget: MaintenanceBudget) => Promise<void>;
+  updateBudget: (
+    budgetId: string,
+    data: Partial<MaintenanceBudget>
+  ) => Promise<void>;
+  deleteBudget: (budgetId: string) => Promise<void>;
+  calculateBudgetProgress: (budgetId: string) => Promise<void>;
+  getBudgetSummary: (
+    year: number
+  ) => Promise<
+    { category: string; budgeted: number; spent: number; remaining: number }[]
+  >;
 };
 
 export const useMaintenanceReportStore = create<MaintenanceReportState>()(
@@ -982,3 +1074,1041 @@ export const useMaintenanceAppointmentStore =
       }
     },
   }));
+
+// Nuevo store para costos de mantenimiento
+export const useMaintenanceCostStore = create<MaintenanceCostState>()(
+  (set, get) => ({
+    costs: [],
+    loading: false,
+    error: null,
+
+    fetchCosts: async (filters) => {
+      set({ loading: true, error: null });
+      try {
+        const condominiumId = localStorage.getItem("condominiumId");
+        if (!condominiumId) {
+          set({ error: "Condominio no seleccionado", loading: false });
+          return;
+        }
+        const auth = getAuth();
+        const user = auth.currentUser;
+        if (!user) throw new Error("Usuario no autenticado");
+        const tokenResult = await getIdTokenResult(user);
+        const clientId = tokenResult.claims["clientId"] as string;
+        if (!clientId) throw new Error("clientId no disponible en el token");
+
+        const db = getFirestore();
+        const costsRef = collection(
+          db,
+          "clients",
+          clientId,
+          "condominiums",
+          condominiumId,
+          "maintenanceCosts"
+        );
+
+        let constraints: any[] = [];
+
+        // Aplicar filtros si existen
+        if (filters) {
+          if (filters.startDate) {
+            constraints.push(where("date", ">=", filters.startDate));
+          }
+          if (filters.endDate) {
+            constraints.push(where("date", "<=", filters.endDate));
+          }
+          if (filters.category) {
+            constraints.push(where("category", "==", filters.category));
+          }
+        }
+
+        let q;
+        if (constraints.length > 0) {
+          q = query(costsRef, ...constraints, orderBy("date", "desc"));
+        } else {
+          q = query(costsRef, orderBy("date", "desc"));
+        }
+
+        const querySnapshot = await getDocs(q);
+
+        const costs: MaintenanceCost[] = [];
+        for (const docSnap of querySnapshot.docs) {
+          const data = docSnap.data();
+          const cost: MaintenanceCost = {
+            id: docSnap.id,
+            description: data.description,
+            amount: data.amount,
+            date: data.date,
+            category: data.category,
+            appointmentId: data.appointmentId || "",
+            ticketId: data.ticketId || "",
+            contractId: data.contractId || "",
+            invoiceNumber: data.invoiceNumber || "",
+            invoiceFile: data.invoiceFile || "",
+            provider: data.provider || "",
+            status: data.status,
+            paymentDate: data.paymentDate || "",
+            paymentMethod: data.paymentMethod || "",
+            notes: data.notes || "",
+          };
+
+          // Si hay un appointmentId, obtenemos los datos de la cita
+          if (data.appointmentId) {
+            try {
+              const appointmentDocRef = doc(
+                db,
+                "clients",
+                clientId,
+                "condominiums",
+                condominiumId,
+                "maintenanceAppointments",
+                data.appointmentId
+              );
+              const appointmentSnap = await getDoc(appointmentDocRef);
+
+              if (appointmentSnap.exists()) {
+                cost.appointment = {
+                  id: appointmentSnap.id,
+                  ...appointmentSnap.data(),
+                } as MaintenanceAppointment;
+              }
+            } catch (error) {
+              console.error("Error al obtener cita asociada:", error);
+            }
+          }
+
+          // Si hay un ticketId, obtenemos los datos del ticket
+          if (data.ticketId) {
+            try {
+              const ticketDocRef = doc(
+                db,
+                "clients",
+                clientId,
+                "condominiums",
+                condominiumId,
+                "ticketsMaintenance",
+                data.ticketId
+              );
+              const ticketSnap = await getDoc(ticketDocRef);
+
+              if (ticketSnap.exists()) {
+                cost.ticket = {
+                  id: ticketSnap.id,
+                  ...ticketSnap.data(),
+                } as Ticket;
+              }
+            } catch (error) {
+              console.error("Error al obtener ticket asociado:", error);
+            }
+          }
+
+          // Si hay un contractId, obtenemos los datos del contrato
+          if (data.contractId) {
+            try {
+              const contractDocRef = doc(
+                db,
+                "clients",
+                clientId,
+                "condominiums",
+                condominiumId,
+                "maintenanceContracts",
+                data.contractId
+              );
+              const contractSnap = await getDoc(contractDocRef);
+
+              if (contractSnap.exists()) {
+                cost.contract = {
+                  id: contractSnap.id,
+                  ...contractSnap.data(),
+                } as MaintenanceContract;
+              }
+            } catch (error) {
+              console.error("Error al obtener contrato asociado:", error);
+            }
+          }
+
+          costs.push(cost);
+        }
+
+        set({ costs, loading: false });
+      } catch (error: any) {
+        set({ error: error.message, loading: false });
+      }
+    },
+
+    createCost: async (cost, file) => {
+      set({ loading: true, error: null });
+      try {
+        const condominiumId = localStorage.getItem("condominiumId");
+        if (!condominiumId) {
+          set({ error: "Condominio no seleccionado", loading: false });
+          return;
+        }
+        const auth = getAuth();
+        const user = auth.currentUser;
+        if (!user) throw new Error("Usuario no autenticado");
+        const tokenResult = await getIdTokenResult(user);
+        const clientId = tokenResult.claims["clientId"] as string;
+        if (!clientId) throw new Error("clientId no disponible en el token");
+
+        const db = getFirestore();
+        const storage = getStorage();
+
+        // Si se proporciona un archivo de factura, lo subimos
+        let invoiceFile = "";
+        if (file) {
+          const storageRef = ref(
+            storage,
+            `clients/${clientId}/condominiums/${condominiumId}/maintenance/invoices/${Date.now()}_${
+              file.name
+            }`
+          );
+          await uploadBytes(storageRef, file);
+          invoiceFile = await getDownloadURL(storageRef);
+        }
+
+        // Crear el objeto de costo con la URL del archivo si existe
+        const costData = {
+          ...cost,
+          invoiceFile,
+        };
+
+        // Eliminar objetos complejos antes de guardar en Firestore
+        const costToSave = { ...costData };
+        delete costToSave.appointment;
+        delete costToSave.ticket;
+        delete costToSave.contract;
+
+        const costsRef = collection(
+          db,
+          "clients",
+          clientId,
+          "condominiums",
+          condominiumId,
+          "maintenanceCosts"
+        );
+
+        // Guardar en la colección de maintenanceCosts
+        await addDoc(costsRef, costToSave);
+
+        // Si este costo está vinculado a un presupuesto, actualizar el progreso del presupuesto
+        if (cost.budgetId) {
+          const budgetStore = useMaintenanceBudgetStore.getState();
+          await budgetStore.calculateBudgetProgress(cost.budgetId);
+        }
+
+        // Registrar también como un egreso general
+        await registerMaintenanceCostAsExpense(cost, file, invoiceFile);
+
+        set({ loading: false });
+        await get().fetchCosts();
+      } catch (error: any) {
+        set({ error: error.message, loading: false });
+        throw error;
+      }
+    },
+
+    updateCost: async (costId, data, file) => {
+      set({ loading: true, error: null });
+      try {
+        const condominiumId = localStorage.getItem("condominiumId");
+        if (!condominiumId) {
+          set({ error: "Condominio no seleccionado", loading: false });
+          return;
+        }
+        const auth = getAuth();
+        const user = auth.currentUser;
+        if (!user) throw new Error("Usuario no autenticado");
+        const tokenResult = await getIdTokenResult(user);
+        const clientId = tokenResult.claims["clientId"] as string;
+        if (!clientId) throw new Error("clientId no disponible en el token");
+
+        const db = getFirestore();
+        const storage = getStorage();
+
+        // Si se proporciona un archivo, lo subimos y actualizamos la URL
+        let updateData = { ...data };
+        if (file) {
+          const storageRef = ref(
+            storage,
+            `clients/${clientId}/condominiums/${condominiumId}/maintenance/invoices/${Date.now()}_${
+              file.name
+            }`
+          );
+          await uploadBytes(storageRef, file);
+          const invoiceFile = await getDownloadURL(storageRef);
+          updateData.invoiceFile = invoiceFile;
+        }
+
+        // Eliminar objetos complejos antes de guardar en Firestore
+        delete updateData.appointment;
+        delete updateData.ticket;
+        delete updateData.contract;
+
+        const costDocRef = doc(
+          db,
+          "clients",
+          clientId,
+          "condominiums",
+          condominiumId,
+          "maintenanceCosts",
+          costId
+        );
+
+        // Obtener datos completos antes de actualizar para registrar como egreso
+        const currentCostDoc = await getDoc(costDocRef);
+        if (currentCostDoc.exists()) {
+          const currentCost = currentCostDoc.data() as MaintenanceCost;
+          const updatedCost = { ...currentCost, ...updateData, id: costId };
+
+          // Registrar como un egreso general (actualiza si existe o crea nuevo)
+          await registerMaintenanceCostAsExpense(
+            updatedCost,
+            file,
+            updateData.invoiceFile || currentCost.invoiceFile
+          );
+        }
+
+        await updateDoc(costDocRef, updateData);
+
+        // Si hay un budgetId, actualizar el progreso del presupuesto
+        const costDoc = await getDoc(costDocRef);
+        if (costDoc.exists() && costDoc.data().budgetId) {
+          const budgetStore = useMaintenanceBudgetStore.getState();
+          await budgetStore.calculateBudgetProgress(costDoc.data().budgetId);
+        }
+
+        set({ loading: false });
+        await get().fetchCosts();
+      } catch (error: any) {
+        set({ error: error.message, loading: false });
+        throw error;
+      }
+    },
+
+    deleteCost: async (costId) => {
+      set({ loading: true, error: null });
+      try {
+        const condominiumId = localStorage.getItem("condominiumId");
+        if (!condominiumId) {
+          set({ error: "Condominio no seleccionado", loading: false });
+          return;
+        }
+        const auth = getAuth();
+        const user = auth.currentUser;
+        if (!user) throw new Error("Usuario no autenticado");
+        const tokenResult = await getIdTokenResult(user);
+        const clientId = tokenResult.claims["clientId"] as string;
+        if (!clientId) throw new Error("clientId no disponible en el token");
+
+        const db = getFirestore();
+
+        // Obtener el documento antes de eliminarlo para ver si tiene budgetId
+        const costDocRef = doc(
+          db,
+          "clients",
+          clientId,
+          "condominiums",
+          condominiumId,
+          "maintenanceCosts",
+          costId
+        );
+
+        const costDoc = await getDoc(costDocRef);
+        const budgetId = costDoc.exists() ? costDoc.data().budgetId : null;
+
+        await deleteDoc(costDocRef);
+
+        // Si había un presupuesto asociado, actualizar su progreso
+        if (budgetId) {
+          const budgetStore = useMaintenanceBudgetStore.getState();
+          await budgetStore.calculateBudgetProgress(budgetId);
+        }
+
+        set({ loading: false });
+        await get().fetchCosts();
+      } catch (error: any) {
+        set({ error: error.message, loading: false });
+        throw error;
+      }
+    },
+
+    getCostsByAppointment: async (appointmentId) => {
+      try {
+        const condominiumId = localStorage.getItem("condominiumId");
+        if (!condominiumId) {
+          throw new Error("Condominio no seleccionado");
+        }
+        const auth = getAuth();
+        const user = auth.currentUser;
+        if (!user) throw new Error("Usuario no autenticado");
+        const tokenResult = await getIdTokenResult(user);
+        const clientId = tokenResult.claims["clientId"] as string;
+        if (!clientId) throw new Error("clientId no disponible en el token");
+
+        const db = getFirestore();
+        const costsRef = collection(
+          db,
+          "clients",
+          clientId,
+          "condominiums",
+          condominiumId,
+          "maintenanceCosts"
+        );
+
+        const q = query(costsRef, where("appointmentId", "==", appointmentId));
+        const querySnapshot = await getDocs(q);
+
+        const costs: MaintenanceCost[] = [];
+        querySnapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          costs.push({
+            id: docSnap.id,
+            description: data.description,
+            amount: data.amount,
+            date: data.date,
+            category: data.category,
+            appointmentId: data.appointmentId || "",
+            ticketId: data.ticketId || "",
+            contractId: data.contractId || "",
+            invoiceNumber: data.invoiceNumber || "",
+            invoiceFile: data.invoiceFile || "",
+            provider: data.provider || "",
+            status: data.status,
+            paymentDate: data.paymentDate || "",
+            paymentMethod: data.paymentMethod || "",
+            notes: data.notes || "",
+          });
+        });
+
+        return costs;
+      } catch (error: any) {
+        console.error("Error al obtener costos por appointmentId:", error);
+        return [];
+      }
+    },
+
+    getCostsByTicket: async (ticketId) => {
+      try {
+        const condominiumId = localStorage.getItem("condominiumId");
+        if (!condominiumId) {
+          throw new Error("Condominio no seleccionado");
+        }
+        const auth = getAuth();
+        const user = auth.currentUser;
+        if (!user) throw new Error("Usuario no autenticado");
+        const tokenResult = await getIdTokenResult(user);
+        const clientId = tokenResult.claims["clientId"] as string;
+        if (!clientId) throw new Error("clientId no disponible en el token");
+
+        const db = getFirestore();
+        const costsRef = collection(
+          db,
+          "clients",
+          clientId,
+          "condominiums",
+          condominiumId,
+          "maintenanceCosts"
+        );
+
+        const q = query(costsRef, where("ticketId", "==", ticketId));
+        const querySnapshot = await getDocs(q);
+
+        const costs: MaintenanceCost[] = [];
+        querySnapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          costs.push({
+            id: docSnap.id,
+            description: data.description,
+            amount: data.amount,
+            date: data.date,
+            category: data.category,
+            appointmentId: data.appointmentId || "",
+            ticketId: data.ticketId || "",
+            contractId: data.contractId || "",
+            invoiceNumber: data.invoiceNumber || "",
+            invoiceFile: data.invoiceFile || "",
+            provider: data.provider || "",
+            status: data.status,
+            paymentDate: data.paymentDate || "",
+            paymentMethod: data.paymentMethod || "",
+            notes: data.notes || "",
+          });
+        });
+
+        return costs;
+      } catch (error: any) {
+        console.error("Error al obtener costos por ticketId:", error);
+        return [];
+      }
+    },
+
+    getCostsByContract: async (contractId) => {
+      try {
+        const condominiumId = localStorage.getItem("condominiumId");
+        if (!condominiumId) {
+          throw new Error("Condominio no seleccionado");
+        }
+        const auth = getAuth();
+        const user = auth.currentUser;
+        if (!user) throw new Error("Usuario no autenticado");
+        const tokenResult = await getIdTokenResult(user);
+        const clientId = tokenResult.claims["clientId"] as string;
+        if (!clientId) throw new Error("clientId no disponible en el token");
+
+        const db = getFirestore();
+        const costsRef = collection(
+          db,
+          "clients",
+          clientId,
+          "condominiums",
+          condominiumId,
+          "maintenanceCosts"
+        );
+
+        const q = query(costsRef, where("contractId", "==", contractId));
+        const querySnapshot = await getDocs(q);
+
+        const costs: MaintenanceCost[] = [];
+        querySnapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          costs.push({
+            id: docSnap.id,
+            description: data.description,
+            amount: data.amount,
+            date: data.date,
+            category: data.category,
+            appointmentId: data.appointmentId || "",
+            ticketId: data.ticketId || "",
+            contractId: data.contractId || "",
+            invoiceNumber: data.invoiceNumber || "",
+            invoiceFile: data.invoiceFile || "",
+            provider: data.provider || "",
+            status: data.status,
+            paymentDate: data.paymentDate || "",
+            paymentMethod: data.paymentMethod || "",
+            notes: data.notes || "",
+          });
+        });
+
+        return costs;
+      } catch (error: any) {
+        console.error("Error al obtener costos por contractId:", error);
+        return [];
+      }
+    },
+
+    getCostSummaryByCategory: async (startDate, endDate) => {
+      try {
+        const condominiumId = localStorage.getItem("condominiumId");
+        if (!condominiumId) {
+          throw new Error("Condominio no seleccionado");
+        }
+
+        // Si no hay fechas, establecer periodo del año actual
+        if (!startDate) {
+          const currentYear = new Date().getFullYear();
+          startDate = `${currentYear}-01-01`;
+        }
+
+        if (!endDate) {
+          const currentYear = new Date().getFullYear();
+          endDate = `${currentYear}-12-31`;
+        }
+
+        // Obtener todos los costos en el rango de fechas
+        await get().fetchCosts({ startDate, endDate });
+        const costs = get().costs;
+
+        // Agrupar por categoría y sumar
+        const categorySummary: Record<string, number> = {};
+        costs.forEach((cost) => {
+          if (!categorySummary[cost.category]) {
+            categorySummary[cost.category] = 0;
+          }
+          categorySummary[cost.category] += cost.amount;
+        });
+
+        // Convertir a array para retornar
+        return Object.entries(categorySummary).map(([category, total]) => ({
+          category,
+          total,
+        }));
+      } catch (error: any) {
+        console.error("Error al obtener resumen por categoría:", error);
+        return [];
+      }
+    },
+
+    getCostSummaryByMonth: async (year) => {
+      try {
+        const condominiumId = localStorage.getItem("condominiumId");
+        if (!condominiumId) {
+          throw new Error("Condominio no seleccionado");
+        }
+
+        const startDate = `${year}-01-01`;
+        const endDate = `${year}-12-31`;
+
+        // Obtener todos los costos del año
+        await get().fetchCosts({ startDate, endDate });
+        const costs = get().costs;
+
+        // Inicializar resumen para los 12 meses
+        const monthSummary: Record<number, number> = {};
+        for (let i = 1; i <= 12; i++) {
+          monthSummary[i] = 0;
+        }
+
+        // Agrupar por mes y sumar
+        costs.forEach((cost) => {
+          const costDate = new Date(cost.date);
+          const month = costDate.getMonth() + 1; // getMonth() es 0-indexed
+
+          if (costDate.getFullYear() === year) {
+            monthSummary[month] += cost.amount;
+          }
+        });
+
+        // Convertir a array para retornar
+        return Object.entries(monthSummary).map(([monthStr, total]) => ({
+          month: parseInt(monthStr),
+          total,
+        }));
+      } catch (error: any) {
+        console.error("Error al obtener resumen por mes:", error);
+        return [];
+      }
+    },
+  })
+);
+
+// Nuevo store para presupuestos de mantenimiento
+export const useMaintenanceBudgetStore = create<MaintenanceBudgetState>()(
+  (set, get) => ({
+    budgets: [],
+    loading: false,
+    error: null,
+
+    fetchBudgets: async (year) => {
+      set({ loading: true, error: null });
+      try {
+        const condominiumId = localStorage.getItem("condominiumId");
+        if (!condominiumId) {
+          set({ error: "Condominio no seleccionado", loading: false });
+          return;
+        }
+        const auth = getAuth();
+        const user = auth.currentUser;
+        if (!user) throw new Error("Usuario no autenticado");
+        const tokenResult = await getIdTokenResult(user);
+        const clientId = tokenResult.claims["clientId"] as string;
+        if (!clientId) throw new Error("clientId no disponible en el token");
+
+        const db = getFirestore();
+        const budgetsRef = collection(
+          db,
+          "clients",
+          clientId,
+          "condominiums",
+          condominiumId,
+          "maintenanceBudgets"
+        );
+
+        let q;
+        if (year) {
+          q = query(
+            budgetsRef,
+            where("year", "==", year),
+            orderBy("startDate", "asc")
+          );
+        } else {
+          q = query(budgetsRef, orderBy("startDate", "asc"));
+        }
+
+        const querySnapshot = await getDocs(q);
+
+        const budgets: MaintenanceBudget[] = [];
+        for (const docSnap of querySnapshot.docs) {
+          const data = docSnap.data();
+
+          // Obtener los gastos asociados a este presupuesto
+          const costsRef = collection(
+            db,
+            "clients",
+            clientId,
+            "condominiums",
+            condominiumId,
+            "maintenanceCosts"
+          );
+
+          const costsQuery = query(
+            costsRef,
+            where("budgetId", "==", docSnap.id)
+          );
+          const costsSnapshot = await getDocs(costsQuery);
+
+          const expenses: MaintenanceCost[] = [];
+          let totalExpenses = 0;
+
+          costsSnapshot.forEach((costDoc) => {
+            const costData = costDoc.data();
+            expenses.push({
+              id: costDoc.id,
+              description: costData.description,
+              amount: costData.amount,
+              date: costData.date,
+              category: costData.category,
+              status: costData.status,
+              appointmentId: costData.appointmentId || "",
+              ticketId: costData.ticketId || "",
+              contractId: costData.contractId || "",
+              provider: costData.provider || "",
+              notes: costData.notes || "",
+            });
+
+            totalExpenses += costData.amount;
+          });
+
+          // Calcular progreso
+          const progress =
+            data.amount > 0
+              ? Math.min(100, (totalExpenses / data.amount) * 100)
+              : 0;
+
+          budgets.push({
+            id: docSnap.id,
+            title: data.title,
+            description: data.description,
+            amount: data.amount,
+            startDate: data.startDate,
+            endDate: data.endDate,
+            year: data.year,
+            month: data.month || null,
+            category: data.category,
+            status: data.status,
+            expenses: expenses,
+            progress: progress,
+            notes: data.notes || "",
+          });
+        }
+
+        set({ budgets, loading: false });
+      } catch (error: any) {
+        set({ error: error.message, loading: false });
+      }
+    },
+
+    createBudget: async (budget) => {
+      set({ loading: true, error: null });
+      try {
+        const condominiumId = localStorage.getItem("condominiumId");
+        if (!condominiumId) {
+          set({ error: "Condominio no seleccionado", loading: false });
+          return;
+        }
+        const auth = getAuth();
+        const user = auth.currentUser;
+        if (!user) throw new Error("Usuario no autenticado");
+        const tokenResult = await getIdTokenResult(user);
+        const clientId = tokenResult.claims["clientId"] as string;
+        if (!clientId) throw new Error("clientId no disponible en el token");
+
+        const db = getFirestore();
+
+        // Eliminar las expenses antes de guardar
+        const { expenses, ...budgetToSave } = budget;
+
+        // Asegurar progreso inicial
+        budgetToSave.progress = 0;
+
+        const budgetsRef = collection(
+          db,
+          "clients",
+          clientId,
+          "condominiums",
+          condominiumId,
+          "maintenanceBudgets"
+        );
+
+        await addDoc(budgetsRef, budgetToSave);
+        set({ loading: false });
+        await get().fetchBudgets();
+      } catch (error: any) {
+        set({ error: error.message, loading: false });
+        throw error;
+      }
+    },
+
+    updateBudget: async (budgetId, data) => {
+      set({ loading: true, error: null });
+      try {
+        const condominiumId = localStorage.getItem("condominiumId");
+        if (!condominiumId) {
+          set({ error: "Condominio no seleccionado", loading: false });
+          return;
+        }
+        const auth = getAuth();
+        const user = auth.currentUser;
+        if (!user) throw new Error("Usuario no autenticado");
+        const tokenResult = await getIdTokenResult(user);
+        const clientId = tokenResult.claims["clientId"] as string;
+        if (!clientId) throw new Error("clientId no disponible en el token");
+
+        const db = getFirestore();
+
+        // Eliminar las expenses antes de guardar
+        const updateData = { ...data };
+        delete updateData.expenses;
+
+        const budgetDocRef = doc(
+          db,
+          "clients",
+          clientId,
+          "condominiums",
+          condominiumId,
+          "maintenanceBudgets",
+          budgetId
+        );
+
+        await updateDoc(budgetDocRef, updateData);
+
+        // Si se cambió el monto del presupuesto, recalcular el progreso
+        if (data.amount !== undefined) {
+          await get().calculateBudgetProgress(budgetId);
+        }
+
+        set({ loading: false });
+        await get().fetchBudgets();
+      } catch (error: any) {
+        set({ error: error.message, loading: false });
+        throw error;
+      }
+    },
+
+    deleteBudget: async (budgetId) => {
+      set({ loading: true, error: null });
+      try {
+        const condominiumId = localStorage.getItem("condominiumId");
+        if (!condominiumId) {
+          set({ error: "Condominio no seleccionado", loading: false });
+          return;
+        }
+        const auth = getAuth();
+        const user = auth.currentUser;
+        if (!user) throw new Error("Usuario no autenticado");
+        const tokenResult = await getIdTokenResult(user);
+        const clientId = tokenResult.claims["clientId"] as string;
+        if (!clientId) throw new Error("clientId no disponible en el token");
+
+        const db = getFirestore();
+
+        // Primero verificamos si hay costos asociados a este presupuesto
+        const costsRef = collection(
+          db,
+          "clients",
+          clientId,
+          "condominiums",
+          condominiumId,
+          "maintenanceCosts"
+        );
+
+        const costsQuery = query(costsRef, where("budgetId", "==", budgetId));
+        const costsSnapshot = await getDocs(costsQuery);
+
+        // Si hay costos, actualizar su budgetId a null
+        const batch = writeBatch(db);
+        costsSnapshot.forEach((doc) => {
+          const costDocRef = doc.ref;
+          batch.update(costDocRef, { budgetId: null });
+        });
+
+        // Eliminar el presupuesto
+        const budgetDocRef = doc(
+          db,
+          "clients",
+          clientId,
+          "condominiums",
+          condominiumId,
+          "maintenanceBudgets",
+          budgetId
+        );
+
+        batch.delete(budgetDocRef);
+
+        // Ejecutar el batch
+        await batch.commit();
+
+        set({ loading: false });
+        await get().fetchBudgets();
+      } catch (error: any) {
+        set({ error: error.message, loading: false });
+        throw error;
+      }
+    },
+
+    calculateBudgetProgress: async (budgetId) => {
+      try {
+        const condominiumId = localStorage.getItem("condominiumId");
+        if (!condominiumId) {
+          throw new Error("Condominio no seleccionado");
+        }
+        const auth = getAuth();
+        const user = auth.currentUser;
+        if (!user) throw new Error("Usuario no autenticado");
+        const tokenResult = await getIdTokenResult(user);
+        const clientId = tokenResult.claims["clientId"] as string;
+        if (!clientId) throw new Error("clientId no disponible en el token");
+
+        const db = getFirestore();
+
+        // Obtener el presupuesto
+        const budgetDocRef = doc(
+          db,
+          "clients",
+          clientId,
+          "condominiums",
+          condominiumId,
+          "maintenanceBudgets",
+          budgetId
+        );
+
+        const budgetDoc = await getDoc(budgetDocRef);
+        if (!budgetDoc.exists()) {
+          throw new Error("El presupuesto no existe");
+        }
+
+        const budgetData = budgetDoc.data();
+        const budgetAmount = budgetData.amount;
+
+        // Obtener todos los costos asociados
+        const costsRef = collection(
+          db,
+          "clients",
+          clientId,
+          "condominiums",
+          condominiumId,
+          "maintenanceCosts"
+        );
+
+        const costsQuery = query(costsRef, where("budgetId", "==", budgetId));
+        const costsSnapshot = await getDocs(costsQuery);
+
+        let totalExpenses = 0;
+        costsSnapshot.forEach((doc) => {
+          totalExpenses += doc.data().amount;
+        });
+
+        // Calcular el progreso y actualizar
+        const progress =
+          budgetAmount > 0
+            ? Math.min(100, (totalExpenses / budgetAmount) * 100)
+            : 0;
+
+        await updateDoc(budgetDocRef, { progress });
+
+        // Actualizar el estado si el presupuesto está completado o excedido
+        if (progress >= 100 && budgetData.status === "active") {
+          await updateDoc(budgetDocRef, { status: "completed" });
+        }
+      } catch (error: any) {
+        console.error("Error al calcular progreso del presupuesto:", error);
+      }
+    },
+
+    getBudgetSummary: async (year) => {
+      try {
+        // Cargar los presupuestos del año
+        await get().fetchBudgets(year);
+        const budgets = get().budgets;
+
+        // Agrupar por categoría
+        const categorySummary: Record<
+          string,
+          { budgeted: number; spent: number; remaining: number }
+        > = {};
+
+        budgets.forEach((budget) => {
+          if (!categorySummary[budget.category]) {
+            categorySummary[budget.category] = {
+              budgeted: 0,
+              spent: 0,
+              remaining: 0,
+            };
+          }
+
+          // Sumar presupuesto
+          categorySummary[budget.category].budgeted += budget.amount;
+
+          // Calcular gastos
+          const totalExpenses = budget.expenses.reduce(
+            (sum, expense) => sum + expense.amount,
+            0
+          );
+          categorySummary[budget.category].spent += totalExpenses;
+
+          // Calcular restante
+          categorySummary[budget.category].remaining =
+            categorySummary[budget.category].budgeted -
+            categorySummary[budget.category].spent;
+        });
+
+        // Convertir a array para retornar
+        return Object.entries(categorySummary).map(([category, values]) => ({
+          category,
+          budgeted: values.budgeted,
+          spent: values.spent,
+          remaining: values.remaining,
+        }));
+      } catch (error: any) {
+        console.error("Error al obtener resumen de presupuestos:", error);
+        return [];
+      }
+    },
+  })
+);
+
+// Función auxiliar para registrar un costo de mantenimiento como un egreso
+async function registerMaintenanceCostAsExpense(
+  cost: MaintenanceCost,
+  file?: File,
+  invoiceUrl?: string
+) {
+  try {
+    const expenseStore = useExpenseStore.getState();
+
+    // Construir un concepto descriptivo para el egreso
+    let concept = `Mantenimiento - ${cost.category}`;
+
+    // Añadir información adicional si está relacionado con ticket, cita o contrato
+    if (cost.ticketId) {
+      concept += ` - Ticket relacionado`;
+    } else if (cost.appointmentId) {
+      concept += ` - Visita relacionada`;
+    } else if (cost.contractId) {
+      concept += ` - Contrato relacionado`;
+    }
+
+    // Convertir fecha a formato esperado por expenseStore (YYYY-MM-DD HH:mm)
+    const formattedDate = moment(cost.date).format("YYYY-MM-DD HH:mm");
+
+    // Configurar los datos para el registro del egreso
+    await expenseStore.addExpense({
+      amount: cost.amount / 100, // El expense store espera pesos, no centavos
+      concept,
+      paymentType: cost.paymentMethod || "Efectivo", // Usar el método de pago si existe, o "Efectivo" por defecto
+      expenseDate: formattedDate,
+      description: `${
+        cost.description || cost.notes || ""
+      } - Ref: Costo de mantenimiento`,
+      file: invoiceUrl ? undefined : file, // Solo pasar el archivo si no tenemos ya una URL
+      financialAccountId: "default", // Usar una cuenta financiera por defecto o ajustar según sea necesario
+      providerId: cost.providerId, // Usar el ID del proveedor si existe
+    });
+  } catch (error) {
+    console.error(
+      "Error al registrar costo de mantenimiento como egreso:",
+      error
+    );
+  }
+}

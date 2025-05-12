@@ -12,10 +12,12 @@ import {
   DocumentChartBarIcon,
   CalendarDaysIcon,
   UserGroupIcon,
+  CurrencyDollarIcon,
 } from "@heroicons/react/24/solid";
 import MaintenanceDashboard from "./MaintenanceDashboard";
 import MaintenanceAppointments from "./MaintenanceAppointments";
 import MaintenanceContracts from "./MaintenanceContracts";
+import MaintenanceCosts from "./MaintenanceCosts";
 import { useTicketsStore } from "./tickets/ticketsStore";
 
 const Maintenance = () => {
@@ -47,7 +49,7 @@ const Maintenance = () => {
   };
 
   const [tab, setTab] = useState<
-    "dashboard" | "reportes" | "tickets" | "citas" | "contratos"
+    "dashboard" | "reportes" | "tickets" | "citas" | "contratos" | "costos"
   >("dashboard");
   return (
     <div className="px-4 rounded-md sm:px-6 lg:px-8">
@@ -115,6 +117,17 @@ const Maintenance = () => {
           <UserGroupIcon className="h-4 w-4 mr-2" />
           Proveedores y Contratos
         </button>
+        <button
+          className={`py-2 px-4 flex items-center whitespace-nowrap transition-all ${
+            tab === "costos"
+              ? "border-b-2 border-indigo-600 text-indigo-600 dark:text-white font-medium"
+              : "text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400"
+          }`}
+          onClick={() => setTab("costos")}
+        >
+          <CurrencyDollarIcon className="h-4 w-4 mr-2" />
+          Control de Costos
+        </button>
       </div>
       {tab === "dashboard" && (
         <div className="mt-4">
@@ -176,6 +189,12 @@ const Maintenance = () => {
       {tab === "contratos" && (
         <div className="mt-6">
           <MaintenanceContracts />
+        </div>
+      )}
+
+      {tab === "costos" && (
+        <div className="mt-6">
+          <MaintenanceCosts />
         </div>
       )}
     </div>

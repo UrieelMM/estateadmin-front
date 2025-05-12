@@ -14,7 +14,7 @@ import toast from "react-hot-toast";
 // Constantes de colores por estado para mantener consistencia en toda la UI
 const TICKET_STATUS_COLORS = {
   abierto: {
-    bg: "rgba(120, 53, 15, 0.8)",
+    bg: "rgba(252, 211, 77, 0.8)",
     border: "border-yellow-400",
     bgLight: "bg-yellow-50",
     bgDark: "dark:bg-yellow-900/10",

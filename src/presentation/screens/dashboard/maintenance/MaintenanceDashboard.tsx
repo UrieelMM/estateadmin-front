@@ -3,6 +3,7 @@ import {
   useMaintenanceReportStore,
   useMaintenanceAppointmentStore,
   useMaintenanceContractStore,
+  useMaintenanceCostStore,
 } from "../../../../store/useMaintenanceStore";
 import { useTicketsStore } from "./tickets/ticketsStore";
 import TicketToAppointment from "./TicketToAppointment";
@@ -27,10 +28,13 @@ import {
   CheckCircleIcon,
   WrenchScrewdriverIcon,
   LightBulbIcon,
-  BuildingOfficeIcon,
   ArrowTrendingUpIcon,
+  CurrencyDollarIcon,
+  ReceiptPercentIcon,
+  BanknotesIcon,
 } from "@heroicons/react/24/outline";
 import moment from "moment";
+import { formatCurrency } from "../../../../utils/curreyncy";
 
 ChartJS.register(
   ArcElement,
@@ -56,7 +60,7 @@ type TicketStatistics = {
 // Constantes de colores por estado para mantener consistencia en toda la UI
 const TICKET_STATUS_COLORS = {
   abierto: {
-    bg: "rgba(120, 53, 15, 0.8)",
+    bg: "rgba(252, 211, 77, 0.8)",
     border: "border-yellow-400",
     bgLight: "bg-yellow-50",
     bgDark: "dark:bg-yellow-900/10",
@@ -89,6 +93,8 @@ const MaintenanceDashboard: React.FC = () => {
   const { tickets, fetchTickets } = useTicketsStore();
   const { appointments, fetchAppointments } = useMaintenanceAppointmentStore();
   const { contracts, fetchContracts } = useMaintenanceContractStore();
+  const { costs, fetchCosts, getCostSummaryByCategory, getCostSummaryByMonth } =
+    useMaintenanceCostStore();
 
   const [ticketStatistics, setTicketStatistics] = useState<TicketStatistics>({
     averageResolutionTime: "24.5",
@@ -97,6 +103,14 @@ const MaintenanceDashboard: React.FC = () => {
     byUrgency: {},
     dailyTrend: [4, 5, 3, 7, 8, 6, 9],
   });
+
+  const [categoryData, setCategoryData] = useState<
+    { category: string; total: number }[]
+  >([]);
+  const [monthlyData, setMonthlyData] = useState<
+    { month: number; total: number }[]
+  >([]);
+  const [_costsLoading, setCostsLoading] = useState(false);
 
   // Cargar datos al montar el componente
   useEffect(() => {
@@ -107,6 +121,7 @@ const MaintenanceDashboard: React.FC = () => {
         fetchTickets(),
         fetchAppointments(),
         fetchContracts(),
+        loadCostsData(),
       ]);
 
       // Luego calculamos las estadísticas con los datos actualizados
@@ -115,6 +130,34 @@ const MaintenanceDashboard: React.FC = () => {
 
     loadData();
   }, []);
+
+  // Función para cargar datos de costos
+  const loadCostsData = async () => {
+    setCostsLoading(true);
+    try {
+      const currentYear = new Date().getFullYear();
+      const startDate = `${currentYear}-01-01`;
+      const endDate = `${currentYear}-12-31`;
+
+      // Cargar gastos filtrados por año
+      await fetchCosts({ startDate, endDate });
+
+      // Obtener datos por categoría
+      const categoryResults = await getCostSummaryByCategory(
+        startDate,
+        endDate
+      );
+      setCategoryData(categoryResults);
+
+      // Obtener datos por mes
+      const monthlyResults = await getCostSummaryByMonth(currentYear);
+      setMonthlyData(monthlyResults);
+    } catch (error) {
+      console.error("Error al cargar datos de costos:", error);
+    } finally {
+      setCostsLoading(false);
+    }
+  };
 
   // Calcular estadísticas de tickets para el dashboard
   const calculateTicketStatistics = () => {
@@ -380,6 +423,40 @@ const MaintenanceDashboard: React.FC = () => {
     maintainAspectRatio: false,
   };
 
+  // Calcular métricas de costos para KPIs
+  const calculateCostKPIs = () => {
+    // Total de gastos
+    const totalExpenses =
+      monthlyData.reduce((acc, item) => acc + item.total, 0) / 100;
+
+    // Promedio mensual de gastos
+    const activeMonths = monthlyData.filter((m) => m.total > 0).length;
+    const avgMonthlyExpense =
+      activeMonths > 0 ? totalExpenses / activeMonths : 0;
+
+    // Gastos pendientes de pago
+    const pendingCosts = costs.filter((cost) => cost.status === "pending");
+    const pendingTotal =
+      pendingCosts.reduce((acc, cost) => acc + cost.amount, 0) / 100;
+
+    // Top categoría con más gastos
+    const topCategory =
+      categoryData.length > 0
+        ? categoryData.sort((a, b) => b.total - a.total)[0]
+        : { category: "N/A", total: 0 };
+
+    return {
+      totalExpenses,
+      avgMonthlyExpense,
+      pendingTotal,
+      pendingCount: pendingCosts.length,
+      topCategory: {
+        name: topCategory.category,
+        amount: topCategory.total / 100,
+      },
+    };
+  };
+
   // Calcular contadores para KPIs con datos reales
   const calculateKPIs = () => {
     // Tickets activos (no cerrados)
@@ -415,10 +492,6 @@ const MaintenanceDashboard: React.FC = () => {
     // Este dato podría obtenerse de una fuente real en una implementación completa
     const firstResponseTime = tickets.length > 0 ? "6.2" : "0.0";
 
-    // Satisfacción del cliente (dato simulado, reemplazar con datos reales)
-    // Este dato podría obtenerse de encuestas o valoraciones en una implementación completa
-    const customerSatisfaction = tickets.length > 0 ? "92" : "0";
-
     return {
       activeTicketsCount,
       resolvedTicketsCount,
@@ -426,11 +499,11 @@ const MaintenanceDashboard: React.FC = () => {
       expiringContractsCount,
       pendingAppointmentsCount,
       firstResponseTime,
-      customerSatisfaction,
     };
   };
 
   const kpis = calculateKPIs();
+  const costKPIs = calculateCostKPIs();
 
   // Definir los tickets resueltos para usar en las tarjetas de estadísticas
   const resolvedTickets = tickets.filter(
@@ -520,6 +593,85 @@ const MaintenanceDashboard: React.FC = () => {
             </div>
             <div className="rounded-full bg-blue-50 dark:bg-blue-900/20 p-3 group-hover:bg-blue-100 dark:group-hover:bg-blue-800/30 transition-all">
               <CheckCircleIcon className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Nueva fila de KPIs relacionados con costos */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 animate-fadeIn">
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-md border border-gray-100 dark:border-gray-700 transition-all hover:shadow-lg group hover:translate-y-[-2px] duration-300">
+          <div className="flex justify-between items-start">
+            <div>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Gastos Totales
+              </p>
+              <h3 className="text-2xl font-bold mt-1 text-gray-800 dark:text-white transition-all group-hover:text-purple-600 dark:group-hover:text-purple-400">
+                {formatCurrency(costKPIs.totalExpenses)}
+              </h3>
+              <p className="text-xs mt-1 text-gray-500 dark:text-gray-400">
+                {costs.length} registros este año
+              </p>
+            </div>
+            <div className="rounded-full bg-purple-50 dark:bg-purple-900/20 p-3 group-hover:bg-purple-100 dark:group-hover:bg-purple-800/30 transition-all">
+              <CurrencyDollarIcon className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-md border border-gray-100 dark:border-gray-700 transition-all hover:shadow-lg group hover:translate-y-[-2px] duration-300">
+          <div className="flex justify-between items-start">
+            <div>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Gastos Pendientes
+              </p>
+              <h3 className="text-2xl font-bold mt-1 text-gray-800 dark:text-white transition-all group-hover:text-red-500 dark:group-hover:text-red-400">
+                {formatCurrency(costKPIs.pendingTotal)}
+              </h3>
+              <p className="text-xs mt-1 text-gray-500 dark:text-gray-400">
+                {costKPIs.pendingCount} pagos por realizar
+              </p>
+            </div>
+            <div className="rounded-full bg-red-50 dark:bg-red-900/20 p-3 group-hover:bg-red-100 dark:group-hover:bg-red-800/30 transition-all">
+              <BanknotesIcon className="h-6 w-6 text-red-500 dark:text-red-400" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-md border border-gray-100 dark:border-gray-700 transition-all hover:shadow-lg group hover:translate-y-[-2px] duration-300">
+          <div className="flex justify-between items-start">
+            <div>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Promedio Mensual
+              </p>
+              <h3 className="text-2xl font-bold mt-1 text-gray-800 dark:text-white transition-all group-hover:text-cyan-600 dark:group-hover:text-cyan-400">
+                {formatCurrency(costKPIs.avgMonthlyExpense)}
+              </h3>
+              <p className="text-xs mt-1 text-gray-500 dark:text-gray-400">
+                Por mes con actividad
+              </p>
+            </div>
+            <div className="rounded-full bg-cyan-50 dark:bg-cyan-900/20 p-3 group-hover:bg-cyan-100 dark:group-hover:bg-cyan-800/30 transition-all">
+              <ArrowTrendingUpIcon className="h-6 w-6 text-cyan-600 dark:text-cyan-400" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-md border border-gray-100 dark:border-gray-700 transition-all hover:shadow-lg group hover:translate-y-[-2px] duration-300">
+          <div className="flex justify-between items-start">
+            <div>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Top Categoría de Gasto
+              </p>
+              <h3 className="text-2xl font-bold mt-1 text-gray-800 dark:text-white transition-all group-hover:text-emerald-600 dark:group-hover:text-emerald-400">
+                {costKPIs.topCategory.name}
+              </h3>
+              <p className="text-xs mt-1 text-gray-500 dark:text-gray-400">
+                {formatCurrency(costKPIs.topCategory.amount)}
+              </p>
+            </div>
+            <div className="rounded-full bg-emerald-50 dark:bg-emerald-900/20 p-3 group-hover:bg-emerald-100 dark:group-hover:bg-emerald-800/30 transition-all">
+              <ReceiptPercentIcon className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
             </div>
           </div>
         </div>
@@ -671,13 +823,19 @@ const MaintenanceDashboard: React.FC = () => {
 
             <div className="bg-amber-50 dark:bg-amber-900/20 rounded-lg p-4 hover:shadow-md transition-all duration-300">
               <div className="text-sm text-amber-700 dark:text-amber-300 mb-1">
-                Satisfacción del Cliente
+                Eficiencia en Gastos
               </div>
               <div className="text-2xl font-bold text-amber-800 dark:text-amber-200">
-                {kpis.customerSatisfaction}%
+                {costs.length > 0
+                  ? `${Math.round(
+                      (costs.filter((c) => c.status === "paid").length /
+                        costs.length) *
+                        100
+                    )}%`
+                  : "0%"}
               </div>
               <div className="text-xs text-amber-600 dark:text-amber-400 mt-1">
-                Valoraciones positivas
+                Pagos completados
               </div>
             </div>
           </div>
@@ -761,39 +919,59 @@ const MaintenanceDashboard: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-900/40 dark:to-amber-800/40 rounded-xl p-6 shadow-md border border-amber-200 dark:border-amber-800/50 hover:shadow-lg transition-all duration-300 hover:translate-y-[-2px]">
+        <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/40 dark:to-purple-800/40 rounded-xl p-6 shadow-md border border-purple-200 dark:border-purple-800/50 hover:shadow-lg transition-all duration-300 hover:translate-y-[-2px]">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-medium text-amber-800 dark:text-amber-200">
-              Áreas con más Incidencias
+            <h3 className="text-lg font-medium text-purple-800 dark:text-purple-200">
+              Control de Gastos
             </h3>
-            <div className="p-2 bg-white dark:bg-amber-900 rounded-full">
-              <BuildingOfficeIcon className="h-5 w-5 text-amber-500" />
+            <div className="p-2 bg-white dark:bg-purple-900 rounded-full">
+              <CurrencyDollarIcon className="h-5 w-5 text-purple-500" />
             </div>
           </div>
 
           <div className="space-y-3">
-            {Object.keys(ticketStatistics.byAreas || {}).length > 0 ? (
-              Object.entries(ticketStatistics.byAreas || {})
-                .sort((a, b) => b[1] - a[1])
-                .slice(0, 3)
-                .map(([area, count], idx) => (
+            {costs.length > 0 ? (
+              <>
+                <div className="flex justify-between items-center">
+                  <span className="text-purple-800 dark:text-purple-200">
+                    Total Anual:
+                  </span>
+                  <span className="font-bold text-lg text-purple-900 dark:text-purple-100">
+                    {formatCurrency(costKPIs.totalExpenses)}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-purple-800 dark:text-purple-200">
+                    Pendiente:
+                  </span>
+                  <span className="font-bold text-lg text-purple-900 dark:text-purple-100">
+                    {formatCurrency(costKPIs.pendingTotal)}
+                  </span>
+                </div>
+                <div className="mt-4 h-1 w-full bg-purple-200 dark:bg-purple-700 rounded-full overflow-hidden">
                   <div
-                    key={idx}
-                    className="flex items-center justify-between hover:bg-amber-100 dark:hover:bg-amber-800/20 p-1 rounded-md transition-colors"
-                  >
-                    <div className="text-amber-800 dark:text-amber-200 font-medium">
-                      {area}
-                    </div>
-                    <div className="text-amber-600 dark:text-amber-300 flex items-center">
-                      <span className="bg-amber-200 dark:bg-amber-700 py-0.5 px-2 rounded-full text-xs font-medium">
-                        {count} tickets
-                      </span>
-                    </div>
-                  </div>
-                ))
+                    className="h-full bg-purple-500 rounded-full"
+                    style={{
+                      width:
+                        costs.length > 0
+                          ? `${Math.min(
+                              100,
+                              (costs.filter((c) => c.status === "paid").length /
+                                costs.length) *
+                                100
+                            )}%`
+                          : "0%",
+                    }}
+                  ></div>
+                </div>
+                <div className="text-xs text-purple-600 dark:text-purple-400 text-center mt-1">
+                  {costs.filter((c) => c.status === "paid").length} de{" "}
+                  {costs.length} gastos pagados
+                </div>
+              </>
             ) : (
-              <div className="text-amber-600 dark:text-amber-400 text-sm">
-                No hay datos de áreas disponibles
+              <div className="text-purple-600 dark:text-purple-400 text-sm text-center py-6">
+                No hay datos de costos disponibles
               </div>
             )}
           </div>
