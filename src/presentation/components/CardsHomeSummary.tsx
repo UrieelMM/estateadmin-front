@@ -4,12 +4,17 @@ import {
   ArrowTrendingDownIcon,
   ScaleIcon,
   InformationCircleIcon,
+  UserGroupIcon,
+  UserIcon,
+  HomeIcon,
 } from "@heroicons/react/24/solid";
 import { usePaymentSummaryStore } from "../../store/paymentSummaryStore";
 import { useExpenseSummaryStore } from "../../store/expenseSummaryStore";
 import { Card } from "@heroui/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { shallow } from "zustand/shallow";
+import useUserStore from "../../store/UserDataStore";
+import { useCondominiumStore } from "../../store/useCondominiumStore";
 
 const Tooltip: React.FC<{ text: string }> = ({ text }) => {
   const [show, setShow] = React.useState(false);
@@ -64,9 +69,35 @@ const CardsHomeSummary: React.FC = () => {
     shallow
   );
 
+  // Estados para datos de usuarios
   const [hasCondominiumId, setHasCondominiumId] = useState<boolean>(false);
   const [dataFetchAttempted, setDataFetchAttempted] = useState<boolean>(false);
   const [localLoading, setLocalLoading] = useState<boolean>(false);
+  const [userCount, setUserCount] = useState<number>(0);
+  const [condominiumInfo, setCondominiumInfo] = useState<{ name: string }>({
+    name: "",
+  });
+  const [adminUsersCount, setAdminUsersCount] = useState<number>(0);
+
+  // Acceder a los stores de usuarios y condominios
+  const {
+    condominiumsUsers,
+    adminUsers,
+    fetchCondominiumsUsers,
+    fetchAdminUsers,
+  } = useUserStore(
+    (state) => ({
+      condominiumsUsers: state.condominiumsUsers,
+      adminUsers: state.adminUsers,
+      fetchCondominiumsUsers: state.fetchCondominiumsUsers,
+      fetchAdminUsers: state.fetchAdminUsers,
+    }),
+    shallow
+  );
+
+  const selectedCondominium = useCondominiumStore(
+    (state) => state.selectedCondominium
+  );
 
   // Verificar si tenemos condominiumId
   useEffect(() => {
@@ -113,6 +144,8 @@ const CardsHomeSummary: React.FC = () => {
           await Promise.all([
             fetchSummary(selectedYear),
             fetchExpenseSummary(selectedYear),
+            fetchCondominiumsUsers(),
+            fetchAdminUsers(),
           ]);
 
           setDataFetchAttempted(true);
@@ -128,12 +161,23 @@ const CardsHomeSummary: React.FC = () => {
   }, [
     fetchSummary,
     fetchExpenseSummary,
+    fetchCondominiumsUsers,
+    fetchAdminUsers,
     shouldFetchData,
     shouldFetchExpenseData,
     selectedYear,
     hasCondominiumId,
     dataFetchAttempted,
   ]);
+
+  // Actualizar contadores de usuarios
+  useEffect(() => {
+    setUserCount(condominiumsUsers.length);
+    setAdminUsersCount(adminUsers.length);
+    if (selectedCondominium) {
+      setCondominiumInfo({ name: selectedCondominium.name });
+    }
+  }, [condominiumsUsers, adminUsers, selectedCondominium]);
 
   const currentMonth = (new Date().getMonth() + 1).toString().padStart(2, "0");
   const currentMonthStats = monthlyStats.find(
@@ -158,7 +202,7 @@ const CardsHomeSummary: React.FC = () => {
       maximumFractionDigits: 2,
     });
 
-  const cards = [
+  const financialCards = [
     {
       title: "Ingresos del Mes",
       amount: monthlyIncome,
@@ -184,6 +228,31 @@ const CardsHomeSummary: React.FC = () => {
     },
   ];
 
+  // Nuevas tarjetas para información de usuarios
+  const userCards = [
+    {
+      title: "Total Condóminos",
+      amount: userCount,
+      tooltip: "Número total de condóminos registrados",
+      icon: UserGroupIcon,
+      iconBackground: "bg-purple-500",
+    },
+    {
+      title: "Administradores",
+      amount: adminUsersCount,
+      tooltip: "Número total de administradores",
+      icon: UserIcon,
+      iconBackground: "bg-amber-500",
+    },
+    {
+      title: "Condominio",
+      text: condominiumInfo.name,
+      tooltip: "Nombre del condominio actual",
+      icon: HomeIcon,
+      iconBackground: "bg-indigo-500",
+    },
+  ];
+
   // Mostrar skeleton mientras carga o no hay datos
   const shouldShowSkeleton =
     loading || localLoading || !hasCondominiumId || !dataFetchAttempted;
@@ -191,7 +260,7 @@ const CardsHomeSummary: React.FC = () => {
   if (shouldShowSkeleton) {
     return (
       <div className="grid w-full grid-cols-1 gap-5 mb-8 sm:grid-cols-3">
-        {[1, 2, 3].map((index) => (
+        {[1, 2, 3, 4, 5, 6].map((index) => (
           <Card
             key={index}
             className="p-4 shadow-md rounded-md relative animate-pulse"
@@ -205,9 +274,69 @@ const CardsHomeSummary: React.FC = () => {
 
   return (
     <>
-      <h2 className="text-xl font-bold mb-4">Estadísticas del mes actual</h2>
+      <h2 className="text-xl font-bold mb-4">Información del condominio</h2>
       <div className="grid w-full grid-cols-1 gap-5 mb-8 sm:grid-cols-3">
-        {cards.map((card) => (
+        {userCards.map((card) => (
+          <Card
+            key={card.title}
+            className={
+              `relative p-4 shadow-md rounded-xl transition duration-300 ease-in-out transform hover:translate-y-[-5px] hover:shadow-lg ` +
+              (card.title === "Total Condóminos"
+                ? "bg-gradient-to-br from-purple-50 to-white dark:from-gray-800 dark:to-gray-900"
+                : card.title === "Administradores"
+                ? "bg-gradient-to-br from-amber-50 to-white dark:from-gray-800 dark:to-gray-900"
+                : "bg-gradient-to-br from-indigo-50 to-white dark:from-gray-800 dark:to-gray-900")
+            }
+          >
+            <div className="absolute top-2 right-2">
+              <Tooltip text={card.tooltip} />
+            </div>
+            <div className="flex items-center mb-2">
+              <div className={`rounded-md p-2 ${card.iconBackground} mr-3`}>
+                <card.icon className="h-5 w-5 text-white" aria-hidden="true" />
+              </div>
+            </div>
+            <div className="flex flex-col gap-y-2">
+              <span className="text-sm font-medium text-default-500">
+                {card.title}:
+              </span>
+              {card.text ? (
+                <span
+                  className={
+                    `text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r ` +
+                    (card.title === "Total Condóminos"
+                      ? "from-purple-500 to-purple-600 dark:from-purple-300 dark:to-purple-400"
+                      : card.title === "Administradores"
+                      ? "from-amber-500 to-amber-600 dark:from-amber-300 dark:to-amber-400"
+                      : "from-indigo-500 to-indigo-600 dark:from-indigo-300 dark:to-indigo-400")
+                  }
+                >
+                  {card.text}
+                </span>
+              ) : (
+                <span
+                  className={
+                    `text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r ` +
+                    (card.title === "Total Condóminos"
+                      ? "from-purple-500 to-purple-600 dark:from-purple-300 dark:to-purple-400"
+                      : card.title === "Administradores"
+                      ? "from-amber-500 to-amber-600 dark:from-amber-300 dark:to-amber-400"
+                      : "from-indigo-500 to-indigo-600 dark:from-indigo-300 dark:to-indigo-400")
+                  }
+                >
+                  {card.amount}
+                </span>
+              )}
+            </div>
+          </Card>
+        ))}
+      </div>
+
+      <h2 className="text-xl font-bold mb-4">
+        Estadísticas financieras del mes actual
+      </h2>
+      <div className="grid w-full grid-cols-1 gap-5 mb-8 sm:grid-cols-3">
+        {financialCards.map((card) => (
           <Card
             key={card.title}
             className={
