@@ -1,0 +1,12 @@
+# Robots.txt file for EstateAdmin
+# https://estateadmin.com/
+
+User-agent: *
+Allow: /
+
+# Disallow admin sections
+Disallow: /dashboard/
+Disallow: /super-admin/
+
+# Sitemap
+Sitemap: https://estateadmin.com/sitemap.xml 
