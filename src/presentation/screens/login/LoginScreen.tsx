@@ -7,6 +7,7 @@ import Loading from "../../components/shared/loaders/Loading";
 import logo from "../../../assets/logo.png";
 import { ForgotPasswordForm } from "./ForgotPasswordForm";
 import { motion } from "framer-motion";
+import { Helmet } from "react-helmet-async";
 
 const LoginScreen = () => {
   const loginWithEmailAndPassword = useAuthStore(
@@ -105,6 +106,22 @@ const LoginScreen = () => {
 
   return (
     <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-indigo-50 to-white flex items-center justify-center p-6">
+      <Helmet>
+        <title>Iniciar Sesión - EstateAdmin | Acceso a tu cuenta</title>
+        <meta charSet="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta
+          name="description"
+          content="Inicia sesión en tu cuenta de EstateAdmin para acceder a todas las herramientas de gestión de condominios. Administra tu condominio de manera eficiente."
+        />
+        <meta
+          name="keywords"
+          content="estateadmin login, inicio sesión condominios, acceso administración, portal gestión condominios"
+        />
+        <meta name="robots" content="noindex, nofollow" />
+        <link rel="canonical" href="https://estateadmin.com/login" />
+      </Helmet>
+
       {/* Card container */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}

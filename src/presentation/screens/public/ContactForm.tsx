@@ -4,6 +4,7 @@ import { toast } from "react-hot-toast";
 import * as Sentry from "@sentry/react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeftIcon } from "@heroicons/react/24/solid";
+import { Helmet } from "react-helmet-async";
 
 const ContactForm = () => {
   const navigate = useNavigate();
@@ -160,6 +161,23 @@ const ContactForm = () => {
       variants={containerVariants}
       className="min-h-screen bg-white"
     >
+      <Helmet>
+        <title>Contacta con EstateAdmin | Solicita información y soporte</title>
+        <meta charSet="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta
+          name="description"
+          content="Contacta con el equipo de EstateAdmin para obtener más información sobre nuestras soluciones de gestión de condominios. Estamos aquí para ayudarte."
+        />
+        <meta
+          name="keywords"
+          content="contacto estateadmin, soporte condominios, solicitar información, contactar administración condominios"
+        />
+        <meta name="robots" content="index, follow" />
+        <meta name="language" content="es" />
+        <link rel="canonical" href="https://estateadmin.com/contact" />
+      </Helmet>
+
       <div className="flex flex-col lg:flex-row h-screen">
         <motion.div
           variants={itemVariants}
