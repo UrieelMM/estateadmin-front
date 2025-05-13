@@ -4,6 +4,7 @@ import ClientsManagement from "../presentation/screens/superAdmin/ClientsManagem
 import SuperAdminDashboard from "../presentation/screens/superAdmin/SuperAdminDashboard";
 import SystemSettings from "../presentation/screens/superAdmin/SystemSettings";
 import UserManagement from "../presentation/screens/superAdmin/UserManagement";
+import NewsAndGuides from "../presentation/screens/superAdmin/NewsAndGuides";
 
 interface Route {
   to: string;
@@ -42,5 +43,11 @@ export const superAdminRoutes: Route[] = [
     path: "super-admin/settings",
     Component: SystemSettings,
     name: "Configuración del Sistema",
+  },
+  {
+    to: "news-and-guides",
+    path: "super-admin/news-and-guides",
+    Component: NewsAndGuides,
+    name: "Novedades y Guías",
   },
 ];
