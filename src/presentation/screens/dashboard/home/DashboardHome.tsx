@@ -6,6 +6,7 @@ import { CalendarIcon } from "@heroicons/react/24/solid";
 import { useCalendarEventsStore } from "../../../../store/useReservationStore";
 import dayjs from "dayjs";
 import { Link } from "react-router-dom";
+import ImageSlider from "../../../components/ImageSlider";
 
 const NextEvents = () => {
   const { events, fetchEvents } = useCalendarEventsStore();
@@ -63,13 +64,30 @@ const NextEvents = () => {
 const DashboardHome = () => {
   return (
     <div className="flex flex-col gap-6 px-4 md:px-8">
-      {/* Resumen Financiero */}
-      <section>
-        <CardsHomeSummary />
-      </section>
+      {/* Fila 1: Cards Summary y Slider en dos columnas */}
+      <div className="flex flex-col lg:flex-row gap-4">
+        {/* Columna izquierda (60%) - Resumen financiero (KPIs) */}
+        <div className="w-full lg:w-[65%]">
+          <section>
+            <CardsHomeSummary />
+          </section>
+        </div>
 
-      {/* Grid de información relevante */}
-      <Card className="p-6">
+        {/* Columna derecha (40%) - Slider de imágenes */}
+        <div className="w-full lg:w-[35%]">
+          <Card className="p-6 flex flex-col">
+            <h3 className="text-lg font-semibold mb-4 dark:text-white">
+              Novedades y Guías
+            </h3>
+            <div className="flex justify-center">
+              <ImageSlider />
+            </div>
+          </Card>
+        </div>
+      </div>
+
+      {/* Fila 2: Eventos de la Semana (100% ancho) */}
+      <Card className="p-6 w-full">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <CalendarIcon className="h-5 w-5 text-indigo-600" />
@@ -86,6 +104,8 @@ const DashboardHome = () => {
         </div>
         <NextEvents />
       </Card>
+
+      {/* Fila 3: Acceso Directo (100% ancho) */}
       <DirectAccess />
     </div>
   );

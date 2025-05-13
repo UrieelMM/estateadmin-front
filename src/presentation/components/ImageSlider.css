@@ -1,0 +1,98 @@
+/* Estilos personalizados para el slider de imágenes */
+
+/* Ajuste para el contenedor del slider */
+.image-slider-container {
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  margin-top: 0;
+}
+
+/* Configuración para el wrapper del slider con tarjetas cuadradas */
+.card-square-wrapper {
+  width: 385px;
+  max-width: 100%;
+  height: 385px;
+  margin: 0 auto;
+  display: block;
+  position: relative;
+  z-index: 1;
+}
+
+/* Ajustes para el efecto de cartas */
+.image-slider .swiper-slide {
+  border-radius: 0.375rem; /* rounded-md */
+  overflow: hidden;
+  transition: transform 0.3s ease;
+  background-color: #f3f4f6; /* Fondo por defecto */
+}
+
+/* Tamaño fijo para las tarjetas cuadradas */
+.card-square {
+  width: 385px !important;
+  height: 385px !important;
+  max-width: 100%;
+  aspect-ratio: 1/1; /* Forzar formato cuadrado */
+  display: flex !important;
+  background-color: white;
+}
+
+/* Estilos para las imágenes */
+.card-square img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+/* Asegurar que las flechas sean visibles sobre el slider */
+.swiper-button-prev-custom,
+.swiper-button-next-custom {
+  opacity: 0.85;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  z-index: 10;
+}
+
+.swiper-button-prev-custom:hover,
+.swiper-button-next-custom:hover {
+  opacity: 1;
+  transform: translateY(-50%) scale(1.1);
+}
+
+/* Fix para el plugin de efecto de cartas */
+.swiper-effect-cards {
+  overflow: visible !important;
+}
+
+/* Estilos adicionales para dispositivos móviles */
+@media (max-width: 640px) {
+  .card-square-wrapper,
+  .card-square {
+    width: 300px !important;
+    height: 300px !important;
+  }
+
+  .swiper-button-prev-custom,
+  .swiper-button-next-custom {
+    padding: 0.375rem;
+  }
+
+  .swiper-button-prev-custom svg,
+  .swiper-button-next-custom svg {
+    width: 1rem;
+    height: 1rem;
+  }
+}
+
+/* Ajustes para el modo oscuro */
+@media (prefers-color-scheme: dark) {
+  .image-slider .swiper-slide {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3),
+      0 4px 6px -4px rgba(0, 0, 0, 0.2);
+    background-color: #1f2937;
+  }
+}
