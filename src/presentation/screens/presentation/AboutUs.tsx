@@ -53,7 +53,10 @@ const AboutUs = () => {
 
         {/* Open Graph / Facebook */}
         <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://estateadmin.com/about-us" />
+        <meta
+          property="og:url"
+          content="https://estateadmin.com/sobre-nosotros"
+        />
         <meta
           property="og:title"
           content="Sobre Nosotros - EstateAdmin | Gestión Inteligente de Condominios"
