@@ -24,11 +24,10 @@ const projectStatusLabels: Record<ProjectStatus, string> = {
 
 // Mapeo de estados de tareas a español
 const taskStatusLabels: Record<TaskStatus, string> = {
-  [TaskStatus.BACKLOG]: "Pendientes",
-  [TaskStatus.TODO]: "Por hacer",
+  [TaskStatus.PENDING]: "Pendientes",
   [TaskStatus.IN_PROGRESS]: "En progreso",
   [TaskStatus.REVIEW]: "Revisión",
-  [TaskStatus.DONE]: "Completado",
+  [TaskStatus.COMPLETED]: "Completado",
 };
 
 // Mapeo de prioridades a español

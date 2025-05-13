@@ -1,10 +1,7 @@
 import React, { useState, useRef } from "react";
-import { Dialog } from "@headlessui/react";
 import {
   XMarkIcon,
-  DocumentIcon,
   ExclamationCircleIcon,
-  ArrowUpTrayIcon,
   DocumentArrowUpIcon,
 } from "@heroicons/react/24/outline";
 import { usePlanningStore } from "../../../../../store/planningStore";
@@ -73,10 +70,11 @@ const UploadDocumentModal: React.FC<UploadDocumentModalProps> = ({
         planningId,
         title,
         description,
-        file,
+        file: file!,
         taskId,
         uploadedBy: user?.uid || "",
         uploadedAt: new Date(),
+        name: file?.name || title,
       };
 
       const documentId = await uploadDocument(documentData);
@@ -159,11 +157,7 @@ const UploadDocumentModal: React.FC<UploadDocumentModalProps> = ({
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={3}
-                className={`w-full rounded-md border-gray-300 px-4 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white ${
-                  formErrors.description
-                    ? "border-red-500 dark:border-red-500"
-                    : ""
-                }`}
+                className={`w-full rounded-md border-gray-300 px-4 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white`}
                 placeholder="Descripción opcional del documento"
               ></textarea>
             </div>
