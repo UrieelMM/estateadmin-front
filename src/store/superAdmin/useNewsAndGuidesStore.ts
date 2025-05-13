@@ -26,18 +26,24 @@ export interface NewsGuide {
   title: string;
   subtitle: string;
   imageUrl: string;
+  url: string;
+  active: boolean;
   createdAt: string;
 }
 
 interface NewsGuideInput {
   title: string;
   subtitle: string;
+  url: string;
+  active: boolean;
   imageFile: File | null;
 }
 
 interface NewsGuideUpdate {
   title?: string;
   subtitle?: string;
+  url?: string;
+  active?: boolean;
   imageFile?: File | null;
 }
 
@@ -76,6 +82,8 @@ const useNewsAndGuidesStore = create<NewsAndGuidesState>()((set, get) => ({
           title: data.title || "",
           subtitle: data.subtitle || "",
           imageUrl: data.imageUrl || "",
+          url: data.url || "/dashboard",
+          active: data.active === undefined ? true : data.active,
           createdAt: data.createdAt?.toDate?.() || new Date(),
         });
       });
@@ -121,6 +129,8 @@ const useNewsAndGuidesStore = create<NewsAndGuidesState>()((set, get) => ({
       const newsData = {
         title: input.title,
         subtitle: input.subtitle || "",
+        url: input.url || "/dashboard",
+        active: input.active === undefined ? true : input.active,
         imageUrl,
         imagePath: `administration/assets/linksNewsAndGuides/${imageName}`,
         createdAt: serverTimestamp(),
@@ -168,6 +178,16 @@ const useNewsAndGuidesStore = create<NewsAndGuidesState>()((set, get) => ({
       // Actualizar subtítulo si se proporciona
       if (updates.subtitle !== undefined) {
         updateData.subtitle = updates.subtitle;
+      }
+
+      // Actualizar URL si se proporciona
+      if (updates.url !== undefined) {
+        updateData.url = updates.url;
+      }
+
+      // Actualizar estado activo si se proporciona
+      if (updates.active !== undefined) {
+        updateData.active = updates.active;
       }
 
       // Si hay una nueva imagen, subirla y actualizar URL

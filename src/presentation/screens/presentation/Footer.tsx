@@ -36,7 +36,7 @@ const Footer = () => {
 
           <li>
             <a
-              href="/contact"
+              href="/contacto"
               title="Contacto"
               className="inline-flex text-lg font-medium text-gray-900 transition-all duration-200 transform font-pj hover:-translate-y-1 hover:text-gray-600"
             >
@@ -46,7 +46,7 @@ const Footer = () => {
 
           <li>
             <a
-              href="/privacy"
+              href="/privacidad"
               title="Política de Privacidad"
               className="inline-flex text-lg font-medium text-gray-900 transition-all duration-200 transform font-pj hover:-translate-y-1 hover:text-gray-600"
             >
@@ -56,7 +56,7 @@ const Footer = () => {
 
           <li>
             <a
-              href="/data-deletion"
+              href="/eliminar-datos"
               title="Guía para eliminación de datos"
               className="inline-flex text-lg font-medium text-gray-900 transition-all duration-200 transform font-pj hover:-translate-y-1 hover:text-gray-600"
             >

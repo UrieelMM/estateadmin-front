@@ -22,66 +22,84 @@ import DataDeletion from "../presentation/screens/presentation/DataDeletion";
 import PrivacyPolicy from "../presentation/screens/presentation/PrivacyPolicy";
 import AboutUs from "../presentation/screens/presentation/AboutUs";
 import AIFeatures from "../presentation/screens/presentation/AIFeatures";
+import {
+  GuidesList,
+  GuidePage,
+} from "../presentation/components/newsAndGuides";
+import { HelmetProvider } from "react-helmet-async";
 
 export const AppRouterPage = () => {
   return (
-    <Router>
-      <Routes>
-        {/* Rutas públicas */}
-        <Route path="/" element={<Hero />} />
-        <Route path="/login" element={<LoginScreen />} />
-        <Route path="/reset-password" element={<ResetPasswordScreen />} />
-        <Route path="/presentation" element={<Hero />} />
-        <Route path="/contact" element={<ContactForm />} />
-        <Route path="/privacy" element={<PrivacyPolicy />} />
-        <Route path="/data-deletion" element={<DataDeletion />} />
-        <Route path="/about-us" element={<AboutUs />} />
-        <Route path="/ai-features" element={<AIFeatures />} />
-        <Route
-          path="/unidentified-payments/:qrId"
-          element={<UnidentifiedPaymentsPublic />}
-        />
-
-        {/* Rutas protegidas para usuarios normales */}
-        <Route element={<ProtectedRoute />}>
+    <HelmetProvider>
+      <Router>
+        <Routes>
+          {/* Rutas públicas */}
+          <Route path="/" element={<Hero />} />
+          <Route path="/login" element={<LoginScreen />} />
+          <Route path="/reset-password" element={<ResetPasswordScreen />} />
+          <Route path="/presentation" element={<Hero />} />
+          <Route path="/contacto" element={<ContactForm />} />
+          <Route path="/privacidad" element={<PrivacyPolicy />} />
+          <Route path="/eliminar-datos" element={<DataDeletion />} />
+          <Route path="/sobre-nosotros" element={<AboutUs />} />
           <Route
-            path="/dashboard"
-            element={
-              <LayoutDashboard>
-                <Outlet />
-              </LayoutDashboard>
-            }
-          >
-            {routesApp.map((route) => (
-              <Route key={route.to} path={route.to} element={route.component} />
-            ))}
-            <Route index element={<Navigate to="/dashboard/home" />} />
-          </Route>
-        </Route>
-
-        {/* Rutas protegidas para Super Admin */}
-        <Route element={<SuperAdminProtectedRoute />}>
+            path="/caracteristicas-inteligencia-artificial"
+            element={<AIFeatures />}
+          />
           <Route
-            path="/super-admin"
-            element={
-              <SuperAdminLayout>
-                <Outlet />
-              </SuperAdminLayout>
-            }
-          >
-            {superAdminRoutes.map((route) => (
-              <Route
-                key={route.to}
-                path={route.to}
-                element={<route.Component />}
-              />
-            ))}
-            <Route index element={<Navigate to={superAdminRoutes[0].to} />} />
-          </Route>
-        </Route>
+            path="/unidentified-payments/:qrId"
+            element={<UnidentifiedPaymentsPublic />}
+          />
 
-        <Route path="*" element={<NotFoundPage />} />
-      </Routes>
-    </Router>
+          {/* Rutas para guías */}
+          <Route path="/guias" element={<GuidesList />} />
+          <Route path="/guias/:slug" element={<GuidePage />} />
+
+          {/* Rutas protegidas para usuarios normales */}
+          <Route element={<ProtectedRoute />}>
+            <Route
+              path="/dashboard"
+              element={
+                <LayoutDashboard>
+                  <Outlet />
+                </LayoutDashboard>
+              }
+            >
+              {routesApp.map((route) => (
+                <Route
+                  key={route.to}
+                  path={route.to}
+                  element={route.component}
+                />
+              ))}
+              <Route index element={<Navigate to="/dashboard/home" />} />
+            </Route>
+          </Route>
+
+          {/* Rutas protegidas para Super Admin */}
+          <Route element={<SuperAdminProtectedRoute />}>
+            <Route
+              path="/super-admin"
+              element={
+                <SuperAdminLayout>
+                  <Outlet />
+                </SuperAdminLayout>
+              }
+            >
+              {superAdminRoutes.map((route) => (
+                <Route
+                  key={route.to}
+                  path={route.to}
+                  element={<route.Component />}
+                />
+              ))}
+              <Route index element={<Navigate to={superAdminRoutes[0].to} />} />
+            </Route>
+          </Route>
+
+          <Route path="*" element={<NotFoundPage />} />
+        </Routes>
+      </Router>
+    </HelmetProvider>
   );
 };

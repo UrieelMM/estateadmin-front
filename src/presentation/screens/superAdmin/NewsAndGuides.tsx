@@ -5,12 +5,15 @@ import { PencilIcon, TrashIcon } from "@heroicons/react/24/solid";
 import moment from "moment";
 import "moment/locale/es";
 import useNewsAndGuidesStore from "../../../store/superAdmin/useNewsAndGuidesStore";
+import { Switch } from "@headlessui/react";
 
 interface NewsGuideItem {
   id: string;
   title: string;
   subtitle: string;
   imageUrl: string;
+  url: string;
+  active: boolean;
   createdAt: string;
 }
 
@@ -26,6 +29,8 @@ const NewsAndGuides: React.FC = () => {
 
   const [title, setTitle] = useState("");
   const [subtitle, setSubtitle] = useState("");
+  const [url, setUrl] = useState("/dashboard");
+  const [active, setActive] = useState(true);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>("");
   const [isEditing, setIsEditing] = useState(false);
@@ -67,6 +72,8 @@ const NewsAndGuides: React.FC = () => {
         await updateNewsGuide(currentItemId, {
           title,
           subtitle,
+          url,
+          active,
           imageFile,
         });
         toast.success("Noticia/guía actualizada correctamente");
@@ -79,6 +86,8 @@ const NewsAndGuides: React.FC = () => {
         await createNewsGuide({
           title,
           subtitle,
+          url,
+          active,
           imageFile,
         });
         toast.success("Noticia/guía creada correctamente");
@@ -93,6 +102,8 @@ const NewsAndGuides: React.FC = () => {
   const handleEdit = (item: NewsGuideItem) => {
     setTitle(item.title);
     setSubtitle(item.subtitle);
+    setUrl(item.url || "/dashboard");
+    setActive(item.active === undefined ? true : item.active);
     setImagePreview(item.imageUrl);
     setIsEditing(true);
     setCurrentItemId(item.id);
@@ -112,6 +123,8 @@ const NewsAndGuides: React.FC = () => {
   const resetForm = () => {
     setTitle("");
     setSubtitle("");
+    setUrl("/dashboard");
+    setActive(true);
     setImageFile(null);
     setImagePreview("");
     setIsEditing(false);
@@ -174,6 +187,53 @@ const NewsAndGuides: React.FC = () => {
                   }
                   className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                 />
+              </div>
+
+              <div className="mb-4">
+                <label
+                  htmlFor="url"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >
+                  URL de redirección
+                </label>
+                <input
+                  type="text"
+                  id="url"
+                  value={url}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    setUrl(e.target.value)
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  placeholder="/dashboard"
+                />
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                  Ruta a la que será redirigido el usuario (ej:
+                  /dashboard/calendar)
+                </p>
+              </div>
+
+              <div className="mb-4">
+                <div className="flex items-center">
+                  <Switch
+                    checked={active}
+                    onChange={setActive}
+                    className={`${
+                      active ? "bg-indigo-600" : "bg-gray-300 dark:bg-gray-600"
+                    } relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2`}
+                  >
+                    <span
+                      className={`${
+                        active ? "translate-x-6" : "translate-x-1"
+                      } inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
+                    />
+                  </Switch>
+                  <span className="ml-3 text-sm font-medium text-gray-700 dark:text-gray-300">
+                    {active ? "Activo" : "Inactivo"}
+                  </span>
+                </div>
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                  Las guías inactivas no se mostrarán a los usuarios
+                </p>
               </div>
 
               <div className="mb-4">
@@ -267,6 +327,12 @@ const NewsAndGuides: React.FC = () => {
                         scope="col"
                         className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
                       >
+                        Estado
+                      </th>
+                      <th
+                        scope="col"
+                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                      >
                         Fecha
                       </th>
                       <th
@@ -299,6 +365,20 @@ const NewsAndGuides: React.FC = () => {
                               {item.subtitle}
                             </div>
                           )}
+                          <div className="text-xs text-indigo-600 dark:text-indigo-400 mt-1">
+                            {item.url || "/dashboard"}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span
+                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              item.active
+                                ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+                                : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
+                            }`}
+                          >
+                            {item.active ? "Activo" : "Inactivo"}
+                          </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                           {moment(item.createdAt)

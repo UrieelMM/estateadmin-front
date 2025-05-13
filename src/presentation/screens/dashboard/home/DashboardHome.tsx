@@ -1,12 +1,12 @@
 import { useEffect } from "react";
-import CardsHomeSummary from "../../../components/CardsHomeSummary";
+import CardsHomeSummary from "./CardsHomeSummary";
 import DirectAccess from "../../../components/shared/DirectAccess";
 import { Card } from "@heroui/react";
 import { CalendarIcon } from "@heroicons/react/24/solid";
 import { useCalendarEventsStore } from "../../../../store/useReservationStore";
 import dayjs from "dayjs";
 import { Link } from "react-router-dom";
-import ImageSlider from "../../../components/ImageSlider";
+import ImageSlider from "../../../components/shared/sliders/ImageSlider";
 
 const NextEvents = () => {
   const { events, fetchEvents } = useCalendarEventsStore();
@@ -63,20 +63,41 @@ const NextEvents = () => {
 
 const DashboardHome = () => {
   return (
-    <div className="flex flex-col gap-6 px-4 md:px-8">
-      {/* Fila 1: Cards Summary y Slider en dos columnas */}
+    <div className="flex flex-col gap-6 px-4 py-4 md:px-8">
+      {/* Fila 1: Solo Cards Summary (KPIs) */}
+      <div className="w-full">
+        <section>
+          <CardsHomeSummary />
+        </section>
+      </div>
+
+      {/* Fila 2: Calendario (70%) y Slider (30%) */}
       <div className="flex flex-col lg:flex-row gap-4">
-        {/* Columna izquierda (60%) - Resumen financiero (KPIs) */}
-        <div className="w-full lg:w-[65%]">
-          <section>
-            <CardsHomeSummary />
-          </section>
+        {/* Columna izquierda (70%) - Calendario */}
+        <div className="w-full lg:w-[70%]">
+          <Card className="p-6 pt-2 w-full">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <CalendarIcon className="h-5 w-5 text-indigo-600" />
+                <h3 className="text-lg font-semibold dark:text-white">
+                  Eventos de la Semana
+                </h3>
+              </div>
+              <Link
+                to="/dashboard/calendar"
+                className="text-sm text-indigo-600 hover:text-indigo-500 transition-colors border-b border-indigo-600 dark:text-indigo-400 dark:hover:text-indigo-500 dark:border-indigo-400"
+              >
+                Ver calendario
+              </Link>
+            </div>
+            <NextEvents />
+          </Card>
         </div>
 
-        {/* Columna derecha (40%) - Slider de imágenes */}
-        <div className="w-full lg:w-[35%]">
-          <Card className="p-6 flex flex-col">
-            <h3 className="text-lg font-semibold mb-4 dark:text-white">
+        {/* Columna derecha (30%) - Slider de imágenes */}
+        <div className="w-full lg:w-[30%]">
+          <Card className="p-6 pt-0 flex flex-col">
+            <h3 className="text-lg font-semibold mb-4 text-center dark:text-white">
               Novedades y Guías
             </h3>
             <div className="flex justify-center">
@@ -86,26 +107,7 @@ const DashboardHome = () => {
         </div>
       </div>
 
-      {/* Fila 2: Eventos de la Semana (100% ancho) */}
-      <Card className="p-6 w-full">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <CalendarIcon className="h-5 w-5 text-indigo-600" />
-            <h3 className="text-lg font-semibold dark:text-white">
-              Eventos de la Semana
-            </h3>
-          </div>
-          <Link
-            to="/dashboard/calendar"
-            className="text-sm text-indigo-600 hover:text-indigo-500 transition-colors border-b border-indigo-600 dark:text-indigo-400 dark:hover:text-indigo-500 dark:border-indigo-400"
-          >
-            Ver calendario
-          </Link>
-        </div>
-        <NextEvents />
-      </Card>
-
-      {/* Fila 3: Acceso Directo (100% ancho) */}
+      {/* Fila 3: Accesos Directos (100% ancho) */}
       <DirectAccess />
     </div>
   );

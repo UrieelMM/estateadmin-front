@@ -216,7 +216,7 @@ const PrivacyPolicy = () => {
                   Para más información sobre cómo eliminar sus datos personales,
                   consulte nuestra{" "}
                   <Link
-                    to="/data-deletion"
+                    to="/eliminar-datos"
                     className="text-indigo-600 hover:text-indigo-800"
                   >
                     Guía para la Eliminación de Datos

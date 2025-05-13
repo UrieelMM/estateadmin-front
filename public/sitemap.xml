@@ -2,38 +2,87 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://estateadmin.com/</loc>
-    <lastmod>2023-09-15</lastmod>
+    <lastmod>2025-05-13</lastmod>
     <changefreq>monthly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://estateadmin.com/about-us</loc>
-    <lastmod>2023-09-15</lastmod>
+    <loc>https://estateadmin.com/sobre-nosotros</loc>
+    <lastmod>2025-05-13</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://estateadmin.com/contact</loc>
-    <lastmod>2023-09-15</lastmod>
+    <loc>https://estateadmin.com/contacto</loc>
+    <lastmod>2025-05-13</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://estateadmin.com/ai-features</loc>
-    <lastmod>2023-09-15</lastmod>
+    <loc>https://estateadmin.com/caracteristicas-inteligencia-artificial</loc>
+    <lastmod>2025-05-13</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://estateadmin.com/privacy-policy</loc>
-    <lastmod>2023-09-15</lastmod>
+    <loc>https://estateadmin.com/privacidad</loc>
+    <lastmod>2025-05-13</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://estateadmin.com/data-deletion</loc>
-    <lastmod>2023-09-15</lastmod>
+    <loc>https://estateadmin.com/eliminar-datos</loc>
+    <lastmod>2025-05-13</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://estateadmin.com/guias</loc>
+    <lastmod>2025-05-13</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <!-- Rutas de guías individuales -->
+  <url>
+    <loc>https://estateadmin.com/guias/modulo-de-mantenimiento</loc>
+    <lastmod>2025-05-13</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://estateadmin.com/guias/gestion-financiera-condominio</loc>
+    <lastmod>2025-05-13</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://estateadmin.com/guias/comunicacion-efectiva-residentes</loc>
+    <lastmod>2025-05-13</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://estateadmin.com/guias/reserva-areas-comunes</loc>
+    <lastmod>2025-05-13</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://estateadmin.com/guias/inventario</loc>
+    <lastmod>2025-05-13</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://estateadmin.com/guias/ingresos-y-egresos</loc>
+    <lastmod>2025-05-13</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://estateadmin.com/guias/proyectos</loc>
+    <lastmod>2025-05-13</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
   </url>
 </urlset> 

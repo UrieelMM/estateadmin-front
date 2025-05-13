@@ -68,7 +68,10 @@ const AboutUs = () => {
 
         {/* Twitter */}
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:url" content="https://estateadmin.com/about-us" />
+        <meta
+          name="twitter:url"
+          content="https://estateadmin.com/sobre-nosotros"
+        />
         <meta
           name="twitter:title"
           content="Sobre Nosotros - EstateAdmin | Gestión Inteligente de Condominios"
@@ -81,7 +84,7 @@ const AboutUs = () => {
         <meta name="twitter:creator" content="@estateadmin" />
 
         {/* Canonical URL */}
-        <link rel="canonical" href="https://estateadmin.com/about-us" />
+        <link rel="canonical" href="https://estateadmin.com/sobre-nosotros" />
       </Helmet>
 
       <header className="bg-white shadow-sm">

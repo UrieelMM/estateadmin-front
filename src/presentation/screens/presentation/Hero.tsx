@@ -15,8 +15,8 @@ import FeatureDetails from "./FeatureDetails";
 
 const navigation = [
   { name: "Características", href: "#features" },
-  { name: "Sobre nosotros", href: "/about-us" },
-  { name: "Contacto", href: "/contact" },
+  { name: "Sobre nosotros", href: "/sobre-nosotros" },
+  { name: "Contacto", href: "/contacto" },
 ];
 
 const Hero = () => {
@@ -249,7 +249,7 @@ const Hero = () => {
             </p>
             <div className="mt-10 flex items-center justify-center gap-x-6">
               <a
-                href="/contact"
+                href="/contacto"
                 className="rounded-md bg-indigo-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
               >
                 Comenzar ahora
@@ -264,7 +264,7 @@ const Hero = () => {
             </div>
             <div className="mt-6">
               <a
-                href="/ai-features"
+                href="/caracteristicas-inteligencia-artificial"
                 className="inline-flex items-center text-sm font-medium px-4 py-2 rounded-full transition-colors duration-300 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white dark:from-indigo-700 dark:via-purple-700 dark:to-pink-700"
               >
                 Conoce en lo que hemos estado trabajando para ti

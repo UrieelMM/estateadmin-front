@@ -1,0 +1,202 @@
+/* Estilos para el contenido de la guía */
+.guide-content {
+  /* Estilos base */
+  color: #333;
+  line-height: 1.6;
+  font-size: 1.125rem;
+}
+
+/* Estilos para las etiquetas HTML que podrían estar en el contenido */
+.guide-content h1,
+.guide-content h2,
+.guide-content h3,
+.guide-content h4,
+.guide-content h5,
+.guide-content h6 {
+  margin-top: 1.5em;
+  margin-bottom: 0.75em;
+  font-weight: 600;
+  line-height: 1.25;
+  color: #1a202c;
+}
+
+.guide-content h2 {
+  font-size: 1.875rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.guide-content h3 {
+  font-size: 1.5rem;
+}
+
+.guide-content h4 {
+  font-size: 1.25rem;
+}
+
+.guide-content p {
+  margin-bottom: 1.25rem;
+}
+
+.guide-content a {
+  color: #4f46e5;
+  text-decoration: underline;
+}
+
+.guide-content a:hover {
+  color: #4338ca;
+}
+
+.guide-content ul,
+.guide-content ol {
+  margin-bottom: 1.25rem;
+  padding-left: 1.75rem;
+}
+
+.guide-content ul {
+  list-style-type: disc;
+}
+
+.guide-content ol {
+  list-style-type: decimal;
+}
+
+.guide-content li {
+  margin-bottom: 0.5rem;
+}
+
+.guide-content blockquote {
+  padding: 1rem;
+  margin: 1.5rem 0;
+  border-left: 4px solid #4f46e5;
+  background-color: #f3f4f6;
+  color: #4b5563;
+  font-style: italic;
+}
+
+.guide-content pre {
+  background-color: #1e293b;
+  color: #e2e8f0;
+  padding: 1rem;
+  border-radius: 0.375rem;
+  overflow-x: auto;
+  margin: 1.5rem 0;
+}
+
+.guide-content code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
+  font-size: 0.875rem;
+}
+
+.guide-content pre code {
+  display: block;
+  line-height: 1.5;
+}
+
+.guide-content img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.375rem;
+  margin: 1.5rem 0;
+}
+
+.guide-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.5rem 0;
+}
+
+.guide-content th,
+.guide-content td {
+  padding: 0.75rem;
+  border: 1px solid #e5e7eb;
+}
+
+.guide-content th {
+  background-color: #f3f4f6;
+  font-weight: 600;
+  text-align: left;
+}
+
+.guide-content tr:nth-child(even) {
+  background-color: #f9fafb;
+}
+
+/* Estilos específicos para la guía de mantenimiento */
+.guide-content .tag {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  background-color: #dbeafe;
+  color: #1e40af;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  margin-right: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.guide-content .note {
+  background-color: #fffbeb;
+  border-left: 4px solid #f59e0b;
+  padding: 1rem;
+  margin: 1.5rem 0;
+  border-radius: 0 0.375rem 0.375rem 0;
+}
+
+.guide-content .warning {
+  background-color: #fef2f2;
+  border-left: 4px solid #ef4444;
+  padding: 1rem;
+  margin: 1.5rem 0;
+  border-radius: 0 0.375rem 0.375rem 0;
+}
+
+/* Soporte para el plugin Tailwind Typography */
+.guide-content .prose {
+  max-width: 65ch;
+  color: var(--tw-prose-body);
+}
+
+.guide-content
+  .prose
+  :where(h1, h2, h3, h4, h5, h6):not(
+    :where([class~="not-prose"], [class~="not-prose"] *)
+  ) {
+  color: var(--tw-prose-headings);
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.guide-content
+  .prose
+  :where(img):not(:where([class~="not-prose"], [class~="not-prose"] *)) {
+  margin-top: 2em;
+  margin-bottom: 2em;
+}
+
+.guide-content
+  .prose
+  :where(a):not(:where([class~="not-prose"], [class~="not-prose"] *)) {
+  color: var(--tw-prose-links);
+  text-decoration: underline;
+  font-weight: 500;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .guide-content {
+    font-size: 1rem;
+  }
+
+  .guide-content h2 {
+    font-size: 1.5rem;
+  }
+
+  .guide-content h3 {
+    font-size: 1.25rem;
+  }
+
+  .guide-content h4 {
+    font-size: 1.125rem;
+  }
+}

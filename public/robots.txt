@@ -4,9 +4,21 @@
 User-agent: *
 Allow: /
 
+# Priorizar el rastreo de guías
+Allow: /guias/
+Allow: /guias/*
+
 # Disallow admin sections
 Disallow: /dashboard/
 Disallow: /super-admin/
+
+# Controlar la tasa de rastreo
+Crawl-delay: 2
+
+# Mejorar rendimiento SEO para Googlebot
+User-agent: Googlebot
+Allow: /
+Crawl-delay: 1
 
 # Sitemap
 Sitemap: https://estateadmin.com/sitemap.xml 

@@ -8,13 +8,13 @@ import {
   UserIcon,
   HomeIcon,
 } from "@heroicons/react/24/solid";
-import { usePaymentSummaryStore } from "../../store/paymentSummaryStore";
-import { useExpenseSummaryStore } from "../../store/expenseSummaryStore";
+import { usePaymentSummaryStore } from "../../../../store/paymentSummaryStore";
+import { useExpenseSummaryStore } from "../../../../store/expenseSummaryStore";
 import { Card } from "@heroui/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { shallow } from "zustand/shallow";
-import useUserStore from "../../store/UserDataStore";
-import { useCondominiumStore } from "../../store/useCondominiumStore";
+import useUserStore from "../../../../store/UserDataStore";
+import { useCondominiumStore } from "../../../../store/useCondominiumStore";
 
 const Tooltip: React.FC<{ text: string }> = ({ text }) => {
   const [show, setShow] = React.useState(false);
