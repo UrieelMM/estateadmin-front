@@ -11,6 +11,8 @@ import {
   CheckCircleIcon,
   XCircleIcon,
   ClipboardDocumentListIcon,
+  DocumentTextIcon,
+  ArrowsPointingOutIcon,
 } from "@heroicons/react/24/solid";
 import EditProjectModal from "./components/EditProjectModal";
 import NewExpenseModal from "./components/NewExpenseModal";
@@ -24,13 +26,15 @@ import ProjectExportMenu from "./components/ProjectExportMenu";
 import { usePaymentSummaryStore } from "../../../../store/paymentSummaryStore";
 import NewMilestoneModal from "./components/NewMilestoneModal";
 import MilestonesList from "./components/MilestonesList";
+import ProjectQuotesSection from "./components/ProjectQuotesSection";
+import NewQuoteModal from "./components/NewQuoteModal";
 
 interface ProjectDashboardProps {
   project: Project;
 }
 
 const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ project }) => {
-  const { projectExpenses, updateProject } = useProjectStore();
+  const { projectExpenses, projectQuotes, updateProject } = useProjectStore();
   const { logoBase64, signatureBase64, adminCompany, adminPhone, adminEmail } =
     usePaymentSummaryStore();
 
@@ -38,6 +42,8 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ project }) => {
   const [isEditProjectModalOpen, setIsEditProjectModalOpen] = useState(false);
   const [isKanbanModalOpen, setIsKanbanModalOpen] = useState(false);
   const [isNewMilestoneModalOpen, setIsNewMilestoneModalOpen] = useState(false);
+  const [isNewQuoteModalOpen, setIsNewQuoteModalOpen] = useState(false);
+  const [isQuotesSectionExpanded, setIsQuotesSectionExpanded] = useState(false);
 
   // Calcular días transcurridos y restantes
   const today = new Date();
@@ -82,6 +88,12 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ project }) => {
         return "";
     }
   };
+
+  // Filtrar cotizaciones para este proyecto
+  const quotes = projectQuotes.filter(
+    (quote) => quote.projectId === project.id
+  );
+  const canAddMoreQuotes = quotes.length < 5;
 
   return (
     <div className="space-y-6 p-4">
@@ -155,113 +167,248 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ project }) => {
         </div>
       </div>
 
-      {/* Tarjetas de resumen */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <ProjectSummaryCard
-          title="Presupuesto Inicial"
-          value={`$${project.initialBudget.toLocaleString("es-MX", {
-            minimumFractionDigits: 2,
-          })}`}
-          subtitle={`Asignado: ${new Date(project.createdAt).toLocaleDateString(
-            "es-MX"
-          )}`}
-          icon="budget"
-          color="blue"
-        />
+      {/* Dashboard principal */}
+      <div className="grid grid-cols-1 gap-6">
+        {/* Tarjetas de resumen */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <ProjectSummaryCard
+            title="Presupuesto Inicial"
+            value={`$${project.initialBudget.toLocaleString("es-MX", {
+              minimumFractionDigits: 2,
+            })}`}
+            subtitle={`Asignado: ${new Date(
+              project.createdAt
+            ).toLocaleDateString("es-MX")}`}
+            icon="budget"
+            color="blue"
+          />
 
-        <ProjectSummaryCard
-          title="Presupuesto Restante"
-          value={`$${(project.currentBudget || 0).toLocaleString("es-MX", {
-            minimumFractionDigits: 2,
-          })}`}
-          subtitle={`${budgetUsedPercent.toFixed(1)}% utilizado`}
-          icon="money"
-          color={
-            budgetUsedPercent > 90
-              ? "red"
-              : budgetUsedPercent > 70
-              ? "yellow"
-              : "green"
-          }
-        />
+          <ProjectSummaryCard
+            title="Presupuesto Restante"
+            value={`$${(project.currentBudget || 0).toLocaleString("es-MX", {
+              minimumFractionDigits: 2,
+            })}`}
+            subtitle={`${budgetUsedPercent.toFixed(1)}% utilizado`}
+            icon="money"
+            color={
+              budgetUsedPercent > 90
+                ? "red"
+                : budgetUsedPercent > 70
+                ? "yellow"
+                : "green"
+            }
+          />
 
-        <ProjectSummaryCard
-          title="Tiempo Transcurrido"
-          value={`${daysElapsed} días`}
-          subtitle={`Desde: ${new Date(project.startDate).toLocaleDateString(
-            "es-MX"
-          )}`}
-          icon="calendar"
-          color="indigo"
-        />
+          <ProjectSummaryCard
+            title="Tiempo Transcurrido"
+            value={`${daysElapsed} días`}
+            subtitle={`Desde: ${new Date(project.startDate).toLocaleDateString(
+              "es-MX"
+            )}`}
+            icon="calendar"
+            color="indigo"
+          />
 
-        <ProjectSummaryCard
-          title="Tiempo Restante"
-          value={daysRemaining > 0 ? `${daysRemaining} días` : "Vencido"}
-          subtitle={`Hasta: ${new Date(project.endDate).toLocaleDateString(
-            "es-MX"
-          )}`}
-          icon="clock"
-          color={
-            daysRemaining < 0 ? "red" : daysRemaining < 7 ? "yellow" : "green"
-          }
-        />
-      </div>
-
-      {/* Sección de Hitos */}
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow dark:shadow-lg">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-            Hitos del Proyecto
-          </h3>
-          <button
-            onClick={() => setIsNewMilestoneModalOpen(true)}
-            className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-500"
-          >
-            Nuevo Hito
-          </button>
+          <ProjectSummaryCard
+            title="Tiempo Restante"
+            value={daysRemaining > 0 ? `${daysRemaining} días` : "Vencido"}
+            subtitle={`Hasta: ${new Date(project.endDate).toLocaleDateString(
+              "es-MX"
+            )}`}
+            icon="clock"
+            color={
+              daysRemaining < 0 ? "red" : daysRemaining < 7 ? "yellow" : "green"
+            }
+          />
         </div>
-        <MilestonesList projectId={project.id} />
-      </div>
 
-      {/* Gráficas */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 dark:shadow-lg">
-          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">
-            Presupuesto Utilizado
-          </h3>
-          <div className="h-64">
-            <ProjectBudgetChart
-              initialBudget={project.initialBudget}
-              currentBudget={project.currentBudget || 0}
-            />
+        {/* Gráficas */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 dark:shadow-lg">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">
+              Presupuesto Utilizado
+            </h3>
+            <div className="h-64">
+              <ProjectBudgetChart
+                initialBudget={project.initialBudget}
+                currentBudget={project.currentBudget || 0}
+              />
+            </div>
+          </div>
+
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 dark:shadow-lg">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">
+              Distribución de Gastos por Categoría
+            </h3>
+            <div className="h-64">
+              <ProjectExpenseTagsChart expenses={projectExpenses} />
+            </div>
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 dark:shadow-lg">
-          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">
-            Distribución de Gastos por Categoría
-          </h3>
-          <div className="h-64">
-            <ProjectExpenseTagsChart expenses={projectExpenses} />
+        {/* Sección de Hitos */}
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow dark:shadow-lg">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              Hitos del Proyecto
+            </h3>
+            <button
+              onClick={() => setIsNewMilestoneModalOpen(true)}
+              className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-500"
+            >
+              Nuevo Hito
+            </button>
+          </div>
+          <MilestonesList projectId={project.id} />
+        </div>
+
+        {/* Tabla de gastos */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden dark:shadow-lg">
+          <div className="p-6 pb-0">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
+              Registro de Gastos
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400 text-sm mt-1">
+              Total de registros: {projectExpenses.length}
+            </p>
+          </div>
+          <ProjectExpensesTable expenses={projectExpenses} />
+        </div>
+
+        {/* Sección de Cotizaciones (Ahora en su propia fila) */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-lg overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+            <div className="flex items-center">
+              <DocumentTextIcon className="h-5 w-5 text-indigo-500 mr-2" />
+              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
+                Cotizaciones
+              </h3>
+            </div>
+            {quotes.length > 0 && (
+              <button
+                onClick={() =>
+                  setIsQuotesSectionExpanded(!isQuotesSectionExpanded)
+                }
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              >
+                <ArrowsPointingOutIcon className="h-5 w-5" />
+              </button>
+            )}
+          </div>
+
+          <div className="p-6">
+            {quotes.length === 0 ? (
+              <div className="text-center py-8">
+                <DocumentTextIcon className="mx-auto h-12 w-12 text-gray-400" />
+                <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-gray-100">
+                  No hay cotizaciones
+                </h3>
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                  Comienza agregando cotizaciones para este proyecto.
+                </p>
+                <div className="mt-6">
+                  <button
+                    onClick={() => setIsNewQuoteModalOpen(true)}
+                    className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                  >
+                    Nueva Cotización
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    {quotes.length} de 5 cotizaciones
+                  </p>
+                  {quotes.length >= 2 && (
+                    <button
+                      onClick={() => setIsQuotesSectionExpanded(true)}
+                      className="text-sm text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300 flex items-center"
+                    >
+                      <span className="bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300 px-2 py-1 rounded-md inline-flex items-center mr-2">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 20 20"
+                          fill="currentColor"
+                          className="w-4 h-4 mr-1"
+                        >
+                          <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                          <path
+                            fillRule="evenodd"
+                            d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                        Comparar cotizaciones
+                      </span>
+                    </button>
+                  )}
+                </div>
+
+                {/* Vista resumida de cotizaciones - Grid con más columnas para aprovechar el espacio horizontal */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                  {quotes.slice(0, 8).map((quote) => (
+                    <div
+                      key={quote.id}
+                      className={`p-3 rounded-lg border ${
+                        quote.isSelected
+                          ? "border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-900/20"
+                          : "border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-700/30"
+                      }`}
+                    >
+                      <div className="flex justify-between">
+                        <h4 className="font-medium text-gray-900 dark:text-gray-100 truncate">
+                          {quote.providerName}
+                        </h4>
+                        {quote.isSelected && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100">
+                            Seleccionada
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 truncate">
+                        {quote.concept}
+                      </p>
+                      <div className="flex justify-between items-center mt-2">
+                        <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                          $
+                          {quote.amount.toLocaleString("es-MX", {
+                            minimumFractionDigits: 2,
+                          })}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {quotes.length > 8 && (
+                  <button
+                    onClick={() => setIsQuotesSectionExpanded(true)}
+                    className="w-full text-center text-sm text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300"
+                  >
+                    Ver todas las cotizaciones ({quotes.length})
+                  </button>
+                )}
+
+                {/* Botón para agregar nueva cotización si hay espacio */}
+                {canAddMoreQuotes && (
+                  <div className="pt-3 border-t border-gray-200 dark:border-gray-700">
+                    <button
+                      onClick={() => setIsNewQuoteModalOpen(true)}
+                      className="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none"
+                    >
+                      Nueva Cotización
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Tabla de gastos */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden dark:shadow-lg">
-        <div className="p-6 pb-0">
-          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
-            Registro de Gastos
-          </h3>
-          <p className="text-gray-600 dark:text-gray-400 text-sm mt-1">
-            Total de registros: {projectExpenses.length}
-          </p>
-        </div>
-        <ProjectExpensesTable expenses={projectExpenses} />
-      </div>
-
-      {/* Modals adicionales */}
+      {/* Modales */}
       <NewExpenseModal
         isOpen={isNewExpenseModalOpen}
         onClose={() => setIsNewExpenseModalOpen(false)}
@@ -284,6 +431,39 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ project }) => {
         onClose={() => setIsNewMilestoneModalOpen(false)}
         projectId={project.id}
       />
+      <NewQuoteModal
+        isOpen={isNewQuoteModalOpen}
+        onClose={() => setIsNewQuoteModalOpen(false)}
+        projectId={project.id}
+        projectName={project.name}
+      />
+
+      {/* Vista expandida de cotizaciones */}
+      {isQuotesSectionExpanded && (
+        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-6xl max-h-[90vh] overflow-auto">
+            <div className="sticky top-0 bg-white dark:bg-gray-800 px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
+                Cotizaciones de {project.name}
+              </h3>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setIsQuotesSectionExpanded(false)}
+                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                >
+                  <XCircleIcon className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+            <div className="p-6" id="quotes-section">
+              <ProjectQuotesSection
+                projectId={project.id}
+                projectName={project.name}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
