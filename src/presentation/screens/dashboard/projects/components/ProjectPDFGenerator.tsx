@@ -1,5 +1,5 @@
 // ProjectPDFGenerator.tsx
-import React from "react";
+import React, { useEffect } from "react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import {
@@ -14,6 +14,7 @@ import {
   useProjectTaskStore,
 } from "../../../../../store/projectTaskStore";
 import { DocumentTextIcon } from "@heroicons/react/24/solid";
+import { useSignaturesStore } from "../../../../../store/useSignaturesStore";
 
 // Mapeo de estados de proyecto a español
 const projectStatusLabels: Record<ProjectStatus, string> = {
@@ -84,20 +85,10 @@ const formatDate = (dateString: string): string => {
 
 export interface ProjectPDFGeneratorProps {
   project: Project;
-  logoBase64?: string;
-  signatureBase64?: string;
-  adminCompany?: string;
-  adminPhone?: string;
-  adminEmail?: string;
 }
 
 const ProjectPDFGenerator: React.FC<ProjectPDFGeneratorProps> = ({
   project,
-  logoBase64,
-  signatureBase64,
-  adminCompany,
-  adminPhone,
-  adminEmail,
 }) => {
   // Obtener los gastos del proyecto
   const { projectExpenses, fetchProjectExpenses } = useProjectStore();
@@ -105,7 +96,28 @@ const ProjectPDFGenerator: React.FC<ProjectPDFGeneratorProps> = ({
   // Obtener las tareas del proyecto
   const { tasks, fetchProjectTasks } = useProjectTaskStore();
 
+  // Obtener las firmas y datos de administración desde el store
+  const {
+    logoBase64,
+    signatureBase64,
+    adminCompany,
+    adminPhone,
+    adminEmail,
+    loading,
+    fetchSignatures,
+  } = useSignaturesStore();
+
+  // Cargar las firmas cuando se monta el componente
+  useEffect(() => {
+    fetchSignatures();
+  }, [fetchSignatures]);
+
   const generatePDF = async () => {
+    // Asegurarnos de tener las firmas cargadas
+    if (!loading && (!logoBase64 || !signatureBase64)) {
+      await fetchSignatures();
+    }
+
     // Primero, aseguramos de tener los datos más recientes
     await fetchProjectExpenses(project.id);
     await fetchProjectTasks(project.id);
@@ -359,7 +371,14 @@ const ProjectPDFGenerator: React.FC<ProjectPDFGeneratorProps> = ({
 
       // Agrupar tareas
       projectTasks.forEach((task) => {
-        tasksByStatus[task.status].push(task);
+        // Verificar que task.status sea una clave válida en tasksByStatus
+        if (task && task.status && tasksByStatus[task.status]) {
+          tasksByStatus[task.status].push(task);
+        } else {
+          // Si el status no es válido, agregarlo a pendientes como fallback
+          console.warn(`Estado de tarea no válido: ${task?.status}`, task);
+          tasksByStatus[TaskStatus.PENDING].push(task);
+        }
       });
 
       // Preparar datos para el resumen de tareas por estado

@@ -7,21 +7,9 @@ import ProjectExcelGenerator from "./ProjectExcelGenerator";
 
 interface ProjectExportMenuProps {
   project: Project;
-  logoBase64?: string;
-  signatureBase64?: string;
-  adminCompany?: string;
-  adminPhone?: string;
-  adminEmail?: string;
 }
 
-const ProjectExportMenu: React.FC<ProjectExportMenuProps> = ({
-  project,
-  logoBase64,
-  signatureBase64,
-  adminCompany,
-  adminPhone,
-  adminEmail,
-}) => {
+const ProjectExportMenu: React.FC<ProjectExportMenuProps> = ({ project }) => {
   return (
     <Menu as="div" className="relative inline-block text-left mt-2">
       <div>
@@ -64,14 +52,7 @@ const ProjectExportMenu: React.FC<ProjectExportMenuProps> = ({
                       : "text-gray-700 dark:text-gray-200"
                   } flex w-full py-2 text-sm items-center`}
                 >
-                  <ProjectPDFGenerator
-                    project={project}
-                    logoBase64={logoBase64}
-                    signatureBase64={signatureBase64}
-                    adminCompany={adminCompany}
-                    adminPhone={adminPhone}
-                    adminEmail={adminEmail}
-                  />
+                  <ProjectPDFGenerator project={project} />
                 </div>
               )}
             </Menu.Item>
