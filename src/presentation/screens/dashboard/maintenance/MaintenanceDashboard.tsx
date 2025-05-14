@@ -7,6 +7,8 @@ import {
 } from "../../../../store/useMaintenanceStore";
 import { useTicketsStore } from "./tickets/ticketsStore";
 import TicketToAppointment from "./TicketToAppointment";
+import LoadingApp from "../../../components/shared/loaders/LoadingApp";
+import MaintenancePDFReportGenerator from "../../../components/shared/reports/MaintenancePDFReportGenerator";
 import {
   Chart as ChartJS,
   ArcElement,
@@ -32,6 +34,7 @@ import {
   CurrencyDollarIcon,
   ReceiptPercentIcon,
   BanknotesIcon,
+  DocumentArrowDownIcon,
 } from "@heroicons/react/24/outline";
 import moment from "moment";
 import { formatCurrency } from "../../../../utils/curreyncy";
@@ -96,12 +99,14 @@ const MaintenanceDashboard: React.FC = () => {
   const { costs, fetchCosts, getCostSummaryByCategory, getCostSummaryByMonth } =
     useMaintenanceCostStore();
 
+  // Estado general de carga
+  const [isLoading, setIsLoading] = useState(true);
   const [ticketStatistics, setTicketStatistics] = useState<TicketStatistics>({
-    averageResolutionTime: "24.5",
-    resolvedPercentage: 75,
+    averageResolutionTime: "0",
+    resolvedPercentage: 0,
     byAreas: {},
     byUrgency: {},
-    dailyTrend: [4, 5, 3, 7, 8, 6, 9],
+    dailyTrend: [0, 0, 0, 0, 0, 0, 0],
   });
 
   const [categoryData, setCategoryData] = useState<
@@ -112,20 +117,36 @@ const MaintenanceDashboard: React.FC = () => {
   >([]);
   const [_costsLoading, setCostsLoading] = useState(false);
 
+  // Estado para el selector de fechas del reporte
+  const [dateFilter, setDateFilter] = useState({
+    startDate: moment().subtract(3, "months").format("YYYY-MM-DD"),
+    endDate: moment().format("YYYY-MM-DD"),
+  });
+
+  // Estado para controlar visibilidad del panel de reportes
+  const [showReportPanel, setShowReportPanel] = useState(false);
+
   // Cargar datos al montar el componente
   useEffect(() => {
     const loadData = async () => {
-      // Cargamos todos los datos primero
-      await Promise.all([
-        fetchReports(),
-        fetchTickets(),
-        fetchAppointments(),
-        fetchContracts(),
-        loadCostsData(),
-      ]);
+      setIsLoading(true);
+      try {
+        // Cargamos todos los datos primero
+        await Promise.all([
+          fetchReports(),
+          fetchTickets(),
+          fetchAppointments(),
+          fetchContracts(),
+          loadCostsData(),
+        ]);
 
-      // Luego calculamos las estadísticas con los datos actualizados
-      calculateTicketStatistics();
+        // Luego calculamos las estadísticas con los datos actualizados
+        calculateTicketStatistics();
+      } catch (error) {
+        console.error("Error al cargar datos del dashboard:", error);
+      } finally {
+        setIsLoading(false);
+      }
     };
 
     loadData();
@@ -161,6 +182,17 @@ const MaintenanceDashboard: React.FC = () => {
 
   // Calcular estadísticas de tickets para el dashboard
   const calculateTicketStatistics = () => {
+    if (!tickets || tickets.length === 0) {
+      setTicketStatistics({
+        averageResolutionTime: "0",
+        resolvedPercentage: 0,
+        byAreas: {},
+        byUrgency: {},
+        dailyTrend: [0, 0, 0, 0, 0, 0, 0],
+      });
+      return;
+    }
+
     // Áreas más comunes en tickets
     const byAreas: Record<string, number> = {};
     tickets.forEach((ticket) => {
@@ -193,7 +225,7 @@ const MaintenanceDashboard: React.FC = () => {
     const resolvedTickets = tickets.filter(
       (ticket) => ticket.status === "cerrado" && ticket.closedAt
     );
-    let avgResolutionTime = "N/A";
+    let avgResolutionTime = "0";
 
     if (resolvedTickets.length > 0) {
       const totalHours = resolvedTickets.reduce((acc, ticket) => {
@@ -459,6 +491,17 @@ const MaintenanceDashboard: React.FC = () => {
 
   // Calcular contadores para KPIs con datos reales
   const calculateKPIs = () => {
+    if (!tickets || tickets.length === 0) {
+      return {
+        activeTicketsCount: 0,
+        resolvedTicketsCount: 0,
+        activeContractsCount: 0,
+        expiringContractsCount: 0,
+        pendingAppointmentsCount: 0,
+        firstResponseTime: "0.0",
+      };
+    }
+
     // Tickets activos (no cerrados)
     const activeTicketsCount = tickets.filter(
       (t) => t.status !== "cerrado"
@@ -489,7 +532,6 @@ const MaintenanceDashboard: React.FC = () => {
     ).length;
 
     // Calcular tiempo promedio de primera respuesta (asumimos 6.2h si no hay datos reales)
-    // Este dato podría obtenerse de una fuente real en una implementación completa
     const firstResponseTime = tickets.length > 0 ? "6.2" : "0.0";
 
     return {
@@ -510,8 +552,80 @@ const MaintenanceDashboard: React.FC = () => {
     (ticket) => ticket.status === "cerrado" && ticket.closedAt
   );
 
+  if (isLoading) {
+    return <LoadingApp />;
+  }
+
   return (
     <div className="space-y-8">
+      {/* Botón de generación de reportes */}
+      <div className="flex justify-end">
+        <button
+          className="flex items-center space-x-2 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:hover:bg-indigo-800/40 text-indigo-600 dark:text-indigo-300 px-4 py-2 rounded-lg transition-all duration-200"
+          onClick={() => setShowReportPanel(!showReportPanel)}
+        >
+          <DocumentArrowDownIcon className="h-5 w-5" />
+          <span>Generar Reporte PDF</span>
+        </button>
+      </div>
+
+      {/* Panel de reportes */}
+      {showReportPanel && (
+        <div className="bg-white dark:bg-gray-800 shadow-md rounded-xl p-6 border border-gray-100 dark:border-gray-700 animate-fadeIn">
+          <h3 className="text-lg font-semibold mb-4 text-gray-800 dark:text-white">
+            Generar Reporte de Mantenimiento
+          </h3>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div>
+              <label
+                htmlFor="startDate"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >
+                Fecha inicial
+              </label>
+              <input
+                type="date"
+                id="startDate"
+                className="block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                value={dateFilter.startDate}
+                onChange={(e) =>
+                  setDateFilter({ ...dateFilter, startDate: e.target.value })
+                }
+              />
+            </div>
+            <div>
+              <label
+                htmlFor="endDate"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >
+                Fecha final
+              </label>
+              <input
+                type="date"
+                id="endDate"
+                className="block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                value={dateFilter.endDate}
+                onChange={(e) =>
+                  setDateFilter({ ...dateFilter, endDate: e.target.value })
+                }
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-between items-center">
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              El reporte incluirá información de reportes, tickets, citas y
+              costos para el período seleccionado.
+            </p>
+            <MaintenancePDFReportGenerator
+              dateFilter={dateFilter}
+              buttonClassName="bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded shadow-sm text-sm font-medium transition-colors ease-in-out"
+            />
+          </div>
+        </div>
+      )}
+
       {/* KPIs */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 animate-fadeIn">
         <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-md border border-gray-100 dark:border-gray-700 transition-all hover:shadow-lg group hover:translate-y-[-2px] duration-300">
@@ -873,7 +987,7 @@ const MaintenanceDashboard: React.FC = () => {
             </div>
           </div>
           <div className="text-3xl font-bold text-indigo-800 dark:text-indigo-100">
-            {ticketStatistics?.averageResolutionTime || "- - -"}
+            {ticketStatistics?.averageResolutionTime || "0"}
             <span className="text-sm text-indigo-600 dark:text-indigo-300 ml-1">
               horas
             </span>
