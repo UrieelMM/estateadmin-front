@@ -78,7 +78,7 @@ const Hero = () => {
 
         {/* Twitter */}
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:url" content="https://estateadmin.com" />
+        <meta name="twitter:url" content="https://estate-admin.com" />
         <meta
           name="twitter:title"
           content="EstateAdmin - Sistema de Gestión de Condominios"
