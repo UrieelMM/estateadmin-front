@@ -1,15 +1,1 @@
-# Redirecciones de URLs en inglés a español (301 permanente)
-
-/data-deletion /eliminar-datos 301
-/about-us /sobre-nosotros 301
-/ai-features /caracteristicas-inteligencia-artificial 301
-/login /login 301
-/privacy /privacidad 301
-
-# Redirección de dominio sin guion al dominio con guion
-
-https://estateadmin.com/* https://estate-admin.com/:splat 301!
-
-# Regla SPA - DEBE estar al final
-
-/\* /index.html 200
+/* /index.html 200
