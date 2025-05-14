@@ -73,8 +73,8 @@ const DashboardHome = () => {
 
       {/* Fila 2: Calendario (70%) y Slider (30%) */}
       <div className="flex flex-col lg:flex-row gap-4">
-        {/* Columna izquierda (70%) - Calendario */}
-        <div className="w-full lg:w-[70%]">
+        {/* Columna izquierda (60%) - Calendario */}
+        <div className="w-full lg:w-[60%]">
           <Card className="p-6 pt-2 w-full">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
@@ -94,8 +94,8 @@ const DashboardHome = () => {
           </Card>
         </div>
 
-        {/* Columna derecha (30%) - Slider de imágenes */}
-        <div className="w-full lg:w-[30%]">
+        {/* Columna derecha (40%) - Slider de imágenes */}
+        <div className="w-full lg:w-[40%]">
           <Card className="p-6 pt-0 flex flex-col">
             <h3 className="text-lg font-semibold mb-4 text-center dark:text-white">
               Novedades y Guías
