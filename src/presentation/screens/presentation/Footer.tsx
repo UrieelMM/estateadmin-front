@@ -63,6 +63,16 @@ const Footer = () => {
               Eliminación de datos
             </a>
           </li>
+
+          <li>
+            <a
+              href="/guias"
+              title="Guía para conocer el sistema"
+              className="inline-flex text-lg font-medium text-gray-900 transition-all duration-200 transform font-pj hover:-translate-y-1 hover:text-gray-600"
+            >
+              Guías y tutoriales
+            </a>
+          </li>
         </ul>
 
         <div className="mt-8 sm:mt-12">
