@@ -91,7 +91,7 @@ const AIFeatures = () => {
         <meta name="language" content="es" />
         <link
           rel="canonical"
-          href="https://estateadmin.com/caracteristicas-inteligencia-artificial"
+          href="https://estate-admin.com/caracteristicas-inteligencia-artificial"
         />
       </Helmet>
 

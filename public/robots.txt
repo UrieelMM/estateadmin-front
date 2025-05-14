@@ -1,5 +1,5 @@
 # Robots.txt file for EstateAdmin
-# https://estateadmin.com/
+# https://estate-admin.com/
 
 User-agent: *
 Allow: /
@@ -21,4 +21,4 @@ Allow: /
 Crawl-delay: 1
 
 # Sitemap
-Sitemap: https://estateadmin.com/sitemap.xml 
+Sitemap: https://estate-admin.com/sitemap.xml 

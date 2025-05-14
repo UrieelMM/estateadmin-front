@@ -118,7 +118,7 @@ const Hero = () => {
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 
         {/* Canonical URL */}
-        <link rel="canonical" href="https://estateadmin.com" />
+        <link rel="canonical" href="https://estate-admin.com" />
       </Helmet>
 
       <header className="absolute inset-x-0 top-0 z-50">

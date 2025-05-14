@@ -87,7 +87,7 @@ const AboutUs = () => {
         <meta name="twitter:creator" content="@estateadmin" />
 
         {/* Canonical URL */}
-        <link rel="canonical" href="https://estateadmin.com/sobre-nosotros" />
+        <link rel="canonical" href="https://estate-admin.com/sobre-nosotros" />
       </Helmet>
 
       <header className="bg-white shadow-sm">
