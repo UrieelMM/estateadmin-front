@@ -165,7 +165,7 @@ const AIFeatures = () => {
                   <div className="mt-8">
                     <div className="inline-flex rounded-md shadow">
                       <Link
-                        to="/contact"
+                        to="/contacto"
                         className="inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-indigo-600 bg-white hover:bg-indigo-50"
                       >
                         Mantente informado
@@ -287,7 +287,7 @@ const AIFeatures = () => {
             <div className="mt-8 flex justify-center">
               <div className="inline-flex rounded-md shadow">
                 <Link
-                  to="/contact"
+                  to="/contacto"
                   className="inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-indigo-600 bg-white hover:bg-indigo-50"
                 >
                   Contáctanos

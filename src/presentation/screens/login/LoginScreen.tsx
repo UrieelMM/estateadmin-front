@@ -404,7 +404,7 @@ const LoginScreen = () => {
               <motion.a
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.97 }}
-                href="/contact"
+                href="/contacto"
                 className="text-sm font-medium text-indigo-600 hover:text-indigo-800 transition-colors"
               >
                 Contáctanos para unirte a nuestros servicios
