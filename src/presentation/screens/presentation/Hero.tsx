@@ -63,7 +63,7 @@ const Hero = () => {
 
         {/* Open Graph / Facebook */}
         <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://estateadmin.com" />
+        <meta property="og:url" content="https://estate-admin.com" />
         <meta
           property="og:title"
           content="EstateAdmin - Sistema de Gestión de Condominios"
@@ -102,7 +102,7 @@ const Hero = () => {
         <meta property="business:contact_data:phone" content="+527711953837" />
         <meta
           property="business:contact_data:website"
-          content="https://estateadmin.com"
+          content="https://estate-admin.com"
         />
         <meta
           property="business:contact_data:category"

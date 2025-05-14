@@ -119,7 +119,7 @@ const LoginScreen = () => {
           content="estateadmin login, inicio sesión condominios, acceso administración, portal gestión condominios"
         />
         <meta name="robots" content="noindex, nofollow" />
-        <link rel="canonical" href="https://estateadmin.com/login" />
+        <link rel="canonical" href="https://estate-admin.com/login" />
       </Helmet>
 
       {/* Card container */}

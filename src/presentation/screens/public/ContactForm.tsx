@@ -175,7 +175,7 @@ const ContactForm = () => {
         />
         <meta name="robots" content="index, follow" />
         <meta name="language" content="es" />
-        <link rel="canonical" href="https://estateadmin.com/contact" />
+        <link rel="canonical" href="https://estate-admin.com/contacto" />
       </Helmet>
 
       <div className="flex flex-col lg:flex-row h-screen">

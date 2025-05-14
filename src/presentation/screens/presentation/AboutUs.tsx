@@ -55,7 +55,7 @@ const AboutUs = () => {
         <meta property="og:type" content="website" />
         <meta
           property="og:url"
-          content="https://estateadmin.com/sobre-nosotros"
+          content="https://estate-admin.com/sobre-nosotros"
         />
         <meta
           property="og:title"
@@ -73,7 +73,7 @@ const AboutUs = () => {
         <meta name="twitter:card" content="summary_large_image" />
         <meta
           name="twitter:url"
-          content="https://estateadmin.com/sobre-nosotros"
+          content="https://estate-admin.com/sobre-nosotros"
         />
         <meta
           name="twitter:title"
