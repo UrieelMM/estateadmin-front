@@ -19,6 +19,7 @@ import {
 } from "@heroicons/react/24/solid";
 import toast from "react-hot-toast";
 import LoadingApp from "../../../../components/shared/loaders/LoadingApp";
+import { createPortal } from "react-dom";
 
 interface CommonAreaDetailsProps {
   isOpen: boolean;
@@ -159,8 +160,17 @@ const CommonAreaDetails = ({
 
   return (
     <>
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center overflow-y-auto z-40">
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+      {/* Modal principal */}
+      <div
+        className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center overflow-y-auto z-40"
+        onClick={(e) => {
+          if (e.target === e.currentTarget) onClose();
+        }}
+      >
+        <div
+          className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto"
+          onClick={(e) => e.stopPropagation()}
+        >
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-bold text-gray-900 dark:text-white truncate">
               {selectedArea.name}
@@ -378,8 +388,14 @@ const CommonAreaDetails = ({
 
       {/* Modal de eliminación */}
       {isDeleteModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md">
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50"
+          onClick={() => setIsDeleteModalOpen(false)}
+        >
+          <div
+            className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                 Confirmar eliminación
@@ -415,8 +431,14 @@ const CommonAreaDetails = ({
 
       {/* Modal de mantenimiento */}
       {isMaintenanceModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md">
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50"
+          onClick={() => setIsMaintenanceModalOpen(false)}
+        >
+          <div
+            className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                 {selectedArea.status === "maintenance"
@@ -477,15 +499,29 @@ const CommonAreaDetails = ({
         </div>
       )}
 
-      {/* Imagen a pantalla completa */}
+      {/* Formulario de edición */}
+      {isEditFormOpen && (
+        <CommonAreaForm
+          isOpen={isEditFormOpen}
+          onClose={handleEditClose}
+          areaToEdit={selectedArea}
+        />
+      )}
+
+      {/* Imagen a pantalla completa como portal para asegurar que está en el nivel superior del DOM */}
       {showFullscreenImage &&
         selectedArea.images &&
-        selectedArea.images.length > 0 && (
+        selectedArea.images.length > 0 &&
+        createPortal(
           <div
-            className="fixed inset-0 bg-black bg-opacity-90 flex justify-center items-center z-50 cursor-pointer"
+            className="fixed inset-0 bg-black bg-opacity-90 flex justify-center items-center cursor-pointer"
+            style={{ zIndex: 9999 }}
             onClick={() => setShowFullscreenImage(false)}
           >
-            <div className="relative max-w-7xl max-h-screen p-4">
+            <div
+              className="relative max-w-7xl max-h-screen p-4"
+              onClick={(e) => e.stopPropagation()}
+            >
               <img
                 src={selectedArea.images[currentImageIndex]}
                 alt={selectedArea.name}
@@ -514,23 +550,18 @@ const CommonAreaDetails = ({
                 </>
               )}
               <button
-                onClick={() => setShowFullscreenImage(false)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowFullscreenImage(false);
+                }}
                 className="absolute top-4 right-4 bg-black bg-opacity-50 rounded-full p-2 text-white hover:bg-opacity-70"
               >
                 <XMarkIcon className="h-6 w-6" />
               </button>
             </div>
-          </div>
+          </div>,
+          document.body
         )}
-
-      {/* Formulario de edición */}
-      {isEditFormOpen && (
-        <CommonAreaForm
-          isOpen={isEditFormOpen}
-          onClose={handleEditClose}
-          areaToEdit={selectedArea}
-        />
-      )}
     </>
   );
 };
