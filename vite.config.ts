@@ -56,15 +56,7 @@ export default defineConfig({
 
   build: {
     sourcemap: true,
-    // Mantener consistente la estructura de assets
-    assetsDir: "assets",
-    // No añadir hash a los nombres de archivos principales
-    rollupOptions: {
-      output: {
-        entryFileNames: `assets/[name].js`,
-        chunkFileNames: `assets/[name].js`,
-        assetFileNames: `assets/[name].[ext]`,
-      },
-    },
+    // Configuración para Netlify y SPA
+    outDir: "dist",
   },
 });

@@ -10,11 +10,6 @@
 
 https://estateadmin.com/* https://estate-admin.com/:splat 301!
 
-# Asegurar que los assets se sirvan correctamente
-
-/assets/_ /assets/:splat 200
-/src/_ /src/:splat 200
-
-# Redirección genérica para SPA
+# Esta línea es CRÍTICA para SPAs en Netlify - DEBE ser la última
 
 /\* /index.html 200
