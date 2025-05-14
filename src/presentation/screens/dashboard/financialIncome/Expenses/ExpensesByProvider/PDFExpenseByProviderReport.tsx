@@ -1,9 +1,8 @@
-import React from "react";
+import React, { useEffect } from "react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { useExpenseSummaryStore } from "../../../../../../store/expenseSummaryStore";
 import { DocumentChartBarIcon } from "@heroicons/react/20/solid";
-import { usePaymentSummaryStore } from "../../../../../../store/paymentSummaryStore";
+import { useSignaturesStore } from "../../../../../../store/useSignaturesStore";
 
 interface PDFExpenseByProviderReportProps {
   year: string;
@@ -17,36 +16,24 @@ interface PDFExpenseByProviderReportProps {
   }[];
 }
 
-// Función auxiliar para convertir una URL de imagen a base64
-async function getBase64FromUrl(url: string): Promise<string> {
-  const response = await fetch(url);
-  const blob = await response.blob();
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onerror = reject;
-    reader.onloadend = () => {
-      resolve(reader.result as string);
-    };
-    reader.readAsDataURL(blob);
-  });
-}
-
 const PDFExpenseByProviderReport: React.FC<PDFExpenseByProviderReportProps> = ({
   year,
   providerSummaries,
 }) => {
-  const { logoBase64, adminCompany, adminPhone, adminEmail } =
-    useExpenseSummaryStore((state) => ({
-      logoBase64: state.logoBase64,
-      adminCompany: state.adminCompany || "Administradora S.A.",
-      adminPhone: state.adminPhone || "Teléfono no disponible",
-      adminEmail: state.adminEmail || "Email no disponible",
-    }));
+  // Obtener datos de firma y administradora desde el store de firmas
+  const {
+    logoBase64,
+    signatureBase64,
+    adminCompany,
+    adminPhone,
+    adminEmail,
+    fetchSignatures,
+  } = useSignaturesStore();
 
-  // Obtener la URL de la firma desde el store de ingresos
-  const { signatureUrl } = usePaymentSummaryStore((state) => ({
-    signatureUrl: state.signatureUrl,
-  }));
+  // Cargar las firmas cuando se monta el componente
+  useEffect(() => {
+    fetchSignatures();
+  }, [fetchSignatures]);
 
   const generatePDF = async () => {
     const doc = new jsPDF();
@@ -151,13 +138,8 @@ const PDFExpenseByProviderReport: React.FC<PDFExpenseByProviderReportProps> = ({
     const margin = 14;
     const adminSectionY = pageHeight - 80;
 
-    if (signatureUrl) {
-      try {
-        const signatureImage = await getBase64FromUrl(signatureUrl);
-        doc.addImage(signatureImage, "PNG", margin, adminSectionY - 20, 50, 20);
-      } catch (error) {
-        console.error("Error al cargar la firma:", error);
-      }
+    if (signatureBase64) {
+      doc.addImage(signatureBase64, "PNG", margin, adminSectionY - 20, 50, 20);
     }
     doc.setFontSize(12);
     doc.text("Firma del Administrador", margin, adminSectionY);
@@ -166,15 +148,27 @@ const PDFExpenseByProviderReport: React.FC<PDFExpenseByProviderReportProps> = ({
     doc.setFont("helvetica", "bold");
     doc.text("Administradora:", adminX, adminSectionY + 10);
     doc.setFont("helvetica", "normal");
-    doc.text(adminCompany, adminX + 40, adminSectionY + 10);
+    doc.text(
+      adminCompany || "Administradora S.A.",
+      adminX + 40,
+      adminSectionY + 10
+    );
     doc.setFont("helvetica", "bold");
     doc.text("Teléfono:", adminX, adminSectionY + 20);
     doc.setFont("helvetica", "normal");
-    doc.text(adminPhone, adminX + 40, adminSectionY + 20);
+    doc.text(
+      adminPhone || "Teléfono no disponible",
+      adminX + 40,
+      adminSectionY + 20
+    );
     doc.setFont("helvetica", "bold");
     doc.text("Contacto:", adminX, adminSectionY + 30);
     doc.setFont("helvetica", "normal");
-    doc.text(adminEmail, adminX + 40, adminSectionY + 30);
+    doc.text(
+      adminEmail || "Email no disponible",
+      adminX + 40,
+      adminSectionY + 30
+    );
 
     const footerText = "Un servicio de Omnipixel.";
     const footerY = pageHeight - 15;

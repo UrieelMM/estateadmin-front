@@ -1,5 +1,5 @@
 // src/components/BalanceGeneral/PDFBalanceGeneralReport.tsx
-import React from "react";
+import React, { useEffect } from "react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { useExpenseSummaryStore } from "../../../../../../store/expenseSummaryStore";
@@ -8,20 +8,7 @@ import {
   PaymentRecord,
 } from "../../../../../../store/paymentSummaryStore";
 import { DocumentChartBarIcon } from "@heroicons/react/16/solid";
-
-// Función auxiliar para convertir una URL de imagen a base64
-async function getBase64FromUrl(url: string): Promise<string> {
-  const response = await fetch(url);
-  const blob = await response.blob();
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onerror = reject;
-    reader.onloadend = () => {
-      resolve(reader.result as string);
-    };
-    reader.readAsDataURL(blob);
-  });
-}
+import { useSignaturesStore } from "../../../../../../store/useSignaturesStore";
 
 interface PDFBalanceGeneralReportProps {
   year: string;
@@ -65,10 +52,6 @@ const PDFBalanceGeneralReport: React.FC<PDFBalanceGeneralReportProps> = ({
     // totalIncome,
     monthlyStats: incomesMonthlyStats,
     logoBase64: logoIncome,
-    signatureUrl: signatureUrl,
-    adminCompany,
-    adminPhone,
-    adminEmail,
     financialAccountsMap,
     payments,
     detailed,
@@ -76,14 +59,25 @@ const PDFBalanceGeneralReport: React.FC<PDFBalanceGeneralReportProps> = ({
     totalIncome: state.totalIncome,
     monthlyStats: state.monthlyStats,
     logoBase64: state.logoBase64,
-    signatureUrl: state.signatureUrl,
-    adminCompany: state.adminCompany,
-    adminPhone: state.adminPhone,
-    adminEmail: state.adminEmail,
     financialAccountsMap: state.financialAccountsMap,
     payments: state.payments,
     detailed: state.detailed,
   }));
+
+  // Obtener firma y datos administrativos del store de firmas
+  const {
+    logoBase64: logoSignatures,
+    signatureBase64,
+    adminCompany,
+    adminPhone,
+    adminEmail,
+    fetchSignatures,
+  } = useSignaturesStore();
+
+  // Cargar las firmas cuando se monta el componente
+  useEffect(() => {
+    fetchSignatures();
+  }, [fetchSignatures]);
 
   // Datos de egresos
   const {
@@ -98,8 +92,8 @@ const PDFBalanceGeneralReport: React.FC<PDFBalanceGeneralReportProps> = ({
     expenses: state.expenses,
   }));
 
-  // Utilizar uno de los logos (se prioriza el de ingresos)
-  const logoBase64 = logoIncome || logoExpense;
+  // Utilizar uno de los logos (se prioriza el de firmas, luego el de ingresos)
+  const logoBase64 = logoSignatures || logoIncome || logoExpense;
 
   // Calcular el saldo a favor total
   const totalCreditGlobal = React.useMemo(
@@ -124,8 +118,6 @@ const PDFBalanceGeneralReport: React.FC<PDFBalanceGeneralReportProps> = ({
 
     return computedTotalIncome;
   }, [incomesMonthlyStats, financialAccountsMap]);
-
-  // const netBalance = totalIncomeWithCredit - totalSpent;
 
   // Calcular estadísticas adicionales y análisis
   const analisisAvanzado = React.useMemo(() => {
@@ -881,28 +873,35 @@ const PDFBalanceGeneralReport: React.FC<PDFBalanceGeneralReportProps> = ({
     const margin = 14;
     const adminSectionY = pageHeight - 80;
 
-    if (signatureUrl) {
-      try {
-        const signatureImage = await getBase64FromUrl(signatureUrl);
-        doc.addImage(signatureImage, "PNG", margin, adminSectionY - 20, 50, 20);
-      } catch (error) {
-        console.error("Error al cargar la firma:", error);
-      }
+    if (signatureBase64) {
+      doc.addImage(signatureBase64, "PNG", margin, adminSectionY - 20, 50, 20);
     }
     doc.setFontSize(12);
     doc.text("Firma del Administrador", margin, adminSectionY);
     doc.setFont("helvetica", "bold");
     doc.text("Administradora:", margin, adminSectionY + 10);
     doc.setFont("helvetica", "normal");
-    doc.text(adminCompany, margin + 40, adminSectionY + 10);
+    doc.text(
+      adminCompany || "Administradora S.A.",
+      margin + 40,
+      adminSectionY + 10
+    );
     doc.setFont("helvetica", "bold");
     doc.text("Teléfono:", margin, adminSectionY + 20);
     doc.setFont("helvetica", "normal");
-    doc.text(adminPhone, margin + 40, adminSectionY + 20);
+    doc.text(
+      adminPhone || "Teléfono no disponible",
+      margin + 40,
+      adminSectionY + 20
+    );
     doc.setFont("helvetica", "bold");
     doc.text("Contacto:", margin, adminSectionY + 30);
     doc.setFont("helvetica", "normal");
-    doc.text(adminEmail, margin + 40, adminSectionY + 30);
+    doc.text(
+      adminEmail || "Email no disponible",
+      margin + 40,
+      adminSectionY + 30
+    );
 
     const footerY = pageHeight - 15;
     doc.setFontSize(11);

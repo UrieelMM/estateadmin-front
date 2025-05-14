@@ -23,7 +23,6 @@ import ProjectStatusBadge from "./components/ProjectStatusBadge";
 import ProjectSummaryCard from "./components/ProjectSummaryCard";
 import KanbanBoardModal from "./components/KanbanBoardModal";
 import ProjectExportMenu from "./components/ProjectExportMenu";
-import { usePaymentSummaryStore } from "../../../../store/paymentSummaryStore";
 import NewMilestoneModal from "./components/NewMilestoneModal";
 import MilestonesList from "./components/MilestonesList";
 import ProjectQuotesSection from "./components/ProjectQuotesSection";
@@ -35,8 +34,6 @@ interface ProjectDashboardProps {
 
 const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ project }) => {
   const { projectExpenses, projectQuotes, updateProject } = useProjectStore();
-  const { logoBase64, signatureBase64, adminCompany, adminPhone, adminEmail } =
-    usePaymentSummaryStore();
 
   const [isNewExpenseModalOpen, setIsNewExpenseModalOpen] = useState(false);
   const [isEditProjectModalOpen, setIsEditProjectModalOpen] = useState(false);
@@ -156,14 +153,7 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ project }) => {
             </button>
           </div>
 
-          <ProjectExportMenu
-            project={project}
-            logoBase64={logoBase64}
-            signatureBase64={signatureBase64}
-            adminCompany={adminCompany}
-            adminPhone={adminPhone}
-            adminEmail={adminEmail}
-          />
+          <ProjectExportMenu project={project} />
         </div>
       </div>
 
