@@ -51,12 +51,7 @@ export default defineConfig({
     },
   },
 
-  // Asegurar que archivos especiales se consideren como assets
-  assetsInclude: ["_redirects", "robots.txt", "sitemap.xml"],
-
   build: {
     sourcemap: true,
-    // Configuración para Netlify y SPA
-    outDir: "dist",
   },
 });

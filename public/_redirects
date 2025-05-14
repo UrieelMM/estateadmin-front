@@ -6,10 +6,10 @@
 /login /login 301
 /privacy /privacidad 301
 
-# Redirección de dominio sin guion al dominio con guion (que es el correcto)
+# Redirección de dominio sin guion al dominio con guion
 
 https://estateadmin.com/* https://estate-admin.com/:splat 301!
 
-# Esta línea es CRÍTICA para SPAs en Netlify - DEBE ser la última
+# Regla SPA - DEBE estar al final
 
 /\* /index.html 200
