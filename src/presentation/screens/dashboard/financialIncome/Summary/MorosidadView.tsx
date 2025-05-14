@@ -18,6 +18,7 @@ import {
 import MorosidadPDFReport from "../Income/PDFMorosidadReport";
 import { BellAlertIcon } from "@heroicons/react/24/solid";
 import toast from "react-hot-toast";
+import LoadingApp from "../../../../components/shared/loaders/LoadingApp";
 
 // Interfaces para tipado
 interface DebtorInfo {
@@ -282,15 +283,20 @@ const MorosidadView: React.FC = () => {
 
   return (
     <div className="mt-4">
-      <h2 className="text-2xl font-bold text-indigo-600 mb-4">
-        Vista de Morosidad
-      </h2>
+      <div className="w-full flex justify-between">
+        <h2 className="text-2xl font-bold text-indigo-600 dark:text-indigo-500 mb-4">
+          Vista de Morosidad
+        </h2>
+
+        {/* Botón para generar el reporte PDF de morosidad */}
+        <div className="text-left">
+          <MorosidadPDFReport />
+        </div>
+      </div>
 
       {loading && !historicalDataLoaded ? (
         <div className="flex justify-center items-center h-40">
-          <p className="text-gray-600 dark:text-gray-300">
-            Cargando datos históricos de morosidad...
-          </p>
+          <LoadingApp />
         </div>
       ) : (
         <>
@@ -471,15 +477,6 @@ const MorosidadView: React.FC = () => {
                 </LineChart>
               </ResponsiveContainer>
             </div>
-          </div>
-
-          {/* Botón para generar el reporte PDF de morosidad */}
-          <div className="mt-6 text-left">
-            <p className="text-sm text-gray-600 mb-4 dark:text-gray-100">
-              Descarga un reporte detallado con la lista de cargos pendientes
-              por condomino.
-            </p>
-            <MorosidadPDFReport />
           </div>
         </>
       )}
