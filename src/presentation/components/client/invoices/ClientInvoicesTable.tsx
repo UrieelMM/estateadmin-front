@@ -6,12 +6,14 @@ import {
   ArrowDownTrayIcon,
   CreditCardIcon,
   DocumentTextIcon,
+  ClockIcon,
 } from "@heroicons/react/24/solid";
 import useClientInvoicesStore, {
   ClientInvoice,
 } from "../../../../store/useClientInvoicesStore";
 import LoadingApp from "../../shared/loaders/LoadingApp";
 import toast from "react-hot-toast";
+import SubscriptionManagement from "../subscriptions/SubscriptionManagement";
 
 interface ClientInvoicesTableProps {
   onViewInvoice?: (invoice: ClientInvoice) => void;
@@ -42,12 +44,21 @@ const truncateText = (text: string | undefined, maxLength: number = 25) => {
   return text.length > maxLength ? `${text.substring(0, maxLength)}...` : text;
 };
 
-const statusColors = {
+const statusColors: Record<string, string> = {
   paid: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
   pending:
     "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
   overdue: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
   canceled: "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300",
+  active: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
+  trialing:
+    "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
+  past_due:
+    "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
+  incomplete: "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300",
+  incomplete_expired:
+    "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
+  unpaid: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
 };
 
 const formatStatus = (status: string) => {
@@ -60,6 +71,18 @@ const formatStatus = (status: string) => {
       return "Vencido";
     case "canceled":
       return "Cancelado";
+    case "active":
+      return "Activa";
+    case "trialing":
+      return "Periodo de prueba";
+    case "past_due":
+      return "Pago atrasado";
+    case "incomplete":
+      return "Incompleta";
+    case "incomplete_expired":
+      return "Expirada";
+    case "unpaid":
+      return "No pagada";
     default:
       return status;
   }
@@ -76,6 +99,9 @@ const ClientInvoicesTable: React.FC<ClientInvoicesTableProps> = ({
     resetInvoicesState,
     searchInvoiceByNumber,
     initiateStripePayment,
+    initiateStripeSubscription,
+    fetchSubscriptionInfo,
+    listSubscriptionPlans,
   } = useClientInvoicesStore();
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -88,27 +114,55 @@ const ClientInvoicesTable: React.FC<ClientInvoicesTableProps> = ({
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [searchResults, setSearchResults] = useState<ClientInvoice[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [showSubscriptionInfo, setShowSubscriptionInfo] = useState(false);
 
-  // Cargar facturas iniciales
+  // Cargar facturas iniciales y datos de suscripción
   useEffect(() => {
-    const loadInitialInvoices = async () => {
+    const loadInitialData = async () => {
       try {
+        // Primero, obtener las facturas - esto siempre se debe intentar
         const count = await fetchInvoices(ITEMS_PER_PAGE, null, filters);
         setHasMore(count === ITEMS_PER_PAGE);
         setCurrentPage(1);
+
+        try {
+          // Verificar si existe un subscriptionId en localStorage antes de intentar obtener info
+          const hasSubscriptionId = Boolean(
+            localStorage.getItem("subscriptionId")
+          );
+
+          if (hasSubscriptionId) {
+            // Solo cargar información de suscripción si tenemos un ID
+            await fetchSubscriptionInfo();
+          }
+
+          // Siempre intentar cargar planes disponibles, ya que el usuario
+          // podría querer iniciar una nueva suscripción
+          await listSubscriptionPlans();
+        } catch (subError) {
+          console.error("Error al cargar datos de suscripción:", subError);
+          // No mostrar toast para estos errores específicos de suscripción
+          // ya que pueden ser normales si el usuario no tiene una suscripción activa
+        }
       } catch (error) {
-        console.error("Error al cargar facturas iniciales:", error);
-        toast.error("Error al cargar las facturas");
+        console.error("Error al cargar datos iniciales:", error);
+        toast.error("Error al cargar los datos");
       }
     };
 
-    loadInitialInvoices();
+    loadInitialData();
 
     // Limpiar estado al desmontar
     return () => {
       resetInvoicesState();
     };
-  }, [fetchInvoices, resetInvoicesState, filters]);
+  }, [
+    fetchInvoices,
+    resetInvoicesState,
+    filters,
+    fetchSubscriptionInfo,
+    listSubscriptionPlans,
+  ]);
 
   // Manejar búsqueda por número de factura
   const handleInvoiceNumberChange = async (value: string) => {
@@ -172,7 +226,7 @@ const ClientInvoicesTable: React.FC<ClientInvoicesTableProps> = ({
 
   const totalPages = hasMore ? currentPage + 1 : currentPage;
 
-  // Función para pagar con Stripe
+  // Función para pagar con suscripción de Stripe
   const handlePayWithStripe = async (invoice: ClientInvoice) => {
     try {
       // Si hay un handler personalizado, usarlo
@@ -181,10 +235,27 @@ const ClientInvoicesTable: React.FC<ClientInvoicesTableProps> = ({
         return;
       }
 
-      // Si no, usar la implementación predeterminada con Stripe
-      const { url } = await initiateStripePayment(invoice);
+      // Usar la implementación de suscripción directamente
+      const { url } = await initiateStripeSubscription(invoice);
 
       // Redirigir al usuario a la página de pago de Stripe
+      if (url) {
+        window.location.href = url;
+      } else {
+        toast.error("No se pudo iniciar la suscripción");
+      }
+    } catch (error) {
+      console.error("Error al iniciar la suscripción:", error);
+      toast.error("Error al iniciar la suscripción");
+    }
+  };
+
+  // Función para pago único (uso anterior)
+  const handleSinglePayment = async (invoice: ClientInvoice) => {
+    try {
+      // Usar la implementación de pago directo
+      const { url } = await initiateStripePayment(invoice);
+
       if (url) {
         window.location.href = url;
       } else {
@@ -196,18 +267,69 @@ const ClientInvoicesTable: React.FC<ClientInvoicesTableProps> = ({
     }
   };
 
+  // Función para iniciar suscripción
+  const handleStartSubscription = () => {
+    // Primero intentar encontrar una factura existente con priceId
+    const invoice = invoices.find((inv) => inv.priceId);
+
+    if (invoice) {
+      // Si existe una factura con priceId, usar esa
+      handlePayWithStripe(invoice);
+    } else {
+      // Si no hay facturas con priceId, crear una "factura temporal" con el priceId de la variable de entorno
+      const defaultPriceId = "price_1ROndGQYiUs7o8UP0Zgy81U6";
+
+      if (!defaultPriceId) {
+        toast.error("No se encontró un ID de plan de suscripción configurado");
+        return;
+      }
+
+      console.log("Iniciando suscripción con priceId:", defaultPriceId);
+
+      // Crear una factura temporal con el mínimo de datos necesarios
+      const temporaryInvoice: ClientInvoice = {
+        id: "temp-" + new Date().getTime(),
+        invoiceNumber: "SUBS-" + new Date().getTime(),
+        concept: "Nueva suscripción",
+        amount: 0, // El precio real viene del plan en Stripe
+        status: "pending",
+        paymentStatus: "pending",
+        createdAt: new Date(),
+        dueDate: new Date(),
+        isPaid: false,
+        optionalMessage: "",
+        clientId: "", // Lo obtenemos desde los claims en el store
+        condominiumId: localStorage.getItem("condominiumId") || "",
+        priceId: defaultPriceId,
+      };
+
+      // Iniciar el proceso de suscripción con esta factura temporal
+      handlePayWithStripe(temporaryInvoice);
+    }
+  };
+
   return (
     <div className="px-4 sm:px-6 lg:px-8 dark:bg-gray-900 p-4 rounded-lg">
       <div className="sm:flex sm:items-center">
         <div className="sm:flex-auto">
           <h1 className="text-base font-semibold leading-6 text-gray-900 dark:text-white">
-            Facturas
+            Facturas y Suscripciones
           </h1>
           <p className="mt-2 text-sm text-gray-700 dark:text-gray-300">
-            Lista de todas tus facturas
+            Lista de todas tus facturas y estado de suscripción
           </p>
         </div>
         <div className="mt-4 sm:ml-16 sm:mt-0 sm:flex gap-4">
+          {/* Botón para mostrar información de suscripción */}
+          <button
+            type="button"
+            onClick={() => setShowSubscriptionInfo(!showSubscriptionInfo)}
+            className="flex items-center rounded-md bg-blue-600 px-3 py-2 text-center text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 dark:bg-blue-700 dark:hover:bg-blue-600 mr-2"
+          >
+            <ClockIcon className="h-5 w-5 mr-2" />
+            Estado de Suscripción
+          </button>
+
           {/* Barra de búsqueda por número de factura */}
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -234,6 +356,15 @@ const ClientInvoicesTable: React.FC<ClientInvoicesTableProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Panel de información de suscripción */}
+      {showSubscriptionInfo && (
+        <div className="mt-6">
+          <SubscriptionManagement
+            onStartSubscription={handleStartSubscription}
+          />
+        </div>
+      )}
 
       {/* Filtros */}
       {showFilters && (
@@ -398,11 +529,17 @@ const ClientInvoicesTable: React.FC<ClientInvoicesTableProps> = ({
                               "pending" && (
                               <button
                                 className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 group relative"
-                                onClick={() => handlePayWithStripe(invoice)}
+                                onClick={() =>
+                                  invoice.priceId
+                                    ? handlePayWithStripe(invoice)
+                                    : handleSinglePayment(invoice)
+                                }
                               >
                                 <CreditCardIcon className="h-5 w-5" />
                                 <span className="absolute bottom-full left-[-20px] transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-gray-900 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                                  Pagar factura
+                                  {invoice.priceId
+                                    ? "Iniciar suscripción"
+                                    : "Pagar factura"}
                                 </span>
                               </button>
                             )}
@@ -636,12 +773,16 @@ const ClientInvoicesTable: React.FC<ClientInvoicesTableProps> = ({
                                         <button
                                           className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 group relative"
                                           onClick={() =>
-                                            handlePayWithStripe(invoice)
+                                            invoice.priceId
+                                              ? handlePayWithStripe(invoice)
+                                              : handleSinglePayment(invoice)
                                           }
                                         >
                                           <CreditCardIcon className="h-5 w-5" />
                                           <span className="absolute bottom-full left-[-20px] transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-gray-900 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                                            Pagar factura
+                                            {invoice.priceId
+                                              ? "Iniciar suscripción"
+                                              : "Pagar factura"}
                                           </span>
                                         </button>
                                       )}
