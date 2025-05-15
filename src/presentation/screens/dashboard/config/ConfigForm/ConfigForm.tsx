@@ -19,11 +19,11 @@ import FinancialAccounts from "../FinancialAccounts";
 import { useTheme } from "../../../../../context/Theme/ThemeContext";
 import AdminUsers from "../AdminUsers/AdminUsers";
 import { getAuth } from "firebase/auth";
-import ClientInvoicesTable from "../../../../components/client/invoices/ClientInvoicesTable";
 import { ClientInvoice } from "../../../../../store/useClientInvoicesStore";
 import useClientInvoicesStore from "../../../../../store/useClientInvoicesStore";
 import PaymentMessageEditor from "../PaymentMessageEditor/PaymentMessageEditor";
 import CommitteeManagement from "../committee/CommitteeManagement";
+import ClientInvoicesTable from "../../client/invoices/ClientInvoicesTable";
 
 const ConfigForm = () => {
   const { config, loading, error, fetchConfig, updateConfig } =

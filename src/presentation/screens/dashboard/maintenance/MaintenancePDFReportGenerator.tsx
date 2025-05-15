@@ -11,10 +11,7 @@ import {
   MaintenanceContract,
   MaintenanceCost,
 } from "../../../../store/useMaintenanceStore";
-import {
-  useTicketsStore,
-  Ticket,
-} from "../../../screens/dashboard/maintenance/tickets/ticketsStore";
+import { useTicketsStore, Ticket } from "./tickets/ticketsStore";
 import { useSignaturesStore } from "../../../../store/useSignaturesStore";
 import moment from "moment";
 import "moment/locale/es";

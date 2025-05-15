@@ -8,7 +8,7 @@ import {
 import { useTicketsStore } from "./tickets/ticketsStore";
 import TicketToAppointment from "./TicketToAppointment";
 import LoadingApp from "../../../components/shared/loaders/LoadingApp";
-import MaintenancePDFReportGenerator from "../../../components/shared/reports/MaintenancePDFReportGenerator";
+import MaintenancePDFReportGenerator from "./MaintenancePDFReportGenerator";
 import {
   Chart as ChartJS,
   ArcElement,
