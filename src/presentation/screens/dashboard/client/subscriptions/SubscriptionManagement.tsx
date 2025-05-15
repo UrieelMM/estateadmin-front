@@ -7,9 +7,9 @@ import {
   ArrowPathIcon,
   CreditCardIcon,
 } from "@heroicons/react/24/solid";
-import useClientInvoicesStore from "../../../../store/useClientInvoicesStore";
-import LoadingApp from "../../shared/loaders/LoadingApp";
 import toast from "react-hot-toast";
+import useClientInvoicesStore from "../../../../../store/useClientInvoicesStore";
+import LoadingApp from "../../../../components/shared/loaders/LoadingApp";
 
 const statusColors: Record<string, string> = {
   active: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",

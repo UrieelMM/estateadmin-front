@@ -8,12 +8,12 @@ import {
   DocumentTextIcon,
   ClockIcon,
 } from "@heroicons/react/24/solid";
-import useClientInvoicesStore, {
-  ClientInvoice,
-} from "../../../../store/useClientInvoicesStore";
-import LoadingApp from "../../shared/loaders/LoadingApp";
 import toast from "react-hot-toast";
 import SubscriptionManagement from "../subscriptions/SubscriptionManagement";
+import useClientInvoicesStore, {
+  ClientInvoice,
+} from "../../../../../store/useClientInvoicesStore";
+import LoadingApp from "../../../../components/shared/loaders/LoadingApp";
 
 interface ClientInvoicesTableProps {
   onViewInvoice?: (invoice: ClientInvoice) => void;
