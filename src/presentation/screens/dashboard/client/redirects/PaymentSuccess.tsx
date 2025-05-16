@@ -2,9 +2,9 @@ import React, { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import useClientInvoicesStore, {
   ClientInvoice,
-} from "../../../../store/useClientInvoicesStore";
-import { CheckCircleIcon } from "@heroicons/react/24/solid";
-import LoadingApp from "../../../components/shared/loaders/LoadingApp";
+} from "../../../../../store/useClientInvoicesStore";
+import { CheckCircleIcon, ArrowRightIcon } from "@heroicons/react/24/solid";
+import LoadingApp from "../../../../components/shared/loaders/LoadingApp";
 
 const PaymentSuccess: React.FC = () => {
   const navigate = useNavigate();
@@ -85,7 +85,7 @@ const PaymentSuccess: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-teal-50 dark:from-gray-900 dark:to-green-950">
         <div className="text-center">
           <LoadingApp />
           <p className="mt-4 text-lg text-gray-600 dark:text-gray-300">
@@ -98,12 +98,12 @@ const PaymentSuccess: React.FC = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
-        <div className="max-w-md w-full bg-white dark:bg-gray-800 shadow-lg rounded-lg p-8 text-center">
-          <div className="text-red-500 mb-4">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-50 to-pink-50 dark:from-gray-900 dark:to-red-950 px-4 sm:px-6">
+        <div className="max-w-md w-full bg-white dark:bg-gray-800 shadow-2xl rounded-2xl p-8 text-center transform transition-all animate-fade-in-up">
+          <div className="bg-red-100 dark:bg-red-900/30 rounded-full p-3 w-20 h-20 mx-auto mb-6 flex items-center justify-center">
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              className="h-16 w-16 mx-auto"
+              className="h-14 w-14 text-red-600 dark:text-red-400"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -116,15 +116,23 @@ const PaymentSuccess: React.FC = () => {
               />
             </svg>
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+
+          <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white mb-4">
             Error en el proceso de pago
-          </h2>
-          <p className="text-gray-600 dark:text-gray-300 mb-6">{error}</p>
+          </h1>
+
+          <div className="h-1 w-16 bg-red-500 mx-auto mb-6 rounded-full"></div>
+
+          <p className="text-gray-600 dark:text-gray-300 mb-6 text-lg">
+            {error}
+          </p>
+
           <button
             onClick={handleGoBack}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors"
+            className="w-full flex items-center justify-center bg-red-600 hover:bg-red-700 text-white font-bold py-4 px-6 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all transform hover:scale-[1.02] shadow-lg"
           >
-            Volver a mis facturas
+            <span>Volver a mis facturas</span>
+            <ArrowRightIcon className="ml-2 h-5 w-5" />
           </button>
         </div>
       </div>
@@ -132,29 +140,33 @@ const PaymentSuccess: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
-      <div className="max-w-md w-full bg-white dark:bg-gray-800 shadow-lg rounded-lg p-8 text-center">
-        <div className="text-green-500 mb-4">
-          <CheckCircleIcon className="h-16 w-16 mx-auto" />
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-teal-50 dark:from-gray-900 dark:to-green-950 px-4 sm:px-6">
+      <div className="max-w-md w-full bg-white dark:bg-gray-800 shadow-2xl rounded-2xl p-8 text-center transform transition-all animate-fade-in-up">
+        <div className="bg-green-100 dark:bg-green-900/30 rounded-full p-3 w-20 h-20 mx-auto mb-6 flex items-center justify-center">
+          <CheckCircleIcon className="h-14 w-14 text-green-600 dark:text-green-400" />
         </div>
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+
+        <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white mb-4">
           ¡Pago exitoso!
-        </h2>
-        <p className="text-gray-600 dark:text-gray-300 mb-6">
+        </h1>
+
+        <div className="h-1 w-16 bg-green-500 mx-auto mb-6 rounded-full"></div>
+
+        <p className="text-gray-600 dark:text-gray-300 mb-6 text-lg">
           Tu pago ha sido procesado correctamente. Se enviará un comprobante a
           tu correo electrónico.
         </p>
 
         {/* Mostrar datos de la factura si están disponibles */}
         {(invoiceData || (paymentData && paymentData.metadata)) && (
-          <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-4 mb-6 text-left">
-            <h3 className="font-semibold text-gray-700 dark:text-gray-200 mb-3">
-              Detalles del pago:
+          <div className="bg-green-50 dark:bg-green-900/20 rounded-xl p-4 mb-8">
+            <h3 className="font-medium text-green-700 dark:text-green-400 mb-2 text-sm uppercase tracking-wide">
+              Detalles del pago
             </h3>
 
             {/* Mostrar información detallada si tenemos datos de la factura */}
             {invoiceData ? (
-              <div className="space-y-2">
+              <div className="space-y-2 text-left">
                 <p className="text-sm text-gray-600 dark:text-gray-300">
                   <span className="font-medium">Factura:</span>{" "}
                   {invoiceData.invoiceNumber}
@@ -182,7 +194,7 @@ const PaymentSuccess: React.FC = () => {
               </div>
             ) : (
               // Información básica de los metadatos si no tenemos la factura completa
-              <p className="text-sm text-gray-600 dark:text-gray-300">
+              <p className="text-sm text-gray-600 dark:text-gray-300 text-left">
                 <span className="font-medium">Factura:</span>{" "}
                 {paymentData?.metadata?.invoiceNumber || "N/A"}
               </p>
@@ -192,10 +204,16 @@ const PaymentSuccess: React.FC = () => {
 
         <button
           onClick={handleGoBack}
-          className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors"
+          className="w-full flex items-center justify-center bg-green-600 hover:bg-green-700 text-white font-bold py-4 px-6 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-all transform hover:scale-[1.02] shadow-lg"
         >
-          Volver a mis facturas
+          <span>Volver a mis facturas</span>
+          <ArrowRightIcon className="ml-2 h-5 w-5" />
         </button>
+
+        <p className="mt-6 text-sm text-gray-500 dark:text-gray-400">
+          Si tienes alguna pregunta, no dudes en contactar a nuestro equipo de
+          soporte.
+        </p>
       </div>
     </div>
   );

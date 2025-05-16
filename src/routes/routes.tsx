@@ -12,8 +12,8 @@ import ProviderList from "../presentation/screens/dashboard/providers/ProvidersL
 import Publications from "../presentation/screens/dashboard/publications/Publications";
 import UsersRegistration from "../presentation/screens/dashboard/users/UsersRegistration";
 import UsersScreen from "../presentation/screens/dashboard/users/UsersScreen";
-import PaymentSuccess from "../presentation/screens/dashboard/payment/PaymentSuccess";
-import PaymentCancel from "../presentation/screens/dashboard/payment/PaymentCancel";
+import PaymentSuccess from "../presentation/screens/dashboard/client/redirects/PaymentSuccess";
+import PaymentCancel from "../presentation/screens/dashboard/client/redirects/PaymentCancel";
 import ReceiptsAndInvoices from "../presentation/screens/dashboard/financialIncome/ReceiptsAndInvoices/ReceiptsAndInvoices";
 import PettyCash from "../presentation/screens/dashboard/financialIncome/PettyCash/PettyCash";
 import PettyCashDashboard from "../presentation/screens/dashboard/financialIncome/PettyCash/components/PettyCashDashboard";
