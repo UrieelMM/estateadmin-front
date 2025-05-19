@@ -9,17 +9,26 @@ import {
   getDocs,
   setDoc,
 } from "firebase/firestore";
-import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
+import {
+  getStorage,
+  ref,
+  uploadBytes,
+  getDownloadURL,
+  deleteObject,
+} from "firebase/storage";
 import * as Sentry from "@sentry/react";
 
 /** Config general en clients/{clientId}. (Incluyendo darkMode) */
 export type Config = {
   companyName: string;
+  businessName?: string;
   email: string;
   phoneNumber: string;
   address: string;
+  fullFiscalAddress?: string;
   RFC: string;
   country: string;
+  businessActivity?: string;
   logoUrl?: string;
   signatureUrl?: string;
   logo?: string; // Derivado de logoUrl para la UI
@@ -62,10 +71,17 @@ type ConfigState = {
     signatureFile?: File,
     logoReportsFile?: File
   ) => Promise<void>;
-  updatePaymentMessageInfo: (data: Omit<PaymentMessageInfo, "updatedAt">) => Promise<void>;
+  updatePaymentMessageInfo: (
+    data: Omit<PaymentMessageInfo, "updatedAt">
+  ) => Promise<void>;
   fetchPaymentMessageInfo: () => Promise<void>;
   fetchPublicDocuments: () => Promise<void>;
-  uploadPublicDocument: (documentId: string, file: File, documentName: string, description?: string) => Promise<void>;
+  uploadPublicDocument: (
+    documentId: string,
+    file: File,
+    documentName: string,
+    description?: string
+  ) => Promise<void>;
   deletePublicDocument: (documentId: string) => Promise<void>;
 };
 
@@ -250,30 +266,30 @@ export const useConfigStore = create<ConfigState>()((set, get) => ({
       if (!clientId) throw new Error("clientId no disponible en el token");
 
       const db = getFirestore();
-      
+
       // Preparamos los datos con la fecha de actualización
       const paymentMessageData: PaymentMessageInfo = {
         ...data,
-        updatedAt: new Date()
+        updatedAt: new Date(),
       };
 
       // Guardamos en la colección paymentMessageInfo
       const paymentMsgDocRef = doc(
-        db, 
-        "clients", 
-        clientId, 
-        "condominiums", 
-        condominiumId, 
-        "paymentMessageInfo", 
+        db,
+        "clients",
+        clientId,
+        "condominiums",
+        condominiumId,
+        "paymentMessageInfo",
         "config"
       );
-      
+
       await setDoc(paymentMsgDocRef, paymentMessageData);
 
       // Actualizamos el estado local
-      set({ 
-        paymentMessageInfo: paymentMessageData, 
-        loading: false 
+      set({
+        paymentMessageInfo: paymentMessageData,
+        loading: false,
       });
     } catch (err: any) {
       set({ error: err.message, loading: false });
@@ -306,24 +322,24 @@ export const useConfigStore = create<ConfigState>()((set, get) => ({
       if (!clientId) throw new Error("clientId no disponible en el token");
 
       const db = getFirestore();
-      
+
       // Leemos el documento de la colección paymentMessageInfo
       const paymentMsgDocRef = doc(
-        db, 
-        "clients", 
-        clientId, 
-        "condominiums", 
-        condominiumId, 
-        "paymentMessageInfo", 
+        db,
+        "clients",
+        clientId,
+        "condominiums",
+        condominiumId,
+        "paymentMessageInfo",
         "config"
       );
-      
+
       const docSnap = await getDoc(paymentMsgDocRef);
-      
+
       if (docSnap.exists()) {
         const data = docSnap.data() as PaymentMessageInfo;
         // Aseguramos que updatedAt sea un objeto Date
-        if (data.updatedAt && typeof data.updatedAt !== 'object') {
+        if (data.updatedAt && typeof data.updatedAt !== "object") {
           data.updatedAt = (data.updatedAt as any).toDate();
         }
         set({ paymentMessageInfo: data, loading: false });
@@ -334,7 +350,7 @@ export const useConfigStore = create<ConfigState>()((set, get) => ({
           bankName: "",
           dueDay: 10,
           paymentMessage: "",
-          updatedAt: new Date()
+          updatedAt: new Date(),
         };
         set({ paymentMessageInfo: defaultPaymentInfo, loading: false });
       }
@@ -368,37 +384,41 @@ export const useConfigStore = create<ConfigState>()((set, get) => ({
       if (!clientId) throw new Error("clientId no disponible en el token");
 
       const db = getFirestore();
-      
+
       // Leemos el documento de la colección publicDocuments
       const publicDocsRef = doc(
-        db, 
-        "clients", 
-        clientId, 
-        "condominiums", 
-        condominiumId, 
-        "publicDocuments", 
+        db,
+        "clients",
+        clientId,
+        "condominiums",
+        condominiumId,
+        "publicDocuments",
         "config"
       );
-      
+
       const docSnap = await getDoc(publicDocsRef);
-      
+
       if (docSnap.exists()) {
         const data = docSnap.data() as Record<string, PublicDocument>;
-        
+
         // Aseguramos que uploadedAt sea un objeto Date en cada documento
-        Object.keys(data).forEach(key => {
-          if (data[key].uploadedAt && typeof data[key].uploadedAt !== 'object') {
+        Object.keys(data).forEach((key) => {
+          if (
+            data[key].uploadedAt &&
+            typeof data[key].uploadedAt !== "object"
+          ) {
             data[key].uploadedAt = (data[key].uploadedAt as any).toDate();
           }
           // Extraer el nombre del archivo de la URL si existe
           if (data[key].fileUrl && !data[key].fileName) {
-            const urlParts = data[key].fileUrl.split('/').pop()?.split('_') || [];
+            const urlParts =
+              data[key].fileUrl.split("/").pop()?.split("_") || [];
             if (urlParts.length > 2) {
-              data[key].fileName = urlParts.slice(2).join('_');
+              data[key].fileName = urlParts.slice(2).join("_");
             }
           }
         });
-        
+
         set({ publicDocuments: data, loading: false });
       } else {
         // Si no existe, establecemos un objeto vacío
@@ -418,9 +438,9 @@ export const useConfigStore = create<ConfigState>()((set, get) => ({
    * @param description Descripción opcional del documento
    */
   uploadPublicDocument: async (documentId, file, documentName, description) => {
-    set(state => ({ 
+    set((state) => ({
       uploading: { ...state.uploading, [documentId]: true },
-      error: null 
+      error: null,
     }));
     try {
       // Obtenemos condominiumId
@@ -441,17 +461,19 @@ export const useConfigStore = create<ConfigState>()((set, get) => ({
 
       const storage = getStorage();
       const db = getFirestore();
-      
+
       // Crear referencia al archivo en Storage
       const fileRef = ref(
         storage,
-        `clients/${clientId}/condominiums/${condominiumId}/publicDocuments/${documentId}_${Date.now()}_${file.name}`
+        `clients/${clientId}/condominiums/${condominiumId}/publicDocuments/${documentId}_${Date.now()}_${
+          file.name
+        }`
       );
-      
+
       // Subir archivo
       await uploadBytes(fileRef, file);
       const fileUrl = await getDownloadURL(fileRef);
-      
+
       // Preparar datos del documento
       const docInfo: PublicDocument = {
         id: documentId,
@@ -461,9 +483,9 @@ export const useConfigStore = create<ConfigState>()((set, get) => ({
         fileSize: file.size,
         uploadedAt: new Date(),
         description,
-        fileName: file.name
+        fileName: file.name,
       };
-      
+
       // Obtener documento actual o crear uno nuevo
       const docRef = doc(
         db,
@@ -474,13 +496,13 @@ export const useConfigStore = create<ConfigState>()((set, get) => ({
         "publicDocuments",
         "config"
       );
-      
+
       const docSnap = await getDoc(docRef);
       let currentData: Record<string, PublicDocument> = {};
-      
+
       if (docSnap.exists()) {
         currentData = docSnap.data() as Record<string, PublicDocument>;
-        
+
         // Si ya existe un documento con este ID, intentar eliminar el archivo anterior
         if (currentData[documentId] && currentData[documentId].fileUrl) {
           try {
@@ -492,30 +514,29 @@ export const useConfigStore = create<ConfigState>()((set, get) => ({
           }
         }
       }
-      
+
       // Actualizar datos
       currentData[documentId] = docInfo;
-      
+
       // Guardar en Firestore
       if (docSnap.exists()) {
         await updateDoc(docRef, currentData);
       } else {
         await setDoc(docRef, currentData);
       }
-      
+
       // Actualizar estado local
-      set(state => ({ 
+      set((state) => ({
         publicDocuments: {
           ...state.publicDocuments,
-          [documentId]: docInfo
+          [documentId]: docInfo,
         },
-        uploading: { ...state.uploading, [documentId]: false }
+        uploading: { ...state.uploading, [documentId]: false },
       }));
-      
     } catch (err: any) {
-      set(state => ({ 
-        error: err.message, 
-        uploading: { ...state.uploading, [documentId]: false } 
+      set((state) => ({
+        error: err.message,
+        uploading: { ...state.uploading, [documentId]: false },
       }));
       Sentry.captureException(err);
       throw err;
@@ -527,9 +548,9 @@ export const useConfigStore = create<ConfigState>()((set, get) => ({
    * @param documentId Identificador único del documento a eliminar
    */
   deletePublicDocument: async (documentId) => {
-    set(state => ({ 
+    set((state) => ({
       uploading: { ...state.uploading, [documentId]: true },
-      error: null 
+      error: null,
     }));
     try {
       // Verificar que exista el documento
@@ -538,7 +559,7 @@ export const useConfigStore = create<ConfigState>()((set, get) => ({
         set({ uploading: {} });
         return;
       }
-      
+
       // Obtenemos condominiumId
       const condominiumId = localStorage.getItem("condominiumId");
       if (!condominiumId) {
@@ -557,7 +578,7 @@ export const useConfigStore = create<ConfigState>()((set, get) => ({
 
       const storage = getStorage();
       const db = getFirestore();
-      
+
       // Eliminar archivo de Storage
       try {
         const fileRef = ref(storage, currentDocs[documentId].fileUrl);
@@ -566,7 +587,7 @@ export const useConfigStore = create<ConfigState>()((set, get) => ({
         console.warn("Error al eliminar archivo de Storage:", error);
         // Continuamos aunque falle la eliminación del archivo
       }
-      
+
       // Actualizar documento en Firestore
       const docRef = doc(
         db,
@@ -577,12 +598,12 @@ export const useConfigStore = create<ConfigState>()((set, get) => ({
         "publicDocuments",
         "config"
       );
-      
+
       const docSnap = await getDoc(docRef);
-      
+
       if (docSnap.exists()) {
         const data = docSnap.data() as Record<string, PublicDocument>;
-        
+
         if (data[documentId]) {
           // Mantener el documento pero limpiar la información del archivo
           data[documentId] = {
@@ -591,29 +612,28 @@ export const useConfigStore = create<ConfigState>()((set, get) => ({
             fileType: "",
             fileSize: 0,
             uploadedAt: new Date(),
-            fileName: ""
+            fileName: "",
           };
-          
+
           await updateDoc(docRef, data);
-          
+
           // Actualizar estado local
-          set(state => ({ 
+          set((state) => ({
             publicDocuments: {
               ...state.publicDocuments,
-              [documentId]: data[documentId]
+              [documentId]: data[documentId],
             },
-            uploading: { ...state.uploading, [documentId]: false }
+            uploading: { ...state.uploading, [documentId]: false },
           }));
         }
       }
-      
     } catch (err: any) {
-      set(state => ({ 
-        error: err.message, 
-        uploading: { ...state.uploading, [documentId]: false } 
+      set((state) => ({
+        error: err.message,
+        uploading: { ...state.uploading, [documentId]: false },
       }));
       Sentry.captureException(err);
       throw err;
     }
-  }
+  },
 }));

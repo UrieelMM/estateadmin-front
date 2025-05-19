@@ -46,11 +46,14 @@ const InitialSetupSteps = () => {
   const { fetchCondominiums } = useCondominiumStore();
   const [userData, setUserData] = useState({
     companyName: "",
+    businessName: "",
     email: "",
     phoneNumber: "",
     address: "",
+    fullFiscalAddress: "",
     RFC: "",
     country: "",
+    businessActivity: "",
   });
   const [logoReportsFile, setLogoReportsFile] = useState<File | null>(null);
   const [signReportsFile, setSignReportsFile] = useState<File | null>(null);
@@ -93,11 +96,14 @@ const InitialSetupSteps = () => {
     if (config) {
       setUserData({
         companyName: config.companyName || "",
+        businessName: config.businessName || "",
         email: config.email || "",
         phoneNumber: config.phoneNumber || "",
         address: config.address || "",
+        fullFiscalAddress: config.fullFiscalAddress || "",
         RFC: config.RFC || "",
         country: config.country || "",
+        businessActivity: config.businessActivity || "",
       });
     }
   }, [config]);
@@ -105,15 +111,23 @@ const InitialSetupSteps = () => {
   // Función para avanzar pasos con validaciones
   const nextStep = () => {
     if (currentStep === 2) {
-      const { companyName, email, phoneNumber, address, RFC, country } =
-        userData;
+      const {
+        businessName,
+        email,
+        phoneNumber,
+        fullFiscalAddress,
+        RFC,
+        country,
+        businessActivity,
+      } = userData;
       if (
-        !companyName ||
+        !businessName ||
         !email ||
         !phoneNumber ||
-        !address ||
+        !fullFiscalAddress ||
         !RFC ||
-        !country
+        !country ||
+        !businessActivity
       ) {
         toast.error("Datos incompletos. Comunícate con soporte.");
         return;
@@ -412,7 +426,7 @@ const InitialSetupSteps = () => {
               <div className="flex items-center justify-center md:justify-start space-x-2">
                 <BuildingOffice2Icon className="h-5 w-5 text-gray-300" />
                 <span>
-                  <strong>Empresa:</strong> {userData.companyName}
+                  <strong>Nombre Comercial:</strong> {userData.businessName}
                 </span>
               </div>
               <div className="flex items-center justify-center md:justify-start space-x-2">
@@ -428,9 +442,17 @@ const InitialSetupSteps = () => {
                 </span>
               </div>
               <div className="flex items-center justify-center md:justify-start space-x-2">
+                <PencilSquareIcon className="h-5 w-5 text-gray-300" />
+                <span>
+                  <strong>Actividad Económica:</strong>{" "}
+                  {userData.businessActivity}
+                </span>
+              </div>
+              <div className="flex items-center justify-center md:justify-start space-x-2">
                 <MapPinIcon className="h-5 w-5 text-gray-300" />
                 <span>
-                  <strong>Dirección:</strong> {userData.address}
+                  <strong>Domicilio Fiscal:</strong>{" "}
+                  {userData.fullFiscalAddress}
                 </span>
               </div>
               <div className="flex items-center justify-center md:justify-start space-x-2">
@@ -448,7 +470,13 @@ const InitialSetupSteps = () => {
             </div>
             <p className="text-sm text-gray-500 dark:text-gray-400">
               Si alguno de estos datos no es correcto, comunícate con{" "}
-              <span className="font-bold">soporte.</span>
+              <a
+                href="mailto:administracion@estate-admin.com"
+                className="font-bold text-indigo-500 hover:text-indigo-600"
+              >
+                soporte
+              </a>
+              .
             </p>
           </div>
         );
@@ -534,8 +562,9 @@ const InitialSetupSteps = () => {
               )}
             </div>
             <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
-                Se recomienda usar formato PNG con fondo transparente para mejor calidad.
-              </p>
+              Se recomienda usar formato PNG con fondo transparente para mejor
+              calidad.
+            </p>
           </div>
         );
       case 4:
