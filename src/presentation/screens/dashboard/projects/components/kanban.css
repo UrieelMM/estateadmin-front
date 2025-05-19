@@ -1,0 +1,39 @@
+/* 
+ * Kanban Board styles para manejar problemas de scroll
+ * La biblioteca react-beautiful-dnd tiene problemas con contenedores de scroll anidados
+ */
+
+/* Contenedor principal del tablero */
+.kanban-container {
+  scroll-behavior: smooth;
+}
+
+/* Evitar scroll anidados que causan problemas con react-beautiful-dnd */
+.kanban-wrapper .min-h-\[300px\] {
+  overflow: visible !important;
+  overscroll-behavior: none;
+}
+
+/* Estilos específicos para arrastrar elementos */
+.react-beautiful-dnd-dragging {
+  z-index: 9999;
+}
+
+/* Evita que los elementos arrastrados queden ocultos detrás de otros elementos */
+[data-rbd-draggable-id] {
+  z-index: 1;
+}
+
+[data-rbd-draggable-id].dragging {
+  z-index: 9999;
+}
+
+/* Hace que el contenedor del dragdrop tenga la altura completa */
+[data-rbd-droppable-id] {
+  min-height: 100%;
+}
+
+/* Desactiva temporalmente los efectos de hover mientras se arrastra */
+[data-rbd-drag-handle-draggable-id] {
+  cursor: grab;
+}
