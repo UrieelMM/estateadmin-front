@@ -27,6 +27,8 @@ import {
   GuidePage,
 } from "../presentation/components/newsAndGuides";
 import { HelmetProvider } from "react-helmet-async";
+import NewCustomerInformationForm from "../presentation/screens/public/NewCustomerInformationForm";
+import FormSubmissionSuccess from "../presentation/screens/public/FormSubmissionSuccess";
 
 export const AppRouterPage = () => {
   return (
@@ -49,6 +51,16 @@ export const AppRouterPage = () => {
           <Route
             path="/unidentified-payments/:qrId"
             element={<UnidentifiedPaymentsPublic />}
+          />
+
+          {/* Rutas para el formulario de nuevos clientes */}
+          <Route
+            path="/nuevo-cliente/:formId"
+            element={<NewCustomerInformationForm />}
+          />
+          <Route
+            path="/formulario-completado"
+            element={<FormSubmissionSuccess />}
           />
 
           {/* Rutas para guías */}

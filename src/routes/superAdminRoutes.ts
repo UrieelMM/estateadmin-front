@@ -5,6 +5,7 @@ import SuperAdminDashboard from "../presentation/screens/superAdmin/SuperAdminDa
 import SystemSettings from "../presentation/screens/superAdmin/SystemSettings";
 import UserManagement from "../presentation/screens/superAdmin/UserManagement";
 import NewsAndGuides from "../presentation/screens/superAdmin/NewsAndGuides";
+import { NewCustomerFormManager } from "../presentation/screens/superAdmin/newCustomerInformationForm";
 
 interface Route {
   to: string;
@@ -37,6 +38,12 @@ export const superAdminRoutes: Route[] = [
     path: "super-admin/billing",
     Component: BillingManagement,
     name: "Facturación",
+  },
+  {
+    to: "new-customer-form",
+    path: "super-admin/new-customer-form",
+    Component: NewCustomerFormManager,
+    name: "Formularios Nuevos Clientes",
   },
   {
     to: "settings",

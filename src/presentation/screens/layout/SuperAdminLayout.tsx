@@ -11,6 +11,8 @@ import {
   CreditCardIcon,
   ChartBarIcon,
   ShieldCheckIcon,
+  DocumentTextIcon,
+  DocumentPlusIcon,
 } from "@heroicons/react/24/solid";
 import {
   ChevronRightIcon,
@@ -227,6 +229,12 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ children }) => {
                     break;
                   case "settings":
                     Icon = Cog6ToothIcon;
+                    break;
+                  case "news-and-guides":
+                    Icon = DocumentTextIcon;
+                    break;
+                  case "new-customer-form":
+                    Icon = DocumentPlusIcon;
                     break;
                   default:
                     Icon = ChartBarIcon;
