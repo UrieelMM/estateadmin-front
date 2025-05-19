@@ -522,7 +522,7 @@ export default function CalendarReservations() {
           </Menu>
         </div>
       </header>
-      <div className="flex flex-col lg:flex-row flex-1 overflow-hidden">
+      <div className="flex flex-col lg:flex-row flex-1 overflow-hidden dark:bg-gray-900">
         <div className="flex-1 overflow-auto">
           {view === "day" && (
             <DayView
@@ -931,7 +931,7 @@ function WeekView({
           ))}
         </div>
         {/* Grid de eventos: 7 columnas para cada día */}
-        <div className="flex-1 relative dark:bg-gray-800">
+        <div className="flex-1 relative dark:bg-gray-900 dark:border-gray-500">
           <div
             className="grid gap-0 w-full border dark:border-gray-900"
             style={{
@@ -1030,7 +1030,7 @@ function MonthView({
                 <div
                   key={day.date}
                   className={classNames(
-                    "border p-1 rounded relative h-24 overflow-auto",
+                    "border p-1 rounded relative h-24 overflow-auto dark:bg-gray-900 dark:border-gray-500",
                     !day.isCurrentMonth && "bg-gray-50 text-gray-400",
                     day.isToday && "border-indigo-500"
                   )}
