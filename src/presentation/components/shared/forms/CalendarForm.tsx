@@ -11,6 +11,7 @@ import {
   XMarkIcon,
   ExclamationTriangleIcon,
   CurrencyDollarIcon,
+  WrenchScrewdriverIcon,
 } from "@heroicons/react/24/solid";
 import { useCondominiumStore } from "../../../../store/useCondominiumStore";
 import { useCommonAreasStore } from "../../../../store/useCommonAreasStore";
@@ -71,6 +72,9 @@ const FormCalendar = ({ isOpen, onClose }: FormCalendarProps) => {
   // Nuevo estado para calcular el costo
   const [reservationCost, setReservationCost] = useState<number | null>(null);
   const [reservationHours, setReservationHours] = useState<number>(0);
+
+  // Estado para alerta de área en mantenimiento
+  const [maintenanceModalVisible, setMaintenanceModalVisible] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -159,6 +163,11 @@ const FormCalendar = ({ isOpen, onClose }: FormCalendarProps) => {
     return startMinutes >= openMinutes && endMinutes <= closeMinutes;
   };
 
+  const validateAreaNotInMaintenance = () => {
+    if (!selectedArea) return true;
+    return selectedArea.status !== "maintenance";
+  };
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
@@ -180,6 +189,12 @@ const FormCalendar = ({ isOpen, onClose }: FormCalendarProps) => {
     // Validar campos obligatorios
     if (!commonArea || !eventDate || !startTime || !endTime) {
       toast.error("Por favor, complete todos los campos obligatorios.");
+      return;
+    }
+
+    // Verificar que el área no esté en mantenimiento
+    if (!validateAreaNotInMaintenance()) {
+      setMaintenanceModalVisible(true);
       return;
     }
 
@@ -243,6 +258,7 @@ const FormCalendar = ({ isOpen, onClose }: FormCalendarProps) => {
     setEndTime("");
     setComments("");
     setTimeRangeModalVisible(false);
+    setMaintenanceModalVisible(false);
     setSelectedArea(null);
   };
 
@@ -480,6 +496,37 @@ const FormCalendar = ({ isOpen, onClose }: FormCalendarProps) => {
                 ></textarea>
               </div>
             </div>
+            {/* Renderización condicional para mostrar alerta si el área está en mantenimiento */}
+            {selectedArea && selectedArea.status === "maintenance" && (
+              <div className="md:col-span-2">
+                <div className="rounded-md bg-yellow-50 dark:bg-yellow-900/20 p-4 mt-2">
+                  <div className="flex">
+                    <div className="flex-shrink-0">
+                      <WrenchScrewdriverIcon
+                        className="h-5 w-5 text-yellow-400"
+                        aria-hidden="true"
+                      />
+                    </div>
+                    <div className="ml-3">
+                      <h3 className="text-sm font-medium text-yellow-800 dark:text-yellow-300">
+                        Área en mantenimiento
+                      </h3>
+                      <div className="mt-2 text-sm text-yellow-700 dark:text-yellow-200">
+                        <p>
+                          Esta área común se encuentra actualmente en
+                          mantenimiento y no está disponible para reservaciones.
+                        </p>
+                        {selectedArea.maintenanceNotes && (
+                          <p className="mt-1 font-semibold">
+                            Notas: {selectedArea.maintenanceNotes}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
             <div className="md:col-span-2 flex justify-end gap-4">
               <button type="button" onClick={onClose} className="btn-secundary">
                 Cancelar
@@ -583,6 +630,52 @@ const FormCalendar = ({ isOpen, onClose }: FormCalendarProps) => {
               </button>
               <button onClick={handleForceTimeRange} className="btn-primary">
                 Continuar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal para informar que el área está en mantenimiento */}
+      {maintenanceModalVisible && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+          <div className="bg-white min-w-[500px] dark:bg-gray-800 p-6 rounded-lg max-w-md shadow-xl">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center">
+                <WrenchScrewdriverIcon className="h-6 w-6 text-yellow-500 mr-2" />
+                Área en mantenimiento
+              </h3>
+              <button
+                onClick={() => setMaintenanceModalVisible(false)}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white"
+              >
+                <XMarkIcon className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="mb-6">
+              <p className="text-gray-700 dark:text-gray-300">
+                Lo sentimos, el área común "{selectedArea?.name}" se encuentra
+                actualmente en mantenimiento y no está disponible para
+                reservaciones.
+              </p>
+              {selectedArea?.maintenanceNotes && (
+                <p className="text-gray-700 dark:text-gray-300 mt-2 font-bold">
+                  Notas de mantenimiento: {selectedArea.maintenanceNotes}
+                </p>
+              )}
+              <p className="text-gray-700 dark:text-gray-300 mt-4">
+                Por favor, seleccione otra área común o intente más tarde cuando
+                el mantenimiento haya concluido.
+              </p>
+            </div>
+
+            <div className="flex justify-end">
+              <button
+                onClick={() => setMaintenanceModalVisible(false)}
+                className="btn-primary"
+              >
+                Entendido
               </button>
             </div>
           </div>

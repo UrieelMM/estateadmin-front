@@ -194,7 +194,7 @@ function getAreaColor(areaName: string) {
 }
 
 export default function CalendarReservations() {
-  const [view, setView] = useState<"day" | "week" | "month" | "year">("week");
+  const [view, setView] = useState<"day" | "week" | "month" | "year">("month");
   const [currentDate, setCurrentDate] = useState(dayjs().format("YYYY-MM-DD"));
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(
     null
