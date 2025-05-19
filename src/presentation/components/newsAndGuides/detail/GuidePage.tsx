@@ -16,6 +16,7 @@ import {
   INCOMES_AND_EXPENSES_CONTENT,
   PROJECTS_MANAGEMENT_CONTENT,
 } from "../shared/sampleContents";
+import LoadingApp from "../../shared/loaders/LoadingApp";
 
 // Componente para la página detallada de una guía
 const GuidePage: React.FC = () => {
@@ -54,7 +55,7 @@ const GuidePage: React.FC = () => {
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-[500px]">
-        <div className="animate-pulse text-indigo-600">Cargando guía...</div>
+        <LoadingApp />
       </div>
     );
   }

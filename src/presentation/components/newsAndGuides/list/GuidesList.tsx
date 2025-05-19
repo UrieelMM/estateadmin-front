@@ -7,6 +7,7 @@ import { Helmet } from "react-helmet-async";
 import CategoryFilter from "./CategoryFilter";
 import GuideCard from "./GuideCard";
 import SearchBar from "./SearchBar";
+import LoadingApp from "../../shared/loaders/LoadingApp";
 
 // Componente principal de la lista de guías
 const GuidesList: React.FC = () => {
@@ -73,7 +74,7 @@ const GuidesList: React.FC = () => {
   if (loading && items.length === 0) {
     return (
       <div className="flex justify-center items-center min-h-[400px]">
-        <div className="animate-pulse text-indigo-600">Cargando guías...</div>
+        <LoadingApp />
       </div>
     );
   }
