@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useDropzone } from "react-dropzone";
 import { useCondominiumStore } from "../../../../store/useRegisterUserStore";
+import { useCondominiumLimitsStore } from "../../../../store/useCondominiumLimitsStore";
 import {
   DocumentPlusIcon,
   ArrowUpTrayIcon,
@@ -9,6 +10,7 @@ import {
   ExclamationCircleIcon,
   DocumentCheckIcon,
   TableCellsIcon,
+  InformationCircleIcon,
 } from "@heroicons/react/24/solid";
 import toast from "react-hot-toast";
 import LoadingRegister from "../loaders/LoadingRegister";
@@ -43,8 +45,23 @@ const UsersRegistrationForm = () => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [currentStep, setCurrentStep] = useState(1);
   const [isDragActive, setIsDragActive] = useState(false);
+  const [validationResult, setValidationResult] = useState<{
+    isValid: boolean;
+    message?: string;
+    excelUserCount?: number;
+  } | null>(null);
+  const [limitInfo, setLimitInfo] = useState<{
+    condominiumLimit: number;
+    currentUserCount: number;
+  }>({ condominiumLimit: 0, currentUserCount: 0 });
 
   const sendExcel = useCondominiumStore((state) => state.sendExcel);
+  const {
+    getCondominiumLimit,
+    getCurrentUserCount,
+    validateExcelUsers,
+    isLoading: isValidating,
+  } = useCondominiumLimitsStore();
 
   // Insertar estilos CSS de animación
   useEffect(() => {
@@ -56,6 +73,24 @@ const UsersRegistrationForm = () => {
       document.head.removeChild(styleElement);
     };
   }, []);
+
+  // Cargar límites al montar el componente
+  useEffect(() => {
+    const loadLimits = async () => {
+      try {
+        const limit = await getCondominiumLimit();
+        const currentCount = await getCurrentUserCount();
+        setLimitInfo({
+          condominiumLimit: limit,
+          currentUserCount: currentCount,
+        });
+      } catch (error) {
+        toast.error("Error al cargar la información de límites");
+      }
+    };
+
+    loadLimits();
+  }, [getCondominiumLimit, getCurrentUserCount]);
 
   // Formatear tamaño del archivo
   const formatFileSize = (size: number): string => {
@@ -78,16 +113,47 @@ const UsersRegistrationForm = () => {
         });
       }, 200);
 
-      // Avanzar al paso 2 cuando la carga se completa
-      if (uploadProgress === 100) {
-        setTimeout(() => {
-          setCurrentStep(2);
-        }, 300);
+      // Cuando la carga llegue al 100%, habilitar el botón y mostrar resumen
+      if (uploadProgress === 100 && file) {
+        // Crear resumen con los límites actuales
+        const excelUserCount = 1; // Asumimos al menos 1 usuario
+
+        setValidationResult({
+          isValid: true,
+          message: `Se procesará el archivo y se importarán ${excelUserCount} registros.`,
+          excelUserCount,
+        });
+
+        toast.success(
+          `Archivo listo para importar: ${excelUserCount} usuarios`
+        );
+        setCurrentStep(2);
       }
     }
 
     return () => clearInterval(interval);
   }, [file, uploadProgress]);
+
+  // Mostrar paso 2 con más detalles sobre los límites
+  useEffect(() => {
+    if (currentStep === 2 && validationResult?.isValid) {
+      const loadDetails = async () => {
+        try {
+          const limit = await getCondominiumLimit();
+          const currentCount = await getCurrentUserCount();
+
+          setLimitInfo({
+            condominiumLimit: limit,
+            currentUserCount: currentCount,
+          });
+        } catch (error) {
+          console.error("Error al cargar detalles:", error);
+        }
+      };
+
+      loadDetails();
+    }
+  }, [currentStep, validationResult, getCondominiumLimit, getCurrentUserCount]);
 
   const handleRegisterCondominiums = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -96,6 +162,15 @@ const UsersRegistrationForm = () => {
     if (!file) {
       toast.error(
         "Por favor, selecciona un archivo para registrar los usuarios"
+      );
+      setLoading(false);
+      return;
+    }
+
+    // Verificar si el resultado de validación existe y es válido
+    if (!validationResult || validationResult.isValid === false) {
+      toast.error(
+        validationResult?.message || "El archivo no es válido para importar"
       );
       setLoading(false);
       return;
@@ -114,6 +189,11 @@ const UsersRegistrationForm = () => {
       setFileSize("");
       setUploadProgress(0);
       setCurrentStep(1);
+      setValidationResult(null);
+
+      // Actualizar contador de usuarios tras registro exitoso
+      const currentCount = await getCurrentUserCount();
+      setLimitInfo((prev) => ({ ...prev, currentUserCount: currentCount }));
     } catch (error) {
       toast.error("Error al registrar los usuarios");
     } finally {
@@ -131,7 +211,7 @@ const UsersRegistrationForm = () => {
     } as any,
     maxSize: 10 * 1024 * 1024, // 10MB
     multiple: false,
-    onDrop: (acceptedFiles: File[]) => {
+    onDrop: async (acceptedFiles: File[]) => {
       if (acceptedFiles.length > 0) {
         const selectedFile = acceptedFiles[0];
         setFile(selectedFile);
@@ -139,6 +219,32 @@ const UsersRegistrationForm = () => {
         setFileSize(formatFileSize(selectedFile.size));
         setUploadProgress(10); // Iniciar la simulación de progreso
         setCurrentStep(1);
+        setValidationResult(null);
+
+        // Validar el archivo después de cargarlo
+        try {
+          const result = await validateExcelUsers(selectedFile);
+
+          // Si el archivo no es válido (excede límites), mostrar mensaje y detener proceso
+          if (!result.isValid) {
+            toast.error(
+              result.message || "El archivo excede los límites permitidos"
+            );
+            setValidationResult(result);
+            setUploadProgress(100); // Completar el progreso para mostrar el mensaje de error
+            setCurrentStep(2);
+            return;
+          }
+
+          // Si es válido, continuar con el proceso normal
+          setValidationResult(result);
+        } catch (error) {
+          toast.error("Error al validar el archivo Excel");
+          setFile(null);
+          setFileName("");
+          setFileSize("");
+          setUploadProgress(0);
+        }
       }
     },
     onDropRejected: (fileRejections: any[]) => {
@@ -173,7 +279,7 @@ const UsersRegistrationForm = () => {
 
   return (
     <div className="divide-gray-900/10 w-full shadow-md rounded-md px-8 py-6 dark:bg-gray-800 dark:text-gray-100 dark:shadow-2xl">
-      {loading && <LoadingRegister />}
+      {(loading || isValidating) && <LoadingRegister />}
       <form
         className="bg-white shadow-sm ring-1 w-full flex-col justify-center mx-auto ring-gray-900/5 sm:rounded-xl overflow-hidden dark:bg-gray-800"
         onSubmit={handleRegisterCondominiums}
@@ -186,6 +292,15 @@ const UsersRegistrationForm = () => {
             Importa la lista de usuarios del condominio mediante un archivo
             Excel
           </p>
+
+          {/* Información de límites */}
+          <div className="mt-3 flex items-center text-sm">
+            <InformationCircleIcon className="w-4 h-4 text-indigo-500 mr-1" />
+            <span className="text-indigo-700 dark:text-indigo-300">
+              {limitInfo.currentUserCount} de {limitInfo.condominiumLimit}{" "}
+              usuarios permitidos registrados
+            </span>
+          </div>
         </div>
 
         <div className="px-6 py-5 space-y-6 dark:bg-gray-800 dark:text-gray-100">
@@ -278,6 +393,7 @@ const UsersRegistrationForm = () => {
                         setFileSize("");
                         setUploadProgress(0);
                         setCurrentStep(1);
+                        setValidationResult(null);
                       }}
                       className="text-gray-500 hover:text-red-500 transition-colors"
                       type="button"
@@ -337,36 +453,131 @@ const UsersRegistrationForm = () => {
                 <span className="bg-indigo-600 text-white rounded-full w-6 h-6 flex items-center justify-center mr-2 text-sm font-semibold">
                   2
                 </span>
-                <h4 className="text-md font-semibold">Confirmar importación</h4>
+                <h4 className="text-md font-semibold">
+                  {validationResult?.isValid
+                    ? "Confirmar importación"
+                    : "Error de validación"}
+                </h4>
               </div>
 
-              <div className="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700">
-                <div className="flex justify-between py-2 border-b dark:border-gray-700">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">
-                    Archivo:
-                  </span>
-                  <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
-                    {fileName}
-                  </span>
+              {validationResult?.isValid ? (
+                <div className="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700">
+                  <div className="flex justify-between py-2 border-b dark:border-gray-700">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                      Archivo seleccionado:
+                    </span>
+                    <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                      {fileName}
+                    </span>
+                  </div>
+                  <div className="flex justify-between py-2 border-b dark:border-gray-700">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                      Tamaño del archivo:
+                    </span>
+                    <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                      {fileSize}
+                    </span>
+                  </div>
+                  <div className="flex justify-between py-2 border-b dark:border-gray-700">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                      Usuarios a importar:
+                    </span>
+                    <span className="text-sm font-medium text-indigo-600 dark:text-indigo-400">
+                      {validationResult.excelUserCount} usuarios
+                    </span>
+                  </div>
+                  <div className="flex justify-between py-2 border-b dark:border-gray-700">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                      Usuarios actuales:
+                    </span>
+                    <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                      {limitInfo.currentUserCount} usuarios
+                    </span>
+                  </div>
+                  <div className="flex justify-between py-2 border-b dark:border-gray-700">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                      Límite del plan:
+                    </span>
+                    <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                      {limitInfo.condominiumLimit} usuarios
+                    </span>
+                  </div>
+                  <div className="flex justify-between py-2">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                      Total después de importar:
+                    </span>
+                    <span className="text-sm font-medium text-green-600 dark:text-green-400 flex items-center">
+                      <CheckCircleIcon className="w-4 h-4 mr-1" />
+                      {limitInfo.currentUserCount +
+                        (validationResult?.excelUserCount || 0)}{" "}
+                      de {limitInfo.condominiumLimit} usuarios
+                    </span>
+                  </div>
                 </div>
-                <div className="flex justify-between py-2">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">
-                    Estado:
-                  </span>
-                  <span className="text-sm font-medium text-indigo-600 dark:text-indigo-400 flex items-center">
-                    <CheckCircleIcon className="w-4 h-4 mr-1" />
-                    Listo para importar
-                  </span>
-                </div>
-              </div>
+              ) : (
+                <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-700">
+                  <div className="flex items-start">
+                    <ExclamationCircleIcon className="w-5 h-5 text-red-500 mr-2 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-medium text-red-800 dark:text-red-200">
+                        No se puede importar este archivo
+                      </p>
+                      <p className="text-sm text-red-700 dark:text-red-300 mt-1">
+                        {validationResult?.message ||
+                          "El archivo excede los límites de usuarios permitidos."}
+                      </p>
 
-              <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md mb-4">
-                <p className="text-sm text-blue-800 dark:text-blue-200 flex items-start">
-                  <ExclamationCircleIcon className="w-5 h-5 mr-2 flex-shrink-0" />
-                  Al importar, los datos serán procesados por el sistema. Esta
-                  acción no se puede deshacer.
-                </p>
-              </div>
+                      <div className="mt-3 space-y-2">
+                        <div className="flex justify-between py-2 border-b border-red-200 dark:border-red-700">
+                          <span className="text-sm text-red-600 dark:text-red-400">
+                            Usuarios a importar:
+                          </span>
+                          <span className="text-sm font-medium text-red-800 dark:text-red-200">
+                            {validationResult?.excelUserCount} usuarios
+                          </span>
+                        </div>
+                        <div className="flex justify-between py-2 border-b border-red-200 dark:border-red-700">
+                          <span className="text-sm text-red-600 dark:text-red-400">
+                            Usuarios actuales:
+                          </span>
+                          <span className="text-sm font-medium text-red-800 dark:text-red-200">
+                            {limitInfo.currentUserCount} usuarios
+                          </span>
+                        </div>
+                        <div className="flex justify-between py-2 border-b border-red-200 dark:border-red-700">
+                          <span className="text-sm text-red-600 dark:text-red-400">
+                            Límite del plan:
+                          </span>
+                          <span className="text-sm font-medium text-red-800 dark:text-red-200">
+                            {limitInfo.condominiumLimit} usuarios
+                          </span>
+                        </div>
+                        <div className="flex justify-between py-2">
+                          <span className="text-sm text-red-600 dark:text-red-400">
+                            Total después de importar:
+                          </span>
+                          <span className="text-sm font-medium text-red-800 dark:text-red-200 flex items-center">
+                            <XCircleIcon className="w-4 h-4 mr-1" />
+                            {limitInfo.currentUserCount +
+                              (validationResult?.excelUserCount || 0)}{" "}
+                            de {limitInfo.condominiumLimit} usuarios
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {validationResult?.isValid && (
+                <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md mb-4">
+                  <p className="text-sm text-blue-800 dark:text-blue-200 flex items-start">
+                    <ExclamationCircleIcon className="w-5 h-5 mr-2 flex-shrink-0" />
+                    Al importar, los usuarios serán agregados al sistema. Esta
+                    acción no se puede deshacer.
+                  </p>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -382,14 +593,20 @@ const UsersRegistrationForm = () => {
               setFileSize("");
               setUploadProgress(0);
               setCurrentStep(1);
+              setValidationResult(null);
             }}
           >
             Cancelar
           </button>
+
           <button
             type="submit"
             className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center"
-            disabled={!file || uploadProgress < 100}
+            disabled={
+              !file ||
+              uploadProgress < 100 ||
+              (validationResult !== null && validationResult.isValid === false)
+            }
           >
             {file && uploadProgress < 100 ? (
               <>

@@ -64,8 +64,6 @@ const ImageSlider: React.FC = () => {
     );
   }
 
-  console.log("Rendering ImageSlider with active items:", activeItems);
-
   // Convertir URL externa en ruta interna si es necesario
   const getInternalPath = (url: string) => {
     // Si la URL contiene guias/ pero es una URL completa, extraer la parte de la ruta
