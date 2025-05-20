@@ -53,8 +53,8 @@ const FormSubmissionSuccess: React.FC = () => {
             Nuestro equipo se pondrá en contacto con usted próximamente para
             continuar con el proceso.
           </p>
-          <div className="mt-6 bg-blue-50 dark:bg-blue-900/30 p-4 rounded-md">
-            <p className="text-blue-800 dark:text-blue-300 text-sm">
+          <div className="mt-6 bg-indigo-50 dark:bg-indigo-900/30 p-4 rounded-md">
+            <p className="text-indigo-800 dark:text-indigo-300 text-sm">
               <strong>Nota:</strong> Le recomendamos guardar una copia de este
               mensaje como confirmación de que sus datos han sido recibidos
               correctamente.

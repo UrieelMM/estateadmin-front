@@ -29,7 +29,7 @@ const NewsAndGuides: React.FC = () => {
 
   const [title, setTitle] = useState("");
   const [subtitle, setSubtitle] = useState("");
-  const [url, setUrl] = useState("/dashboard");
+  const [url, setUrl] = useState("/guias");
   const [active, setActive] = useState(true);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>("");
@@ -102,7 +102,7 @@ const NewsAndGuides: React.FC = () => {
   const handleEdit = (item: NewsGuideItem) => {
     setTitle(item.title);
     setSubtitle(item.subtitle);
-    setUrl(item.url || "/dashboard");
+    setUrl(item.url || "/guias");
     setActive(item.active === undefined ? true : item.active);
     setImagePreview(item.imageUrl);
     setIsEditing(true);
@@ -204,11 +204,10 @@ const NewsAndGuides: React.FC = () => {
                     setUrl(e.target.value)
                   }
                   className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                  placeholder="/dashboard"
+                  placeholder="/guias"
                 />
                 <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                  Ruta a la que será redirigido el usuario (ej:
-                  /dashboard/calendar)
+                  Ruta a la que será redirigido el usuario (ej: /guias/calendar)
                 </p>
               </div>
 
@@ -366,7 +365,7 @@ const NewsAndGuides: React.FC = () => {
                             </div>
                           )}
                           <div className="text-xs text-indigo-600 dark:text-indigo-400 mt-1">
-                            {item.url || "/dashboard"}
+                            {item.url || "/guias"}
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">

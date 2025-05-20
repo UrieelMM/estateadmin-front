@@ -551,7 +551,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
               return (
                 <div
                   key={status}
-                  className="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden"
+                  className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden"
                 >
                   {/* Encabezado de la columna */}
                   <div className="px-4 py-3 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 font-medium text-gray-800 dark:text-gray-200">

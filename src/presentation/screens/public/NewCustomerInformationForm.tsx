@@ -40,6 +40,8 @@ const PLANS = [
   {
     value: "Basic",
     label: "Básico",
+    price: "$750.00 MXN",
+    tax: "+ IVA",
     range: "1 - 50",
     highlighted: false,
     description:
@@ -48,6 +50,8 @@ const PLANS = [
   {
     value: "Essential",
     label: "Esencial",
+    price: "$1,200.00 MXN",
+    tax: "+ IVA",
     range: "51 - 100",
     highlighted: true,
     description:
@@ -56,6 +60,8 @@ const PLANS = [
   {
     value: "Professional",
     label: "Profesional",
+    price: "$1,850.00 MXN",
+    tax: "+ IVA",
     range: "101 - 250",
     highlighted: false,
     description:
@@ -64,6 +70,8 @@ const PLANS = [
   {
     value: "Premium",
     label: "Premium",
+    price: "$1,950.00 MXN",
+    tax: "+ IVA",
     range: "251 - 500",
     highlighted: false,
     description: "Capacidad completa para grandes desarrollos residenciales.",
@@ -644,14 +652,14 @@ const AdditionalConfigStep: React.FC<StepProps> = ({
   return (
     <div className="space-y-6">
       <h3 className="text-lg font-medium leading-6 text-gray-900 dark:text-white">
-        Selección de Plan
+        Selección de Plan{" "}
       </h3>
       <p className="text-sm text-gray-500 dark:text-gray-400">
         Elija el plan que mejor se adapte a las necesidades de su condominio.
       </p>
 
-      <div className="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-md mb-6">
-        <p className="text-blue-800 dark:text-blue-300 text-sm">
+      <div className="bg-indigo-50 dark:bg-indigo-900/30 p-4 rounded-md mb-6">
+        <p className="text-indigo-800 dark:text-indigo-300 text-sm">
           <strong>Nota:</strong> Todos los planes incluyen acceso a todas las
           funciones: proyectos, inventario, sistema de gestión de mantenimiento
           y más.
@@ -685,7 +693,10 @@ const AdditionalConfigStep: React.FC<StepProps> = ({
               <h3 className="text-lg font-bold text-gray-900 dark:text-white">
                 {plan.label}
               </h3>
-              <p className="mt-2 text-sm font-medium text-indigo-600 dark:text-indigo-400">
+              <p className="mt-1 text-xl font-semibold text-indigo-600 dark:text-indigo-400">
+                {plan.price} <span className="text-sm">{plan.tax}</span>
+              </p>
+              <p className="mt-2 text-sm font-medium text-gray-600 dark:text-gray-400">
                 {plan.range} condóminos/residentes
               </p>
               <p className="mt-4 text-sm text-gray-600 dark:text-gray-400">
@@ -774,6 +785,12 @@ const AdditionalConfigStep: React.FC<StepProps> = ({
             </div>
           </div>
         ))}
+      </div>
+
+      <div>
+        <span className="text-indigo-600 text-sm dark:text-indigo-400">
+          (Precio facturado mensualmente)
+        </span>
       </div>
 
       <div className="bg-yellow-50 dark:bg-yellow-900/30 p-4 rounded-md mt-4">
@@ -1215,9 +1232,12 @@ const NewCustomerInformationForm = () => {
         className={`mx-auto ${currentStep === 5 ? "max-w-6xl" : "max-w-3xl"}`}
       >
         <div className="text-center mb-12">
-          <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white sm:text-4xl">
-            Información de Nuevo Cliente
+          <h1 className="bg-gradient-to-r from-indigo-700 via-indigo-500 to-pink-500 bg-clip-text text-transparent text-5xl font-extrabold mb-3">
+            EstateAdmin
           </h1>
+          <h2 className="text-xl font-extrabold text-gray-900 dark:text-white sm:text-4xl">
+            Información de Nuevo Cliente
+          </h2>
           <p className="mt-3 text-lg text-gray-500 dark:text-gray-400">
             Complete el formulario con la información solicitada
           </p>
