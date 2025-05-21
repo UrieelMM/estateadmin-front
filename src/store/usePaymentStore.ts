@@ -11,6 +11,7 @@ import {
 } from "firebase/firestore";
 import axios from "axios";
 import * as Sentry from "@sentry/react";
+import { syncWithAIContext } from "../services/aiContextService";
 
 export type Charge = {
   id: string;
@@ -67,6 +68,9 @@ export type MaintenancePayment = {
 
   startAts?: string[];
   startAt?: string;
+
+  // Campos para conceptos de pago
+  concepts?: string[];
 };
 
 type FinancialAccount = {
@@ -501,6 +505,225 @@ export const usePaymentStore = create<MaintenancePaymentState>()(
 
         // Recargar cargos asociados al usuario
         await get().fetchUserCharges(payment.numberCondominium);
+
+        // MEJORADO: Sincronizar con el contexto de IA con detalles enriquecidos
+        try {
+          // Obtener información del condómino desde Firestore
+          const db = getFirestore();
+          const usersRef = collection(
+            db,
+            `clients/${clientId}/condominiums/${condominiumId}/users`
+          );
+          const userQuery = query(
+            usersRef,
+            where("number", "==", payment.numberCondominium)
+          );
+          const userSnap = await getDocs(userQuery);
+
+          let condominoInfo = {};
+          if (!userSnap.empty) {
+            const userData = userSnap.docs[0].data();
+            condominoInfo = {
+              condominoNombre: userData.name || "No disponible",
+              condominoEmail: userData.email || "No disponible",
+              condominoNumero: userData.number || payment.numberCondominium,
+              condominoTelefono: userData.phone || "No disponible",
+              condominoTipo: userData.type || "Propietario",
+            };
+          }
+
+          // Obtener detalles de los conceptos pagados
+          let conceptosDetallados = "";
+          let conceptosPagados: Array<{
+            concepto: string;
+            monto: number;
+            mes: string;
+          }> = [];
+
+          if (payment.selectedCharges && payment.selectedCharges.length > 0) {
+            const { charges } = get();
+
+            // Asegurarnos de que los cargos estén disponibles
+            if (charges && charges.length > 0) {
+              conceptosPagados = payment.selectedCharges.map((sc) => {
+                // Buscar el cargo correspondiente por ID
+                const foundCharge = charges.find((c) => c.id === sc.chargeId);
+
+                // Si encontramos el cargo, obtener su concepto
+                if (foundCharge && foundCharge.concept) {
+                  return {
+                    concepto: foundCharge.concept,
+                    monto: sc.amount,
+                    mes: foundCharge.month || "No especificado",
+                  };
+                }
+
+                // Si no lo encontramos o no tiene concepto, usar "Desconocido"
+                console.warn(
+                  `Cargo no encontrado o sin concepto: ${sc.chargeId}`
+                );
+                return {
+                  concepto: "Desconocido",
+                  monto: sc.amount,
+                  mes: "No especificado",
+                };
+              });
+
+              // Generar descripción detallada de los conceptos
+              conceptosDetallados = conceptosPagados
+                .map(
+                  (cp) =>
+                    `${cp.concepto} (${cp.mes}): $${cp.monto.toLocaleString(
+                      "es-MX",
+                      {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      }
+                    )}`
+                )
+                .join(", ");
+            } else {
+              console.warn("No se encontraron cargos para el usuario");
+
+              // Si no hay cargos, usar los IDs al menos
+              conceptosPagados = payment.selectedCharges.map((sc) => ({
+                concepto:
+                  payment.concepts?.find(
+                    (_, i) => i === payment.selectedCharges?.indexOf(sc)
+                  ) || "Desconocido",
+                monto: sc.amount,
+                mes: "No especificado",
+              }));
+
+              conceptosDetallados = conceptosPagados
+                .map(
+                  (cp) =>
+                    `${
+                      cp.concepto
+                    } (No especificado): $${cp.monto.toLocaleString("es-MX", {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}`
+                )
+                .join(", ");
+            }
+          } else if (payment.chargeId) {
+            const { charges } = get();
+            const foundCharge = charges.find((c) => c.id === payment.chargeId);
+            if (foundCharge) {
+              conceptosPagados = [
+                {
+                  concepto: foundCharge.concept,
+                  monto: foundCharge.amount,
+                  mes: foundCharge.month || "No especificado",
+                },
+              ];
+              conceptosDetallados = foundCharge.concept;
+            }
+          }
+
+          // Registrar para debugging
+          console.log("Cargos disponibles:", charges);
+          console.log("Cargos seleccionados:", payment.selectedCharges);
+          console.log("Conceptos obtenidos:", conceptosPagados);
+
+          // Obtener el concepto principal del pago
+          let conceptoPrincipal = "Cuota de mantenimiento";
+
+          // Si hay conceptos especificados explícitamente en el formulario
+          if (
+            payment.concepts &&
+            payment.concepts.length > 0 &&
+            payment.concepts[0]
+          ) {
+            conceptoPrincipal = payment.concepts[0];
+          }
+          // Si no, buscar en los cargos seleccionados
+          else if (conceptosPagados.length > 0) {
+            if (conceptosPagados.length === 1) {
+              // Si solo hay un concepto, usamos ese
+              conceptoPrincipal = conceptosPagados[0].concepto;
+            } else {
+              // Si hay múltiples conceptos pero todos son iguales
+              const todosIguales = conceptosPagados.every(
+                (c) => c.concepto === conceptosPagados[0].concepto
+              );
+              if (todosIguales) {
+                conceptoPrincipal = conceptosPagados[0].concepto;
+              } else {
+                // Si hay diferentes conceptos, crear una lista resumida
+                const conceptosUnicos = [
+                  ...new Set(conceptosPagados.map((c) => c.concepto)),
+                ].filter((c) => c !== "Desconocido");
+                if (conceptosUnicos.length > 0) {
+                  if (conceptosUnicos.length === 1) {
+                    conceptoPrincipal = conceptosUnicos[0];
+                  } else if (conceptosUnicos.length <= 3) {
+                    conceptoPrincipal = conceptosUnicos.join(", ");
+                  } else {
+                    conceptoPrincipal = `${conceptosUnicos
+                      .slice(0, 2)
+                      .join(", ")} y otros conceptos`;
+                  }
+                } else {
+                  conceptoPrincipal = "Pago de múltiples conceptos";
+                }
+              }
+            }
+          }
+          // Si es un pago no identificado y no hay concepto, mantener el predeterminado
+
+          // Obtener información de la cuenta financiera
+          let cuentaFinanciera = "No especificada";
+          if (payment.financialAccountId) {
+            const cuenta = get().financialAccounts.find(
+              (a) => a.id === payment.financialAccountId
+            );
+            if (cuenta) {
+              cuentaFinanciera = cuenta.name;
+            }
+          }
+
+          const paymentData = {
+            // Datos básicos del pago
+            paymentDate: formattedPaymentDate,
+            amountPaid: payment.amountPaid,
+            concept: conceptoPrincipal,
+            conceptosDetallados: conceptosDetallados || "No especificado",
+            paymentGroupId: formData.get("paymentGroupId"),
+            paymentType: payment.paymentType,
+            currency: "MXN",
+            usedCredit: payment.useCreditBalance ? payment.creditUsed : 0,
+            comments: payment.comments,
+
+            // Datos del condómino
+            ...condominoInfo,
+
+            // Datos financieros adicionales
+            numeroCondominio: payment.numberCondominium,
+            cuentaFinanciera,
+            fechaRegistro: new Date().toISOString(),
+
+            // Detalles de los conceptos pagados
+            conceptosPagados:
+              conceptosPagados.length > 0 ? conceptosPagados : undefined,
+            detalleConceptos: conceptosDetallados || undefined,
+
+            // Datos de pago adicionales
+            isUnidentifiedPayment: payment.isUnidentifiedPayment || false,
+            aplazado: false,
+          };
+
+          await syncWithAIContext(
+            "payment",
+            paymentData,
+            clientId,
+            condominiumId
+          );
+        } catch (syncError) {
+          // Solo registrar el error, no afecta el flujo principal
+          console.error("[AI Context] Error al sincronizar pago:", syncError);
+        }
 
         set({ loading: false, error: null });
       } catch (error: any) {

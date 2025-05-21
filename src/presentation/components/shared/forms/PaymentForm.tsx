@@ -294,10 +294,45 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
       }
 
       // Extraer los conceptos y el campo startAt de los cargos seleccionados
-      const concepts = selectedCharges.map((sc) => {
-        const foundCharge = charges.find((c) => c.id === sc.chargeId);
-        return foundCharge ? foundCharge.concept : "";
-      });
+      const concepts = selectedCharges
+        .map((sc) => {
+          const foundCharge = charges.find((c) => c.id === sc.chargeId);
+          return foundCharge && foundCharge.concept
+            ? foundCharge.concept
+            : "Desconocido";
+        })
+        .filter((concept) => concept !== "" && concept !== "Desconocido");
+
+      // Si no hay conceptos válidos, intentar identificarlos de otra manera
+      if (concepts.length === 0 && charges.length > 0) {
+        console.log("No se pudieron extraer conceptos válidos:", {
+          selectedCharges,
+          charges,
+        });
+
+        // Intento adicional para extraer conceptos
+        selectedCharges.forEach((sc) => {
+          const charge = charges.find((c) => c.id === sc.chargeId);
+          if (charge) {
+            console.log(`Cargo encontrado para ${sc.chargeId}:`, charge);
+          } else {
+            console.log(`No se encontró cargo para ${sc.chargeId}`);
+          }
+        });
+
+        // Usar los conceptos disponibles en charges aunque no estén seleccionados (última opción)
+        if (selectedCharges.length > 0 && charges.length > 0) {
+          for (const sc of selectedCharges) {
+            for (const charge of charges) {
+              if (charge.id === sc.chargeId && charge.concept) {
+                concepts.push(charge.concept);
+                break;
+              }
+            }
+          }
+        }
+      }
+
       const startAts = selectedCharges
         .map((sc) => {
           const foundCharge = charges.find((c) => c.id === sc.chargeId);
@@ -319,8 +354,8 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
         financialAccountId,
         creditUsed,
         isUnidentifiedPayment,
-        concepts, // Se envía el concepto del cargo
-        startAts, // Ahora es string[]
+        concepts,
+        startAts,
         ...(isUnidentifiedPayment && { appliedToUser: false }),
       };
 

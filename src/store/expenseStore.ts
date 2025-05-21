@@ -9,8 +9,10 @@ import {
   getDocs,
   setDoc,
   doc as createDoc,
+  getDoc,
 } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { syncWithAIContext } from "../services/aiContextService";
 
 /**
  * Tipos de datos para un egreso
@@ -61,7 +63,7 @@ interface ExpenseState {
   refreshExpenses: () => Promise<void>;
 }
 
-// NUEVO: Función para convertir centavos (enteros) a pesos (float)
+// Función para convertir centavos (enteros) a pesos (float)
 function centsToPesos(value: any): number {
   const intVal = parseInt(value, 10);
   if (isNaN(intVal)) return 0;
@@ -76,6 +78,18 @@ async function generateUniqueFolio(): Promise<string> {
   ).join("");
   return `EA-${randomNumbers}`;
 }
+
+// Función para formatear fecha en formato legible
+const formatDisplayDate = (dateString: string): string => {
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return dateString;
+
+  return date.toLocaleDateString("es-MX", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+};
 
 export const useExpenseStore = create<ExpenseState>()((set, get) => ({
   expenses: [],
@@ -206,6 +220,105 @@ export const useExpenseStore = create<ExpenseState>()((set, get) => ({
 
       // Guardar en Firestore
       await setDoc(newDocRef, expenseData);
+
+      // NUEVO: Obtener información de la cuenta financiera
+      let accountName = "No especificada";
+      if (data.financialAccountId) {
+        try {
+          const accountRef = createDoc(
+            db,
+            `clients/${clientId}/condominiums/${condominiumId}/financialAccounts/${data.financialAccountId}`
+          );
+          const accountSnap = await getDoc(accountRef);
+          if (accountSnap.exists()) {
+            accountName = accountSnap.data()?.name || "No especificada";
+          }
+        } catch (e) {
+          console.error("Error al obtener nombre de cuenta:", e);
+        }
+      }
+
+      // NUEVO: Obtener información del proveedor
+      let providerInfo = {
+        providerName: "No especificado",
+        providerEmail: "",
+        providerPhone: "",
+        providerCategory: "",
+      };
+
+      if (data.providerId) {
+        try {
+          const providerRef = createDoc(
+            db,
+            `clients/${clientId}/condominiums/${condominiumId}/providers/${data.providerId}`
+          );
+          const providerSnap = await getDoc(providerRef);
+          if (providerSnap.exists()) {
+            const providerData = providerSnap.data();
+            providerInfo = {
+              providerName: providerData?.name || "No especificado",
+              providerEmail: providerData?.email || "",
+              providerPhone: providerData?.phone || "",
+              providerCategory: providerData?.category || "",
+            };
+          }
+        } catch (e) {
+          console.error("Error al obtener datos del proveedor:", e);
+        }
+      }
+
+      // NUEVO: Sincronizar con la API de IA
+      try {
+        const expenseAIData = {
+          // Datos básicos del egreso
+          id: newDocRef.id,
+          folio: folio,
+          amount: data.amount, // Monto en pesos
+          amountCents: amountCents, // Monto en centavos
+          concept: data.concept,
+          paymentType: data.paymentType,
+          expenseDate: data.expenseDate,
+          expenseDateFormatted: formatDisplayDate(data.expenseDate),
+          registerDate: expenseData.registerDate,
+          registerDateFormatted: formatDisplayDate(expenseData.registerDate),
+          description: data.description || "",
+
+          // Información financiera
+          cuentaFinanciera: accountName,
+          financialAccountId: data.financialAccountId,
+
+          // Información del proveedor
+          ...providerInfo,
+          providerId: data.providerId || "",
+
+          // Metadatos
+          hasInvoice: !!invoiceUrl,
+          invoiceUrl: invoiceUrl || "",
+          currency: "MXN",
+
+          // Detalles administrativos
+          tipo: "egreso",
+          categoriaEgreso: data.concept,
+          status: "completado",
+
+          // Información adicional para búsquedas
+          año: new Date(data.expenseDate).getFullYear().toString(),
+          mes: (new Date(data.expenseDate).getMonth() + 1)
+            .toString()
+            .padStart(2, "0"),
+        };
+
+        // Enviar a la API
+        await syncWithAIContext(
+          "expense",
+          expenseAIData,
+          clientId,
+          condominiumId
+        );
+      } catch (syncError) {
+        console.error("[AI Context] Error al sincronizar egreso:", syncError);
+        // No afecta el flujo principal
+      }
 
       // Actualizar la lista de egresos
       await get().refreshExpenses();

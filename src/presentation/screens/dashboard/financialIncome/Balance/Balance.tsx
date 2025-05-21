@@ -1,6 +1,7 @@
 import { useState } from "react";
 import ExpenseForm from "../../../../components/shared/forms/ExpensesForm";
 import BalanceSummary from "./BalanceSummary";
+import IASearch from "../../../IA/IASearch";
 
 const Balance = () => {
   const [open, setOpen] = useState(false);
@@ -12,6 +13,9 @@ const Balance = () => {
       <div className="px-4 shadow-lg rounded-md sm:px-6 lg:px-8">
         <header className="bg-gray-50 font-medium shadow-lg flex w-full h-16 justify-between px-2 rounded-md items-center mb-6 dark:shadow-2xl dark:bg-gray-800 dark:text-gray-100">
           <p className="text-md">Balance General</p>
+          <div className="w-20 flex justify-end">
+            <IASearch context="balance" />
+          </div>
         </header>
 
         {/* Tab Layout */}

@@ -3,6 +3,7 @@ import ExpenseForm from "../../../../components/shared/forms/ExpensesForm";
 import ExpensesSummary from "./ExpensesSummary";
 import ExpenseDetailedConceptsTableAdvanced from "./ExpensesSummary/ExpenseDetailedConceptsTableAdvanced";
 import ExpensesByProvider from "./ExpensesByProvider";
+import IASearch from "../../../IA/IASearch";
 
 const Expenses = () => {
   const [open, setOpen] = useState(false);
@@ -14,12 +15,17 @@ const Expenses = () => {
       <div className="px-4 shadow-lg rounded-md sm:px-6 lg:px-8">
         <header className="bg-gray-50 font-medium shadow-lg flex w-full h-16 justify-between px-2 rounded-md items-center mb-6 dark:shadow-2xl dark:bg-gray-800 dark:text-gray-100">
           <p className="text-md">Egresos</p>
-          <button
-            className="btn-primary h-10 mb-3"
-            onClick={() => setOpen(!open)}
-          >
-            Registrar Gasto
-          </button>
+          <div className="flex gap-4 items-center justify-end">
+            <div className="w-20 flex justify-end">
+              <IASearch context="expenses" />
+            </div>
+            <button
+              className="btn-primary h-10 mb-3"
+              onClick={() => setOpen(!open)}
+            >
+              Registrar Gasto
+            </button>
+          </div>
         </header>
 
         {/* Tab Layout */}
