@@ -23,8 +23,8 @@ import ProjectStatusBadge from "./components/ProjectStatusBadge";
 import ProjectSummaryCard from "./components/ProjectSummaryCard";
 import KanbanBoardModal from "./components/KanbanBoardModal";
 import ProjectExportMenu from "./components/ProjectExportMenu";
-import NewMilestoneModal from "./components/NewMilestoneModal";
-import MilestonesList from "./components/MilestonesList";
+import ProjectTimelineProgress from "./components/ProjectTimelineProgress";
+import ProjectTimelineStats from "./components/ProjectTimelineStats";
 import ProjectQuotesSection from "./components/ProjectQuotesSection";
 import NewQuoteModal from "./components/NewQuoteModal";
 
@@ -38,7 +38,6 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ project }) => {
   const [isNewExpenseModalOpen, setIsNewExpenseModalOpen] = useState(false);
   const [isEditProjectModalOpen, setIsEditProjectModalOpen] = useState(false);
   const [isKanbanModalOpen, setIsKanbanModalOpen] = useState(false);
-  const [isNewMilestoneModalOpen, setIsNewMilestoneModalOpen] = useState(false);
   const [isNewQuoteModalOpen, setIsNewQuoteModalOpen] = useState(false);
   const [isQuotesSectionExpanded, setIsQuotesSectionExpanded] = useState(false);
 
@@ -236,22 +235,6 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ project }) => {
           </div>
         </div>
 
-        {/* Sección de Hitos */}
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow dark:shadow-lg">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-              Hitos del Proyecto
-            </h3>
-            <button
-              onClick={() => setIsNewMilestoneModalOpen(true)}
-              className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-500"
-            >
-              Nuevo Hito
-            </button>
-          </div>
-          <MilestonesList projectId={project.id} />
-        </div>
-
         {/* Tabla de gastos */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden dark:shadow-lg">
           <div className="p-6 pb-0">
@@ -396,6 +379,29 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ project }) => {
             )}
           </div>
         </div>
+        {/* Sección de Progreso del Proyecto */}
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow dark:shadow-lg">
+          <div className="flex justify-between items-center mb-4">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                Progreso del Proyecto
+              </h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                Timeline automático de eventos y milestones del proyecto
+              </p>
+            </div>
+          </div>
+          <ProjectTimelineStats
+            project={project}
+            expenses={projectExpenses}
+            quotes={projectQuotes}
+          />
+          <ProjectTimelineProgress
+            project={project}
+            expenses={projectExpenses}
+            quotes={projectQuotes}
+          />
+        </div>
       </div>
 
       {/* Modales */}
@@ -415,11 +421,6 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ project }) => {
         onClose={() => setIsKanbanModalOpen(false)}
         projectId={project.id}
         projectName={project.name}
-      />
-      <NewMilestoneModal
-        isOpen={isNewMilestoneModalOpen}
-        onClose={() => setIsNewMilestoneModalOpen(false)}
-        projectId={project.id}
       />
       <NewQuoteModal
         isOpen={isNewQuoteModalOpen}

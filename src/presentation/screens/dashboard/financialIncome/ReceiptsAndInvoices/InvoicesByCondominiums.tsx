@@ -31,15 +31,26 @@ const InvoicesByCondominiums = () => {
   const [selectedImage, setSelectedImage] = useState("");
   const [filters, setFilters] = useState<{ status?: string }>({});
   const [reloadCounter, setReloadCounter] = useState(0);
+  const [showExtractedDataModal, setShowExtractedDataModal] = useState(false);
+  const [extractedData, setExtractedData] = useState<any>(null);
+  const [extractingData, setExtractingData] = useState(false);
+  const [currentVoucherId, setCurrentVoucherId] = useState<string>("");
 
-  const { vouchers, fetchVouchers, applyVoucher, loading, lastVoucherDoc } =
-    usePaymentVouchersStore((state) => ({
-      vouchers: state.vouchers,
-      fetchVouchers: state.fetchVouchers,
-      applyVoucher: state.applyVoucher,
-      loading: state.loading,
-      lastVoucherDoc: state.lastVoucherDoc,
-    }));
+  const {
+    vouchers,
+    fetchVouchers,
+    applyVoucher,
+    loading,
+    lastVoucherDoc,
+    extractReceiptData,
+  } = usePaymentVouchersStore((state) => ({
+    vouchers: state.vouchers,
+    fetchVouchers: state.fetchVouchers,
+    applyVoucher: state.applyVoucher,
+    loading: state.loading,
+    lastVoucherDoc: state.lastVoucherDoc,
+    extractReceiptData: state.extractReceiptData,
+  }));
 
   // Función para determinar el tipo de archivo
   const getFileType = (url: string): "image" | "pdf" | "other" => {
@@ -149,9 +160,42 @@ const InvoicesByCondominiums = () => {
 
   const handleApplyVoucher = async (voucherId: string) => {
     try {
+      setExtractingData(true);
+      setCurrentVoucherId(voucherId);
+
+      // Buscar el voucher por su ID para obtener la URL del archivo
+      const voucher = vouchers.find((v) => v.id === voucherId);
+      if (!voucher) {
+        throw new Error("Comprobante no encontrado");
+      }
+
+      // Extraer los datos del comprobante
+      const extractedInfo = await extractReceiptData(voucher.paymentProofUrl);
+
+      // Mostrar los datos extraídos en el modal
+      setExtractedData(extractedInfo);
+      setShowExtractedDataModal(true);
+    } catch (error) {
+      console.error("Error al extraer datos del comprobante:", error);
+      // Si hay error en la extracción, mostrar el error pero permitir aplicar el voucher manualmente
+      alert(
+        `Error al extraer datos: ${
+          error instanceof Error ? error.message : "Error desconocido"
+        }`
+      );
+    } finally {
+      setExtractingData(false);
+    }
+  };
+
+  const handleConfirmApplyVoucher = async (voucherId: string) => {
+    try {
       await applyVoucher(voucherId);
       // Recargar la lista después de aplicar
       handleRefresh();
+      // Cerrar el modal
+      setShowExtractedDataModal(false);
+      setExtractedData(null);
     } catch (error) {
       console.error("Error al aplicar el comprobante:", error);
     }
@@ -321,7 +365,7 @@ const InvoicesByCondominiums = () => {
                             }`}
                           >
                             {voucher.status === "applied"
-                              ? "Aplicado"
+                              ? "Aplicar"
                               : "Pendiente"}
                           </span>
                         </td>
@@ -344,10 +388,22 @@ const InvoicesByCondominiums = () => {
                             {voucher.status !== "applied" && (
                               <button
                                 onClick={() => handleApplyVoucher(voucher.id)}
-                                className="flex items-center bg-green-600 dark:bg-green-600 text-white px-3 py-1 rounded-md hover:bg-green-700 dark:hover:bg-green-700"
+                                disabled={
+                                  extractingData &&
+                                  currentVoucherId === voucher.id
+                                }
+                                className="flex items-center bg-green-600 dark:bg-green-600 text-white px-3 py-1 rounded-md hover:bg-green-700 dark:hover:bg-green-700 disabled:opacity-50"
                               >
-                                <CheckIcon className="h-3 w-3 mr-1" />
-                                Aplicado
+                                {extractingData &&
+                                currentVoucherId === voucher.id ? (
+                                  <ArrowPathIcon className="h-3 w-3 mr-1 animate-spin" />
+                                ) : (
+                                  <CheckIcon className="h-3 w-3 mr-1" />
+                                )}
+                                {extractingData &&
+                                currentVoucherId === voucher.id
+                                  ? "Extrayendo..."
+                                  : "Aplicar"}
                               </button>
                             )}
                           </div>
@@ -476,6 +532,228 @@ const InvoicesByCondominiums = () => {
                       alt="Comprobante de pago"
                       className="w-full h-auto"
                     />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal para mostrar los datos extraídos */}
+      {showExtractedDataModal && (
+        <div className="fixed inset-0 bg-indigo-400 bg-opacity-15 transition-opacity z-50">
+          <div className="fixed inset-0 z-50 overflow-y-auto">
+            <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+              <div className="relative transform overflow-hidden rounded-lg bg-white dark:bg-gray-800 px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-3xl sm:p-6">
+                <div className="absolute right-0 top-0 pr-4 pt-4">
+                  <button
+                    type="button"
+                    className="rounded-md bg-white dark:bg-gray-800 text-gray-400 hover:text-gray-500 focus:outline-none"
+                    onClick={() => {
+                      setShowExtractedDataModal(false);
+                      setExtractedData(null);
+                      setCurrentVoucherId("");
+                    }}
+                  >
+                    <span className="sr-only">Cerrar</span>
+                    <svg
+                      className="h-6 w-6"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      strokeWidth="1.5"
+                      stroke="currentColor"
+                      aria-hidden="true"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M6 18L18 6M6 6l12 12"
+                      />
+                    </svg>
+                  </button>
+                </div>
+                <div className="mt-3 text-center sm:mt-0 sm:text-left">
+                  <div className="flex items-center mb-6">
+                    <div className="flex-shrink-0">
+                      <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-900">
+                        <CheckIcon
+                          className="h-6 w-6 text-green-600 dark:text-green-400"
+                          aria-hidden="true"
+                        />
+                      </div>
+                    </div>
+                    <div className="ml-4">
+                      <h3 className="text-lg font-semibold leading-6 text-gray-900 dark:text-white">
+                        Datos Extraídos del Comprobante
+                      </h3>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        Revisa la información antes de aplicar el comprobante
+                      </p>
+                    </div>
+                  </div>
+                  <div className="mt-2">
+                    {extractedData ? (
+                      <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          {/* Monto y Moneda */}
+                          {extractedData.amount && (
+                            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-600">
+                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                💰 Monto
+                              </label>
+                              <p className="text-lg font-semibold text-green-600 dark:text-green-400">
+                                {extractedData.amount}{" "}
+                                {extractedData.currency || ""}
+                              </p>
+                            </div>
+                          )}
+
+                          {/* Fecha */}
+                          {extractedData.date && (
+                            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-600">
+                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                📅 Fecha
+                              </label>
+                              <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                                {new Date(
+                                  extractedData.date
+                                ).toLocaleDateString("es-ES", {
+                                  year: "numeric",
+                                  month: "long",
+                                  day: "numeric",
+                                })}
+                              </p>
+                            </div>
+                          )}
+
+                          {/* Referencia */}
+                          {extractedData.reference && (
+                            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-600">
+                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                🔢 Referencia
+                              </label>
+                              <p className="text-lg font-semibold text-blue-600 dark:text-blue-400">
+                                {extractedData.reference}
+                              </p>
+                            </div>
+                          )}
+
+                          {/* Método de Pago */}
+                          {extractedData.paymentMethod && (
+                            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-600">
+                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                🏦 Método de Pago
+                              </label>
+                              <p className="text-lg font-semibold text-purple-600 dark:text-purple-400">
+                                {extractedData.paymentMethod}
+                              </p>
+                            </div>
+                          )}
+
+                          {/* Destinatario */}
+                          {extractedData.recipient && (
+                            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-600 md:col-span-2">
+                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                👤 Destinatario
+                              </label>
+                              <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                                {extractedData.recipient}
+                              </p>
+                            </div>
+                          )}
+
+                          {/* Descripción */}
+                          {extractedData.description && (
+                            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-600 md:col-span-2">
+                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                📝 Descripción
+                              </label>
+                              <p className="text-base text-gray-900 dark:text-gray-100 leading-relaxed">
+                                {extractedData.description}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Mostrar datos adicionales si existen */}
+                        {Object.keys(extractedData).some(
+                          (key) =>
+                            ![
+                              "amount",
+                              "currency",
+                              "date",
+                              "reference",
+                              "paymentMethod",
+                              "recipient",
+                              "description",
+                            ].includes(key)
+                        ) && (
+                          <details className="mt-6 bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-600">
+                            <summary className="cursor-pointer text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
+                              🔍 Ver datos técnicos adicionales
+                            </summary>
+                            <pre className="mt-3 whitespace-pre-wrap text-xs text-gray-600 dark:text-gray-400 overflow-auto max-h-40 bg-gray-50 dark:bg-gray-700 p-3 rounded border">
+                              {JSON.stringify(extractedData, null, 2)}
+                            </pre>
+                          </details>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8">
+                        <div className="mx-auto h-12 w-12 text-gray-400">
+                          <svg
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            strokeWidth="1.5"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"
+                            />
+                          </svg>
+                        </div>
+                        <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                          No se pudieron extraer datos del comprobante.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                  <div className="mt-8 flex flex-col sm:flex-row gap-3 sm:gap-4">
+                    <button
+                      onClick={() =>
+                        handleConfirmApplyVoucher(currentVoucherId)
+                      }
+                      className="flex-1 inline-flex items-center justify-center rounded-lg bg-green-600 px-4 py-3 text-sm font-semibold text-white shadow-sm hover:bg-green-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-600 transition-all duration-200"
+                    >
+                      <CheckIcon className="h-5 w-5 mr-2" aria-hidden="true" />
+                      Aplicar Comprobante
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowExtractedDataModal(false);
+                        setExtractedData(null);
+                        setCurrentVoucherId("");
+                      }}
+                      className="flex-1 inline-flex items-center justify-center rounded-lg bg-gray-200 dark:bg-gray-600 px-4 py-3 text-sm font-semibold text-gray-700 dark:text-gray-200 shadow-sm hover:bg-gray-300 dark:hover:bg-gray-500 transition-all duration-200"
+                    >
+                      <svg
+                        className="h-5 w-5 mr-2"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        strokeWidth="1.5"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M6 18L18 6M6 6l12 12"
+                        />
+                      </svg>
+                      Cancelar
+                    </button>
                   </div>
                 </div>
               </div>

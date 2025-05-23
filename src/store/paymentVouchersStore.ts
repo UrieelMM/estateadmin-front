@@ -54,6 +54,7 @@ export type PaymentVouchersState = {
     filters?: { status?: string }
   ) => Promise<number>;
   applyVoucher: (voucherId: string) => Promise<void>;
+  extractReceiptData: (fileUrl: string) => Promise<any>;
 };
 
 // Variable de caché para resultados de paginación
@@ -273,6 +274,55 @@ export const usePaymentVouchersStore = create<PaymentVouchersState>()(
         await get().fetchVouchers();
       } catch (error: any) {
         console.error("Error applying voucher:", error);
+        throw error;
+      }
+    },
+
+    extractReceiptData: async (fileUrl: string): Promise<any> => {
+      try {
+        if (!fileUrl) {
+          throw new Error("URL del archivo no proporcionada");
+        }
+
+        // Descargar el archivo desde la URL
+        const fileResponse = await fetch(fileUrl);
+        if (!fileResponse.ok) {
+          throw new Error("Error al descargar el archivo");
+        }
+
+        const fileBlob = await fileResponse.blob();
+
+        // Determinar el nombre del archivo basado en la URL o usar uno genérico
+        const fileName =
+          fileUrl.split("/").pop()?.split("?")[0] || "comprobante";
+
+        // Crear un objeto File desde el Blob
+        const file = new File([fileBlob], fileName, { type: fileBlob.type });
+
+        // Crear FormData para enviar el archivo
+        const formData = new FormData();
+        formData.append("file", file);
+
+        // Realizar la llamada al endpoint /gemini/extract-receipt
+        const response = await fetch(
+          `${import.meta.env.VITE_URL_SERVER}/gemini/extract-receipt`,
+          {
+            method: "POST",
+            body: formData,
+          }
+        );
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(
+            `Error al extraer datos del comprobante: ${errorText}`
+          );
+        }
+
+        const extractedData = await response.json();
+        return extractedData;
+      } catch (error: any) {
+        console.error("Error al extraer datos del comprobante:", error);
         throw error;
       }
     },
