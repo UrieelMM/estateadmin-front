@@ -257,7 +257,7 @@ const UnidentifiedPaymentsTable = () => {
                   {new Intl.NumberFormat("es-MX", {
                     style: "currency",
                     currency: "MXN",
-                  }).format(payment.amountPaid)}
+                  }).format(payment.paymentAmountReference)}
                 </td>
                 <td className="px-4 py-2 whitespace-nowrap">
                   <div className="flex justify-center items-center w-full">
@@ -373,7 +373,7 @@ const UnidentifiedPaymentsTable = () => {
 
       {selectedPayment && (
         <ApplyPaymentModal
-          amount={selectedPayment.amountPaid}
+          amount={selectedPayment.paymentAmountReference}
           paymentDate={selectedPayment.paymentDate}
           paymentId={selectedPayment.id}
           paymentType={selectedPayment.paymentType}

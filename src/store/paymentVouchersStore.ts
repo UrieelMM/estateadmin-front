@@ -34,6 +34,7 @@ export interface PaymentVoucher {
     concept: string;
     startAt: string;
     amount: number;
+    chargeAmountReference?: number;
   }[];
 }
 
@@ -170,6 +171,9 @@ export const usePaymentVouchersStore = create<PaymentVouchersState>()(
                 concept: chargeData?.concept || "Desconocido",
                 startAt: chargeData?.startAt || "",
                 amount: centsToPesos(chargeData?.amount || 0),
+                chargeAmountReference: centsToPesos(
+                  chargeData?.chargeAmountReference || chargeData?.amount || 0
+                ),
               };
             })
           );

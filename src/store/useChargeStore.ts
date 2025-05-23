@@ -83,6 +83,7 @@ export const useChargeStore = create<ChargeState>()((set) => ({
         concept: options.concept,
         amount: amountCents,
         referenceAmount: amountCents, // Guardamos el monto original
+        chargeAmountReference: amountCents, // Nuevo campo con el mismo valor que amount
         generatedAt: now,
         startAt: options.startAt,
         dueDate: options.dueDate,
@@ -164,6 +165,7 @@ export const useChargeStore = create<ChargeState>()((set) => ({
             concept: options.concept,
             amount: amountCents, // GUARDADO EN CENTAVOS
             referenceAmount: amountCents, // Guardamos el monto original
+            chargeAmountReference: amountCents, // Nuevo campo con el mismo valor que amount
             generatedAt: now,
             startAt: options.startAt, // Se almacena como string
             dueDate: options.dueDate, // String

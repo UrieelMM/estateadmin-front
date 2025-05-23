@@ -303,7 +303,11 @@ const InvoicesByCondominiums = () => {
                         <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 dark:text-gray-200">
                           {formatCurrency(
                             voucher.charges?.reduce(
-                              (sum, charge) => sum + charge.amount,
+                              (sum, charge) =>
+                                sum +
+                                (charge.chargeAmountReference !== undefined
+                                  ? charge.chargeAmountReference
+                                  : charge.amount),
                               0
                             ) || 0
                           )}

@@ -20,6 +20,7 @@ export interface UnidentifiedPayment {
   condominiumNumber: string;
   amountPaid: number; // en pesos
   pendingAmount: number; // en pesos
+  paymentAmountReference: number; // en pesos (nuevo campo)
   paymentType: string;
   paymentDate: Date;
   registrationDate: Date; // corresponde a dateRegistered en Firestore
@@ -170,6 +171,11 @@ export const useUnidentifiedPaymentsStore = create<UnidentifiedPaymentsState>()(
               amountPaid: data.amountPaid ? Number(data.amountPaid) / 100 : 0,
               pendingAmount: data.amountPending
                 ? Number(data.amountPending) / 100
+                : 0,
+              paymentAmountReference: data.paymentAmountReference
+                ? Number(data.paymentAmountReference) / 100
+                : data.amountPaid
+                ? Number(data.amountPaid) / 100
                 : 0,
               paymentType: data.paymentType || "",
               paymentDate:
