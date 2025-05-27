@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { XMarkIcon } from "@heroicons/react/24/solid";
-import { countriesList } from "../../../utils/countriesList";
 export enum CondominiumStatus {
   Pending = "pending",
   Active = "active",
@@ -60,6 +59,8 @@ const NewClientForm: React.FC<NewClientFormProps> = ({
       name: "",
       address: "",
       status: CondominiumStatus.Pending,
+      currency: "USD",
+      language: "es-EC",
     },
 
     // Campos opcionales con valores predeterminados
@@ -101,6 +102,64 @@ const NewClientForm: React.FC<NewClientFormProps> = ({
     [CondominiumStatus.Inactive]: "Inactivo",
     [CondominiumStatus.Blocked]: "Bloqueado",
   };
+
+  // Opciones de moneda e idioma por país
+  const countryOptions = [
+    {
+      country: "Ecuador",
+      language: "es-EC",
+      currency: "USD",
+      currencyName: "Dólar estadounidense",
+    },
+    {
+      country: "Colombia",
+      language: "es-CO",
+      currency: "COP",
+      currencyName: "Peso colombiano",
+    },
+    {
+      country: "Chile",
+      language: "es-CL",
+      currency: "CLP",
+      currencyName: "Peso chileno",
+    },
+    {
+      country: "Argentina",
+      language: "es-AR",
+      currency: "ARS",
+      currencyName: "Peso argentino",
+    },
+    {
+      country: "Guatemala",
+      language: "es-GT",
+      currency: "GTQ",
+      currencyName: "Quetzal guatemalteco",
+    },
+    {
+      country: "Costa Rica",
+      language: "es-CR",
+      currency: "CRC",
+      currencyName: "Colón costarricense",
+    },
+    {
+      country: "El Salvador",
+      language: "es-SV",
+      currency: "USD",
+      currencyName: "Dólar estadounidense",
+    },
+    {
+      country: "Bolivia",
+      language: "es-BO",
+      currency: "BOB",
+      currencyName: "Boliviano",
+    },
+    {
+      country: "México",
+      language: "es-MX",
+      currency: "MXN",
+      currencyName: "Peso mexicano",
+    },
+  ];
 
   const [selectAll, setSelectAll] = useState(false);
   const [showCredentials, setShowCredentials] = useState(false);
@@ -146,6 +205,23 @@ const NewClientForm: React.FC<NewClientFormProps> = ({
       }));
     }
   }, [formData.plan]);
+
+  // Sincronizar moneda e idioma cuando se cambie el país
+  useEffect(() => {
+    const selectedCountryOption = countryOptions.find(
+      (option) => option.country === formData.country
+    );
+    if (selectedCountryOption) {
+      setFormData((prev) => ({
+        ...prev,
+        condominiumInfo: {
+          ...prev.condominiumInfo,
+          currency: selectedCountryOption.currency,
+          language: selectedCountryOption.language,
+        },
+      }));
+    }
+  }, [formData.country]);
 
   const generatePassword = () => {
     const chars =
@@ -196,6 +272,14 @@ const NewClientForm: React.FC<NewClientFormProps> = ({
 
     // Validar información del condominio
     if (!formData.condominiumInfo.name || !formData.condominiumInfo.address) {
+      return;
+    }
+
+    // Validar currency y language en condominiumInfo
+    if (
+      !formData.condominiumInfo.currency ||
+      !formData.condominiumInfo.language
+    ) {
       return;
     }
 
@@ -458,9 +542,9 @@ const NewClientForm: React.FC<NewClientFormProps> = ({
                   className="w-full px-2 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
                 >
                   <option value="">Seleccione un país</option>
-                  {countriesList.map((country: string) => (
-                    <option key={country} value={country}>
-                      {country}
+                  {countryOptions.map((option) => (
+                    <option key={option.country} value={option.country}>
+                      {option.country}
                     </option>
                   ))}
                 </select>
@@ -672,6 +756,44 @@ const NewClientForm: React.FC<NewClientFormProps> = ({
                   {Object.entries(CondominiumStatus).map(([_key, value]) => (
                     <option key={value} value={value}>
                       {statusLabels[value as CondominiumStatus]}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Idioma*
+                </label>
+                <select
+                  name="condominiumInfo.language"
+                  value={formData.condominiumInfo.language}
+                  onChange={handleInputChange}
+                  required
+                  className="w-full px-2 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
+                >
+                  {countryOptions.map((option) => (
+                    <option key={option.language} value={option.language}>
+                      {option.country} ({option.language})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Moneda*
+                </label>
+                <select
+                  name="condominiumInfo.currency"
+                  value={formData.condominiumInfo.currency}
+                  onChange={handleInputChange}
+                  required
+                  className="w-full px-2 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
+                >
+                  {countryOptions.map((option) => (
+                    <option key={option.currency} value={option.currency}>
+                      {option.currency} - {option.currencyName}
                     </option>
                   ))}
                 </select>

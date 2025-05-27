@@ -40,6 +40,8 @@ interface Client {
   serviceStartDate?: any;
   termsAccepted?: boolean;
   address?: string;
+  currency?: string; // Nuevo campo para moneda
+  language?: string; // Nuevo campo para idioma
 }
 
 interface NewClientData {
@@ -63,6 +65,8 @@ interface NewClientData {
     name: string;
     address: string;
     status: CondominiumStatus;
+    currency: string;
+    language: string;
   };
 
   // Campos opcionales con valores predeterminados
@@ -155,6 +159,8 @@ const useSuperAdminStore = create<SuperAdminStore>()((set, _get) => ({
           serviceStartDate: data.serviceStartDate || null,
           termsAccepted: data.termsAccepted || false,
           address: data.address || "",
+          currency: data.currency || "",
+          language: data.language || "",
         };
       });
 
