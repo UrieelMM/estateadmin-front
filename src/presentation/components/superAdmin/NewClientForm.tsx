@@ -55,12 +55,12 @@ const NewClientForm: React.FC<NewClientFormProps> = ({
     responsiblePersonName: "",
     responsiblePersonPosition: "",
     condominiumLimit: 1,
+    currency: "MXN",
+    language: "es-MX",
     condominiumInfo: {
       name: "",
       address: "",
       status: CondominiumStatus.Pending,
-      currency: "USD",
-      language: "es-EC",
     },
 
     // Campos opcionales con valores predeterminados
@@ -214,11 +214,8 @@ const NewClientForm: React.FC<NewClientFormProps> = ({
     if (selectedCountryOption) {
       setFormData((prev) => ({
         ...prev,
-        condominiumInfo: {
-          ...prev.condominiumInfo,
-          currency: selectedCountryOption.currency,
-          language: selectedCountryOption.language,
-        },
+        currency: selectedCountryOption.currency,
+        language: selectedCountryOption.language,
       }));
     }
   }, [formData.country]);
@@ -251,6 +248,8 @@ const NewClientForm: React.FC<NewClientFormProps> = ({
       "businessActivity",
       "responsiblePersonName",
       "responsiblePersonPosition",
+      "currency",
+      "language",
     ];
 
     const missingFields = requiredFields.filter(
@@ -275,11 +274,8 @@ const NewClientForm: React.FC<NewClientFormProps> = ({
       return;
     }
 
-    // Validar currency y language en condominiumInfo
-    if (
-      !formData.condominiumInfo.currency ||
-      !formData.condominiumInfo.language
-    ) {
+    // Validar currency y language del cliente
+    if (!formData.currency || !formData.language) {
       return;
     }
 
@@ -618,6 +614,44 @@ const NewClientForm: React.FC<NewClientFormProps> = ({
                   className="w-full px-2 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
                 />
               </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Idioma*
+                </label>
+                <select
+                  name="language"
+                  value={formData.language}
+                  onChange={handleInputChange}
+                  required
+                  className="w-full px-2 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
+                >
+                  {countryOptions.map((option) => (
+                    <option key={option.language} value={option.language}>
+                      {option.country} ({option.language})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Moneda*
+                </label>
+                <select
+                  name="currency"
+                  value={formData.currency}
+                  onChange={handleInputChange}
+                  required
+                  className="w-full px-2 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
+                >
+                  {countryOptions.map((option) => (
+                    <option key={option.currency} value={option.currency}>
+                      {option.currency} - {option.currencyName}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
 
@@ -756,44 +790,6 @@ const NewClientForm: React.FC<NewClientFormProps> = ({
                   {Object.entries(CondominiumStatus).map(([_key, value]) => (
                     <option key={value} value={value}>
                       {statusLabels[value as CondominiumStatus]}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Idioma*
-                </label>
-                <select
-                  name="condominiumInfo.language"
-                  value={formData.condominiumInfo.language}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full px-2 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
-                >
-                  {countryOptions.map((option) => (
-                    <option key={option.language} value={option.language}>
-                      {option.country} ({option.language})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Moneda*
-                </label>
-                <select
-                  name="condominiumInfo.currency"
-                  value={formData.condominiumInfo.currency}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full px-2 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
-                >
-                  {countryOptions.map((option) => (
-                    <option key={option.currency} value={option.currency}>
-                      {option.currency} - {option.currencyName}
                     </option>
                   ))}
                 </select>

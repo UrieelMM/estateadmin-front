@@ -61,12 +61,12 @@ interface NewClientData {
   responsiblePersonName: string;
   responsiblePersonPosition: string;
   condominiumLimit: number;
+  currency: string; // Movido del nivel de condominio al nivel del cliente
+  language: string; // Movido del nivel de condominio al nivel del cliente
   condominiumInfo: {
     name: string;
     address: string;
     status: CondominiumStatus;
-    currency: string;
-    language: string;
   };
 
   // Campos opcionales con valores predeterminados
