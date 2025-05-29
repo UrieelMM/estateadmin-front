@@ -29,6 +29,7 @@ import {
 import { HelmetProvider } from "react-helmet-async";
 import NewCustomerInformationForm from "../presentation/screens/public/NewCustomerInformationForm";
 import FormSubmissionSuccess from "../presentation/screens/public/FormSubmissionSuccess";
+import AttendancePublic from "../presentation/screens/public/AttendancePublic";
 
 export const AppRouterPage = () => {
   return (
@@ -52,6 +53,7 @@ export const AppRouterPage = () => {
             path="/unidentified-payments/:qrId"
             element={<UnidentifiedPaymentsPublic />}
           />
+          <Route path="/attendance/:qrId" element={<AttendancePublic />} />
 
           {/* Rutas para el formulario de nuevos clientes */}
           <Route

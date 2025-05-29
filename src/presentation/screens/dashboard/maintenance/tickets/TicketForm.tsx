@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { useTicketsStore, Ticket } from "./ticketsStore";
 import useProviderStore from "../../../../../store/providerStore";
 import { useCommonAreasStore } from "../../../../../store/useCommonAreasStore";
+import { usePersonalAdministrationStore } from "../../../../../store/PersonalAdministration";
 import { getAuth } from "firebase/auth";
 import toast from "react-hot-toast";
 import { componentStyles } from "./ticketFormStyles";
@@ -227,6 +228,7 @@ const FormField = ({
 const TicketForm: React.FC<TicketFormProps> = ({ initialTicket, onClose }) => {
   const { createTicket, updateTicket, loading } = useTicketsStore();
   const { commonAreas, fetchCommonAreas } = useCommonAreasStore();
+  const { employees } = usePersonalAdministrationStore();
 
   // Estados principales del formulario con valores iniciales
   const [title, setTitle] = useState(initialTicket?.title || "");
@@ -682,15 +684,21 @@ const TicketForm: React.FC<TicketFormProps> = ({ initialTicket, onClose }) => {
       {/* Assigned To field */}
       <FormField
         label="Asignado a"
-        helpText="Persona responsable de atender el ticket"
+        helpText="Selecciona un miembro del personal para asignar el ticket"
       >
-        <input
-          type="text"
-          className={componentStyles.formInput}
+        <select
+          className={componentStyles.formSelect}
           value={assignedTo}
           onChange={(e) => setAssignedTo(e.target.value)}
-          placeholder="Nombre de la persona asignada"
-        />
+        >
+          <option value="">Sin asignar</option>
+          {employees.map((employee) => (
+            <option key={employee.id} value={employee.id}>
+              {employee.personalInfo.firstName} {employee.personalInfo.lastName}{" "}
+              - {employee.employmentInfo.position}
+            </option>
+          ))}
+        </select>
       </FormField>
 
       {/* Attachments field */}

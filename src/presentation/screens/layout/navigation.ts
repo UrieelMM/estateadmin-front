@@ -7,6 +7,7 @@ import {
   TruckIcon,
   BuildingStorefrontIcon,
   ClipboardDocumentCheckIcon,
+  RectangleGroupIcon,
 } from "@heroicons/react/24/solid";
 
 export const navigation = [
@@ -76,6 +77,12 @@ export const navigation = [
     name: "Inventario",
     href: "/dashboard/inventory",
     icon: ClipboardDocumentCheckIcon,
+    current: false,
+  },
+  {
+    name: "Personal",
+    href: "/dashboard/personal-administration",
+    icon: RectangleGroupIcon,
     current: false,
   },
 ];

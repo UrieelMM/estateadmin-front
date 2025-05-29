@@ -31,6 +31,7 @@ import InventoryList from "../presentation/screens/dashboard/inventory/Inventory
 import InventoryMovements from "../presentation/screens/dashboard/inventory/InventoryMovements";
 import InventoryAlerts from "../presentation/screens/dashboard/inventory/InventoryAlerts";
 import CommonAreas from "../presentation/screens/dashboard/commonAreas/CommonAreas";
+import PersonalDashboard from "../presentation/screens/dashboard/PersonalAdministration/PersonalDashboard";
 
 export const routesApp = [
   {
@@ -263,6 +264,13 @@ export const routesApp = [
     title: "Áreas Comunes",
     description: "Gestión de áreas comunes del condominio",
     component: <CommonAreas />,
+  },
+  {
+    to: "/dashboard/personal-administration",
+    icon: "fa-solid fa-user-gear",
+    title: "Gestión de Personal",
+    description: "Administración y control del personal del condominio",
+    component: <PersonalDashboard />,
   },
   // {
   //   to: "/dashboard/planning",
