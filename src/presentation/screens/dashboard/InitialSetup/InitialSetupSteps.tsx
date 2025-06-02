@@ -234,7 +234,7 @@ const InitialSetupSteps = () => {
           darkMode: isDarkMode,
         },
         logoFile || undefined,
-        undefined,
+        signReportsFile || undefined,
         logoReportsFile || undefined
       );
 
