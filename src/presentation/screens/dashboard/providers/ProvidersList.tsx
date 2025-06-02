@@ -51,7 +51,10 @@ const ProvidersList = () => {
     searchProviders(e.target.value);
   };
 
-  const handleToggleRecommendation = async (e: React.MouseEvent, providerId: string) => {
+  const handleToggleRecommendation = async (
+    e: React.MouseEvent,
+    providerId: string
+  ) => {
     e.stopPropagation();
     await toggleRecommendation(providerId);
   };
@@ -77,26 +80,45 @@ const ProvidersList = () => {
         </button>
       </header>
 
-      {/* Tab Layout */}
-      <div className="mb-6">
-        <nav
-          className="flex px-6 space-x-8 overflow-x-auto custom-scrollbar"
-          aria-label="Tabs"
-        >
-          {["providers", "search"].map((tab) => (
-            <button
-              key={tab}
-              className={`relative whitespace-nowrap py-3 px-1 text-sm font-medium transition-all duration-200 ${
-                activeTab === tab
-                  ? "text-indigo-600 dark:text-indigo-400 border-b-2 border-indigo-600 dark:border-indigo-400"
-                  : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-              }`}
-              onClick={() => setActiveTab(tab)}
-            >
-              {tab === "providers" ? "Proveedores" : "Buscar Proveedores"}
-            </button>
-          ))}
-        </nav>
+      {/* Navegación de pestañas moderna */}
+      <div className="mb-8">
+        <div className="flex flex-wrap gap-2 p-2 bg-white/70 dark:bg-gray-800/70 backdrop-blur-lg rounded-2xl border border-gray-200/50 dark:border-gray-700/50 shadow-lg">
+          <button
+            className={`
+              group relative flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm
+              transition-all duration-300 ease-out
+              ${
+                activeTab === "providers"
+                  ? "bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 dark:from-indigo-800 dark:via-purple-700 dark:to-indigo-800 text-white shadow-lg shadow-indigo-500/25"
+                  : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700/50"
+              }
+            `}
+            onClick={() => setActiveTab("providers")}
+          >
+            <span className="whitespace-nowrap">Proveedores</span>
+            {activeTab === "providers" && (
+              <div className="absolute inset-0 rounded-xl bg-white/20 animate-pulse" />
+            )}
+          </button>
+
+          <button
+            className={`
+              group relative flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm
+              transition-all duration-300 ease-out
+              ${
+                activeTab === "search"
+                  ? "bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 dark:from-indigo-800 dark:via-purple-700 dark:to-indigo-800 text-white shadow-lg shadow-indigo-500/25"
+                  : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700/50"
+              }
+            `}
+            onClick={() => setActiveTab("search")}
+          >
+            <span className="whitespace-nowrap">Buscar Proveedores</span>
+            {activeTab === "search" && (
+              <div className="absolute inset-0 rounded-xl bg-white/20 animate-pulse" />
+            )}
+          </button>
+        </div>
       </div>
 
       <div className="-mx-4 sm:-mx-0 py-4">
@@ -124,9 +146,6 @@ const ProvidersList = () => {
               <div className="flex items-center justify-center py-12">
                 <div className="text-center">
                   <LoadingApp />
-                  <p className="mt-4 text-gray-600 dark:text-gray-400">
-                    Cargando proveedores...
-                  </p>
                 </div>
               </div>
             ) : error ? (
@@ -182,28 +201,40 @@ const ProvidersList = () => {
                     >
                       {/* Botón de recomendación en la esquina superior izquierda */}
                       <button
-                        onClick={(e) => handleToggleRecommendation(e, provider.id)}
+                        onClick={(e) =>
+                          handleToggleRecommendation(e, provider.id)
+                        }
                         className="absolute top-2 left-2 px-2 py-1 rounded-md text-sm font-medium transition-colors duration-200"
                       >
                         <AnimatePresence mode="wait">
                           <motion.div
-                            key={provider.isRecommended ? "recommended" : "not-recommended"}
+                            key={
+                              provider.isRecommended
+                                ? "recommended"
+                                : "not-recommended"
+                            }
                             initial={{ scale: 0.8, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0.8, opacity: 0 }}
-                            transition={{ 
+                            transition={{
                               type: "spring",
                               stiffness: 500,
                               damping: 30,
-                              duration: 0.2
+                              duration: 0.2,
                             }}
                           >
-                            <motion.span 
-                              className={`${provider.isRecommended ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-400 dark:text-gray-500 opacity-100'}`}
+                            <motion.span
+                              className={`${
+                                provider.isRecommended
+                                  ? "text-indigo-600 dark:text-indigo-400"
+                                  : "text-gray-400 dark:text-gray-500 opacity-100"
+                              }`}
                               whileHover={{ scale: 1.05 }}
                               whileTap={{ scale: 0.95 }}
                             >
-                              {provider.isRecommended ? 'Recomendado' : 'Recomendar'}
+                              {provider.isRecommended
+                                ? "Recomendado"
+                                : "Recomendar"}
                             </motion.span>
                           </motion.div>
                         </AnimatePresence>

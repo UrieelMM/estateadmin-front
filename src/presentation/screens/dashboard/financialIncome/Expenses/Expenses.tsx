@@ -22,46 +22,62 @@ const Expenses = () => {
           </button>
         </header>
 
-        {/* Tab Layout */}
-        <div className="mb-4">
-          <div className="border-b border-gray-200">
-            <nav className="-mb-px flex space-x-8" aria-label="Tabs">
-              {/* 1. Tab Resumen General */}
-              <button
-                className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
+        {/* Navegación de pestañas moderna */}
+        <div className="mb-8">
+          <div className="flex flex-wrap gap-2 p-2 bg-white/70 dark:bg-gray-800/70 backdrop-blur-lg rounded-2xl border border-gray-200/50 dark:border-gray-700/50 shadow-lg">
+            <button
+              className={`
+                group relative flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm
+                transition-all duration-300 ease-out
+                ${
                   activeTab === "summary"
-                    ? "border-b-2 border-indigo-600 text-indigo-600 dark:text-gray-100"
-                    : "text-gray-500 dark:text-gray-400"
-                }`}
-                onClick={() => setActiveTab("summary")}
-              >
-                Resumen General
-              </button>
+                    ? "bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 dark:from-indigo-800 dark:via-purple-700 dark:to-indigo-800 text-white shadow-lg shadow-indigo-500/25"
+                    : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700/50"
+                }
+              `}
+              onClick={() => setActiveTab("summary")}
+            >
+              <span className="whitespace-nowrap">Resumen General</span>
+              {activeTab === "summary" && (
+                <div className="absolute inset-0 rounded-xl bg-white/20 animate-pulse" />
+              )}
+            </button>
 
-              {/* 2. Tab Historial y Recibos */}
-              <button
-                className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
+            <button
+              className={`
+                group relative flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm
+                transition-all duration-300 ease-out
+                ${
                   activeTab === "history"
-                    ? "border-b-2 border-indigo-600 text-indigo-600 dark:text-gray-100"
-                    : "text-gray-500 dark:text-gray-400"
-                }`}
-                onClick={() => setActiveTab("history")}
-              >
-                Historial
-              </button>
+                    ? "bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 dark:from-indigo-800 dark:via-purple-700 dark:to-indigo-800 text-white shadow-lg shadow-indigo-500/25"
+                    : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700/50"
+                }
+              `}
+              onClick={() => setActiveTab("history")}
+            >
+              <span className="whitespace-nowrap">Historial</span>
+              {activeTab === "history" && (
+                <div className="absolute inset-0 rounded-xl bg-white/20 animate-pulse" />
+              )}
+            </button>
 
-              {/* 3. Tab Egresos por Proveedor */}
-              <button
-                className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
+            <button
+              className={`
+                group relative flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm
+                transition-all duration-300 ease-out
+                ${
                   activeTab === "providers"
-                    ? "border-b-2 border-indigo-600 text-indigo-600 dark:text-gray-100"
-                    : "text-gray-500 dark:text-gray-400"
-                }`}
-                onClick={() => setActiveTab("providers")}
-              >
-                Egresos por Proveedor
-              </button>
-            </nav>
+                    ? "bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 dark:from-indigo-800 dark:via-purple-700 dark:to-indigo-800 text-white shadow-lg shadow-indigo-500/25"
+                    : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700/50"
+                }
+              `}
+              onClick={() => setActiveTab("providers")}
+            >
+              <span className="whitespace-nowrap">Egresos por Proveedor</span>
+              {activeTab === "providers" && (
+                <div className="absolute inset-0 rounded-xl bg-white/20 animate-pulse" />
+              )}
+            </button>
           </div>
         </div>
 

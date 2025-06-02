@@ -64,83 +64,116 @@ const Income = () => {
           </button>
         </header>
 
-        {/* Tab Layout */}
-        <div className="mb-4">
-          <div className="border-b border-gray-200">
-            <nav
-              className="-mb-px flex space-x-8 dark:border-gray-800 overflow-x-auto custom-scrollbar"
-              aria-label="Tabs"
-            >
-              {/* 1. Tab Resumen General */}
-              <button
-                className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
+        {/* Navegación de pestañas moderna */}
+        <div className="mb-8">
+          <div className="flex flex-wrap gap-2 p-2 bg-white/70 dark:bg-gray-800/70 backdrop-blur-lg rounded-2xl border border-gray-200/50 dark:border-gray-700/50 shadow-lg">
+            <button
+              className={`
+                group relative flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm
+                transition-all duration-300 ease-out
+                ${
                   activeTab === "summary"
-                    ? "border-indigo-500 text-indigo-600 dark:text-gray-100"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400"
-                }`}
-                onClick={() => handleTabChange("summary")}
-              >
-                Resumen General
-              </button>
+                    ? "bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 dark:from-indigo-800 dark:via-purple-700 dark:to-indigo-800 text-white shadow-lg shadow-indigo-500/25"
+                    : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700/50"
+                }
+              `}
+              onClick={() => handleTabChange("summary")}
+            >
+              <span className="whitespace-nowrap">Resumen General</span>
+              {activeTab === "summary" && (
+                <div className="absolute inset-0 rounded-xl bg-white/20 animate-pulse" />
+              )}
+            </button>
 
-              {/* 2. Tab Resumen por Cuenta */}
-              <button
-                className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
+            <button
+              className={`
+                group relative flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm
+                transition-all duration-300 ease-out
+                ${
                   activeTab === "accountSummary"
-                    ? "border-indigo-500 text-indigo-600 dark:text-gray-100"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400"
-                }`}
-                onClick={() => handleTabChange("accountSummary")}
-              >
-                Resumen por Cuenta
-              </button>
+                    ? "bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 dark:from-indigo-800 dark:via-purple-700 dark:to-indigo-800 text-white shadow-lg shadow-indigo-500/25"
+                    : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700/50"
+                }
+              `}
+              onClick={() => handleTabChange("accountSummary")}
+            >
+              <span className="whitespace-nowrap">Resumen por Cuenta</span>
+              {activeTab === "accountSummary" && (
+                <div className="absolute inset-0 rounded-xl bg-white/20 animate-pulse" />
+              )}
+            </button>
 
-              {/* 3. Tab Historial y Recibos */}
-              <button
-                className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
+            <button
+              className={`
+                group relative flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm
+                transition-all duration-300 ease-out
+                ${
                   activeTab === "history-by-condominium"
-                    ? "border-indigo-500 text-indigo-600 dark:text-gray-100"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400"
-                }`}
-                onClick={() => handleTabChange("history-by-condominium")}
-              >
-                Historial por condómino
-              </button>
+                    ? "bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 dark:from-indigo-800 dark:via-purple-700 dark:to-indigo-800 text-white shadow-lg shadow-indigo-500/25"
+                    : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700/50"
+                }
+              `}
+              onClick={() => handleTabChange("history-by-condominium")}
+            >
+              <span className="whitespace-nowrap">Historial por condómino</span>
+              {activeTab === "history-by-condominium" && (
+                <div className="absolute inset-0 rounded-xl bg-white/20 animate-pulse" />
+              )}
+            </button>
 
-              {/* 4. Tab Morosidad */}
-              <button
-                className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
+            <button
+              className={`
+                group relative flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm
+                transition-all duration-300 ease-out
+                ${
                   activeTab === "morosidad"
-                    ? "border-indigo-500 text-indigo-600 dark:text-gray-100"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400"
-                }`}
-                onClick={() => handleTabChange("morosidad")}
-              >
-                Morosidad
-              </button>
-              {/* 4. Tab Pagos no identificados*/}
-              <button
-                className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
+                    ? "bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 dark:from-indigo-800 dark:via-purple-700 dark:to-indigo-800 text-white shadow-lg shadow-indigo-500/25"
+                    : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700/50"
+                }
+              `}
+              onClick={() => handleTabChange("morosidad")}
+            >
+              <span className="whitespace-nowrap">Morosidad</span>
+              {activeTab === "morosidad" && (
+                <div className="absolute inset-0 rounded-xl bg-white/20 animate-pulse" />
+              )}
+            </button>
+
+            <button
+              className={`
+                group relative flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm
+                transition-all duration-300 ease-out
+                ${
                   activeTab === "unidentified"
-                    ? "border-indigo-500 text-indigo-600 dark:text-gray-100"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400"
-                }`}
-                onClick={() => handleTabChange("unidentified")}
-              >
-                Pagos no identificados
-              </button>
-              {/* 5. Tab Historial*/}
-              <button
-                className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
+                    ? "bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 dark:from-indigo-800 dark:via-purple-700 dark:to-indigo-800 text-white shadow-lg shadow-indigo-500/25"
+                    : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700/50"
+                }
+              `}
+              onClick={() => handleTabChange("unidentified")}
+            >
+              <span className="whitespace-nowrap">Pagos no identificados</span>
+              {activeTab === "unidentified" && (
+                <div className="absolute inset-0 rounded-xl bg-white/20 animate-pulse" />
+              )}
+            </button>
+
+            <button
+              className={`
+                group relative flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm
+                transition-all duration-300 ease-out
+                ${
                   activeTab === "history"
-                    ? "border-indigo-500 text-indigo-600 dark:text-gray-100"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400"
-                }`}
-                onClick={() => handleTabChange("history")}
-              >
-                Historial
-              </button>
-            </nav>
+                    ? "bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 dark:from-indigo-800 dark:via-purple-700 dark:to-indigo-800 text-white shadow-lg shadow-indigo-500/25"
+                    : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700/50"
+                }
+              `}
+              onClick={() => handleTabChange("history")}
+            >
+              <span className="whitespace-nowrap">Historial</span>
+              {activeTab === "history" && (
+                <div className="absolute inset-0 rounded-xl bg-white/20 animate-pulse" />
+              )}
+            </button>
           </div>
         </div>
 

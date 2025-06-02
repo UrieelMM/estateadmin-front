@@ -485,7 +485,7 @@ const InitialSetupSteps = () => {
           <div className="space-y-4 text-center md:text-left">
             <div>
               <label className="block text-gray-700 dark:text-gray-300 mb-1 font-medium">
-                Logo Coorporativo
+                Logo Corporativo
               </label>
               <label className="inline-flex items-center space-x-2 cursor-pointer bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-md transition-colors">
                 {logoFile ? (

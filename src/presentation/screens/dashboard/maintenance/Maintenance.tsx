@@ -61,74 +61,150 @@ const Maintenance = () => {
           </h1>
         </div>
       </header>
-      <div className="flex border-b text-sm border-gray-200 dark:border-gray-700 mb-6 overflow-x-auto py-1 custom-scrollbar">
-        <button
-          className={`py-2 px-4 flex items-center whitespace-nowrap transition-all ${
-            tab === "dashboard"
-              ? "border-b-2 border-indigo-600 text-indigo-600 dark:text-white font-medium"
-              : "text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400"
-          }`}
-          onClick={() => setTab("dashboard")}
-        >
-          <DocumentChartBarIcon className="h-4 w-4 mr-2" />
-          Panel de Control
-        </button>
-        <button
-          className={`py-2 px-4 flex items-center whitespace-nowrap transition-all ${
-            tab === "reportes"
-              ? "border-b-2 border-indigo-600 text-indigo-600 dark:text-white font-medium"
-              : "text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400"
-          }`}
-          onClick={() => setTab("reportes")}
-        >
-          <ClipboardDocumentCheckIcon className="h-4 w-4 mr-2" />
-          Reportes
-        </button>
-        <button
-          className={`py-2 px-4 flex items-center whitespace-nowrap transition-all ${
-            tab === "tickets"
-              ? "border-b-2 border-indigo-600 text-indigo-600 dark:text-white font-medium"
-              : "text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400"
-          }`}
-          onClick={() => setTab("tickets")}
-        >
-          <WrenchScrewdriverIcon className="h-4 w-4 mr-2" />
-          Tickets
-        </button>
-        <button
-          className={`py-2 px-4 flex items-center whitespace-nowrap transition-all ${
-            tab === "citas"
-              ? "border-b-2 border-indigo-600 text-indigo-600 dark:text-white font-medium"
-              : "text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400"
-          }`}
-          onClick={() => setTab("citas")}
-        >
-          <CalendarDaysIcon className="h-4 w-4 mr-2" />
-          Agenda de Visitas
-        </button>
-        <button
-          className={`py-2 px-4 flex items-center whitespace-nowrap transition-all ${
-            tab === "contratos"
-              ? "border-b-2 border-indigo-600 text-indigo-600 dark:text-white font-medium"
-              : "text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400"
-          }`}
-          onClick={() => setTab("contratos")}
-        >
-          <UserGroupIcon className="h-4 w-4 mr-2" />
-          Proveedores y Contratos
-        </button>
-        <button
-          className={`py-2 px-4 flex items-center whitespace-nowrap transition-all ${
-            tab === "costos"
-              ? "border-b-2 border-indigo-600 text-indigo-600 dark:text-white font-medium"
-              : "text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400"
-          }`}
-          onClick={() => setTab("costos")}
-        >
-          <CurrencyDollarIcon className="h-4 w-4 mr-2" />
-          Control de Costos
-        </button>
+
+      {/* Navegación de pestañas moderna */}
+      <div className="mb-8">
+        <div className="flex flex-wrap gap-2 p-2 bg-white/70 dark:bg-gray-800/70 backdrop-blur-lg rounded-2xl border border-gray-200/50 dark:border-gray-700/50 shadow-lg">
+          <button
+            className={`
+              group relative flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm
+              transition-all duration-300 ease-out
+              ${
+                tab === "dashboard"
+                  ? "bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 dark:from-indigo-800 dark:via-purple-700 dark:to-indigo-800 text-white shadow-lg shadow-indigo-500/25"
+                  : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700/50"
+              }
+            `}
+            onClick={() => setTab("dashboard")}
+          >
+            <DocumentChartBarIcon
+              className={`h-5 w-5 transition-transform duration-300 ${
+                tab === "dashboard" ? "scale-110" : "group-hover:scale-105"
+              }`}
+            />
+            <span className="whitespace-nowrap">Panel de Control</span>
+            {tab === "dashboard" && (
+              <div className="absolute inset-0 rounded-xl bg-white/20 animate-pulse" />
+            )}
+          </button>
+
+          <button
+            className={`
+              group relative flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm
+              transition-all duration-300 ease-out
+              ${
+                tab === "reportes"
+                  ? "bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 dark:from-indigo-800 dark:via-purple-700 dark:to-indigo-800 text-white shadow-lg shadow-indigo-500/25"
+                  : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700/50"
+              }
+            `}
+            onClick={() => setTab("reportes")}
+          >
+            <ClipboardDocumentCheckIcon
+              className={`h-5 w-5 transition-transform duration-300 ${
+                tab === "reportes" ? "scale-110" : "group-hover:scale-105"
+              }`}
+            />
+            <span className="whitespace-nowrap">Reportes</span>
+            {tab === "reportes" && (
+              <div className="absolute inset-0 rounded-xl bg-white/20 animate-pulse" />
+            )}
+          </button>
+
+          <button
+            className={`
+              group relative flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm
+              transition-all duration-300 ease-out
+              ${
+                tab === "tickets"
+                  ? "bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 dark:from-indigo-800 dark:via-purple-700 dark:to-indigo-800 text-white shadow-lg shadow-indigo-500/25"
+                  : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700/50"
+              }
+            `}
+            onClick={() => setTab("tickets")}
+          >
+            <WrenchScrewdriverIcon
+              className={`h-5 w-5 transition-transform duration-300 ${
+                tab === "tickets" ? "scale-110" : "group-hover:scale-105"
+              }`}
+            />
+            <span className="whitespace-nowrap">Tickets</span>
+            {tab === "tickets" && (
+              <div className="absolute inset-0 rounded-xl bg-white/20 animate-pulse" />
+            )}
+          </button>
+
+          <button
+            className={`
+              group relative flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm
+              transition-all duration-300 ease-out
+              ${
+                tab === "citas"
+                  ? "bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 dark:from-indigo-800 dark:via-purple-700 dark:to-indigo-800 text-white shadow-lg shadow-indigo-500/25"
+                  : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700/50"
+              }
+            `}
+            onClick={() => setTab("citas")}
+          >
+            <CalendarDaysIcon
+              className={`h-5 w-5 transition-transform duration-300 ${
+                tab === "citas" ? "scale-110" : "group-hover:scale-105"
+              }`}
+            />
+            <span className="whitespace-nowrap">Agenda de Visitas</span>
+            {tab === "citas" && (
+              <div className="absolute inset-0 rounded-xl bg-white/20 animate-pulse" />
+            )}
+          </button>
+
+          <button
+            className={`
+              group relative flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm
+              transition-all duration-300 ease-out
+              ${
+                tab === "contratos"
+                  ? "bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 dark:from-indigo-800 dark:via-purple-700 dark:to-indigo-800 text-white shadow-lg shadow-indigo-500/25"
+                  : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700/50"
+              }
+            `}
+            onClick={() => setTab("contratos")}
+          >
+            <UserGroupIcon
+              className={`h-5 w-5 transition-transform duration-300 ${
+                tab === "contratos" ? "scale-110" : "group-hover:scale-105"
+              }`}
+            />
+            <span className="whitespace-nowrap">Proveedores y Contratos</span>
+            {tab === "contratos" && (
+              <div className="absolute inset-0 rounded-xl bg-white/20 animate-pulse" />
+            )}
+          </button>
+
+          <button
+            className={`
+              group relative flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm
+              transition-all duration-300 ease-out
+              ${
+                tab === "costos"
+                  ? "bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 dark:from-indigo-800 dark:via-purple-700 dark:to-indigo-800 text-white shadow-lg shadow-indigo-500/25"
+                  : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700/50"
+              }
+            `}
+            onClick={() => setTab("costos")}
+          >
+            <CurrencyDollarIcon
+              className={`h-5 w-5 transition-transform duration-300 ${
+                tab === "costos" ? "scale-110" : "group-hover:scale-105"
+              }`}
+            />
+            <span className="whitespace-nowrap">Control de Costos</span>
+            {tab === "costos" && (
+              <div className="absolute inset-0 rounded-xl bg-white/20 animate-pulse" />
+            )}
+          </button>
+        </div>
       </div>
+
       {tab === "dashboard" && (
         <div className="mt-4">
           <MaintenanceDashboard />
