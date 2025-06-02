@@ -195,7 +195,7 @@ const ProjectQuotesSection: React.FC<ProjectQuotesSectionProps> = ({
 
           <button
             onClick={() => setIsNewQuoteModalOpen(true)}
-            className="inline-flex items-center px-3 py-2 text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-500"
+            className="inline-flex items-center px-3 py-2 text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700"
           >
             Nueva Cotización
           </button>
@@ -209,7 +209,7 @@ const ProjectQuotesSection: React.FC<ProjectQuotesSectionProps> = ({
           </p>
           <button
             onClick={() => setIsNewQuoteModalOpen(true)}
-            className="mt-3 inline-flex items-center px-3 py-2 text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-500"
+            className="mt-3 inline-flex items-center px-3 py-2 text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700"
           >
             Agregar Cotización
           </button>

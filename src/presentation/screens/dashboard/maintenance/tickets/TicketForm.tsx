@@ -356,6 +356,20 @@ const TicketForm: React.FC<TicketFormProps> = ({ initialTicket, onClose }) => {
         ? user.displayName || user.email
         : "Usuario desconocido";
 
+      // Lógica inteligente para assignedTo:
+      // 1. Si hay personal asignado, usar personal
+      // 2. Si no hay personal pero sí proveedor, usar proveedor
+      // 3. Si hay ambos, priorizar personal
+      let finalAssignedTo = "";
+      if (assignedTo) {
+        // Hay personal asignado, usar personal
+        finalAssignedTo = assignedTo;
+      } else if (providerId) {
+        // No hay personal pero sí proveedor, usar proveedor
+        finalAssignedTo = providerId;
+      }
+      // Si no hay ni personal ni proveedor, queda vacío
+
       if (isEdit && initialTicket?.id) {
         await updateTicket(
           initialTicket.id,
@@ -364,7 +378,7 @@ const TicketForm: React.FC<TicketFormProps> = ({ initialTicket, onClose }) => {
             description,
             priority,
             status,
-            assignedTo,
+            assignedTo: finalAssignedTo,
             tags,
             providerId,
             commonAreaId,
@@ -392,7 +406,7 @@ const TicketForm: React.FC<TicketFormProps> = ({ initialTicket, onClose }) => {
             description,
             priority,
             status,
-            assignedTo,
+            assignedTo: finalAssignedTo,
             tags,
             providerId,
             commonAreaId,

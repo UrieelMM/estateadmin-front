@@ -58,13 +58,20 @@ const CACHE_DURATION = 5 * 60 * 1000; // 5 minutos en milisegundos
 const MorosidadView: React.FC = () => {
   const payments = usePaymentSummaryStore((state) => state.payments);
   const fetchSummary = usePaymentSummaryStore((state) => state.fetchSummary);
-  const loading = usePaymentSummaryStore((state) => state.loading);
   const { notifyDebtor, initialize } = useMorosityStore();
   const [loadingStates, setLoadingStates] = useState<Record<string, boolean>>(
     {}
   );
+  // Estado de loading local para controlar mejor el spinner
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
   // Estado para controlar si ya se han cargado datos históricos
-  const [historicalDataLoaded, setHistoricalDataLoaded] = useState(false);
+  const [historicalDataLoaded, setHistoricalDataLoaded] = useState(() => {
+    // Verificar si ya tenemos datos en cache
+    return (
+      globalMorosityCache.allPayments.length > 0 &&
+      Date.now() - globalMorosityCache.lastFetchTimestamp < CACHE_DURATION
+    );
+  });
   // Almacenar pagos históricos combinados
   const [allPayments, setAllPayments] = useState<PaymentRecord[]>(
     () => globalMorosityCache.allPayments
@@ -83,6 +90,12 @@ const MorosidadView: React.FC = () => {
 
   // Función memoizada para cargar datos históricos
   const loadAllPaymentData = useCallback(async () => {
+    // Si ya están cargados los datos históricos, no hacer nada
+    if (historicalDataLoaded) {
+      setIsInitialLoading(false);
+      return;
+    }
+
     // Verificar si la caché es válida
     const now = Date.now();
     if (
@@ -92,10 +105,11 @@ const MorosidadView: React.FC = () => {
     ) {
       setAllPayments(globalMorosityCache.allPayments);
       setHistoricalDataLoaded(true);
+      setIsInitialLoading(false);
       return;
     }
 
-    if (!historicalDataLoaded) {
+    try {
       // Obtenemos el año actual
       const currentYear = new Date().getFullYear();
 
@@ -113,16 +127,29 @@ const MorosidadView: React.FC = () => {
       // Actualizamos el timestamp de la última carga
       globalMorosityCache.lastFetchTimestamp = now;
       setHistoricalDataLoaded(true);
+    } catch (error) {
+      console.error("Error cargando datos históricos:", error);
+    } finally {
+      setIsInitialLoading(false);
     }
   }, [fetchSummary, historicalDataLoaded]);
 
-  // Efecto para inicialización y carga de datos
+  // Efecto para inicialización - solo se ejecuta una vez
   useEffect(() => {
-    initialize();
-    loadAllPaymentData();
-  }, [initialize, loadAllPaymentData]);
+    const initializeComponent = async () => {
+      await initialize();
+      // Solo cargar datos si no están ya cargados
+      if (!historicalDataLoaded) {
+        await loadAllPaymentData();
+      } else {
+        setIsInitialLoading(false);
+      }
+    };
 
-  // Efecto para actualizar allPayments y la caché global cuando cambien los payments
+    initializeComponent();
+  }, []); // Solo se ejecuta una vez al montar el componente
+
+  // Efecto para actualizar allPayments cuando cambien los payments del store
   useEffect(() => {
     if (payments.length > 0) {
       setAllPayments((prev) => {
@@ -147,8 +174,13 @@ const MorosidadView: React.FC = () => {
 
         return updatedPayments;
       });
+
+      // Si recibimos nuevos pagos y aún estamos en loading inicial, lo terminamos
+      if (isInitialLoading) {
+        setIsInitialLoading(false);
+      }
     }
-  }, [payments]);
+  }, [payments, isInitialLoading]);
 
   // Cálculos de morosidad altamente optimizados con useMemo profundo
   const morosityStats = useMemo((): MorosityData => {
@@ -294,7 +326,7 @@ const MorosidadView: React.FC = () => {
         </div>
       </div>
 
-      {loading && !historicalDataLoaded ? (
+      {isInitialLoading ? (
         <div className="flex justify-center items-center h-40">
           <LoadingApp />
         </div>

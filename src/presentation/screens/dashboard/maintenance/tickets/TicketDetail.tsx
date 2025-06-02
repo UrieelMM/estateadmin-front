@@ -4,6 +4,11 @@ import TicketStatusBadge from "./TicketStatusBadge";
 import TicketForm from "./TicketForm";
 import TicketTimeline from "./TicketTimeline";
 import { motion } from "framer-motion";
+import {
+  usePersonalAdministrationStore,
+  PersonalProfile,
+} from "../../../../../store/PersonalAdministration";
+import useProviderStore from "../../../../../store/providerStore";
 
 const TicketDetail: React.FC = () => {
   const {
@@ -14,6 +19,40 @@ const TicketDetail: React.FC = () => {
     loading,
     tickets,
   } = useTicketsStore();
+
+  const { employees, fetchEmployees } = usePersonalAdministrationStore();
+  const { providers, fetchProviders } = useProviderStore();
+
+  // Función helper para obtener el nombre del empleado o proveedor asignado
+  const getAssignedEmployeeName = (assignedTo: string | undefined): string => {
+    if (!assignedTo) return "No asignado";
+
+    // Primero buscar en empleados
+    const employee = employees.find(
+      (emp: PersonalProfile) => emp.id === assignedTo
+    );
+
+    if (employee) {
+      return `${employee.personalInfo.firstName} ${employee.personalInfo.lastName}`;
+    }
+
+    // Si no es un empleado, buscar en proveedores
+    const provider = providers.find((prov) => prov.id === assignedTo);
+
+    if (provider) {
+      return `${provider.name} (Proveedor)`;
+    }
+
+    // Si no se encuentra ni como empleado ni como proveedor, mostrar el valor original
+    // (podría ser un email o nombre ya formateado)
+    return assignedTo;
+  };
+
+  // Cargar empleados y proveedores al montar el componente
+  useEffect(() => {
+    fetchEmployees();
+    fetchProviders();
+  }, [fetchEmployees, fetchProviders]);
 
   function renderMergedTimeline(activeTicket: Ticket, tickets: Ticket[]) {
     console.log("TicketDetail - activeTicket:", activeTicket);
@@ -608,7 +647,7 @@ const TicketDetail: React.FC = () => {
                   Asignado a
                 </label>
                 <div className="px-3 py-2 bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 text-sm text-gray-800 dark:text-gray-200 truncate">
-                  {activeTicket.assignedTo || "No asignado"}
+                  {getAssignedEmployeeName(activeTicket.assignedTo)}
                 </div>
               </div>
             </div>
