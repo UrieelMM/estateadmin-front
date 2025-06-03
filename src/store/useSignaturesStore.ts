@@ -101,7 +101,10 @@ interface SignaturesState {
   loading: boolean;
   error: string | null;
   initialized: boolean;
-  fetchSignatures: () => Promise<void>;
+  fetchSignatures: (force?: boolean) => Promise<void>;
+  ensureSignaturesLoaded: () => Promise<boolean>;
+  isSignatureAvailable: () => boolean;
+  retryCount: number;
 }
 
 export const useSignaturesStore = create<SignaturesState>()((set, get) => ({
@@ -113,62 +116,171 @@ export const useSignaturesStore = create<SignaturesState>()((set, get) => ({
   loading: false,
   error: null,
   initialized: false,
+  retryCount: 0,
 
-  fetchSignatures: async () => {
-    // Si ya tenemos las firmas cargadas y no hay error, no es necesario volver a cargarlas
-    if (get().initialized && !get().error && get().signatureBase64) {
+  fetchSignatures: async (force: boolean = false) => {
+    const state = get();
+
+    // Si ya tenemos las firmas cargadas, no es necesario volver a cargarlas (a menos que sea forzado)
+    if (!force && state.initialized && !state.error && state.signatureBase64) {
+      return;
+    }
+
+    // Evitar múltiples llamadas concurrentes
+    if (state.loading) {
       return;
     }
 
     set({ loading: true, error: null });
-    try {
-      const { clientId } = await getCurrentUserAndToken();
-      const db = getFirestore();
 
-      // Obtener datos de la administradora
-      const clientDocRef = doc(db, "clients", clientId);
-      const clientDocSnap = await getDoc(clientDocRef);
+    const maxRetries = 3;
+    let currentRetry = 0;
 
-      let adminCompany = "";
-      let adminPhone = "";
-      let adminEmail = "";
-      let logoBase64 = "";
-      let signatureBase64 = "";
+    while (currentRetry < maxRetries) {
+      try {
+        const { clientId } = await getCurrentUserAndToken();
+        const db = getFirestore();
 
-      if (clientDocSnap.exists()) {
-        const clientData = clientDocSnap.data();
-        adminCompany = clientData.companyName || "";
-        adminPhone = clientData.phoneNumber || "";
-        adminEmail = clientData.email || "";
+        // Obtener datos de la administradora
+        const clientDocRef = doc(db, "clients", clientId);
+        const clientDocSnap = await getDoc(clientDocRef);
 
-        const logoUrl = clientData.logoReports || "";
-        const signUrl = clientData.signatureUrl || "";
+        let adminCompany = "";
+        let adminPhone = "";
+        let adminEmail = "";
+        let logoBase64 = "";
+        let signatureBase64 = "";
 
-        console.log("URL de firma:", signUrl); // Log para depuración
+        if (clientDocSnap.exists()) {
+          const clientData = clientDocSnap.data();
+          adminCompany = clientData.companyName || "";
+          adminPhone = clientData.phoneNumber || "";
+          adminEmail = clientData.email || "";
 
-        if (logoUrl) {
-          logoBase64 = await getBase64FromUrl(logoUrl, true);
+          const logoUrl = clientData.logoReports || "";
+          const signUrl = clientData.signatureUrl || "";
+
+          console.log("URL de firma:", signUrl); // Log para depuración
+
+          // Cargar logo si existe
+          if (logoUrl) {
+            try {
+              logoBase64 = await getBase64FromUrl(logoUrl, true);
+              console.log("Logo cargado exitosamente");
+            } catch (logoError) {
+              console.warn("Error al cargar logo:", logoError);
+              // No es crítico si el logo falla
+            }
+          }
+
+          // Cargar firma si existe
+          if (signUrl) {
+            try {
+              signatureBase64 = await getBase64FromUrl(signUrl, false);
+              console.log("Firma cargada exitosamente");
+
+              // Validar que la firma se cargó correctamente
+              if (!signatureBase64 || signatureBase64.length < 100) {
+                throw new Error("Firma no válida o muy pequeña");
+              }
+            } catch (signError) {
+              console.warn(
+                `Error al cargar firma (intento ${
+                  currentRetry + 1
+                }/${maxRetries}):`,
+                signError
+              );
+              if (currentRetry < maxRetries - 1) {
+                currentRetry++;
+                await new Promise((resolve) => setTimeout(resolve, 1000)); // Esperar 1 segundo antes del retry
+                continue;
+              } else {
+                throw signError;
+              }
+            }
+          }
         }
-        if (signUrl) {
-          signatureBase64 = await getBase64FromUrl(signUrl, false);
+
+        // Si llegamos aquí, la carga fue exitosa
+        set({
+          adminCompany,
+          adminPhone,
+          adminEmail,
+          logoBase64,
+          signatureBase64,
+          loading: false,
+          initialized: true,
+          error: null,
+          retryCount: currentRetry,
+        });
+
+        console.log(
+          "Firmas cargadas exitosamente en intento:",
+          currentRetry + 1
+        );
+        return;
+      } catch (error: any) {
+        console.error(
+          `Error al cargar firmas (intento ${currentRetry + 1}/${maxRetries}):`,
+          error
+        );
+
+        if (currentRetry < maxRetries - 1) {
+          currentRetry++;
+          await new Promise((resolve) => setTimeout(resolve, 2000)); // Esperar 2 segundos antes del retry
+        } else {
+          // Último intento falló
+          set({
+            error:
+              error.message ||
+              "Error al cargar firmas después de múltiples intentos",
+            loading: false,
+            retryCount: currentRetry + 1,
+          });
+          throw error;
         }
       }
-
-      set({
-        adminCompany,
-        adminPhone,
-        adminEmail,
-        logoBase64,
-        signatureBase64,
-        loading: false,
-        initialized: true,
-      });
-    } catch (error: any) {
-      console.error("Error al cargar firmas:", error);
-      set({
-        error: error.message || "Error al cargar firmas",
-        loading: false,
-      });
     }
+  },
+
+  ensureSignaturesLoaded: async (): Promise<boolean> => {
+    const state = get();
+
+    // Si ya están cargadas correctamente, retornar true
+    if (state.initialized && !state.error && state.signatureBase64) {
+      return true;
+    }
+
+    // Si está cargando, esperar hasta que termine
+    if (state.loading) {
+      // Esperar hasta que termine la carga (máximo 10 segundos)
+      let attempts = 0;
+      const maxAttempts = 50; // 50 * 200ms = 10 segundos
+
+      while (get().loading && attempts < maxAttempts) {
+        await new Promise((resolve) => setTimeout(resolve, 200));
+        attempts++;
+      }
+    }
+
+    // Si después de esperar aún no están cargadas, intentar cargarlas
+    if (!get().initialized || get().error || !get().signatureBase64) {
+      try {
+        await get().fetchSignatures(true); // Forzar recarga
+        return (
+          get().initialized && !get().error && Boolean(get().signatureBase64)
+        );
+      } catch (error) {
+        console.error("Error al asegurar carga de firmas:", error);
+        return false;
+      }
+    }
+
+    return true;
+  },
+
+  isSignatureAvailable: (): boolean => {
+    const state = get();
+    return state.initialized && !state.error && Boolean(state.signatureBase64);
   },
 }));

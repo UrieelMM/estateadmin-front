@@ -72,6 +72,8 @@ const PDFBalanceGeneralReport: React.FC<PDFBalanceGeneralReportProps> = ({
     adminPhone,
     adminEmail,
     fetchSignatures,
+    ensureSignaturesLoaded,
+    isSignatureAvailable,
   } = useSignaturesStore();
 
   // Cargar las firmas cuando se monta el componente
@@ -337,6 +339,9 @@ const PDFBalanceGeneralReport: React.FC<PDFBalanceGeneralReportProps> = ({
   };
 
   const generatePDF = async () => {
+    // Asegurar que las firmas estén cargadas antes de generar el PDF
+    await ensureSignaturesLoaded();
+
     const doc = new jsPDF();
 
     // Helper para formatear números como moneda
@@ -361,7 +366,7 @@ const PDFBalanceGeneralReport: React.FC<PDFBalanceGeneralReportProps> = ({
 
     // --- Encabezado ---
     if (logoBase64) {
-      doc.addImage(logoBase64, "PNG", 160, 10, 30, 30);
+      doc.addImage(logoBase64, "JPEG", 160, 10, 30, 30);
     }
     doc.setFontSize(16);
     doc.text("Reporte Balance General", 14, 20);
@@ -873,8 +878,8 @@ const PDFBalanceGeneralReport: React.FC<PDFBalanceGeneralReportProps> = ({
     const margin = 14;
     const adminSectionY = pageHeight - 80;
 
-    if (signatureBase64) {
-      doc.addImage(signatureBase64, "PNG", margin, adminSectionY - 20, 50, 20);
+    if (isSignatureAvailable() && signatureBase64) {
+      doc.addImage(signatureBase64, "JPEG", margin, adminSectionY - 20, 50, 20);
     }
     doc.setFontSize(12);
     doc.text("Firma del Administrador", margin, adminSectionY);

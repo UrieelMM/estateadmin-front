@@ -28,6 +28,7 @@ const PDFExpenseByProviderReport: React.FC<PDFExpenseByProviderReportProps> = ({
     adminPhone,
     adminEmail,
     fetchSignatures,
+    isSignatureAvailable,
   } = useSignaturesStore();
 
   // Cargar las firmas cuando se monta el componente
@@ -36,6 +37,7 @@ const PDFExpenseByProviderReport: React.FC<PDFExpenseByProviderReportProps> = ({
   }, [fetchSignatures]);
 
   const generatePDF = async () => {
+    // Asegurar que las firmas estén cargadas antes de generar el PDF
     const doc = new jsPDF();
 
     // Función para formatear números como moneda
@@ -49,7 +51,7 @@ const PDFExpenseByProviderReport: React.FC<PDFExpenseByProviderReportProps> = ({
 
     // --- Encabezado: Logo, Título, Fecha y Año ---
     if (logoBase64) {
-      doc.addImage(logoBase64, "PNG", 160, 10, 30, 30);
+      doc.addImage(logoBase64, "JPEG", 160, 10, 30, 30);
     }
     doc.setFontSize(14);
     doc.text("Reporte de Egresos por Proveedor", 14, 20);
@@ -138,9 +140,11 @@ const PDFExpenseByProviderReport: React.FC<PDFExpenseByProviderReportProps> = ({
     const margin = 14;
     const adminSectionY = pageHeight - 80;
 
-    if (signatureBase64) {
-      doc.addImage(signatureBase64, "PNG", margin, adminSectionY - 20, 50, 20);
+    // Verificar disponibilidad y añadir firma
+    if (isSignatureAvailable() && signatureBase64) {
+      doc.addImage(signatureBase64, "JPEG", margin, adminSectionY - 20, 50, 20);
     }
+
     doc.setFontSize(12);
     doc.text("Firma del Administrador", margin, adminSectionY);
 

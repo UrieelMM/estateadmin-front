@@ -48,6 +48,8 @@ const PDFExpenseReportGenerator: React.FC<PDFExpenseReportGeneratorProps> = ({
     adminPhone,
     adminEmail,
     fetchSignatures,
+    ensureSignaturesLoaded,
+    isSignatureAvailable,
   } = useSignaturesStore();
 
   // Cargar las firmas cuando se monta el componente
@@ -56,6 +58,9 @@ const PDFExpenseReportGenerator: React.FC<PDFExpenseReportGeneratorProps> = ({
   }, [fetchSignatures]);
 
   const generatePDF = async () => {
+    // Asegurar que las firmas estén cargadas antes de generar el PDF
+    await ensureSignaturesLoaded();
+
     const doc = new jsPDF();
 
     // Función para formatear números como moneda
@@ -69,7 +74,7 @@ const PDFExpenseReportGenerator: React.FC<PDFExpenseReportGeneratorProps> = ({
 
     // --- Encabezado: Logo, Título, Fecha, Año y Total Egresos ---
     if (logoBase64) {
-      doc.addImage(logoBase64, "PNG", 160, 10, 30, 30);
+      doc.addImage(logoBase64, "JPEG", 160, 10, 30, 30);
     }
     doc.setFontSize(14);
     doc.text("Reporte General de Egresos", 14, 20);
@@ -239,8 +244,8 @@ const PDFExpenseReportGenerator: React.FC<PDFExpenseReportGeneratorProps> = ({
     const margin = 14;
     const adminSectionY = pageHeight - 80;
 
-    if (signatureBase64) {
-      doc.addImage(signatureBase64, "PNG", margin, adminSectionY - 20, 50, 20);
+    if (isSignatureAvailable() && signatureBase64) {
+      doc.addImage(signatureBase64, "JPEG", margin, adminSectionY - 20, 50, 20);
     }
     doc.setFontSize(12);
     doc.text("Firma del Administrador", margin, adminSectionY);

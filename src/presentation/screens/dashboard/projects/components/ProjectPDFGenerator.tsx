@@ -105,6 +105,8 @@ const ProjectPDFGenerator: React.FC<ProjectPDFGeneratorProps> = ({
     adminEmail,
     loading,
     fetchSignatures,
+    ensureSignaturesLoaded,
+    isSignatureAvailable,
   } = useSignaturesStore();
 
   // Cargar las firmas cuando se monta el componente
@@ -113,6 +115,9 @@ const ProjectPDFGenerator: React.FC<ProjectPDFGeneratorProps> = ({
   }, [fetchSignatures]);
 
   const generatePDF = async () => {
+    // Asegurar que las firmas estén cargadas antes de generar el PDF
+    await ensureSignaturesLoaded();
+
     // Asegurarnos de tener las firmas cargadas
     if (!loading && (!logoBase64 || !signatureBase64)) {
       await fetchSignatures();
@@ -132,7 +137,7 @@ const ProjectPDFGenerator: React.FC<ProjectPDFGeneratorProps> = ({
 
     // --- ENCABEZADO ---
     if (logoBase64) {
-      doc.addImage(logoBase64, "PNG", pageWidth - 40, 10, 30, 30);
+      doc.addImage(logoBase64, "JPEG", pageWidth - 40, 10, 30, 30);
     }
 
     // Título
@@ -517,10 +522,10 @@ const ProjectPDFGenerator: React.FC<ProjectPDFGeneratorProps> = ({
     doc.text(adminEmail || "No especificado", adminX + 40, adminInfoY + 20);
 
     // Agregar firma si está disponible
-    if (signatureBase64) {
+    if (isSignatureAvailable() && signatureBase64) {
       doc.addImage(
         signatureBase64,
-        "PNG",
+        "JPEG",
         pageWidth / 2 - 25,
         adminSectionY + 10,
         50,

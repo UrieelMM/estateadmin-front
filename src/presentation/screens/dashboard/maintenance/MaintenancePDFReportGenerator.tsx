@@ -90,6 +90,8 @@ const MaintenancePDFReportGenerator: React.FC<MaintenancePDFReportProps> = ({
     logoBase64,
     signatureBase64,
     fetchSignatures,
+    ensureSignaturesLoaded,
+    isSignatureAvailable,
   } = useSignaturesStore();
   const [providers, setProviders] = useState<Record<string, string>>({});
 
@@ -959,6 +961,9 @@ const MaintenancePDFReportGenerator: React.FC<MaintenancePDFReportProps> = ({
     setIsGenerating(true);
 
     try {
+      // Asegurar que las firmas estén cargadas antes de generar el PDF
+      await ensureSignaturesLoaded();
+
       // Asegurarse de que las firmas se carguen correctamente
       await fetchSignatures();
 
@@ -999,7 +1004,7 @@ const MaintenancePDFReportGenerator: React.FC<MaintenancePDFReportProps> = ({
 
       // --- Encabezado: Logo y Datos Generales ---
       if (logoBase64) {
-        doc.addImage(logoBase64, "PNG", 160, 10, 30, 30);
+        doc.addImage(logoBase64, "JPEG", 160, 10, 30, 30);
       }
 
       doc.setFontSize(14);
@@ -1095,10 +1100,10 @@ const MaintenancePDFReportGenerator: React.FC<MaintenancePDFReportProps> = ({
       const margin = 14;
       const adminSectionY = pageHeight - 80;
 
-      if (signatureBase64) {
+      if (isSignatureAvailable() && signatureBase64) {
         doc.addImage(
           signatureBase64,
-          "PNG",
+          "JPEG",
           margin,
           adminSectionY - 20,
           50,
