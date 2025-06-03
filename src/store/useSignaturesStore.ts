@@ -2,17 +2,77 @@ import { create } from "./createStore";
 import { getFirestore, doc, getDoc } from "firebase/firestore";
 import { getAuth, getIdTokenResult } from "firebase/auth";
 
-// Función auxiliar para convertir una URL de imagen a base64
-async function getBase64FromUrl(url: string): Promise<string> {
+// Función auxiliar para convertir una URL de imagen a base64 con optimización
+async function getBase64FromUrl(
+  url: string,
+  isLogo: boolean = false
+): Promise<string> {
   const response = await fetch(url);
   const blob = await response.blob();
+
   return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onerror = reject;
-    reader.onloadend = () => {
-      resolve(reader.result as string);
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+
+    img.onload = () => {
+      // Crear canvas para redimensionar y comprimir
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+
+      if (!ctx) {
+        reject(new Error("No se pudo obtener el contexto del canvas"));
+        return;
+      }
+
+      // Establecer dimensiones máximas según el tipo de imagen
+      let maxWidth, maxHeight;
+      if (isLogo) {
+        maxWidth = 400; // Logos pueden ser un poco más grandes
+        maxHeight = 400;
+      } else {
+        maxWidth = 300; // Firmas más pequeñas
+        maxHeight = 150;
+      }
+
+      let { width, height } = img;
+
+      // Calcular nuevas dimensiones manteniendo aspect ratio
+      if (width > maxWidth || height > maxHeight) {
+        const ratio = Math.min(maxWidth / width, maxHeight / height);
+        width = width * ratio;
+        height = height * ratio;
+      }
+
+      // Configurar canvas con las nuevas dimensiones
+      canvas.width = width;
+      canvas.height = height;
+
+      // Fondo blanco para imágenes con transparencia
+      ctx.fillStyle = "white";
+      ctx.fillRect(0, 0, width, height);
+
+      // Dibujar la imagen redimensionada
+      ctx.drawImage(img, 0, 0, width, height);
+
+      // Convertir a base64 con compresión JPEG (más eficiente)
+      const quality = isLogo ? 0.8 : 0.7; // 80% para logos, 70% para firmas
+      const base64 = canvas.toDataURL("image/jpeg", quality);
+      resolve(base64);
     };
-    reader.readAsDataURL(blob);
+
+    img.onerror = () => {
+      // Fallback: usar el método original si hay error con la optimización
+      const reader = new FileReader();
+      reader.onerror = reject;
+      reader.onloadend = () => {
+        resolve(reader.result as string);
+      };
+      reader.readAsDataURL(blob);
+    };
+
+    // Crear URL del blob para cargar en la imagen
+    const objectUrl = URL.createObjectURL(blob);
+    img.src = objectUrl;
   });
 }
 
@@ -87,10 +147,10 @@ export const useSignaturesStore = create<SignaturesState>()((set, get) => ({
         console.log("URL de firma:", signUrl); // Log para depuración
 
         if (logoUrl) {
-          logoBase64 = await getBase64FromUrl(logoUrl);
+          logoBase64 = await getBase64FromUrl(logoUrl, true);
         }
         if (signUrl) {
-          signatureBase64 = await getBase64FromUrl(signUrl);
+          signatureBase64 = await getBase64FromUrl(signUrl, false);
         }
       }
 

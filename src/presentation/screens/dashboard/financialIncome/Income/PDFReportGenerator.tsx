@@ -36,17 +36,67 @@ export interface PDFReportGeneratorProps {
   buttonClassName?: string;
 }
 
-// Función auxiliar para convertir una URL de imagen a base64
+// Función auxiliar para convertir una URL de imagen a base64 con optimización
 async function getBase64FromUrl(url: string): Promise<string> {
   const response = await fetch(url);
   const blob = await response.blob();
+
   return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onerror = reject;
-    reader.onloadend = () => {
-      resolve(reader.result as string);
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+
+    img.onload = () => {
+      // Crear canvas para redimensionar y comprimir
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+
+      if (!ctx) {
+        reject(new Error("No se pudo obtener el contexto del canvas"));
+        return;
+      }
+
+      // Establecer dimensiones máximas para la firma (reducidas para optimizar)
+      const maxWidth = 300; // Reducido de posibles dimensiones más grandes
+      const maxHeight = 150; // Altura máxima optimizada para firmas
+
+      let { width, height } = img;
+
+      // Calcular nuevas dimensiones manteniendo aspect ratio
+      if (width > maxWidth || height > maxHeight) {
+        const ratio = Math.min(maxWidth / width, maxHeight / height);
+        width = width * ratio;
+        height = height * ratio;
+      }
+
+      // Configurar canvas con las nuevas dimensiones
+      canvas.width = width;
+      canvas.height = height;
+
+      // Fondo blanco para firmas con transparencia
+      ctx.fillStyle = "white";
+      ctx.fillRect(0, 0, width, height);
+
+      // Dibujar la imagen redimensionada
+      ctx.drawImage(img, 0, 0, width, height);
+
+      // Convertir a base64 con compresión JPEG (más eficiente que PNG para fotos/firmas)
+      const base64 = canvas.toDataURL("image/jpeg", 0.7); // 70% de calidad es suficiente para firmas
+      resolve(base64);
     };
-    reader.readAsDataURL(blob);
+
+    img.onerror = () => {
+      // Fallback: usar el método original si hay error con la optimización
+      const reader = new FileReader();
+      reader.onerror = reject;
+      reader.onloadend = () => {
+        resolve(reader.result as string);
+      };
+      reader.readAsDataURL(blob);
+    };
+
+    // Crear URL del blob para cargar en la imagen
+    const objectUrl = URL.createObjectURL(blob);
+    img.src = objectUrl;
   });
 }
 
@@ -789,7 +839,14 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({
     if (signatureUrl) {
       try {
         const signatureImage = await getBase64FromUrl(signatureUrl);
-        doc.addImage(signatureImage, "PNG", margin, adminSectionY - 20, 50, 20);
+        doc.addImage(
+          signatureImage,
+          "JPEG",
+          margin,
+          adminSectionY - 20,
+          50,
+          20
+        );
       } catch (error) {
         console.error("Error al cargar la firma:", error);
       }
