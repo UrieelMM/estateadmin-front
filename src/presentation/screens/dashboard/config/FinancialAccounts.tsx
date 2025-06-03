@@ -297,13 +297,13 @@ const FinancialAccounts = () => {
                   <button
                     type="button"
                     onClick={resetForm}
-                    className="flex-1 sm:flex-none px-6 py-3 border border-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700 transition-colors duration-200"
+                    className="flex-1 sm:flex-none px-2 py-2 text-m border border-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700 transition-colors duration-200"
                   >
                     Cancelar
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-2 rounded-xl shadow-lg hover:shadow-xl"
+                    className="flex-1 sm:flex-none inline-flex items-center text-md justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-2 rounded-xl shadow-lg hover:shadow-xl"
                   >
                     <CheckIcon className="h-5 w-5" />
                     {isEditing ? "Actualizar Cuenta" : "Crear Cuenta"}

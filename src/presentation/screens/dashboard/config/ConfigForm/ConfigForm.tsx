@@ -196,7 +196,7 @@ const ConfigForm = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-white rounded-lg dark:bg-gray-900 p-4 md:p-2">
+    <div className="min-h-screen bg-white rounded-lg dark:bg-gray-900 p-4 md:px-2 md:py-4">
       {error && (
         <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl">
           <p className="text-red-600 dark:text-red-400 font-medium">{error}</p>
