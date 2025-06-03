@@ -190,9 +190,9 @@ const ActivityDetailModal: React.FC<ActivityDetailModalProps> = ({
                       Incidente: {activity.relatedModules.incidentId}
                     </p>
                   )}
-                  {activity.relatedModules.taskId && (
+                  {activity.relatedModules.ticketId && (
                     <p className="text-sm text-gray-600 dark:text-gray-400">
-                      Tarea: {activity.relatedModules.taskId}
+                      Tarea: {activity.relatedModules.ticketId}
                     </p>
                   )}
                 </div>
