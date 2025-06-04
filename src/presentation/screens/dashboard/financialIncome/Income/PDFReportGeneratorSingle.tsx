@@ -5,6 +5,7 @@ import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import { DocumentChartBarIcon } from "@heroicons/react/20/solid";
 import { usePaymentSummaryStore } from "../../../../../store/paymentSummaryStore";
+import { useSignaturesStore } from "../../../../../store/useSignaturesStore";
 
 // Ajusta esta interfaz a como tengas tu PaymentRecord realmente.
 // Se agregó la propiedad opcional creditUsed.
@@ -103,20 +104,6 @@ function getAllPaymentDates(records: PaymentRecord[]): string {
   return uniqueDates.join(", ");
 }
 
-// Función auxiliar para convertir una URL de imagen a base64
-async function getBase64FromUrl(url: string): Promise<string> {
-  const response = await fetch(url);
-  const blob = await response.blob();
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onerror = reject;
-    reader.onloadend = () => {
-      resolve(reader.result as string);
-    };
-    reader.readAsDataURL(blob);
-  });
-}
-
 const PDFReportGeneratorSingle: React.FC<PDFReportGeneratorSingleProps> = ({
   year,
   condominium,
@@ -127,13 +114,35 @@ const PDFReportGeneratorSingle: React.FC<PDFReportGeneratorSingleProps> = ({
   adminEmail,
   logoBase64,
 }) => {
-  // Obtener la URL de la firma y la función prepareSingleReportData desde el store
-  const { signatureUrl, prepareSingleReportData } = usePaymentSummaryStore(
-    (state) => ({
-      signatureUrl: state.signatureUrl,
-      prepareSingleReportData: state.prepareSingleReportData,
-    })
-  );
+  // Obtener la función prepareSingleReportData desde el store de pagos
+  const { prepareSingleReportData } = usePaymentSummaryStore((state) => ({
+    prepareSingleReportData: state.prepareSingleReportData,
+  }));
+
+  // Obtener la firma desde el store de firmas
+  const {
+    signatureBase64,
+    ensureSignaturesLoaded,
+    isSignatureAvailable,
+    fetchSignatures,
+  } = useSignaturesStore((state) => ({
+    signatureBase64: state.signatureBase64,
+    ensureSignaturesLoaded: state.ensureSignaturesLoaded,
+    isSignatureAvailable: state.isSignatureAvailable,
+    fetchSignatures: state.fetchSignatures,
+  }));
+
+  // Cargar las firmas al montar el componente
+  React.useEffect(() => {
+    const loadSignatures = async () => {
+      try {
+        await fetchSignatures();
+      } catch (error) {
+        console.error("Error al cargar firmas en el componente:", error);
+      }
+    };
+    loadSignatures();
+  }, [fetchSignatures]);
 
   // Procesar los datos correctamente para evitar duplicaciones y mostrar solo los cargos correspondientes
   const processedData = React.useMemo(() => {
@@ -413,14 +422,35 @@ const PDFReportGeneratorSingle: React.FC<PDFReportGeneratorSingleProps> = ({
     doc.addPage();
     yPos = pageHeight - 80;
 
-    if (signatureUrl) {
-      try {
-        const signatureImage = await getBase64FromUrl(signatureUrl);
-        doc.addImage(signatureImage, "PNG", 14, yPos, 50, 20);
-      } catch (error) {
-        console.error("Error al cargar la firma:", error);
+    // Asegurar que las firmas estén cargadas antes de usarlas
+    try {
+      const signaturesLoaded = await ensureSignaturesLoaded();
+
+      if (signaturesLoaded && isSignatureAvailable() && signatureBase64) {
+        try {
+          // Verificar que la imagen base64 sea válida
+          if (signatureBase64.startsWith("data:image/")) {
+            doc.addImage(signatureBase64, "JPEG", 14, yPos, 50, 20);
+          }
+        } catch (error) {
+          console.error("Error al agregar la firma al PDF:", error);
+        }
+      } else {
+        console.warn("No se pudo cargar la firma - Reintentando...");
+        // Intentar cargar las firmas de nuevo como último recurso
+        try {
+          await fetchSignatures(true); // Forzar recarga
+          if (signatureBase64 && signatureBase64.startsWith("data:image/")) {
+            doc.addImage(signatureBase64, "JPEG", 14, yPos, 50, 20);
+          }
+        } catch (retryError) {
+          console.error("Error en el reintento de carga de firma:", retryError);
+        }
       }
+    } catch (error) {
+      console.error("Error al asegurar la carga de firmas:", error);
     }
+
     yPos += 25;
 
     doc.setFontSize(12);
