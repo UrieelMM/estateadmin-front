@@ -242,6 +242,13 @@ const TicketDetail: React.FC = () => {
     activeTicket?.status || "abierto"
   );
 
+  // Sincronizar el estado local con el ticket activo
+  useEffect(() => {
+    if (activeTicket) {
+      setStatus(activeTicket.status);
+    }
+  }, [activeTicket]);
+
   if (!activeTicket) {
     return (
       <motion.div

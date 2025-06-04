@@ -99,6 +99,7 @@ export type Ticket = {
   mergedFrom?: string[];
   area?: string;
   comment?: string; // Campo temporal para añadir comentarios al historial
+  hasAppointment?: boolean; // Indica si el ticket ya tiene una visita programada
 };
 
 export type TicketFilters = {
@@ -385,6 +386,7 @@ export const useTicketsStore = create<TicketState>()((set, get) => ({
             : data.closedAt
             ? new Date(data.closedAt)
             : undefined,
+          hasAppointment: data.hasAppointment || false,
         });
       });
       set({
@@ -538,6 +540,7 @@ export const useTicketsStore = create<TicketState>()((set, get) => ({
         mergedFrom: ticket.mergedFrom || [],
         folio: ticket.folio || "",
         createdByEmail: ticket.createdByEmail || user.email || "",
+        hasAppointment: ticket.hasAppointment,
       };
 
       // Eliminar campo temporal de comentario si existe
@@ -799,6 +802,7 @@ export const useTicketsStore = create<TicketState>()((set, get) => ({
         updatedAt: now,
         attachments,
         history,
+        hasAppointment: data.hasAppointment,
       };
 
       const ticketDocRef = doc(
@@ -959,6 +963,7 @@ export const useTicketsStore = create<TicketState>()((set, get) => ({
             : data.closedAt
             ? new Date(data.closedAt)
             : undefined,
+          hasAppointment: data.hasAppointment || false,
         });
       });
 

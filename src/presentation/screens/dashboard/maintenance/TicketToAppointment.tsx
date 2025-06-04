@@ -128,15 +128,19 @@ const TicketToAppointment: React.FC = () => {
       await convertTicketToAppointment(selectedTicketId, appointmentData);
       toast.success("Visita programada correctamente");
       handleCloseForm();
+      // Refrescar la lista de tickets para que no aparezca el ticket convertido
+      await fetchTickets();
     } catch (error) {
       toast.error("Error al programar la visita");
       console.error(error);
     }
   };
 
-  // Filtrar tickets solo en proceso o abiertos
+  // Filtrar tickets solo en proceso o abiertos y que NO tengan ya una visita programada
   const availableTickets = tickets.filter(
-    (ticket) => ticket.status === "abierto" || ticket.status === "en_progreso"
+    (ticket) =>
+      (ticket.status === "abierto" || ticket.status === "en_progreso") &&
+      !ticket.hasAppointment
   );
 
   // Agrupar tickets por estado

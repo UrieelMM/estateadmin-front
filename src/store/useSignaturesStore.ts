@@ -160,13 +160,10 @@ export const useSignaturesStore = create<SignaturesState>()((set, get) => ({
           const logoUrl = clientData.logoReports || "";
           const signUrl = clientData.signatureUrl || "";
 
-          console.log("URL de firma:", signUrl); // Log para depuración
-
           // Cargar logo si existe
           if (logoUrl) {
             try {
               logoBase64 = await getBase64FromUrl(logoUrl, true);
-              console.log("Logo cargado exitosamente");
             } catch (logoError) {
               console.warn("Error al cargar logo:", logoError);
               // No es crítico si el logo falla
@@ -177,8 +174,6 @@ export const useSignaturesStore = create<SignaturesState>()((set, get) => ({
           if (signUrl) {
             try {
               signatureBase64 = await getBase64FromUrl(signUrl, false);
-              console.log("Firma cargada exitosamente");
-
               // Validar que la firma se cargó correctamente
               if (!signatureBase64 || signatureBase64.length < 100) {
                 throw new Error("Firma no válida o muy pequeña");
@@ -213,11 +208,6 @@ export const useSignaturesStore = create<SignaturesState>()((set, get) => ({
           error: null,
           retryCount: currentRetry,
         });
-
-        console.log(
-          "Firmas cargadas exitosamente en intento:",
-          currentRetry + 1
-        );
         return;
       } catch (error: any) {
         console.error(
@@ -271,7 +261,6 @@ export const useSignaturesStore = create<SignaturesState>()((set, get) => ({
           get().initialized && !get().error && Boolean(get().signatureBase64)
         );
       } catch (error) {
-        console.error("Error al asegurar carga de firmas:", error);
         return false;
       }
     }
