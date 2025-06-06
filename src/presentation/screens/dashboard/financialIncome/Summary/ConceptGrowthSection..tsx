@@ -8,14 +8,18 @@ const ConceptGrowthSection: React.FC = React.memo(() => {
   const conceptRecords = usePaymentSummaryStore(
     (state) => state.conceptRecords
   );
+  const selectedYear = usePaymentSummaryStore((state) => state.selectedYear);
   const { isDarkMode } = useTheme();
   const [showDetails, setShowDetails] = useState(false);
+
   const currentMonthNumber = new Date().getMonth() + 1;
   const currentMonthString = currentMonthNumber.toString().padStart(2, "0");
+
+  // Mejorar la lógica para obtener el mes anterior
   const previousMonthString =
     currentMonthNumber > 1
       ? (currentMonthNumber - 1).toString().padStart(2, "0")
-      : null;
+      : "12"; // Si es enero, comparamos con diciembre
 
   const formatCurrency = (value: number): string => {
     return (
@@ -40,7 +44,6 @@ const ConceptGrowthSection: React.FC = React.memo(() => {
     }
 
     let totalCurrent = 0;
-    let totalPrevious = 0;
     const dataArr: { concept: string; currentValue: number }[] = [];
     const growthArr: {
       concept: string;
@@ -50,7 +53,12 @@ const ConceptGrowthSection: React.FC = React.memo(() => {
     }[] = [];
 
     Object.entries(conceptRecords).forEach(([concept, records]) => {
-      const currentValue = records
+      // Filtrar registros por año - los datos ya deberían estar filtrados por el store,
+      // pero es buena práctica asegurarse
+      const currentYearRecords = records;
+
+      // Calculamos el valor del mes actual
+      const currentValue = currentYearRecords
         .filter((record) => record.month === currentMonthString)
         .reduce(
           (sum, record) =>
@@ -60,32 +68,52 @@ const ConceptGrowthSection: React.FC = React.memo(() => {
             (record.creditUsed || 0),
           0
         );
-      const previousValue = previousMonthString
-        ? records
-            .filter((record) => record.month === previousMonthString)
-            .reduce(
-              (sum, record) =>
-                sum +
-                record.amountPaid +
-                (record.creditBalance > 0 ? record.creditBalance : 0) -
-                (record.creditUsed || 0),
-              0
-            )
-        : 0;
+
+      // Calculamos el valor del mes anterior
+      // Nota: Si estamos en enero y comparamos con diciembre, los datos de diciembre
+      // podrían ser del año anterior y no estar disponibles en conceptRecords del año actual
+      const previousValue = currentYearRecords
+        .filter((record) => record.month === previousMonthString)
+        .reduce(
+          (sum, record) =>
+            sum +
+            record.amountPaid +
+            (record.creditBalance > 0 ? record.creditBalance : 0) -
+            (record.creditUsed || 0),
+          0
+        );
 
       totalCurrent += currentValue;
-      totalPrevious += previousValue;
-      const growth =
-        previousValue !== 0
-          ? ((currentValue - previousValue) / previousValue) * 100
-          : 0;
+
+      // Mejorar el cálculo de crecimiento
+      let growth = 0;
+      if (previousValue > 0) {
+        // Cálculo normal de crecimiento porcentual
+        growth = ((currentValue - previousValue) / previousValue) * 100;
+      } else if (currentValue > 0 && previousValue === 0) {
+        // Si no había valor anterior pero ahora sí hay, podría ser:
+        // 1. Un concepto nuevo, o
+        // 2. No hay datos del mes anterior (ej: comparando enero con dic del año anterior)
+        // En ambos casos, mostramos como "Nuevo" en lugar de un porcentaje
+        growth = currentMonthNumber === 1 ? 0 : 100; // Si es enero, no asumimos crecimiento
+      } else if (currentValue === 0 && previousValue > 0) {
+        // Si había valor anterior pero ahora no hay, es decrecimiento del -100%
+        growth = -100;
+      }
+      // Si ambos valores son 0, el crecimiento es 0%
 
       dataArr.push({ concept, currentValue });
       growthArr.push({ concept, growth, currentValue, previousValue });
     });
 
-    return { totalCurrent, totalPrevious, dataArr, growthArr, hasData: true };
-  }, [conceptRecords, currentMonthString, previousMonthString]);
+    return { totalCurrent, dataArr, growthArr, hasData: true };
+  }, [
+    conceptRecords,
+    currentMonthString,
+    previousMonthString,
+    selectedYear,
+    currentMonthNumber,
+  ]);
 
   const pieData = useMemo(() => {
     const sorted = [...dataArr].sort((a, b) => b.currentValue - a.currentValue);
@@ -118,6 +146,11 @@ const ConceptGrowthSection: React.FC = React.memo(() => {
     <div className="mb-8 w-full">
       <h3 className="text-xl font-bold mb-4">
         Recaudación por concepto - (Mes Actual)
+        {currentMonthNumber === 1 && (
+          <span className="text-sm font-normal text-gray-600 dark:text-gray-400 ml-2">
+            (Comparación vs Diciembre del año anterior)
+          </span>
+        )}
       </h3>
 
       {/* Bloque de estadísticas adicionales */}
@@ -268,45 +301,127 @@ const ConceptGrowthSection: React.FC = React.memo(() => {
         <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <h4 className="text-lg font-bold mb-2">Top Crecimiento</h4>
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left p-2">Concepto</th>
-                  <th className="text-right p-2">Crecimiento (%)</th>
-                </tr>
-              </thead>
-              <tbody>
-                {topGrowth.map((item) => (
-                  <tr key={item.concept}>
-                    <td className="p-2">{item.concept}</td>
-                    <td className="p-2 text-right">
-                      {`${item.growth.toFixed(2)}%`}
-                    </td>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50 dark:bg-gray-700">
+                  <tr className="border-b border-gray-200 dark:border-gray-600">
+                    <th className="text-left p-3 font-medium text-gray-700 dark:text-gray-200">
+                      Concepto
+                    </th>
+                    <th className="text-right p-3 font-medium text-gray-700 dark:text-gray-200">
+                      Crecimiento (%)
+                    </th>
+                    <th className="text-right p-3 font-medium text-gray-700 dark:text-gray-200">
+                      Actual
+                    </th>
+                    <th className="text-right p-3 font-medium text-gray-700 dark:text-gray-200">
+                      Anterior
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {topGrowth.map((item) => (
+                    <tr
+                      key={item.concept}
+                      className="border-b border-gray-100 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700"
+                    >
+                      <td className="p-3 text-gray-900 dark:text-gray-100">
+                        {item.concept}
+                      </td>
+                      <td
+                        className={`p-3 text-right font-semibold ${
+                          item.growth > 0
+                            ? "text-green-600 dark:text-green-400"
+                            : item.growth < 0
+                            ? "text-red-600 dark:text-red-400"
+                            : "text-gray-600 dark:text-gray-400"
+                        }`}
+                      >
+                        {item.previousValue === 0 &&
+                        item.currentValue > 0 &&
+                        currentMonthNumber === 1
+                          ? "Nuevo/Sin datos previos"
+                          : item.growth === 0 &&
+                            item.previousValue === 0 &&
+                            item.currentValue === 0
+                          ? "Sin datos"
+                          : `${item.growth > 0 ? "+" : ""}${item.growth.toFixed(
+                              1
+                            )}%`}
+                      </td>
+                      <td className="p-3 text-right text-gray-900 dark:text-gray-100">
+                        {formatCurrency(item.currentValue)}
+                      </td>
+                      <td className="p-3 text-right text-gray-600 dark:text-gray-400">
+                        {formatCurrency(item.previousValue)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
           <div>
             <h4 className="text-lg font-bold mb-2">Bajo Crecimiento</h4>
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left p-2">Concepto</th>
-                  <th className="text-right p-2">Crecimiento (%)</th>
-                </tr>
-              </thead>
-              <tbody>
-                {bottomGrowth.map((item) => (
-                  <tr key={item.concept}>
-                    <td className="p-2">{item.concept}</td>
-                    <td className="p-2 text-right">
-                      {`${item.growth.toFixed(2)}%`}
-                    </td>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50 dark:bg-gray-700">
+                  <tr className="border-b border-gray-200 dark:border-gray-600">
+                    <th className="text-left p-3 font-medium text-gray-700 dark:text-gray-200">
+                      Concepto
+                    </th>
+                    <th className="text-right p-3 font-medium text-gray-700 dark:text-gray-200">
+                      Crecimiento (%)
+                    </th>
+                    <th className="text-right p-3 font-medium text-gray-700 dark:text-gray-200">
+                      Actual
+                    </th>
+                    <th className="text-right p-3 font-medium text-gray-700 dark:text-gray-200">
+                      Anterior
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {bottomGrowth.map((item) => (
+                    <tr
+                      key={item.concept}
+                      className="border-b border-gray-100 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700"
+                    >
+                      <td className="p-3 text-gray-900 dark:text-gray-100">
+                        {item.concept}
+                      </td>
+                      <td
+                        className={`p-3 text-right font-semibold ${
+                          item.growth > 0
+                            ? "text-green-600 dark:text-green-400"
+                            : item.growth < 0
+                            ? "text-red-600 dark:text-red-400"
+                            : "text-gray-600 dark:text-gray-400"
+                        }`}
+                      >
+                        {item.previousValue === 0 &&
+                        item.currentValue > 0 &&
+                        currentMonthNumber === 1
+                          ? "Nuevo/Sin datos previos"
+                          : item.growth === 0 &&
+                            item.previousValue === 0 &&
+                            item.currentValue === 0
+                          ? "Sin datos"
+                          : `${item.growth > 0 ? "+" : ""}${item.growth.toFixed(
+                              1
+                            )}%`}
+                      </td>
+                      <td className="p-3 text-right text-gray-900 dark:text-gray-100">
+                        {formatCurrency(item.currentValue)}
+                      </td>
+                      <td className="p-3 text-right text-gray-600 dark:text-gray-400">
+                        {formatCurrency(item.previousValue)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       )}

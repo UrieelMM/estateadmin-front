@@ -2,6 +2,7 @@ import React from "react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { usePaymentSummaryStore } from "../../../../../store/paymentSummaryStore";
+import { useSignaturesStore } from "../../../../../store/useSignaturesStore";
 
 export interface UnidentifiedPayment {
   id: string;
@@ -21,8 +22,11 @@ interface UnidentifiedPaymentsPDFProps {
 const UnidentifiedPaymentsPDF: React.FC<UnidentifiedPaymentsPDFProps> = ({
   payments,
 }) => {
-  const { logoBase64, signatureBase64, adminCompany, adminPhone, adminEmail } =
+  const { logoBase64, adminCompany, adminPhone, adminEmail } =
     usePaymentSummaryStore();
+
+  // Obtenemos la firma optimizada del store de firmas
+  const { signatureBase64 } = useSignaturesStore();
 
   const generatePDF = () => {
     const doc = new jsPDF();
