@@ -6,6 +6,7 @@ import {
   usePaymentSummaryStore,
   PaymentRecord,
 } from "../../../../../store/paymentSummaryStore";
+import { useSignaturesStore } from "../../../../../store/useSignaturesStore";
 import { DocumentChartBarIcon } from "@heroicons/react/16/solid";
 import toast from "react-hot-toast";
 
@@ -28,13 +29,12 @@ const MONTH_NAMES: Record<string, string> = {
 };
 
 const MorosidadPDFReport: React.FC = () => {
-  // Obtenemos datos del store
+  // Obtenemos datos del store de pagos
   const {
     adminCompany,
     adminPhone,
     adminEmail,
     logoBase64,
-    signatureBase64,
     payments,
     fetchSummary,
     loading,
@@ -44,11 +44,13 @@ const MorosidadPDFReport: React.FC = () => {
     adminPhone: state.adminPhone,
     adminEmail: state.adminEmail,
     logoBase64: state.logoBase64,
-    signatureBase64: state.signatureBase64,
     payments: state.payments,
     fetchSummary: state.fetchSummary,
     loading: state.loading,
   }));
+
+  // Obtenemos la firma optimizada del store de firmas
+  const { signatureBase64, ensureSignaturesLoaded } = useSignaturesStore();
 
   // Estados para controlar la carga de datos
   const [historicalDataLoaded, setHistoricalDataLoaded] = useState(false);
@@ -92,7 +94,9 @@ const MorosidadPDFReport: React.FC = () => {
   // Efecto para cargar datos históricos al montar el componente
   useEffect(() => {
     loadAllPaymentData();
-  }, [loadAllPaymentData]);
+    // También aseguramos que las firmas estén cargadas
+    ensureSignaturesLoaded();
+  }, [loadAllPaymentData, ensureSignaturesLoaded]);
 
   // Efecto para actualizar allPayments cuando cambien los pagos
   useEffect(() => {
