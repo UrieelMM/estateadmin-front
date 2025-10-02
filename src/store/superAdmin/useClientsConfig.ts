@@ -27,6 +27,7 @@ export interface Client {
   responsiblePersonName?: string;
   responsiblePersonPosition?: string;
   billingFrequency?: string;
+  hasMaintenanceApp?: boolean;
 }
 
 export interface ClientFormData {
@@ -48,6 +49,7 @@ export interface ClientFormData {
   responsiblePersonName?: string;
   responsiblePersonPosition?: string;
   billingFrequency?: string;
+  hasMaintenanceApp?: boolean;
 }
 
 export interface CondominiumFormData {
@@ -103,7 +105,7 @@ interface ClientsConfigStore {
   fetchClientsWithCondominiums: (clients: Client[]) => Promise<void>;
   setCurrentClient: (client: Client | null) => void;
   setCurrentCondominium: (condominium: any | null) => void;
-  updateClientForm: (field: string, value: string) => void;
+  updateClientForm: (field: string, value: any) => void;
   updateCondominiumForm: (field: string, value: any) => void;
   resetCondominiumForm: () => void;
   submitClientEdit: () => Promise<boolean>;
@@ -254,6 +256,7 @@ const useClientsConfig = create<ClientsConfigStore>()((set, get) => ({
         responsiblePersonName: client.responsiblePersonName || "",
         responsiblePersonPosition: client.responsiblePersonPosition || "",
         billingFrequency: client.billingFrequency || "monthly",
+        hasMaintenanceApp: client.hasMaintenanceApp || false,
       },
     });
   },
@@ -382,6 +385,7 @@ const useClientsConfig = create<ClientsConfigStore>()((set, get) => ({
           responsiblePersonName: currentClient.responsiblePersonName,
           responsiblePersonPosition: currentClient.responsiblePersonPosition,
           billingFrequency: currentClient.billingFrequency,
+          hasMaintenanceApp: currentClient.hasMaintenanceApp,
         }
       );
 

@@ -67,6 +67,7 @@ const NewClientForm: React.FC<NewClientFormProps> = ({
     photoURL: "",
     plan: "Basic" as PlanType,
     proFunctions: [] as string[],
+    hasMaintenanceApp: false,
     cfdiUse: "G03",
     serviceStartDate: new Date(),
     billingFrequency: "monthly" as BillingFrequency,
@@ -350,6 +351,14 @@ const NewClientForm: React.FC<NewClientFormProps> = ({
       setFormData((prev) => ({
         ...prev,
         termsAccepted: checked,
+      }));
+      return;
+    }
+
+    if (name === "hasMaintenanceApp") {
+      setFormData((prev) => ({
+        ...prev,
+        hasMaintenanceApp: checked,
       }));
       return;
     }
@@ -739,6 +748,31 @@ const NewClientForm: React.FC<NewClientFormProps> = ({
                     </label>
                   </div>
                 ))}
+              </div>
+            </div>
+          </div>
+
+          {/* App de Mantenimiento */}
+          <div className="mb-6">
+            <h4 className="text-md font-medium mb-3 text-gray-800 dark:text-gray-200 border-b pb-1">
+              App de Mantenimiento
+            </h4>
+            <div className="pl-2">
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="hasMaintenanceApp"
+                  name="hasMaintenanceApp"
+                  checked={formData.hasMaintenanceApp}
+                  onChange={handleCheckboxChange}
+                  className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                />
+                <label
+                  htmlFor="hasMaintenanceApp"
+                  className="ml-2 block text-sm text-gray-900 dark:text-gray-100"
+                >
+                  El cliente contrató la App de Mantenimiento
+                </label>
               </div>
             </div>
           </div>

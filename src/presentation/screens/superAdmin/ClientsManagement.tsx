@@ -459,35 +459,6 @@ const ClientsManagement: React.FC = () => {
                               ? client.condominiumsCount
                               : "..."}
                           </div>
-
-                          {client.condominiumLimit && (
-                            <div className="text-xs text-gray-500 dark:text-gray-400">
-                              <span className="font-bold mr-1">
-                                Límite de condóminos:
-                              </span>
-                              {client.condominiumLimit}
-                            </div>
-                          )}
-
-                          {client.condominiumLimit && (
-                            <div className="text-xs text-gray-500 dark:text-gray-400">
-                              <span className="font-bold mr-1">
-                                Condóminos:
-                              </span>
-                              {client.totalRegularUsers !== undefined
-                                ? Math.round(
-                                    (client.totalRegularUsers /
-                                      client.condominiumLimit) *
-                                      100
-                                  )
-                                : Math.round(
-                                    ((client.condominiumsCount || 0) /
-                                      client.condominiumLimit) *
-                                      100
-                                  )}
-                              % usado
-                            </div>
-                          )}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">

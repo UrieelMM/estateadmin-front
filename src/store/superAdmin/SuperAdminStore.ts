@@ -42,6 +42,7 @@ interface Client {
   address?: string;
   currency?: string; // Nuevo campo para moneda
   language?: string; // Nuevo campo para idioma
+  hasMaintenanceApp?: boolean; // App de Mantenimiento
 }
 
 interface NewClientData {
@@ -73,6 +74,7 @@ interface NewClientData {
   photoURL?: string;
   plan: "Basic" | "Essential" | "Professional" | "Premium";
   proFunctions?: string[];
+  hasMaintenanceApp?: boolean; // App de Mantenimiento
   cfdiUse?: string;
   serviceStartDate?: Date;
   billingFrequency?: "monthly" | "quarterly" | "biannual" | "annual";
@@ -161,6 +163,7 @@ const useSuperAdminStore = create<SuperAdminStore>()((set, _get) => ({
           address: data.address || "",
           currency: data.currency || "",
           language: data.language || "",
+          hasMaintenanceApp: data.hasMaintenanceApp || false,
         };
       });
 

@@ -94,6 +94,11 @@ const ClientEditModal: React.FC<ClientEditModalProps> = ({
     const { name, checked } = e.target;
     const currentProFunctions = condominiumForm.proFunctions || [];
 
+    if (name === "hasMaintenanceApp") {
+      updateClientForm("hasMaintenanceApp", checked);
+      return;
+    }
+
     if (checked) {
       // Añadir la función al array si no está ya
       if (!currentProFunctions.includes(name)) {
@@ -464,6 +469,29 @@ const ClientEditModal: React.FC<ClientEditModalProps> = ({
                   <option value="inactive">Inactivo</option>
                   <option value="pending">Pendiente</option>
                 </select>
+              </div>
+            </div>
+
+            {/* App de Mantenimiento */}
+            <div className="mt-4">
+              <h4 className="text-md font-medium mb-3 text-gray-800 dark:text-gray-200 border-b pb-1">
+                App de Mantenimiento
+              </h4>
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="hasMaintenanceApp"
+                  name="hasMaintenanceApp"
+                  checked={currentClient.hasMaintenanceApp || false}
+                  onChange={handleCheckboxChange}
+                  className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                />
+                <label
+                  htmlFor="hasMaintenanceApp"
+                  className="ml-2 block text-sm text-gray-700 dark:text-gray-300"
+                >
+                  El cliente contrató la App de Mantenimiento
+                </label>
               </div>
             </div>
 
