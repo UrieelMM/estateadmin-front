@@ -797,13 +797,25 @@ export const useTicketsStore = create<TicketState>()((set, get) => ({
       // Fusionar el historial actual con las nuevas actualizaciones
       const history = [...currentHistory, ...historyUpdates];
 
-      const updateData = {
+      // Construir el objeto de actualización evitando valores undefined
+      const updateData: any = {
         ...data,
         updatedAt: now,
         attachments,
         history,
-        hasAppointment: data.hasAppointment,
       };
+
+      // Solo incluir hasAppointment si tiene un valor definido
+      if (data.hasAppointment !== undefined) {
+        updateData.hasAppointment = data.hasAppointment;
+      }
+
+      // Filtrar campos con valores undefined
+      Object.keys(updateData).forEach((key) => {
+        if (updateData[key] === undefined) {
+          delete updateData[key];
+        }
+      });
 
       const ticketDocRef = doc(
         db,
