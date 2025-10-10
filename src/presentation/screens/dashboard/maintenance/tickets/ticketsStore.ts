@@ -528,7 +528,7 @@ export const useTicketsStore = create<TicketState>()((set, get) => ({
       const history = [...initialHistory, ...(ticket.history || [])];
 
       // Preparar datos del ticket
-      const ticketData = {
+      const ticketData: any = {
         ...ticket,
         status: ticket.status || "abierto",
         createdAt: now,
@@ -540,8 +540,12 @@ export const useTicketsStore = create<TicketState>()((set, get) => ({
         mergedFrom: ticket.mergedFrom || [],
         folio: ticket.folio || "",
         createdByEmail: ticket.createdByEmail || user.email || "",
-        hasAppointment: ticket.hasAppointment,
       };
+
+      // Solo incluir hasAppointment si tiene un valor definido
+      if (ticket.hasAppointment !== undefined) {
+        ticketData.hasAppointment = ticket.hasAppointment;
+      }
 
       // Eliminar campo temporal de comentario si existe
       if (ticketData.comment) {

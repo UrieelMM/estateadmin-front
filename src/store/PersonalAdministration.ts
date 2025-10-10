@@ -139,6 +139,7 @@ export interface PersonalProfile {
   };
   photo?: string;
   documents: PersonalDocument[];
+  maintenanceAppUserUid?: string; // UID del usuario de App de Mantenimiento vinculado
   createdAt: Date;
   updatedAt: Date;
 }
@@ -506,7 +507,7 @@ export const usePersonalAdministrationStore =
         }
 
         // Preparar datos del empleado evitando valores undefined
-        const newEmployee = {
+        const newEmployee: any = {
           personalInfo: {
             firstName: employeeData.personalInfo.firstName || "",
             lastName: employeeData.personalInfo.lastName || "",
@@ -537,6 +538,11 @@ export const usePersonalAdministrationStore =
           createdAt: new Date(),
           updatedAt: new Date(),
         };
+
+        // Agregar UID del usuario de mantenimiento si existe
+        if (employeeData.maintenanceAppUserUid) {
+          newEmployee.maintenanceAppUserUid = employeeData.maintenanceAppUserUid;
+        }
 
         // Sanitizar datos para Firestore
         const sanitizedEmployee = sanitizeForFirestore(newEmployee);

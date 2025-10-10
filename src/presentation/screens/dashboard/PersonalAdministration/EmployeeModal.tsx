@@ -13,6 +13,22 @@ import {
   PersonalProfile,
 } from "../../../../store/PersonalAdministration";
 import { formatCurrency } from "../../../../utils/curreyncy";
+import {
+  getFirestore,
+  collection,
+  getDocs,
+} from "firebase/firestore";
+import { getAuth, getIdTokenResult } from "firebase/auth";
+import toast from "react-hot-toast";
+
+interface MaintenanceAppUser {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  uid: string;
+  photoURL?: string;
+}
 
 interface EmployeeModalProps {
   isOpen: boolean;
@@ -86,6 +102,94 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
   const [documentFile, setDocumentFile] = useState<File | undefined>(undefined);
   const [uploading, setUploading] = useState(false);
 
+  // Estados para usuarios de App de Mantenimiento
+  const [maintenanceUsers, setMaintenanceUsers] = useState<MaintenanceAppUser[]>([]);
+  const [selectedMaintenanceUser, setSelectedMaintenanceUser] = useState<string>("");
+  const [loadingUsers, setLoadingUsers] = useState(false);
+
+  // Cargar usuarios de App de Mantenimiento al abrir el modal en modo crear
+  useEffect(() => {
+    if (mode === "create" && isOpen) {
+      fetchMaintenanceUsers();
+    }
+  }, [mode, isOpen]);
+
+  const fetchMaintenanceUsers = async () => {
+    try {
+      setLoadingUsers(true);
+      const auth = getAuth();
+      const user = auth.currentUser;
+      
+      if (!user) return;
+
+      const token = await getIdTokenResult(user);
+      const clientId = token.claims.clientId as string;
+
+      if (!clientId) return;
+
+      const db = getFirestore();
+      const usersRef = collection(db, `clients/${clientId}/maintenanceAppUsers`);
+      const snapshot = await getDocs(usersRef);
+
+      const users: MaintenanceAppUser[] = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        name: doc.data().name,
+        email: doc.data().email,
+        phone: doc.data().phone,
+        uid: doc.data().uid,
+        photoURL: doc.data().photoURL,
+      }));
+
+      setMaintenanceUsers(users);
+    } catch (error) {
+      console.error("Error al cargar usuarios de mantenimiento:", error);
+      toast.error("Error al cargar usuarios de la app");
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
+
+  // Manejar selección de usuario de App
+  const handleMaintenanceUserSelect = (userId: string) => {
+    setSelectedMaintenanceUser(userId);
+    
+    if (userId) {
+      const user = maintenanceUsers.find(u => u.id === userId);
+      if (user) {
+        // Rellenar campos automáticamente
+        setFormData(prev => ({
+          ...prev,
+          personalInfo: {
+            ...prev.personalInfo,
+            firstName: user.name.split(' ')[0] || user.name,
+            lastName: user.name.split(' ').slice(1).join(' ') || '',
+            email: user.email,
+            phone: user.phone,
+          },
+          photo: user.photoURL || '',
+        }));
+        
+        if (user.photoURL) {
+          setPhotoPreview(user.photoURL);
+        }
+      }
+    } else {
+      // Limpiar campos si se deselecciona
+      setFormData(prev => ({
+        ...prev,
+        personalInfo: {
+          ...prev.personalInfo,
+          firstName: '',
+          lastName: '',
+          email: '',
+          phone: '',
+        },
+        photo: '',
+      }));
+      setPhotoPreview('');
+    }
+  };
+
   useEffect(() => {
     if (employee && (mode === "edit" || mode === "view")) {
       setFormData({
@@ -142,6 +246,7 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
       });
       setPhotoPreview("");
       setPhotoFile(undefined);
+      setSelectedMaintenanceUser("");
     }
   }, [employee, mode]);
 
@@ -207,7 +312,7 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
         return;
       }
 
-      const employeeData = {
+      const employeeData: any = {
         personalInfo: {
           ...formData.personalInfo,
           birthDate: new Date(formData.personalInfo.birthDate),
@@ -219,6 +324,14 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
         photo: photoPreview || formData.photo || undefined,
         documents: employee?.documents || [],
       };
+
+      // Si hay un usuario de mantenimiento seleccionado, agregar su UID
+      if (selectedMaintenanceUser) {
+        const selectedUser = maintenanceUsers.find(u => u.id === selectedMaintenanceUser);
+        if (selectedUser) {
+          employeeData.maintenanceAppUserUid = selectedUser.uid;
+        }
+      }
 
       if (mode === "create") {
         await addEmployee(employeeData, photoFile);
@@ -440,6 +553,31 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
                       </div>
                     </div>
 
+                    {/* Selector de Usuario de App (solo en modo crear) */}
+                    {mode === "create" && (
+                      <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Vincular con Usuario de App de Mantenimiento (Opcional)
+                        </label>
+                        <select
+                          value={selectedMaintenanceUser}
+                          onChange={(e) => handleMaintenanceUserSelect(e.target.value)}
+                          disabled={loadingUsers}
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        >
+                          <option value="">-- Seleccionar usuario (opcional) --</option>
+                          {maintenanceUsers.map((user) => (
+                            <option key={user.id} value={user.id}>
+                              {user.name} - {user.email}
+                            </option>
+                          ))}
+                        </select>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                          Si seleccionas un usuario, sus datos se rellenarán automáticamente
+                        </p>
+                      </div>
+                    )}
+
                     {/* Basic Information */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>
@@ -449,7 +587,7 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
                         <input
                           type="text"
                           required
-                          disabled={isReadOnly}
+                          disabled={isReadOnly || !!selectedMaintenanceUser}
                           value={formData.personalInfo.firstName}
                           onChange={(e) =>
                             setFormData((prev) => ({
@@ -471,7 +609,7 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
                         <input
                           type="text"
                           required
-                          disabled={isReadOnly}
+                          disabled={isReadOnly || !!selectedMaintenanceUser}
                           value={formData.personalInfo.lastName}
                           onChange={(e) =>
                             setFormData((prev) => ({
@@ -493,7 +631,7 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
                         <input
                           type="email"
                           required
-                          disabled={isReadOnly}
+                          disabled={isReadOnly || !!selectedMaintenanceUser}
                           value={formData.personalInfo.email}
                           onChange={(e) =>
                             setFormData((prev) => ({
