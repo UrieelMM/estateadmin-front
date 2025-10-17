@@ -25,6 +25,8 @@ import toast from "react-hot-toast";
 export enum ItemType {
   MACHINERY = "machinery", // Maquinaria (bombas, motos, herramientas eléctricas)
   SUPPLIES = "supplies", // Insumos fungibles (focos, material de limpieza)
+  TOOL = "tool", // Herramientas
+  MATERIAL = "material", // Materiales
 }
 
 // Estado del item
@@ -64,6 +66,7 @@ export interface InventoryItem {
   supplier?: string;
   notes?: string;
   images?: string[]; // URLs a imágenes
+  managedByMaintenanceApp?: boolean; // Si puede ser administrado por usuarios de la app de mantenimiento
   createdAt: Date;
   updatedAt: Date;
   createdBy: string;
@@ -309,6 +312,7 @@ const useInventoryStore = create<InventoryStore>()((set, get) => ({
         supplier: item.supplier || "",
         notes: item.notes || "",
         images: [], // Inicializamos con array vacío, luego añadiremos las URLs
+        managedByMaintenanceApp: item.managedByMaintenanceApp || false,
         createdAt: now,
         updatedAt: now,
         createdBy: user.uid,

@@ -115,6 +115,8 @@ const FilterBar: React.FC<FilterBarProps> = ({
             <option value="">Todos los tipos</option>
             <option value={ItemType.MACHINERY}>Maquinaria</option>
             <option value={ItemType.SUPPLIES}>Insumos</option>
+            <option value={ItemType.TOOL}>Herramientas</option>
+            <option value={ItemType.MATERIAL}>Materiales</option>
           </select>
 
           <select

@@ -14,7 +14,6 @@ import { Link, useLocation } from "react-router-dom";
 import ModalButton from "./components/ModalButton";
 import { formatCurrencyInventory } from "../../../../utils/curreyncy";
 
-
 const InventoryList: React.FC = () => {
   const {
     items,
@@ -52,9 +51,7 @@ const InventoryList: React.FC = () => {
     fetchCategories();
   }, [fetchItems, fetchCategories]);
 
-  useEffect(() => {
-    console.log("Modal de añadir ítem:", isAddModalOpen);
-  }, [isAddModalOpen]);
+  useEffect(() => {}, [isAddModalOpen]);
 
   // Handlers para modales
   const handleAddItem = async (data: Partial<InventoryItemFormData>) => {

@@ -47,6 +47,7 @@ const InventoryItemForm: React.FC<InventoryItemFormProps> = ({
     supplier: "",
     notes: "",
     images: [],
+    managedByMaintenanceApp: false,
     ...item,
   });
 
@@ -66,7 +67,10 @@ const InventoryItemForm: React.FC<InventoryItemFormProps> = ({
   ) => {
     const { name, value, type } = e.target;
 
-    if (type === "number") {
+    if (type === "checkbox") {
+      const target = e.target as HTMLInputElement;
+      setFormData({ ...formData, [name]: target.checked });
+    } else if (type === "number") {
       setFormData({ ...formData, [name]: value ? parseFloat(value) : 0 });
     } else if (type === "date") {
       // Si el valor está vacío, simplemente no incluimos esta propiedad
@@ -315,6 +319,8 @@ const InventoryItemForm: React.FC<InventoryItemFormProps> = ({
                 >
                   <option value={ItemType.SUPPLIES}>Insumo</option>
                   <option value={ItemType.MACHINERY}>Maquinaria</option>
+                  <option value={ItemType.TOOL}>Herramienta</option>
+                  <option value={ItemType.MATERIAL}>Material</option>
                 </select>
                 {errors.type && (
                   <p className="mt-1 text-sm text-red-500">{errors.type}</p>
@@ -357,7 +363,7 @@ const InventoryItemForm: React.FC<InventoryItemFormProps> = ({
                   value={formData.location || ""}
                   onChange={handleChange}
                   className="bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white sm:text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
-                  placeholder="Ubicación del ítem"
+                  placeholder="Oficina, cuarto de maquinaria, etc."
                 />
               </div>
 
@@ -373,6 +379,28 @@ const InventoryItemForm: React.FC<InventoryItemFormProps> = ({
                   className="bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white sm:text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
                   placeholder="Descripción detallada del ítem"
                 ></textarea>
+              </div>
+
+              <div className="md:col-span-2">
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    name="managedByMaintenanceApp"
+                    id="managedByMaintenanceApp"
+                    checked={formData.managedByMaintenanceApp || false}
+                    onChange={handleChange}
+                    className="w-4 h-4 text-indigo-600 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded focus:ring-indigo-500 focus:ring-2"
+                  />
+                  <label
+                    htmlFor="managedByMaintenanceApp"
+                    className="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300"
+                  >
+                    Puede ser administrado por usuarios de la app de mantenimiento
+                  </label>
+                </div>
+                <p className="mt-1 text-xs text-gray-600 dark:text-gray-400 ml-6">
+                  Si se activa, los usuarios de la aplicación de mantenimiento podrán gestionar este ítem
+                </p>
               </div>
             </div>
           </div>
