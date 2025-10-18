@@ -34,6 +34,7 @@ export type Config = {
   logo?: string; // Derivado de logoUrl para la UI
   logoReports?: string;
   darkMode?: boolean;
+  hasMaintenanceApp?: boolean;
 };
 
 /** Información del mensaje de pago para clientes */
@@ -64,6 +65,7 @@ type ConfigState = {
   loading: boolean;
   uploading: Record<string, boolean>;
   error: string | null;
+  hasMaintenanceApp: boolean;
   fetchConfig: () => Promise<void>;
   updateConfig: (
     data: Partial<Config> & { darkMode?: boolean },
@@ -83,6 +85,7 @@ type ConfigState = {
     description?: string
   ) => Promise<void>;
   deletePublicDocument: (documentId: string) => Promise<void>;
+  checkMaintenanceAppAccess: () => Promise<boolean>;
 };
 
 export const useConfigStore = create<ConfigState>()((set, get) => ({
@@ -92,6 +95,7 @@ export const useConfigStore = create<ConfigState>()((set, get) => ({
   loading: false,
   uploading: {},
   error: null,
+  hasMaintenanceApp: false,
 
   /**
    * 1) Lee la config general de `clients/{clientId}`.
@@ -149,8 +153,12 @@ export const useConfigStore = create<ConfigState>()((set, get) => ({
         );
       }
 
-      // Actualizamos el state
-      set({ config: data, loading: false });
+      // Actualizamos el state incluyendo hasMaintenanceApp
+      set({ 
+        config: data, 
+        hasMaintenanceApp: data.hasMaintenanceApp || false,
+        loading: false 
+      });
     } catch (err: any) {
       Sentry.captureException(err);
       set({ error: err.message, loading: false });
@@ -634,6 +642,37 @@ export const useConfigStore = create<ConfigState>()((set, get) => ({
       }));
       Sentry.captureException(err);
       throw err;
+    }
+  },
+
+  /**
+   * Verifica si el cliente tiene acceso a la App de Mantenimiento
+   * Lee el campo hasMaintenanceApp de clients/{clientId}
+   */
+  checkMaintenanceAppAccess: async () => {
+    try {
+      const auth = getAuth();
+      const user = auth.currentUser;
+      if (!user) return false;
+
+      const tokenResult = await getIdTokenResult(user);
+      const clientId = tokenResult.claims["clientId"] as string;
+      if (!clientId) return false;
+
+      const db = getFirestore();
+      const configDocRef = doc(db, "clients", clientId);
+      const configDocSnap = await getDoc(configDocRef);
+      
+      if (!configDocSnap.exists()) return false;
+      
+      const data = configDocSnap.data();
+      const hasAccess = data.hasMaintenanceApp || false;
+      
+      set({ hasMaintenanceApp: hasAccess });
+      return hasAccess;
+    } catch (err: any) {
+      Sentry.captureException(err);
+      return false;
     }
   },
 }));

@@ -33,7 +33,7 @@ import CommitteeManagement from "../committee/CommitteeManagement";
 import ClientInvoicesTable from "../../client/invoices/ClientInvoicesTable";
 
 const ConfigForm = () => {
-  const { config, loading, error, fetchConfig, updateConfig } =
+  const { config, loading, error, fetchConfig, updateConfig, hasMaintenanceApp, checkMaintenanceAppAccess } =
     useConfigStore();
   const { isDarkMode, toggleDarkMode } = useTheme(); // <-- Valor del ThemeContext (debe ser boolean)
   const [userRole, setUserRole] = useState<string>("");
@@ -71,7 +71,8 @@ const ConfigForm = () => {
 
   useEffect(() => {
     fetchConfig();
-  }, [fetchConfig]);
+    checkMaintenanceAppAccess();
+  }, [fetchConfig, checkMaintenanceAppAccess]);
 
   useEffect(() => {
     if (config) {
@@ -827,11 +828,16 @@ const ConfigForm = () => {
           <div className="p-6 space-y-8">
             <AdminUsers />
             
-            {/* Separador */}
-            <div className="border-t border-gray-200 dark:border-gray-700 my-8"></div>
-            
-            {/* Usuarios de App de Mantenimiento */}
-            <MaintenanceAppUsers />
+            {/* Usuarios de App de Mantenimiento - Solo visible si hasMaintenanceApp es true */}
+            {hasMaintenanceApp && (
+              <>
+                {/* Separador */}
+                <div className="border-t border-gray-200 dark:border-gray-700 my-8"></div>
+                
+                {/* Usuarios de App de Mantenimiento */}
+                <MaintenanceAppUsers />
+              </>
+            )}
           </div>
         </div>
       )}

@@ -13,12 +13,15 @@ import {
   CalendarDaysIcon,
   UserGroupIcon,
   CurrencyDollarIcon,
+  DevicePhoneMobileIcon,
 } from "@heroicons/react/24/solid";
 import MaintenanceDashboard from "./MaintenanceDashboard";
 import MaintenanceAppointments from "./MaintenanceAppointments";
 import MaintenanceContracts from "./MaintenanceContracts";
 import MaintenanceCosts from "./MaintenanceCosts";
+import MaintenanceAppReports from "./MaintenanceAppReports";
 import { useTicketsStore } from "./tickets/ticketsStore";
+import { useConfigStore } from "../../../../store/useConfigStore";
 
 const Maintenance = () => {
   // Estado para controlar la apertura del formulario
@@ -29,11 +32,13 @@ const Maintenance = () => {
   );
   const { fetchReports } = useMaintenanceReportStore();
   const { fetchTickets } = useTicketsStore();
+  const { hasMaintenanceApp, checkMaintenanceAppAccess } = useConfigStore();
 
   useEffect(() => {
     // Cargar datos al iniciar el componente
     fetchReports();
     fetchTickets();
+    checkMaintenanceAppAccess();
   }, []);
 
   // Función para manejar la edición: guarda el reporte seleccionado y abre el formulario
@@ -49,7 +54,13 @@ const Maintenance = () => {
   };
 
   const [tab, setTab] = useState<
-    "dashboard" | "reportes" | "tickets" | "citas" | "contratos" | "costos"
+    | "dashboard"
+    | "reportes"
+    | "tickets"
+    | "citas"
+    | "contratos"
+    | "costos"
+    | "app"
   >("dashboard");
   return (
     <div className="px-4 rounded-md sm:px-6 lg:px-8">
@@ -174,7 +185,7 @@ const Maintenance = () => {
                 tab === "contratos" ? "scale-110" : "group-hover:scale-105"
               }`}
             />
-            <span className="whitespace-nowrap">Proveedores y Contratos</span>
+            <span className="whitespace-nowrap">Contratos</span>
             {tab === "contratos" && (
               <div className="absolute inset-0 rounded-xl bg-white/20 animate-pulse" />
             )}
@@ -197,11 +208,36 @@ const Maintenance = () => {
                 tab === "costos" ? "scale-110" : "group-hover:scale-105"
               }`}
             />
-            <span className="whitespace-nowrap">Control de Costos</span>
+            <span className="whitespace-nowrap">Costos</span>
             {tab === "costos" && (
               <div className="absolute inset-0 rounded-xl bg-white/20 animate-pulse" />
             )}
           </button>
+
+          {hasMaintenanceApp && (
+            <button
+              className={`
+                group relative flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm
+                transition-all duration-300 ease-out
+                ${
+                  tab === "app"
+                    ? "bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 dark:from-indigo-800 dark:via-purple-700 dark:to-indigo-800 text-white shadow-lg shadow-indigo-500/25"
+                    : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700/50"
+                }
+              `}
+              onClick={() => setTab("app")}
+            >
+              <DevicePhoneMobileIcon
+                className={`h-5 w-5 transition-transform duration-300 ${
+                  tab === "app" ? "scale-110" : "group-hover:scale-105"
+                }`}
+              />
+              <span className="whitespace-nowrap">App Mantenimiento</span>
+              {tab === "app" && (
+                <div className="absolute inset-0 rounded-xl bg-white/20 animate-pulse" />
+              )}
+            </button>
+          )}
         </div>
       </div>
 
@@ -271,6 +307,12 @@ const Maintenance = () => {
       {tab === "costos" && (
         <div className="mt-6">
           <MaintenanceCosts />
+        </div>
+      )}
+
+      {tab === "app" && hasMaintenanceApp && (
+        <div className="mt-6">
+          <MaintenanceAppReports />
         </div>
       )}
     </div>
