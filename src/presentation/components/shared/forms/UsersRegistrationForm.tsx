@@ -28,12 +28,70 @@ const animationStyles = `
     100% { box-shadow: 0 0 0 0 rgba(79, 70, 229, 0); }
   }
   
+  @keyframes orbit {
+    from { transform: rotate(0deg) translateX(150px) rotate(0deg); }
+    to { transform: rotate(360deg) translateX(150px) rotate(-360deg); }
+  }
+  
+  @keyframes orbit-reverse {
+    from { transform: rotate(0deg) translateX(175px) rotate(0deg); }
+    to { transform: rotate(-360deg) translateX(175px) rotate(360deg); }
+  }
+  
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+  }
+  
+  @keyframes pulse-glow {
+    0%, 100% { opacity: 0.5; }
+    50% { opacity: 1; }
+  }
+  
+  @keyframes shimmer {
+    0% { background-position: -1000px 0; }
+    100% { background-position: 1000px 0; }
+  }
+  
+  @keyframes shimmer-slow {
+    0% { background-position: -1000px 0; }
+    100% { background-position: 1000px 0; }
+  }
+  
   .animate-fadeIn {
     animation: fadeIn 0.3s ease-out forwards;
   }
   
   .animate-pulse-highlight {
     animation: pulseHighlight 2s infinite;
+  }
+  
+  .animate-orbit {
+    animation: orbit 20s linear infinite;
+  }
+  
+  .animate-orbit-reverse {
+    animation: orbit-reverse 25s linear infinite;
+  }
+  
+  .animate-float {
+    animation: float 3s ease-in-out infinite;
+  }
+  
+  .animate-pulse-glow {
+    animation: pulse-glow 2s ease-in-out infinite;
+  }
+  
+  .shimmer-effect {
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    background-size: 1000px 100%;
+    animation: shimmer 2s infinite;
+  }
+  
+  .shimmer-effect-slow {
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    background-size: 1000px 100%;
+    animation: shimmer-slow 4s ease-in-out infinite;
   }
 `;
 
@@ -312,77 +370,156 @@ const UsersRegistrationForm = () => {
               </h4>
             </div>
 
-            {/* Área de carga de archivo mejorada */}
+            {/* Área de carga de archivo mejorada con animaciones */}
             <div
               {...getRootProps()}
               className={`
-                relative transition-all duration-300 
-                p-6 border-2 border-dashed rounded-lg 
-                flex flex-col items-center justify-center min-h-[200px]
-                cursor-pointer
+                relative transition-all duration-500 overflow-hidden
+                p-8 border-2 border-dashed rounded-2xl 
+                flex flex-col items-center justify-center min-h-[280px]
+                cursor-pointer group
                 ${
                   isDragActive
-                    ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20"
-                    : "border-gray-300 dark:border-gray-600"
+                    ? "border-indigo-500 bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 dark:from-indigo-900/30 dark:via-purple-900/20 dark:to-pink-900/20 scale-105 shadow-2xl"
+                    : "border-gray-300 dark:border-gray-600 hover:border-indigo-400 dark:hover:border-indigo-500"
                 }
                 ${
                   file
-                    ? "bg-indigo-50 dark:bg-indigo-900/20 border-indigo-300"
-                    : ""
+                    ? "bg-gradient-to-br from-indigo-50 via-blue-50 to-cyan-50 dark:from-indigo-900/30 dark:via-blue-900/20 dark:to-cyan-900/20 border-indigo-400 shadow-xl"
+                    : "hover:shadow-lg"
                 }
               `}
             >
               <input {...getInputProps()} />
 
+              {/* Iconos orbitales - solo cuando NO hay archivo */}
+              {!file && (
+                <div className="absolute inset-0 pointer-events-none">
+                  {/* Centro de órbita */}
+                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+                    {/* Órbita 1 */}
+                    <div className="animate-orbit">
+                      <TableCellsIcon className="w-6 h-6 text-indigo-400 dark:text-indigo-500 opacity-60" />
+                    </div>
+                    {/* Órbita 2 */}
+                    <div
+                      className="animate-orbit"
+                      style={{ animationDelay: "-5s" }}
+                    >
+                      <DocumentCheckIcon className="w-5 h-5 text-purple-400 dark:text-purple-500 opacity-50" />
+                    </div>
+                    {/* Órbita 3 */}
+                    <div
+                      className="animate-orbit"
+                      style={{ animationDelay: "-10s" }}
+                    >
+                      <ArrowUpTrayIcon className="w-5 h-5 text-pink-400 dark:text-pink-500 opacity-50" />
+                    </div>
+                    {/* Órbita 4 */}
+                    <div
+                      className="animate-orbit"
+                      style={{ animationDelay: "-15s" }}
+                    >
+                      <CheckCircleIcon className="w-4 h-4 text-cyan-400 dark:text-cyan-500 opacity-40" />
+                    </div>
+
+                    {/* Órbita inversa 1 */}
+                    <div className="animate-orbit-reverse">
+                      <DocumentPlusIcon className="w-6 h-6 text-blue-400 dark:text-blue-500 opacity-50" />
+                    </div>
+                    {/* Órbita inversa 2 */}
+                    <div
+                      className="animate-orbit-reverse"
+                      style={{ animationDelay: "-8s" }}
+                    >
+                      <TableCellsIcon className="w-5 h-5 text-indigo-300 dark:text-indigo-600 opacity-40" />
+                    </div>
+                    {/* Órbita inversa 3 */}
+                    <div
+                      className="animate-orbit-reverse"
+                      style={{ animationDelay: "-16s" }}
+                    >
+                      <DocumentCheckIcon className="w-4 h-4 text-purple-300 dark:text-purple-600 opacity-35" />
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {!file ? (
                 <>
-                  <DocumentPlusIcon
-                    className={`
-                    w-16 h-16 mb-4 transition-colors
-                    ${
-                      isDragActive
-                        ? "text-indigo-500"
-                        : "text-gray-300 dark:text-gray-500"
-                    }
-                  `}
-                  />
+                  {/* Icono central con animación flotante */}
+                  <div className="relative z-10 animate-float">
+                    <div className="relative">
+                      {/* Glow effect */}
+                      <div className="absolute inset-0 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-full blur-2xl opacity-20 animate-pulse-glow"></div>
 
-                  <div className="text-center space-y-2">
-                    <p className="text-md font-medium text-gray-700 dark:text-gray-200">
+                      <DocumentPlusIcon
+                        className={`
+                        relative w-20 h-20 mb-4 transition-all duration-500
+                        ${
+                          isDragActive
+                            ? "text-indigo-600 dark:text-indigo-400 scale-110"
+                            : "text-indigo-400 dark:text-indigo-500 group-hover:text-indigo-500 dark:group-hover:text-indigo-400 group-hover:scale-105"
+                        }
+                      `}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="text-center space-y-3 relative z-10">
+                    <p className="text-lg font-semibold bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent dark:from-indigo-400 dark:via-purple-400 dark:to-pink-400">
                       {isDragActive
                         ? "¡Suelta el archivo aquí!"
-                        : "Arrastra tu archivo Excel aquí o haz clic para seleccionar"}
+                        : "Arrastra tu archivo Excel aquí"}
                     </p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                      Formatos aceptados: .xls, .xlsx (máx. 10MB)
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      o haz clic para seleccionar
                     </p>
+                    <div className="flex items-center justify-center gap-2 text-xs text-gray-500 dark:text-gray-500">
+                      <span className="px-2 py-1 bg-white dark:bg-gray-800 rounded-full border border-gray-200 dark:border-gray-700">
+                        .xls
+                      </span>
+                      <span className="px-2 py-1 bg-white dark:bg-gray-800 rounded-full border border-gray-200 dark:border-gray-700">
+                        .xlsx
+                      </span>
+                      <span className="text-gray-400">•</span>
+                      <span>máx. 10MB</span>
+                    </div>
                   </div>
 
                   <button
                     type="button"
-                    className="mt-4 px-4 py-2 bg-white dark:bg-gray-700 text-indigo-600 dark:text-indigo-400 
-                              border border-indigo-300 dark:border-indigo-500 rounded-md text-sm font-medium 
-                              flex items-center hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors"
+                    className="relative mt-6 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white 
+                              rounded-xl text-sm font-semibold overflow-hidden
+                              flex items-center shadow-lg hover:shadow-xl
+                              transform transition-all duration-300
+                              group/btn z-10"
                     onClick={(e) => {
                       e.stopPropagation();
-                      // Usar la función open de react-dropzone para abrir el selector de archivos
                       open();
                     }}
                   >
-                    <ArrowUpTrayIcon className="w-4 h-4 mr-2" />
-                    Seleccionar archivo
+                    <div className="absolute inset-0 shimmer-effect-slow"></div>
+                    <ArrowUpTrayIcon className="w-5 h-5 mr-2 relative z-10" />
+                    <span className="relative z-10">Seleccionar archivo</span>
                   </button>
                 </>
               ) : (
-                <div className="w-full">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center">
-                      <DocumentCheckIcon className="w-8 h-8 text-indigo-500 mr-2" />
+                <div className="w-full relative z-10 animate-fadeIn">
+                  <div className="flex items-center justify-between mb-4 p-4 bg-white/50 dark:bg-gray-800/50 rounded-xl backdrop-blur-sm">
+                    <div className="flex items-center gap-3">
+                      <div className="relative">
+                        <div className="absolute inset-0 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-lg blur-md opacity-50 animate-pulse"></div>
+                        <DocumentCheckIcon className="relative w-10 h-10 text-indigo-600 dark:text-indigo-400" />
+                      </div>
                       <div>
-                        <p className="font-medium text-gray-800 dark:text-gray-200">
+                        <p className="font-semibold text-gray-800 dark:text-gray-200">
                           {fileName}
                         </p>
-                        <p className="text-xs text-gray-500">{fileSize}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
+                          {fileSize}
+                        </p>
                       </div>
                     </div>
                     <button
@@ -395,51 +532,82 @@ const UsersRegistrationForm = () => {
                         setCurrentStep(1);
                         setValidationResult(null);
                       }}
-                      className="text-gray-500 hover:text-red-500 transition-colors"
+                      className="text-gray-400 hover:text-red-500 transition-all duration-300 hover:scale-110 hover:rotate-90"
                       type="button"
                     >
-                      <XCircleIcon className="w-6 h-6" />
+                      <XCircleIcon className="w-7 h-7" />
                     </button>
                   </div>
 
                   {uploadProgress < 100 ? (
-                    <div className="w-full">
-                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mb-2">
+                    <div className="w-full space-y-2">
+                      <div className="relative w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 overflow-hidden">
                         <div
-                          className="bg-indigo-600 h-2 rounded-full transition-all duration-300"
+                          className="absolute inset-0 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-full transition-all duration-300"
                           style={{ width: `${uploadProgress}%` }}
-                        ></div>
+                        >
+                          <div className="absolute inset-0 shimmer-effect"></div>
+                        </div>
                       </div>
-                      <p className="text-xs text-right text-gray-500">
-                        Procesando archivo...
-                      </p>
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-gray-600 dark:text-gray-400 flex items-center gap-2">
+                          <svg
+                            className="animate-spin h-3 w-3"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                          >
+                            <circle
+                              className="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                            ></circle>
+                            <path
+                              className="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                            ></path>
+                          </svg>
+                          Procesando archivo...
+                        </span>
+                        <span className="font-semibold text-indigo-600 dark:text-indigo-400">
+                          {uploadProgress}%
+                        </span>
+                      </div>
                     </div>
                   ) : (
-                    <div className="flex items-center justify-center p-2 bg-indigo-50 dark:bg-indigo-900/20 rounded text-sm text-indigo-700 dark:text-indigo-400">
-                      <CheckCircleIcon className="w-5 h-5 mr-2" />
-                      Archivo listo para importar
+                    <div className="flex items-center justify-center p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl border-2 border-green-200 dark:border-green-800 shadow-lg">
+                      <CheckCircleIcon className="w-6 h-6 mr-2 text-green-600 dark:text-green-400 animate-bounce" />
+                      <span className="font-semibold text-green-700 dark:text-green-300">
+                        Archivo listo para importar
+                      </span>
                     </div>
                   )}
                 </div>
               )}
             </div>
 
-            {/* Información y ayuda */}
-            <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-md flex items-start dark:bg-amber-900/20 dark:border-amber-800">
-              <ExclamationCircleIcon className="w-5 h-5 text-amber-500 mr-2 flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="text-sm text-amber-800 dark:text-amber-200 font-medium">
-                  Formato requerido
+            {/* Información y ayuda con diseño mejorado */}
+            <div className="mt-6 p-4 bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-200 rounded-xl flex items-start dark:from-amber-900/20 dark:to-orange-900/20 dark:border-amber-800 shadow-md hover:shadow-lg transition-shadow duration-300">
+              <div className="relative">
+                <ExclamationCircleIcon className="w-6 h-6 text-amber-600 dark:text-amber-400 mr-3 flex-shrink-0 mt-0.5" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm text-amber-900 dark:text-amber-100 font-semibold mb-1">
+                  📋 Formato requerido
                 </p>
-                <p className="text-xs text-amber-700 dark:text-amber-300">
+                <p className="text-xs text-amber-800 dark:text-amber-200 mb-3">
                   Es importante que utilices la plantilla de ejemplo para
                   importar los usuarios.
                 </p>
                 <a
                   href="https://res.cloudinary.com/dz5tntwl1/raw/upload/v1710883105/template-registro-de-usuarios_yw3tih.xlsx"
-                  className="mt-2 inline-flex items-center text-xs font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400"
+                  className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-xs font-semibold rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-105"
                 >
-                  <TableCellsIcon className="w-3 h-3 mr-1 font-medium" />
+                  <TableCellsIcon className="w-4 h-4 mr-2" />
                   Descargar plantilla de ejemplo
                 </a>
               </div>
@@ -601,17 +769,18 @@ const UsersRegistrationForm = () => {
 
           <button
             type="submit"
-            className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center"
+            className="relative px-6 py-3 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white text-sm font-semibold rounded-xl hover:from-indigo-700 hover:via-purple-700 hover:to-pink-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-all duration-300 disabled:from-gray-400 disabled:via-gray-400 disabled:to-gray-400 disabled:cursor-not-allowed flex items-center shadow-lg hover:shadow-xl transform hover:scale-105 disabled:transform-none disabled:shadow-none overflow-hidden group"
             disabled={
               !file ||
               uploadProgress < 100 ||
               (validationResult !== null && validationResult.isValid === false)
             }
           >
+            <div className="absolute inset-0 shimmer-effect opacity-0 group-hover:opacity-100 transition-opacity"></div>
             {file && uploadProgress < 100 ? (
               <>
                 <svg
-                  className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                  className="animate-spin -ml-1 mr-2 h-5 w-5 text-white relative z-10"
                   xmlns="http://www.w3.org/2000/svg"
                   fill="none"
                   viewBox="0 0 24 24"
@@ -630,10 +799,13 @@ const UsersRegistrationForm = () => {
                     d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                   ></path>
                 </svg>
-                Procesando
+                <span className="relative z-10">Procesando</span>
               </>
             ) : (
-              "Importar usuarios"
+              <>
+                <ArrowUpTrayIcon className="w-5 h-5 mr-2 relative z-10 group-hover:animate-bounce" />
+                <span className="relative z-10">Importar usuarios</span>
+              </>
             )}
           </button>
         </div>
