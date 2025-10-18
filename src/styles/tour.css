@@ -1,0 +1,149 @@
+/* Estilos personalizados para el tour de driver.js */
+
+/* Overlay del tour con tono indigo */
+.driver-overlay {
+  background-color: transparent !important;
+  backdrop-filter: blur(0px) !important;
+}
+
+/* Popover principal con degradado indigo suave */
+.driver-popover {
+  background: #5e6ef8 !important;
+  color: white !important;
+  border-radius: 16px !important;
+  max-width: 400px !important;
+}
+
+/* Modo oscuro - mantener el mismo estilo */
+@media (prefers-color-scheme: dark) {
+  .driver-popover {
+    background: #5e6ef8 !important;
+    color: white !important;
+  }
+
+  .driver-popover-title {
+    color: white !important;
+  }
+
+  .driver-popover-description {
+    color: white !important;
+  }
+}
+
+/* Título del popover */
+.driver-popover-title {
+  font-size: 1.25rem !important;
+  font-weight: 700 !important;
+  color: white !important;
+  margin-bottom: 0.5rem !important;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Descripción del popover */
+.driver-popover-description {
+  font-size: 0.95rem !important;
+  line-height: 1.6 !important;
+  color: white !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Botones con fondo sólido y nítido */
+.driver-popover-next-btn,
+.driver-popover-prev-btn,
+.driver-popover-close-btn {
+  background-color: white !important;
+  color: #4f46e5 !important;
+  border: none !important;
+  padding: 0.625rem 1.25rem !important;
+  border-radius: 8px !important;
+  font-weight: 700 !important;
+  font-size: 0.875rem !important;
+  transition: all 0.2s ease !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+  text-shadow: none !important;
+  filter: none !important;
+  backdrop-filter: none !important;
+}
+
+.driver-popover-next-btn:hover,
+.driver-popover-prev-btn:hover {
+  background-color: #f0f0ff !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15) !important;
+}
+
+.driver-popover-prev-btn {
+  background-color: rgba(255, 255, 255, 0.9) !important;
+  color: #4f46e5 !important;
+}
+
+.driver-popover-prev-btn:hover {
+  background-color: white !important;
+}
+
+.driver-popover-close-btn {
+  background-color: transparent !important;
+  color: white !important;
+  padding: 0.25rem !important;
+  border: none !important;
+  opacity: 0.9 !important;
+  font-weight: 600 !important;
+}
+
+.driver-popover-close-btn:hover {
+  background-color: rgba(255, 255, 255, 0.15) !important;
+  opacity: 1 !important;
+  border-radius: 6px !important;
+}
+
+/* Progreso */
+.driver-popover-progress-text {
+  color: rgba(255, 255, 255, 0.9) !important;
+  font-size: 0.875rem !important;
+  font-weight: 500 !important;
+}
+
+/* Flecha del popover - usar el color del degradado */
+.driver-popover-arrow {
+  border-color: #6366f1 !important;
+}
+
+@media (prefers-color-scheme: dark) {
+  .driver-popover-arrow {
+    border-color: #6366f1 !important;
+  }
+}
+
+/* Elemento destacado con borde brillante - SIN BLUR */
+.driver-active-element {
+  border-radius: 8px !important;
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.8),
+    0 0 0 8px rgba(99, 102, 241, 0.5), 0 0 30px rgba(99, 102, 241, 0.6) !important;
+  outline: none !important;
+  filter: none !important;
+  backdrop-filter: none !important;
+}
+
+/* Asegurar que el elemento destacado esté completamente visible y nítido */
+.driver-highlighted-element {
+  background-color: white !important;
+  position: relative !important;
+  z-index: 10000 !important;
+  filter: none !important;
+  backdrop-filter: none !important;
+  opacity: 1 !important;
+}
+
+/* Contenedor del elemento destacado - sin efectos de blur */
+.driver-active-element,
+.driver-active-element * {
+  filter: none !important;
+  backdrop-filter: none !important;
+}
+
+/* En modo oscuro */
+@media (prefers-color-scheme: dark) {
+  .driver-highlighted-element {
+    background-color: #1f2937 !important;
+  }
+}

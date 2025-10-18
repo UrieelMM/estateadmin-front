@@ -166,9 +166,9 @@ const LayoutDashboard = ({ children }: Props) => {
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100 overflow-x-hidden">
       <ChatBot />
-      <SupportModal 
-        isOpen={isSupportModalOpen} 
-        onClose={() => setIsSupportModalOpen(false)} 
+      <SupportModal
+        isOpen={isSupportModalOpen}
+        onClose={() => setIsSupportModalOpen(false)}
       />
 
       {/* Botón móvil (arriba a la izquierda) para abrir/cerrar sidebar */}
@@ -207,7 +207,7 @@ const LayoutDashboard = ({ children }: Props) => {
                 isDesktopMenuCollapsed ? "hidden" : "block"
               )}
               src={logo}
-              alt="Your Company"
+              alt="EstateAdmin"
             />
             <button
               onClick={() => setIsDesktopMenuCollapsed(!isDesktopMenuCollapsed)}
@@ -219,92 +219,104 @@ const LayoutDashboard = ({ children }: Props) => {
           </div>
 
           {/* Contenido con scroll */}
-          <nav className="flex-1 overflow-y-auto custom-scrollbar" aria-label="Sidebar">
+          <nav
+            className="flex-1 overflow-y-auto custom-scrollbar"
+            aria-label="Sidebar"
+          >
             <ul className="py-6 space-y-2">
-              {navigation.map((item) => (
-                <li key={item.name}>
-                  {!item.children ? (
-                    <Link
-                      to={item.href}
-                      className={classNames(
-                        item.current
-                          ? "bg-indigo-100"
-                          : "hover:bg-indigo-100 dark:hover:bg-gray-700",
-                        "group flex items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md",
-                        isDesktopMenuCollapsed ? "justify-center" : ""
-                      )}
-                      title={isDesktopMenuCollapsed ? item.name : undefined}
-                    >
-                      <item.icon
+              {navigation.map((item) => {
+                // Generar ID para el tour basado en el nombre del item
+                const itemId = `nav-${item.name
+                  .toLowerCase()
+                  .replace(/\s+/g, "-")}`;
+
+                return (
+                  <li key={item.name}>
+                    {!item.children ? (
+                      <Link
+                        to={item.href}
+                        id={itemId}
                         className={classNames(
-                          "text-gray-400 dark:text-gray-300",
-                          isDesktopMenuCollapsed ? "h-6 w-6" : "mr-3 h-6 w-6"
+                          item.current
+                            ? "bg-indigo-100"
+                            : "hover:bg-indigo-100 dark:hover:bg-gray-700",
+                          "group flex items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md",
+                          isDesktopMenuCollapsed ? "justify-center" : ""
                         )}
-                        aria-hidden="true"
-                      />
-                      {!isDesktopMenuCollapsed && item.name}
-                    </Link>
-                  ) : (
-                    <Disclosure as="div" className="space-y-1">
-                      {({ open }) => (
-                        <>
-                          <Disclosure.Button
-                            className={classNames(
-                              item.current
-                                ? "bg-indigo-100"
-                                : "hover:bg-indigo-100 dark:hover:bg-gray-700",
-                              "group w-full flex items-center px-4 py-2 text-left text-sm font-medium text-gray-600 dark:text-gray-100 rounded-md focus:outline-none",
-                              isDesktopMenuCollapsed ? "justify-center" : ""
-                            )}
-                            title={
-                              isDesktopMenuCollapsed ? item.name : undefined
-                            }
-                            onClick={() => {
-                              if (isDesktopMenuCollapsed) {
-                                setIsDesktopMenuCollapsed(false);
-                              }
-                            }}
-                          >
-                            <item.icon
-                              className={classNames(
-                                "text-gray-400 dark:text-gray-300",
-                                isDesktopMenuCollapsed
-                                  ? "h-6 w-6"
-                                  : "mr-3 h-6 w-6"
-                              )}
-                              aria-hidden="true"
-                            />
-                            {!isDesktopMenuCollapsed && (
-                              <>
-                                {item.name}
-                                <ChevronRightIcon
-                                  className={`${
-                                    open ? "transform rotate-90" : ""
-                                  } ml-auto h-5 w-5 transition-transform`}
-                                />
-                              </>
-                            )}
-                          </Disclosure.Button>
-                          {!isDesktopMenuCollapsed && (
-                            <Disclosure.Panel className="space-y-1">
-                              {item.children.map((subItem) => (
-                                <Disclosure.Button
-                                  key={subItem.name}
-                                  as={Link}
-                                  to={subItem.href}
-                                  className="group w-full flex items-center pl-11 pr-2 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md hover:bg-indigo-100 dark:hover:bg-gray-700"
-                                >
-                                  {subItem.name}
-                                </Disclosure.Button>
-                              ))}
-                            </Disclosure.Panel>
+                        title={isDesktopMenuCollapsed ? item.name : undefined}
+                      >
+                        <item.icon
+                          className={classNames(
+                            "text-gray-400 dark:text-gray-300",
+                            isDesktopMenuCollapsed ? "h-6 w-6" : "mr-3 h-6 w-6"
                           )}
-                        </>
-                      )}
-                    </Disclosure>
-                  )}
-                </li>
-              ))}
+                          aria-hidden="true"
+                        />
+                        {!isDesktopMenuCollapsed && item.name}
+                      </Link>
+                    ) : (
+                      <Disclosure as="div" className="space-y-1">
+                        {({ open }) => (
+                          <>
+                            <Disclosure.Button
+                              id={itemId}
+                              className={classNames(
+                                item.current
+                                  ? "bg-indigo-100"
+                                  : "hover:bg-indigo-100 dark:hover:bg-gray-700",
+                                "group w-full flex items-center px-4 py-2 text-left text-sm font-medium text-gray-600 dark:text-gray-100 rounded-md focus:outline-none",
+                                isDesktopMenuCollapsed ? "justify-center" : ""
+                              )}
+                              title={
+                                isDesktopMenuCollapsed ? item.name : undefined
+                              }
+                              onClick={() => {
+                                if (isDesktopMenuCollapsed) {
+                                  setIsDesktopMenuCollapsed(false);
+                                }
+                              }}
+                            >
+                              <item.icon
+                                className={classNames(
+                                  "text-gray-400 dark:text-gray-300",
+                                  isDesktopMenuCollapsed
+                                    ? "h-6 w-6"
+                                    : "mr-3 h-6 w-6"
+                                )}
+                                aria-hidden="true"
+                              />
+                              {!isDesktopMenuCollapsed && (
+                                <>
+                                  {item.name}
+                                  <ChevronRightIcon
+                                    className={`${
+                                      open ? "transform rotate-90" : ""
+                                    } ml-auto h-5 w-5 transition-transform`}
+                                  />
+                                </>
+                              )}
+                            </Disclosure.Button>
+                            {!isDesktopMenuCollapsed && (
+                              <Disclosure.Panel className="space-y-1">
+                                {item.children.map((subItem) => (
+                                  <Disclosure.Button
+                                    key={subItem.name}
+                                    as={Link}
+                                    to={subItem.href}
+                                    className="group w-full flex items-center pl-11 pr-2 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md hover:bg-indigo-100 dark:hover:bg-gray-700"
+                                  >
+                                    {subItem.name}
+                                  </Disclosure.Button>
+                                ))}
+                              </Disclosure.Panel>
+                            )}
+                          </>
+                        )}
+                      </Disclosure>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           </nav>
 
@@ -334,7 +346,7 @@ const LayoutDashboard = ({ children }: Props) => {
                       <p className="text-xs mt-2 mb-2 text-center">
                         ¿Necesitas ayuda?
                       </p>
-                      <button 
+                      <button
                         className="bg-indigo-400 text-xs text-center m-0 text-white rounded-md p-1"
                         onClick={() => setIsSupportModalOpen(true)}
                       >
@@ -347,6 +359,7 @@ const LayoutDashboard = ({ children }: Props) => {
               <li>
                 <Link
                   to="/dashboard/client-config"
+                  id="nav-configuracion"
                   className={classNames(
                     "group flex items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md",
                     isDesktopMenuCollapsed ? "justify-center" : ""
@@ -413,66 +426,80 @@ const LayoutDashboard = ({ children }: Props) => {
           </div>
 
           {/* Contenido con scroll */}
-          <nav className="flex-1 overflow-y-auto custom-scrollbar" aria-label="Sidebar">
+          <nav
+            className="flex-1 overflow-y-auto custom-scrollbar"
+            aria-label="Sidebar"
+          >
             <ul className="py-6 space-y-2">
-              {navigation.map((item) => (
-                <li key={item.name}>
-                  {!item.children ? (
-                    <Link
-                      to={item.href}
-                      onClick={() => setIsMobileMenuOpen(false)}
-                      className={classNames(
-                        item.current ? "bg-indigo-100" : "hover:bg-indigo-100",
-                        "group flex items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md"
-                      )}
-                    >
-                      <item.icon
-                        className="mr-3 h-6 w-6 text-gray-400 dark:text-gray-300"
-                        aria-hidden="true"
-                      />
-                      {item.name}
-                    </Link>
-                  ) : (
-                    <Disclosure as="div" className="space-y-1">
-                      {({ open }) => (
-                        <>
-                          <Disclosure.Button
-                            className={classNames(
-                              item.current
-                                ? "bg-indigo-100 "
-                                : "hover:bg-indigo-100 dark:hover:bg-gray-700",
-                              "group w-full flex items-center px-4 py-2 text-left text-sm font-medium text-gray-600 dark:text-gray-100 rounded-md focus:outline-none"
-                            )}
-                          >
-                            <item.icon
-                              className="mr-3 h-6 w-6 text-gray-400 dark:text-gray-300"
-                              aria-hidden="true"
-                            />
-                            {item.name}
-                            <ChevronRightIcon
-                              className={`${
-                                open ? "transform rotate-90" : ""
-                              } ml-auto h-5 w-5 transition-transform`}
-                            />
-                          </Disclosure.Button>
-                          <Disclosure.Panel className="space-y-1">
-                            {item.children.map((subItem) => (
-                              <Disclosure.Button
-                                key={subItem.name}
-                                as={Link}
-                                to={subItem.href}
-                                className="group w-full flex items-center pl-11 pr-2 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md hover:bg-indigo-100 dark:hover:bg-gray-700"
-                              >
-                                {subItem.name}
-                              </Disclosure.Button>
-                            ))}
-                          </Disclosure.Panel>
-                        </>
-                      )}
-                    </Disclosure>
-                  )}
-                </li>
-              ))}
+              {navigation.map((item) => {
+                // Generar ID para el tour basado en el nombre del item
+                const itemId = `nav-${item.name
+                  .toLowerCase()
+                  .replace(/\s+/g, "-")}`;
+
+                return (
+                  <li key={item.name}>
+                    {!item.children ? (
+                      <Link
+                        to={item.href}
+                        id={itemId}
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className={classNames(
+                          item.current
+                            ? "bg-indigo-100"
+                            : "hover:bg-indigo-100",
+                          "group flex items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md"
+                        )}
+                      >
+                        <item.icon
+                          className="mr-3 h-6 w-6 text-gray-400 dark:text-gray-300"
+                          aria-hidden="true"
+                        />
+                        {item.name}
+                      </Link>
+                    ) : (
+                      <Disclosure as="div" className="space-y-1">
+                        {({ open }) => (
+                          <>
+                            <Disclosure.Button
+                              id={itemId}
+                              className={classNames(
+                                item.current
+                                  ? "bg-indigo-100 "
+                                  : "hover:bg-indigo-100 dark:hover:bg-gray-700",
+                                "group w-full flex items-center px-4 py-2 text-left text-sm font-medium text-gray-600 dark:text-gray-100 rounded-md focus:outline-none"
+                              )}
+                            >
+                              <item.icon
+                                className="mr-3 h-6 w-6 text-gray-400 dark:text-gray-300"
+                                aria-hidden="true"
+                              />
+                              {item.name}
+                              <ChevronRightIcon
+                                className={`${
+                                  open ? "transform rotate-90" : ""
+                                } ml-auto h-5 w-5 transition-transform`}
+                              />
+                            </Disclosure.Button>
+                            <Disclosure.Panel className="space-y-1">
+                              {item.children.map((subItem) => (
+                                <Disclosure.Button
+                                  key={subItem.name}
+                                  as={Link}
+                                  to={subItem.href}
+                                  className="group w-full flex items-center pl-11 pr-2 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md hover:bg-indigo-100 dark:hover:bg-gray-700"
+                                >
+                                  {subItem.name}
+                                </Disclosure.Button>
+                              ))}
+                            </Disclosure.Panel>
+                          </>
+                        )}
+                      </Disclosure>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           </nav>
 
@@ -490,7 +517,7 @@ const LayoutDashboard = ({ children }: Props) => {
                   <p className="text-xs mt-2 mb-2 text-center">
                     ¿Necesitas ayuda?
                   </p>
-                  <button 
+                  <button
                     className="bg-indigo-400 text-xs text-center m-0 text-white rounded-md p-1"
                     onClick={() => setIsSupportModalOpen(true)}
                   >
@@ -501,6 +528,7 @@ const LayoutDashboard = ({ children }: Props) => {
               <li>
                 <Link
                   to="/dashboard/client-config"
+                  id="nav-configuracion"
                   onClick={() => setIsMobileMenuOpen(false)}
                   className="group flex items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md"
                 >
