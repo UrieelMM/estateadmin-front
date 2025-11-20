@@ -55,13 +55,13 @@ const Contact = () => {
     <section className="py-12 bg-transparent sm:py-16 lg:py-20" id="contact">
       <div className="px-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
         <div className="max-w-2xl mx-auto text-center">
-          <h2 className="text-4xl font-bold text-gray-900 font-pj">
+          <h2 className="text-4xl font-bold text-gray-900 dark:text-gray-100 font-pj">
             ¿Listo para transformar la gestión de tu condominio?{" "}
-            <span className="text-4xl font-bold tracking-tight text-indigo-600">
+            <span className="text-4xl font-bold tracking-tight text-indigo-600 dark:text-indigo-400">
               EstateAdmin
             </span>
           </h2>
-          <p className="max-w-md mx-auto mt-5 text-base font-normal text-gray-600 font-pj">
+          <p className="max-w-md mx-auto mt-5 text-base font-normal text-gray-600 dark:text-gray-300 font-pj">
             Únete a la comunidad de administradores que ya están disfrutando de
             una gestión más eficiente y moderna de sus condominios.
           </p>
@@ -84,7 +84,7 @@ const Contact = () => {
               name="email"
               id="email"
               placeholder="Ingresa tu correo electrónico"
-              className="block w-full px-5 py-6 text-base font-normal text-gray-800 placeholder-gray-600 bg-white border border-gray-300 rounded-xl focus:border-indigo-300 font-pj focus:outline-none"
+              className="block w-full px-5 py-6 text-base font-normal text-gray-800 dark:text-gray-100 placeholder-gray-600 dark:placeholder-gray-400 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl focus:border-indigo-300 dark:focus:border-indigo-500 font-pj focus:outline-none transition-colors duration-300"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -95,7 +95,7 @@ const Contact = () => {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className={`inline-flex items-center justify-center w-full px-8 py-4 text-base font-bold text-white transition-all duration-200 bg-indigo-600 border border-transparent sm:w-auto sm:py-3 focus:outline-none font-pj hover:bg-indigo-700 rounded-xl ${
+                className={`inline-flex items-center justify-center w-full px-8 py-4 text-base font-bold text-white transition-all duration-200 bg-indigo-600 dark:bg-indigo-500 border border-transparent sm:w-auto sm:py-3 focus:outline-none font-pj hover:bg-indigo-700 dark:hover:bg-indigo-600 rounded-xl ${
                   isSubmitting ? "opacity-70 cursor-not-allowed" : ""
                 }`}
               >
@@ -104,7 +104,7 @@ const Contact = () => {
             </div>
           </form>
         </div>
-        <p className="mt-6 text-sm font-normal text-center text-gray-500 font-pj">
+        <p className="mt-6 text-sm font-normal text-center text-gray-500 dark:text-gray-400 font-pj">
           Sin anuncios. Sin spam. Sin compromisos.
         </p>
       </div>

@@ -43,25 +43,25 @@ const FeatureCards = () => {
       whileInView="visible"
       viewport={{ once: true, margin: "-100px" }}
       variants={containerVariants}
-      className="relative py-10 sm:py-16 lg:py-24 overflow-hidden bg-gradient-to-b from-white via-indigo-50/20 to-white"
+      className="relative py-10 sm:py-16 lg:py-24 overflow-hidden bg-gradient-to-b from-white via-indigo-50/20 to-white dark:from-gray-900 dark:via-gray-800/20 dark:to-gray-900 transition-colors duration-300"
       id="features"
     >
       {/* Grid Pattern Background */}
       <div className="absolute inset-0 -z-10">
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:14px_24px]"></div>
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] dark:bg-[linear-gradient(to_right,#ffffff0a_1px,transparent_1px),linear-gradient(to_bottom,#ffffff0a_1px,transparent_1px)] bg-[size:14px_24px]"></div>
       </div>
 
       {/* Floating Gradient Orbs */}
-      <div className="absolute top-20 left-10 w-72 h-72 bg-gradient-to-br from-indigo-300 to-indigo-100 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
-      <div className="absolute bottom-20 right-10 w-72 h-72 bg-gradient-to-br from-purple-300 to-purple-100 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
+      <div className="absolute top-20 left-10 w-72 h-72 bg-gradient-to-br from-indigo-300 to-indigo-100 dark:from-indigo-600 dark:to-indigo-900 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
+      <div className="absolute bottom-20 right-10 w-72 h-72 bg-gradient-to-br from-purple-300 to-purple-100 dark:from-purple-600 dark:to-purple-900 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
       <div className="px-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
         <motion.div
           variants={itemVariants}
           className="max-w-xl mx-auto text-center"
         >
-          <div className="inline-flex items-center gap-2 px-4 py-2 mb-6 rounded-full bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-indigo-500/10 border border-indigo-200/50 backdrop-blur-sm">
+          <div className="inline-flex items-center gap-2 px-4 py-2 mb-6 rounded-full bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-indigo-500/10 dark:from-indigo-500/20 dark:via-purple-500/20 dark:to-indigo-500/20 border border-indigo-200/50 dark:border-indigo-700/50 backdrop-blur-sm">
             <svg
-              className="h-4 w-4 text-indigo-600"
+              className="h-4 w-4 text-indigo-600 dark:text-indigo-400"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -73,12 +73,12 @@ const FeatureCards = () => {
                 d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"
               />
             </svg>
-            <span className="text-sm font-semibold text-indigo-600">
+            <span className="text-sm font-semibold text-indigo-600 dark:text-indigo-400">
               Sistema Integral de Gestión
             </span>
           </div>
 
-          <h2 className="mt-4 text-3xl md:text-4xl lg:text-5xl font-bold leading-tight text-gray-900">
+          <h2 className="mt-4 text-3xl md:text-4xl lg:text-5xl font-bold leading-tight text-gray-900 dark:text-gray-100">
             Características Principales
           </h2>
         </motion.div>
@@ -90,10 +90,10 @@ const FeatureCards = () => {
           >
             <motion.div
               variants={cardVariants}
-              className="group flex items-start p-4 rounded-xl hover:bg-white/50 backdrop-blur-sm transition-all duration-300"
+              className="group flex items-start p-4 rounded-xl hover:bg-white/50 dark:hover:bg-gray-800/50 backdrop-blur-sm transition-all duration-300"
             >
               <div className="flex-shrink-0">
-                <div className="p-2 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg group-hover:shadow-lg transition-shadow">
+                <div className="p-2 bg-gradient-to-br from-indigo-500 to-purple-600 dark:from-indigo-600 dark:to-purple-700 rounded-lg group-hover:shadow-lg transition-shadow">
                   <svg
                     className="text-white w-6 h-6"
                     xmlns="http://www.w3.org/2000/svg"
@@ -111,10 +111,10 @@ const FeatureCards = () => {
                 </div>
               </div>
               <div className="ml-5">
-                <h3 className="text-xl font-semibold text-gray-900">
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
                   Gestión Financiera
                 </h3>
-                <p className="mt-3 text-base text-gray-600">
+                <p className="mt-3 text-base text-gray-600 dark:text-gray-300">
                   Control de pagos, cobros, gastos y presupuestos en tiempo
                   real.
                 </p>
@@ -123,10 +123,10 @@ const FeatureCards = () => {
 
             <motion.div
               variants={cardVariants}
-              className="group flex items-start p-4 rounded-xl hover:bg-white/50 backdrop-blur-sm transition-all duration-300"
+              className="group flex items-start p-4 rounded-xl hover:bg-white/50 dark:hover:bg-gray-800/50 backdrop-blur-sm transition-all duration-300"
             >
               <div className="flex-shrink-0">
-                <div className="p-2 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg group-hover:shadow-lg transition-shadow">
+                <div className="p-2 bg-gradient-to-br from-purple-500 to-pink-600 dark:from-purple-600 dark:to-pink-700 rounded-lg group-hover:shadow-lg transition-shadow">
                   <svg
                     className="text-white w-6 h-6"
                     xmlns="http://www.w3.org/2000/svg"
@@ -144,10 +144,10 @@ const FeatureCards = () => {
                 </div>
               </div>
               <div className="ml-5">
-                <h3 className="text-xl font-semibold text-gray-900">
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
                   Gestión de Proyectos
                 </h3>
-                <p className="mt-3 text-base text-gray-600">
+                <p className="mt-3 text-base text-gray-600 dark:text-gray-300">
                   Planificación y seguimiento de obras y mantenimientos con
                   control de presupuesto.
                 </p>
@@ -156,10 +156,10 @@ const FeatureCards = () => {
 
             <motion.div
               variants={cardVariants}
-              className="group flex items-start p-4 rounded-xl hover:bg-white/50 backdrop-blur-sm transition-all duration-300"
+              className="group flex items-start p-4 rounded-xl hover:bg-white/50 dark:hover:bg-gray-800/50 backdrop-blur-sm transition-all duration-300"
             >
               <div className="flex-shrink-0">
-                <div className="p-2 bg-gradient-to-br from-indigo-500 to-blue-600 rounded-lg group-hover:shadow-lg transition-shadow">
+                <div className="p-2 bg-gradient-to-br from-indigo-500 to-blue-600 dark:from-indigo-600 dark:to-blue-700 rounded-lg group-hover:shadow-lg transition-shadow">
                   <svg
                     className="text-white w-6 h-6"
                     xmlns="http://www.w3.org/2000/svg"
@@ -177,10 +177,10 @@ const FeatureCards = () => {
                 </div>
               </div>
               <div className="ml-5">
-                <h3 className="text-xl font-semibold text-gray-900">
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
                   Comunicación Eficiente
                 </h3>
-                <p className="mt-3 text-base text-gray-600">
+                <p className="mt-3 text-base text-gray-600 dark:text-gray-300">
                   Sistema de notificaciones por WhatsApp y correo electrónico.
                 </p>
               </div>
@@ -188,10 +188,10 @@ const FeatureCards = () => {
 
             <motion.div
               variants={cardVariants}
-              className="group flex items-start p-4 rounded-xl hover:bg-white/50 backdrop-blur-sm transition-all duration-300"
+              className="group flex items-start p-4 rounded-xl hover:bg-white/50 dark:hover:bg-gray-800/50 backdrop-blur-sm transition-all duration-300"
             >
               <div className="flex-shrink-0">
-                <div className="p-2 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-lg group-hover:shadow-lg transition-shadow">
+                <div className="p-2 bg-gradient-to-br from-purple-500 to-indigo-600 dark:from-purple-600 dark:to-indigo-700 rounded-lg group-hover:shadow-lg transition-shadow">
                   <svg
                     className="text-white w-6 h-6"
                     xmlns="http://www.w3.org/2000/svg"
@@ -209,10 +209,10 @@ const FeatureCards = () => {
                 </div>
               </div>
               <div className="ml-5">
-                <h3 className="text-xl font-semibold text-gray-900">
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
                   Diseño Moderno y Accesible
                 </h3>
-                <p className="mt-3 text-base text-gray-600">
+                <p className="mt-3 text-base text-gray-600 dark:text-gray-300">
                   Interfaz intuitiva con modo oscuro y diseño responsivo para
                   una mejor experiencia de usuario.
                 </p>
@@ -224,7 +224,7 @@ const FeatureCards = () => {
             <div className="relative group">
               <div className="absolute -inset-1 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl blur opacity-25 group-hover:opacity-40 transition duration-300"></div>
               <img
-                className="relative w-full rounded-2xl shadow-2xl border border-gray-200"
+                className="relative w-full rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700"
                 src="https://res.cloudinary.com/dz5tntwl1/image/upload/v1744234537/OmniPixel/Captura_de_pantalla_2025-04-09_a_la_s_3.34.11_p.m._ozb7dh.png"
                 alt="Panel de administración del sistema de gestión de condominios"
               />

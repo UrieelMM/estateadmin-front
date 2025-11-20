@@ -6,7 +6,10 @@ import {
   SparklesIcon,
   CheckBadgeIcon,
   BoltIcon,
+  SunIcon,
+  MoonIcon,
 } from "@heroicons/react/24/solid";
+import { useTheme } from "../../../context/Theme/ThemeContext";
 import { Helmet } from "react-helmet-async";
 import logo from "../../../assets/logo.png";
 import Footer from "./Footer";
@@ -27,7 +30,8 @@ const navigation = [
 
 const Hero = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [_mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const { isDarkMode, toggleDarkMode } = useTheme();
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -57,7 +61,7 @@ const Hero = () => {
   };
 
   return (
-    <div className="bg-white">
+    <div className="bg-white dark:bg-gray-900 transition-colors duration-300">
       <Helmet>
         <title>EstateAdmin - Sistema de Gestión de Condominios</title>
         <meta charSet="utf-8" />
@@ -149,7 +153,7 @@ const Hero = () => {
           <div className="flex lg:hidden">
             <button
               type="button"
-              className="-m-2.5 inline-flex items-center justify-center rounded-md p-2.5 text-gray-700"
+              className="-m-2.5 inline-flex items-center justify-center rounded-md p-2.5 text-gray-700 dark:text-gray-300"
               onClick={() => setMobileMenuOpen(true)}
             >
               <Bars3Icon className="h-6 w-6" aria-hidden="true" />
@@ -161,16 +165,41 @@ const Hero = () => {
                 key={item.name}
                 href={item.href}
                 onClick={(e) => handleScroll(e, item.href)}
-                className="text-sm font-semibold leading-6 text-gray-900"
+                className="text-sm font-semibold leading-6 text-gray-900 dark:text-gray-100 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
               >
                 {item.name}
               </a>
             ))}
           </div>
-          <div className="hidden lg:flex lg:flex-1 lg:justify-end">
+          <div className="hidden lg:flex lg:flex-1 lg:justify-end lg:items-center lg:gap-4">
+            {/* Theme Toggle Button */}
+            <button
+              onClick={toggleDarkMode}
+              className="relative p-2 rounded-full bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 transition-all duration-300 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400"
+              aria-label="Toggle dark mode"
+            >
+              <div className="relative w-5 h-5">
+                {/* Sol icon */}
+                <SunIcon
+                  className={`absolute inset-0 w-5 h-5 text-yellow-500 transition-all duration-500 transform ${
+                    !isDarkMode
+                      ? "opacity-100 rotate-0 scale-100"
+                      : "opacity-0 rotate-180 scale-75"
+                  }`}
+                />
+                {/* Luna icon */}
+                <MoonIcon
+                  className={`absolute inset-0 w-5 h-5 text-indigo-400 transition-all duration-500 transform ${
+                    isDarkMode
+                      ? "opacity-100 rotate-0 scale-100"
+                      : "opacity-0 -rotate-180 scale-75"
+                  }`}
+                />
+              </div>
+            </button>
             <a
               href="/login"
-              className="text-sm font-semibold leading-6 bg-indigo-600 px-4 py-2 rounded-md text-white hover:bg-indigo-700"
+              className="text-sm font-semibold leading-6 bg-indigo-600 px-4 py-2 rounded-md text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors"
             >
               Inicia sesión <span aria-hidden="true">&rarr;</span>
             </a>
@@ -183,14 +212,14 @@ const Hero = () => {
           onClose={setMobileMenuOpen}
         >
           <div className="fixed inset-0 z-50" />
-          <Dialog.Panel className="fixed inset-y-0 right-0 z-50 w-full overflow-y-auto bg-white px-6 py-6 sm:max-w-sm sm:ring-1 sm:ring-gray-900/10">
+          <Dialog.Panel className="fixed inset-y-0 right-0 z-50 w-full overflow-y-auto bg-white dark:bg-gray-900 px-6 py-6 sm:max-w-sm sm:ring-1 sm:ring-gray-900/10 dark:sm:ring-gray-700/50">
             <div className="flex items-center justify-between">
               <a href="#" className="-m-1.5 p-1.5">
                 <img className="h-8 w-auto" src={logo} alt="EstateAdmin Logo" />
               </a>
               <button
                 type="button"
-                className="-m-2.5 rounded-md p-2.5 text-gray-700"
+                className="-m-2.5 rounded-md p-2.5 text-gray-700 dark:text-gray-300"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 <span className="sr-only">Cerrar menú</span>
@@ -205,16 +234,39 @@ const Hero = () => {
                       key={item.name}
                       href={item.href}
                       onClick={(e) => handleScroll(e, item.href)}
-                      className="-mx-3 block rounded-lg px-3 py-2 text-base font-semibold leading-7 text-gray-900 hover:bg-gray-50"
+                      className="-mx-3 block rounded-lg px-3 py-2 text-base font-semibold leading-7 text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-800"
                     >
                       {item.name}
                     </a>
                   ))}
                 </div>
-                <div className="py-6">
+                <div className="py-6 space-y-2">
+                  {/* Theme Toggle Button Mobile */}
+                  <button
+                    onClick={toggleDarkMode}
+                    className="-mx-3 flex items-center gap-3 rounded-lg px-3 py-2.5 text-base font-semibold leading-7 text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-800 w-full"
+                  >
+                    <div className="relative w-5 h-5">
+                      <SunIcon
+                        className={`absolute inset-0 w-5 h-5 text-yellow-500 transition-all duration-500 transform ${
+                          !isDarkMode
+                            ? "opacity-100 rotate-0 scale-100"
+                            : "opacity-0 rotate-180 scale-75"
+                        }`}
+                      />
+                      <MoonIcon
+                        className={`absolute inset-0 w-5 h-5 text-indigo-400 transition-all duration-500 transform ${
+                          isDarkMode
+                            ? "opacity-100 rotate-0 scale-100"
+                            : "opacity-0 -rotate-180 scale-75"
+                        }`}
+                      />
+                    </div>
+                    <span>{isDarkMode ? "Modo Oscuro" : "Modo Claro"}</span>
+                  </button>
                   <a
                     href="/login"
-                    className="-mx-3 block rounded-lg px-3 py-2.5 text-base font-semibold leading-7 text-gray-900 hover:bg-gray-50"
+                    className="-mx-3 block rounded-lg px-3 py-2.5 text-base font-semibold leading-7 text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-800"
                   >
                     Iniciar sesión
                   </a>
@@ -228,8 +280,8 @@ const Hero = () => {
       <div className="relative isolate px-6 pt-14 lg:px-8 overflow-hidden">
         {/* Grid Pattern Background */}
         <div className="absolute inset-0 -z-10">
-          <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:14px_24px]"></div>
-          <div className="absolute left-0 right-0 top-0 -z-10 m-auto h-[310px] w-[310px] rounded-full bg-indigo-400 opacity-20 blur-[100px]"></div>
+          <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] dark:bg-[linear-gradient(to_right,#ffffff0a_1px,transparent_1px),linear-gradient(to_bottom,#ffffff0a_1px,transparent_1px)] bg-[size:14px_24px]"></div>
+          <div className="absolute left-0 right-0 top-0 -z-10 m-auto h-[310px] w-[310px] rounded-full bg-indigo-400 dark:bg-indigo-600 opacity-20 blur-[100px]"></div>
         </div>
 
         {/* Animated Gradient Blobs */}
@@ -267,12 +319,16 @@ const Hero = () => {
               className="absolute left-10 top-40 animate-bounce"
               style={{ animationDuration: "3s" }}
             >
-              <div className="backdrop-blur-lg bg-white/30 border border-white/20 rounded-2xl p-4 shadow-2xl">
+              <div className="backdrop-blur-lg bg-white/30 dark:bg-gray-800/30 border border-white/20 dark:border-gray-700/20 rounded-2xl p-4 shadow-2xl">
                 <div className="flex items-center gap-2">
-                  <CheckBadgeIcon className="h-6 w-6 text-indigo-600" />
+                  <CheckBadgeIcon className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
                   <div>
-                    <p className="text-2xl font-bold text-gray-900">99.9%</p>
-                    <p className="text-xs text-gray-600">Uptime</p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                      99.9%
+                    </p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">
+                      Uptime
+                    </p>
                   </div>
                 </div>
               </div>
@@ -281,12 +337,16 @@ const Hero = () => {
               className="absolute right-10 top-60 animate-bounce"
               style={{ animationDuration: "4s", animationDelay: "1s" }}
             >
-              <div className="backdrop-blur-lg bg-white/30 border border-white/20 rounded-2xl p-4 shadow-2xl">
+              <div className="backdrop-blur-lg bg-white/30 dark:bg-gray-800/30 border border-white/20 dark:border-gray-700/20 rounded-2xl p-4 shadow-2xl">
                 <div className="flex items-center gap-2">
-                  <BoltIcon className="h-6 w-6 text-yellow-500" />
+                  <BoltIcon className="h-6 w-6 text-yellow-500 dark:text-yellow-400" />
                   <div>
-                    <p className="text-2xl font-bold text-gray-900">24/7</p>
-                    <p className="text-xs text-gray-600">Soporte</p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                      24/7
+                    </p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">
+                      Soporte
+                    </p>
                   </div>
                 </div>
               </div>
@@ -296,15 +356,15 @@ const Hero = () => {
           <div className="hidden sm:mb-8 sm:flex sm:justify-center">
             <div className="relative group">
               <div className="absolute -inset-0.5 bg-gradient-to-r from-pink-600 to-purple-600 rounded-full blur opacity-30 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 animate-pulse"></div>
-              <div className="relative rounded-full px-4 py-2 text-sm leading-6 bg-white ring-1 ring-gray-900/10 hover:ring-gray-900/20 transition-all">
-                <SparklesIcon className="inline h-4 w-4 text-indigo-600 mr-1" />
-                <span className="text-gray-600">
+              <div className="relative rounded-full px-4 py-2 text-sm leading-6 bg-white dark:bg-gray-800 ring-1 ring-gray-900/10 dark:ring-gray-700/50 hover:ring-gray-900/20 dark:hover:ring-gray-600/50 transition-all">
+                <SparklesIcon className="inline h-4 w-4 text-indigo-600 dark:text-indigo-400 mr-1" />
+                <span className="text-gray-600 dark:text-gray-300">
                   Sistema Integral de Gestión de Condominios
                 </span>
                 <a
                   href="#features"
                   onClick={(e) => handleScroll(e, "#features")}
-                  className="font-semibold text-indigo-600 ml-1 hover:text-indigo-700"
+                  className="font-semibold text-indigo-600 dark:text-indigo-400 ml-1 hover:text-indigo-700 dark:hover:text-indigo-300"
                 >
                   <span className="absolute inset-0" aria-hidden="true" />
                   Conoce más <span aria-hidden="true">&rarr;</span>
@@ -323,20 +383,20 @@ const Hero = () => {
               <div className="absolute -inset-1 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 rounded-lg blur-2xl opacity-20 group-hover:opacity-30 -z-10"></div>
             </div>
 
-            <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-gray-900 mt-4 mb-6">
+            <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-gray-900 dark:text-gray-100 mt-4 mb-6">
               Gestión{" "}
               <span className="relative inline-block">
                 <span className="relative z-10">Inteligente</span>
-                <span className="absolute bottom-1 left-0 w-full h-3 bg-indigo-200 -z-10 transform -skew-x-12"></span>
+                <span className="absolute bottom-1 left-0 w-full h-3 bg-indigo-200 dark:bg-indigo-900 -z-10 transform -skew-x-12"></span>
               </span>
               <br className="hidden sm:block" /> de Condominios
             </h2>
 
-            <p className="mt-8 text-lg md:text-xl leading-8 text-gray-600 max-w-3xl mx-auto">
+            <p className="mt-8 text-lg md:text-xl leading-8 text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
               Simplifica la administración de tu condominio con nuestra
               plataforma integral.
               <br className="hidden sm:block" />
-              <span className="font-semibold text-gray-900">
+              <span className="font-semibold text-gray-900 dark:text-gray-100">
                 Gestiona pagos, mantenimiento, comunicación
               </span>{" "}
               y más de manera eficiente y segura.
@@ -354,7 +414,7 @@ const Hero = () => {
               <a
                 href="#features"
                 onClick={(e) => handleScroll(e, "#features")}
-                className="group inline-flex items-center gap-2 text-base font-semibold text-gray-900 cursor-pointer hover:text-indigo-600 transition-colors"
+                className="group inline-flex items-center gap-2 text-base font-semibold text-gray-900 dark:text-gray-100 cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
               >
                 Ver características
                 <span
@@ -388,7 +448,7 @@ const Hero = () => {
             </div>
 
             {/* Trust Indicators */}
-            <div className="mt-16 flex flex-wrap items-center justify-center gap-8 text-sm text-gray-600">
+            <div className="mt-16 flex flex-wrap items-center justify-center gap-8 text-sm text-gray-600 dark:text-gray-400">
               <div className="flex items-center gap-2">
                 <CheckBadgeIcon className="h-5 w-5 text-green-500" />
                 <span>Seguro y Confiable</span>

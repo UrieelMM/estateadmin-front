@@ -11,10 +11,10 @@ const DataControl = () => {
       <div className="max-w-7xl px-4 mx-auto sm:px-6 lg:px-8">
         <div className="grid items-center grid-cols-1 gap-y-6 md:grid-cols-2 md:gap-x-20">
           <div>
-            <h2 className="text-3xl font-bold leading-tight text-gray-900 sm:text-3xl lg:text-4xl">
+            <h2 className="text-3xl font-bold leading-tight text-gray-900 sm:text-3xl lg:text-4xl dark:dark:text-gray-100">
               Tú tienes el control de tus datos
             </h2>
-            <p className="mt-4 text-base leading-relaxed text-gray-900">
+            <p className="mt-4 text-base leading-relaxed text-gray-900 dark:dark:text-gray-300">
               En EstateAdmin creemos que tus datos te pertenecen. Te
               proporcionamos herramientas flexibles para que accedas y exportes
               tu información cuando lo necesites, en el formato que prefieras.
@@ -27,7 +27,7 @@ const DataControl = () => {
                   <h3 className="text-lg font-semibold text-gray-900">
                     Exportación a PDF
                   </h3>
-                  <p className="mt-1 text-base text-gray-600">
+                  <p className="mt-1 text-base text-gray-600 dark:dark:text-gray-300">
                     Exporta estados de cuenta, recibos de pago y reportes en
                     formato PDF para conservar un registro detallado de toda tu
                     actividad.
@@ -41,7 +41,7 @@ const DataControl = () => {
                   <h3 className="text-lg font-semibold text-gray-900">
                     Descarga en Excel
                   </h3>
-                  <p className="mt-1 text-base text-gray-600">
+                  <p className="mt-1 text-base text-gray-600 dark:dark:text-gray-300">
                     Genera reportes en formato Excel para analizar tendencias,
                     gastos y pagos de manera detallada y personalizada.
                   </p>
@@ -54,7 +54,7 @@ const DataControl = () => {
                   <h3 className="text-lg font-semibold text-gray-900">
                     Códigos QR
                   </h3>
-                  <p className="mt-1 text-base text-gray-600">
+                  <p className="mt-1 text-base text-gray-600 dark:dark:text-gray-300">
                     Genera rápidamente códigos QR de pagos no identificados y
                     compártelos con los residentes para que puedan
                     identificarlos fácilmente.
@@ -68,7 +68,7 @@ const DataControl = () => {
                   <h3 className="text-lg font-semibold text-gray-900">
                     Notificaciones por correo
                   </h3>
-                  <p className="mt-1 text-base text-gray-600">
+                  <p className="mt-1 text-base text-gray-600 dark:dark:text-gray-300">
                     Filtra y recibe recibos y comprobantes de pago directamente
                     en tu correo electrónico, manteniendo un registro organizado
                     de todas tus transacciones.

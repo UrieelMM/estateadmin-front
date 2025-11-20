@@ -123,13 +123,16 @@ const FeatureDetails = () => {
   };
 
   return (
-    <section className="py-16 bg-white sm:py-20 lg:py-24" id="features-detail">
+    <section
+      className="py-16 bg-white dark:bg-gray-900 sm:py-20 lg:py-24 transition-colors duration-300"
+      id="features-detail"
+    >
       <div className="px-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
         <div className="max-w-3xl mx-auto text-center mb-16">
-          <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
+          <h2 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100 sm:text-4xl">
             Características que transforman la gestión
           </h2>
-          <p className="mt-4 text-lg leading-8 text-gray-600">
+          <p className="mt-4 text-lg leading-8 text-gray-600 dark:text-gray-300">
             EstateAdmin integra todas las herramientas que necesitas para
             administrar tu condominio de manera eficiente, transparente y
             moderna.
@@ -147,7 +150,7 @@ const FeatureDetails = () => {
             <motion.div key={index} variants={itemVariants}>
               <div className="relative flex items-center justify-center mx-auto">
                 <svg
-                  className="text-indigo-50"
+                  className="text-indigo-50 dark:text-indigo-900/30"
                   width="72"
                   height="75"
                   viewBox="0 0 72 75"
@@ -163,10 +166,10 @@ const FeatureDetails = () => {
                   aria-hidden="true"
                 />
               </div>
-              <h3 className="mt-6 text-lg font-semibold text-gray-900">
+              <h3 className="mt-6 text-lg font-semibold text-gray-900 dark:text-gray-100">
                 {feature.title}
               </h3>
-              <p className="mt-4 text-base text-gray-600">
+              <p className="mt-4 text-base text-gray-600 dark:text-gray-300">
                 {feature.description}
               </p>
             </motion.div>

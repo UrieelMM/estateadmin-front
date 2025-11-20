@@ -47,17 +47,17 @@ const AreaReservation = () => {
           </motion.div>
 
           <motion.div variants={itemVariants}>
-            <h2 className="text-3xl font-bold text-gray-900 sm:text-4xl xl:text-4xl font-pj">
+            <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100 sm:text-4xl xl:text-4xl font-pj">
               Reserva de Áreas Comunes
             </h2>
-            <p className="mt-4 text-base leading-7 text-gray-900 sm:mt-8 font-pj">
+            <p className="mt-4 text-base leading-7 text-gray-900 dark:text-gray-300 sm:mt-8 font-pj">
               Gestiona y reserva las áreas comunes de tu condominio de manera
               sencilla. Recibe notificaciones instantáneas sobre el estado de
               tus reservas y mantente informado en todo momento.
             </p>
 
             <svg
-              className="w-auto h-4 mt-8 text-gray-300 sm:mt-10"
+              className="w-auto h-4 mt-8 text-gray-300 dark:text-gray-700 sm:mt-10"
               viewBox="0 0 172 16"
               fill="none"
               stroke="currentColor"
@@ -101,7 +101,7 @@ const AreaReservation = () => {
             >
               <motion.li
                 variants={itemVariants}
-                className="flex items-center text-gray-900"
+                className="flex items-center text-gray-900 dark:text-gray-100"
               >
                 <svg
                   className="w-6 h-6"
@@ -117,14 +117,14 @@ const AreaReservation = () => {
                     d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
                   />
                 </svg>
-                <span className="ml-3 text-lg font-bold font-pj">
+                <span className="ml-3 text-lg font-bold font-pj dark:text-gray-100">
                   Notificaciones en Tiempo Real
                 </span>
               </motion.li>
 
               <motion.li
                 variants={itemVariants}
-                className="flex items-center text-gray-900"
+                className="flex items-center text-gray-900 dark:text-gray-100"
               >
                 <svg
                   className="w-6 h-6"
@@ -140,14 +140,14 @@ const AreaReservation = () => {
                     d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
                   />
                 </svg>
-                <span className="ml-3 text-lg font-bold font-pj">
+                <span className="ml-3 text-lg font-bold font-pj dark:text-gray-100">
                   Calendario de Disponibilidad
                 </span>
               </motion.li>
 
               <motion.li
                 variants={itemVariants}
-                className="flex items-center text-gray-900"
+                className="flex items-center text-gray-900 dark:text-gray-100"
               >
                 <svg
                   className="w-6 h-6"
@@ -163,7 +163,7 @@ const AreaReservation = () => {
                     d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
                   />
                 </svg>
-                <span className="ml-3 text-lg font-bold font-pj">
+                <span className="ml-3 text-lg font-bold font-pj dark:text-gray-100">
                   Confirmación Automática
                 </span>
               </motion.li>

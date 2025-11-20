@@ -3,7 +3,7 @@ import logo from "../../../assets/logo.png";
 const Footer = () => {
   return (
     <footer
-      className="py-12 bg-white sm:py-16 lg:py-8 shadow-[0_-400px_400px_-100px_#9c80ff14]"
+      className="py-12 bg-white dark:bg-gray-900 sm:py-16 lg:py-8 shadow-[0_-400px_400px_-100px_#9c80ff14] dark:shadow-[0_-400px_400px_-100px_#4c1d9514] transition-colors duration-300"
       id="about"
     >
       <div className="px-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
@@ -18,7 +18,7 @@ const Footer = () => {
             <a
               href="#features"
               title="Características"
-              className="inline-flex text-lg font-medium text-gray-900 transition-all duration-200 transform font-pj hover:-translate-y-1 hover:text-gray-600"
+              className="inline-flex text-lg font-medium text-gray-900 dark:text-gray-100 transition-all duration-200 transform font-pj hover:-translate-y-1 hover:text-gray-600 dark:hover:text-gray-400"
             >
               Características
             </a>
@@ -28,7 +28,7 @@ const Footer = () => {
             <a
               href="#about"
               title="Sobre nosotros"
-              className="inline-flex text-lg font-medium text-gray-900 transition-all duration-200 transform font-pj hover:-translate-y-1 hover:text-gray-600"
+              className="inline-flex text-lg font-medium text-gray-900 dark:text-gray-100 transition-all duration-200 transform font-pj hover:-translate-y-1 hover:text-gray-600 dark:hover:text-gray-400"
             >
               Sobre nosotros
             </a>
@@ -38,7 +38,7 @@ const Footer = () => {
             <a
               href="/contacto"
               title="Contacto"
-              className="inline-flex text-lg font-medium text-gray-900 transition-all duration-200 transform font-pj hover:-translate-y-1 hover:text-gray-600"
+              className="inline-flex text-lg font-medium text-gray-900 dark:text-gray-100 transition-all duration-200 transform font-pj hover:-translate-y-1 hover:text-gray-600 dark:hover:text-gray-400"
             >
               Contacto
             </a>
@@ -48,7 +48,7 @@ const Footer = () => {
             <a
               href="/privacidad"
               title="Política de Privacidad"
-              className="inline-flex text-lg font-medium text-gray-900 transition-all duration-200 transform font-pj hover:-translate-y-1 hover:text-gray-600"
+              className="inline-flex text-lg font-medium text-gray-900 dark:text-gray-100 transition-all duration-200 transform font-pj hover:-translate-y-1 hover:text-gray-600 dark:hover:text-gray-400"
             >
               Privacidad
             </a>
@@ -58,7 +58,7 @@ const Footer = () => {
             <a
               href="/eliminar-datos"
               title="Guía para eliminación de datos"
-              className="inline-flex text-lg font-medium text-gray-900 transition-all duration-200 transform font-pj hover:-translate-y-1 hover:text-gray-600"
+              className="inline-flex text-lg font-medium text-gray-900 dark:text-gray-100 transition-all duration-200 transform font-pj hover:-translate-y-1 hover:text-gray-600 dark:hover:text-gray-400"
             >
               Eliminación de datos
             </a>
@@ -68,7 +68,7 @@ const Footer = () => {
             <a
               href="/guias"
               title="Guía para conocer el sistema"
-              className="inline-flex text-lg font-medium text-gray-900 transition-all duration-200 transform font-pj hover:-translate-y-1 hover:text-gray-600"
+              className="inline-flex text-lg font-medium text-gray-900 dark:text-gray-100 transition-all duration-200 transform font-pj hover:-translate-y-1 hover:text-gray-600 dark:hover:text-gray-400"
             >
               Guías y tutoriales
             </a>
@@ -77,7 +77,7 @@ const Footer = () => {
 
         <div className="mt-8 sm:mt-12">
           <svg
-            className="w-auto h-4 mx-auto text-gray-300"
+            className="w-auto h-4 mx-auto text-gray-300 dark:text-gray-700"
             viewBox="0 0 172 16"
             fill="none"
             stroke="currentColor"
@@ -118,36 +118,38 @@ const Footer = () => {
 
         <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-3 sm:gap-8 sm:mt-12">
           <div className="text-center">
-            <h3 className="text-lg font-semibold text-gray-900">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
               WhatsApp Bot
             </h3>
-            <p className="mt-2 text-gray-600">
+            <p className="mt-2 text-gray-600 dark:text-gray-400">
               <a
                 href="https://wa.me/+525633449827"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-indigo-600 hover:text-indigo-700"
+                className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300"
               >
                 Chatea con nosotros
               </a>
             </p>
           </div>
           <div className="text-center">
-            <h3 className="text-lg font-semibold text-gray-900">Email</h3>
-            <p className="mt-2 text-gray-600">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              Email
+            </h3>
+            <p className="mt-2 text-gray-600 dark:text-gray-400">
               <a
                 href="mailto:contacto@estateadmin.com"
-                className="text-indigo-600 hover:text-indigo-700"
+                className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300"
               >
                 administracion@estate-admin.com
               </a>
             </p>
           </div>
           <div className="text-center">
-            <h3 className="text-lg font-semibold text-gray-900">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
               Horario de atención
             </h3>
-            <p className="mt-2 text-gray-600">
+            <p className="mt-2 text-gray-600 dark:text-gray-400">
               Lunes a Viernes
               <br />
               9:00 AM - 6:00 PM
@@ -161,7 +163,7 @@ const Footer = () => {
               href="https://wa.me/+525633449827"
               target="_blank"
               title="WhatsApp Business"
-              className="inline-flex items-center justify-center w-10 h-10 text-gray-900 transition-all duration-200 rounded-full hover:bg-gray-100 focus:outline-none focus:bg-gray-200 focus:ring-2 focus:ring-offset-2 focus:ring-gray-200"
+              className="inline-flex items-center justify-center w-10 h-10 text-gray-900 dark:text-gray-100 transition-all duration-200 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus:bg-gray-200 dark:focus:bg-gray-700 focus:ring-2 focus:ring-offset-2 focus:ring-gray-200 dark:focus:ring-gray-700"
               rel="noopener noreferrer"
             >
               <svg
@@ -180,7 +182,7 @@ const Footer = () => {
               href="https://facebook.com/estateadmin"
               target="_blank"
               title="Facebook"
-              className="inline-flex items-center justify-center w-10 h-10 text-gray-900 transition-all duration-200 rounded-full hover:bg-gray-100 focus:outline-none focus:bg-gray-200 focus:ring-2 focus:ring-offset-2 focus:ring-gray-200"
+              className="inline-flex items-center justify-center w-10 h-10 text-gray-900 dark:text-gray-100 transition-all duration-200 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus:bg-gray-200 dark:focus:bg-gray-700 focus:ring-2 focus:ring-offset-2 focus:ring-gray-200 dark:focus:ring-gray-700"
               rel="noopener noreferrer"
             >
               <svg
@@ -199,7 +201,7 @@ const Footer = () => {
               href="https://instagram.com/estateadmin"
               target="_blank"
               title="Instagram"
-              className="inline-flex items-center justify-center w-10 h-10 text-gray-900 transition-all duration-200 rounded-full hover:bg-gray-100 focus:outline-none focus:bg-gray-200 focus:ring-2 focus:ring-offset-2 focus:ring-gray-200"
+              className="inline-flex items-center justify-center w-10 h-10 text-gray-900 dark:text-gray-100 transition-all duration-200 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus:bg-gray-200 dark:focus:bg-gray-700 focus:ring-2 focus:ring-offset-2 focus:ring-gray-200 dark:focus:ring-gray-700"
               rel="noopener noreferrer"
             >
               <svg
@@ -220,7 +222,7 @@ const Footer = () => {
               href="https://github.com/estateadmin"
               target="_blank"
               title="GitHub"
-              className="inline-flex items-center justify-center w-10 h-10 text-gray-900 transition-all duration-200 rounded-full hover:bg-gray-100 focus:outline-none focus:bg-gray-200 focus:ring-2 focus:ring-offset-2 focus:ring-gray-200"
+              className="inline-flex items-center justify-center w-10 h-10 text-gray-900 dark:text-gray-100 transition-all duration-200 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus:bg-gray-200 dark:focus:bg-gray-700 focus:ring-2 focus:ring-offset-2 focus:ring-gray-200 dark:focus:ring-gray-700"
               rel="noopener noreferrer"
             >
               <svg
@@ -239,11 +241,11 @@ const Footer = () => {
           </li>
         </ul>
 
-        <p className="text-center mt-8 text-gray-600">
+        <p className="text-center mt-8 text-gray-600 dark:text-gray-400">
           43815 Guerreo 11 Tizayuca Hidalgo, México
         </p>
 
-        <p className="text-base font-normal text-center text-gray-600 mt-7 font-pj">
+        <p className="text-base font-normal text-center text-gray-600 dark:text-gray-400 mt-7 font-pj">
           © Copyright 2025, Todos los derechos reservados
           <br />
           Un servicio de <span className="font-bold">EstateAdmin</span>
