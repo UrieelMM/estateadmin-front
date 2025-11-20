@@ -1,6 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog } from "@headlessui/react";
-import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/solid";
+import {
+  Bars3Icon,
+  XMarkIcon,
+  SparklesIcon,
+  CheckBadgeIcon,
+  BoltIcon,
+} from "@heroicons/react/24/solid";
 import { Helmet } from "react-helmet-async";
 import logo from "../../../assets/logo.png";
 import Footer from "./Footer";
@@ -21,6 +27,15 @@ const navigation = [
 
 const Hero = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      setMousePosition({ x: e.clientX, y: e.clientY });
+    };
+    window.addEventListener("mousemove", handleMouseMove);
+    return () => window.removeEventListener("mousemove", handleMouseMove);
+  }, []);
 
   const handleScroll = (
     e: React.MouseEvent<HTMLAnchorElement>,
@@ -210,69 +225,158 @@ const Hero = () => {
         </Dialog>
       </header>
 
-      <div className="relative isolate px-6 pt-14 lg:px-8">
+      <div className="relative isolate px-6 pt-14 lg:px-8 overflow-hidden">
+        {/* Grid Pattern Background */}
+        <div className="absolute inset-0 -z-10">
+          <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:14px_24px]"></div>
+          <div className="absolute left-0 right-0 top-0 -z-10 m-auto h-[310px] w-[310px] rounded-full bg-indigo-400 opacity-20 blur-[100px]"></div>
+        </div>
+
+        {/* Animated Gradient Blobs */}
         <div className="absolute inset-x-0 -top-40 -z-10 transform-gpu overflow-hidden blur-3xl sm:-top-80">
           <div
-            className="relative left-[calc(50%-11rem)] aspect-[1155/678] w-[36.125rem] -translate-x-1/2 rotate-[30deg] bg-gradient-to-tr from-[#9c80ff] to-[#9089fc] opacity-30 sm:left-[calc(50%-30rem)] sm:w-[72.1875rem]"
+            className="relative left-[calc(50%-11rem)] aspect-[1155/678] w-[36.125rem] -translate-x-1/2 rotate-[30deg] bg-gradient-to-tr from-[#ff80b5] to-[#9089fc] opacity-30 sm:left-[calc(50%-30rem)] sm:w-[72.1875rem] animate-pulse"
             style={{
               clipPath:
                 "polygon(74.1% 44.1%, 100% 61.6%, 97.5% 26.9%, 85.5% 0.1%, 80.7% 2%, 72.5% 32.5%, 60.2% 62.4%, 52.4% 68.1%, 47.5% 58.3%, 45.2% 34.5%, 27.5% 76.7%, 0.1% 64.9%, 17.9% 100%, 27.6% 76.8%, 76.1% 97.7%, 74.1% 44.1%)",
             }}
           />
         </div>
+
+        {/* Floating Particles */}
+        <div className="absolute inset-0 -z-10 overflow-hidden">
+          {[...Array(20)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute h-2 w-2 rounded-full bg-indigo-500/20"
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+                animation: `float ${
+                  5 + Math.random() * 10
+                }s ease-in-out infinite`,
+                animationDelay: `${Math.random() * 5}s`,
+              }}
+            />
+          ))}
+        </div>
         <div className="mx-auto max-w-[1920px] py-24 sm:py-32 lg:pt-56 lg:pb-4">
-          <div className="hidden sm:mb-8 sm:flex sm:justify-center">
-            <div className="relative rounded-full px-3 py-1 text-sm leading-6 text-gray-600 ring-1 ring-gray-900/10 hover:ring-gray-900/20">
-              Sistema Integral de Gestión de Condominios
-              <a
-                href="#features"
-                onClick={(e) => handleScroll(e, "#features")}
-                className="font-semibold text-indigo-600 ml-1"
-              >
-                <span className="absolute inset-0" aria-hidden="true" />
-                Conoce más <span aria-hidden="true">&rarr;</span>
-              </a>
+          {/* Floating Stats Badges */}
+          <div className="hidden lg:block">
+            <div
+              className="absolute left-10 top-40 animate-bounce"
+              style={{ animationDuration: "3s" }}
+            >
+              <div className="backdrop-blur-lg bg-white/30 border border-white/20 rounded-2xl p-4 shadow-2xl">
+                <div className="flex items-center gap-2">
+                  <CheckBadgeIcon className="h-6 w-6 text-indigo-600" />
+                  <div>
+                    <p className="text-2xl font-bold text-gray-900">99.9%</p>
+                    <p className="text-xs text-gray-600">Uptime</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div
+              className="absolute right-10 top-60 animate-bounce"
+              style={{ animationDuration: "4s", animationDelay: "1s" }}
+            >
+              <div className="backdrop-blur-lg bg-white/30 border border-white/20 rounded-2xl p-4 shadow-2xl">
+                <div className="flex items-center gap-2">
+                  <BoltIcon className="h-6 w-6 text-yellow-500" />
+                  <div>
+                    <p className="text-2xl font-bold text-gray-900">24/7</p>
+                    <p className="text-xs text-gray-600">Soporte</p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-          <div className="text-center">
-            <h1 className="text-4xl font-bold tracking-tight text-indigo-600 sm:text-6xl">
-              EstateAdmin
-            </h1>
-            <h2 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-6xl">
-              Gestión Inteligente <br /> de Condominios
+
+          <div className="hidden sm:mb-8 sm:flex sm:justify-center">
+            <div className="relative group">
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-pink-600 to-purple-600 rounded-full blur opacity-30 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 animate-pulse"></div>
+              <div className="relative rounded-full px-4 py-2 text-sm leading-6 bg-white ring-1 ring-gray-900/10 hover:ring-gray-900/20 transition-all">
+                <SparklesIcon className="inline h-4 w-4 text-indigo-600 mr-1" />
+                <span className="text-gray-600">
+                  Sistema Integral de Gestión de Condominios
+                </span>
+                <a
+                  href="#features"
+                  onClick={(e) => handleScroll(e, "#features")}
+                  className="font-semibold text-indigo-600 ml-1 hover:text-indigo-700"
+                >
+                  <span className="absolute inset-0" aria-hidden="true" />
+                  Conoce más <span aria-hidden="true">&rarr;</span>
+                </a>
+              </div>
+            </div>
+          </div>
+          <div className="text-center relative">
+            {/* Main Title with Gradient */}
+            <div className="relative inline-block">
+              <h1 className="text-5xl md:text-7xl lg:text-8xl font-black tracking-tight mb-4">
+                <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 animate-gradient">
+                  EstateAdmin
+                </span>
+              </h1>
+              <div className="absolute -inset-1 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 rounded-lg blur-2xl opacity-20 group-hover:opacity-30 -z-10"></div>
+            </div>
+
+            <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-gray-900 mt-4 mb-6">
+              Gestión{" "}
+              <span className="relative inline-block">
+                <span className="relative z-10">Inteligente</span>
+                <span className="absolute bottom-1 left-0 w-full h-3 bg-indigo-200 -z-10 transform -skew-x-12"></span>
+              </span>
+              <br className="hidden sm:block" /> de Condominios
             </h2>
-            <p className="mt-6 text-lg leading-8 text-gray-600">
+
+            <p className="mt-8 text-lg md:text-xl leading-8 text-gray-600 max-w-3xl mx-auto">
               Simplifica la administración de tu condominio con nuestra
-              plataforma integral. <br />
-              Gestiona pagos, mantenimiento, comunicación y más de manera
-              eficiente y segura.
+              plataforma integral.
+              <br className="hidden sm:block" />
+              <span className="font-semibold text-gray-900">
+                Gestiona pagos, mantenimiento, comunicación
+              </span>{" "}
+              y más de manera eficiente y segura.
             </p>
-            <div className="mt-10 flex items-center justify-center gap-x-6">
+            <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-x-6">
               <a
                 href="/contacto"
-                className="rounded-md bg-indigo-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+                className="group relative inline-flex items-center justify-center px-8 py-4 text-base font-bold text-white transition-all duration-200 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl hover:shadow-2xl hover:shadow-indigo-500/50 "
               >
-                Comenzar ahora
+                <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl blur opacity-75 group-hover:opacity-100 transition-opacity"></span>
+                <span className="relative flex items-center gap-2">
+                  Comenzar ahora
+                </span>
               </a>
               <a
                 href="#features"
                 onClick={(e) => handleScroll(e, "#features")}
-                className="text-sm font-semibold leading-6 text-gray-900 cursor-pointer"
+                className="group inline-flex items-center gap-2 text-base font-semibold text-gray-900 cursor-pointer hover:text-indigo-600 transition-colors"
               >
-                Ver características <span aria-hidden="true">→</span>
+                Ver características
+                <span
+                  className="inline-block transition-transform group-hover:translate-x-1"
+                  aria-hidden="true"
+                >
+                  →
+                </span>
               </a>
             </div>
-            <div className="mt-6">
+            <div className="mt-8">
               <a
                 href="/caracteristicas-inteligencia-artificial"
-                className="inline-flex items-center text-sm font-medium px-4 py-2 rounded-full transition-colors duration-300 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white dark:from-indigo-700 dark:via-purple-700 dark:to-pink-700"
+                className="group relative inline-flex items-center gap-2 text-sm font-medium px-6 py-3 rounded-full transition-all duration-300 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white hover:shadow-lg hover:shadow-purple-500/50 "
               >
-                Conoce en lo que hemos estado trabajando para ti
+                <SparklesIcon className="h-4 w-4 animate-pulse" />
+                <span>Conoce en lo que hemos estado trabajando para ti</span>
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   viewBox="0 0 20 20"
                   fill="currentColor"
-                  className="w-5 h-5 ml-1"
+                  className="w-5 h-5 transition-transform group-hover:translate-x-1"
                 >
                   <path
                     fillRule="evenodd"
@@ -282,14 +386,31 @@ const Hero = () => {
                 </svg>
               </a>
             </div>
+
+            {/* Trust Indicators */}
+            <div className="mt-16 flex flex-wrap items-center justify-center gap-8 text-sm text-gray-600">
+              <div className="flex items-center gap-2">
+                <CheckBadgeIcon className="h-5 w-5 text-green-500" />
+                <span>Seguro y Confiable</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <BoltIcon className="h-5 w-5 text-yellow-500" />
+                <span>Rápido y Eficiente</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <SparklesIcon className="h-5 w-5 text-indigo-500" />
+                <span>Fácil de Usar</span>
+              </div>
+            </div>
           </div>
         </div>
         <div className="absolute inset-x-0 top-[calc(100%-13rem)] -z-10 transform-gpu overflow-hidden blur-3xl sm:top-[calc(100%-30rem)]">
           <div
-            className="relative left-[calc(50%+3rem)] aspect-[1155/678] w-[36.125rem] -translate-x-1/2 bg-gradient-to-tr from-[#9c80ff] to-[#9089fc] opacity-30 sm:left-[calc(50%+36rem)] sm:w-[72.1875rem]"
+            className="relative left-[calc(50%+3rem)] aspect-[1155/678] w-[36.125rem] -translate-x-1/2 bg-gradient-to-tr from-[#ff80b5] via-[#9c80ff] to-[#9089fc] opacity-30 sm:left-[calc(50%+36rem)] sm:w-[72.1875rem] animate-pulse"
             style={{
               clipPath:
                 "polygon(74.1% 44.1%, 100% 61.6%, 97.5% 26.9%, 85.5% 0.1%, 80.7% 2%, 72.5% 32.5%, 60.2% 62.4%, 52.4% 68.1%, 47.5% 58.3%, 45.2% 34.5%, 27.5% 76.7%, 0.1% 64.9%, 17.9% 100%, 27.6% 76.8%, 76.1% 97.7%, 74.1% 44.1%)",
+              animationDuration: "4s",
             }}
           />
         </div>

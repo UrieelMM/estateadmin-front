@@ -1,4 +1,9 @@
 import { motion } from "framer-motion";
+import {
+  RocketLaunchIcon,
+  CurrencyDollarIcon,
+  ClipboardDocumentCheckIcon,
+} from "@heroicons/react/24/solid";
 
 const ProjectDetails = () => {
   const containerVariants = {
@@ -24,95 +29,124 @@ const ProjectDetails = () => {
     },
   };
 
-  const gradientVariants = {
-    hidden: { scale: 0.8, opacity: 0 },
-    visible: {
-      scale: 1,
-      opacity: 0.3,
-      transition: {
-        duration: 1.5,
-        ease: "easeOut",
-      },
-    },
-  };
-
   return (
     <motion.section
       initial="hidden"
       whileInView="visible"
       viewport={{ once: true, margin: "-100px" }}
       variants={containerVariants}
-      className="py-12 bg-transparent sm:py-16 lg:py-20"
+      className="relative py-12 sm:py-16 lg:py-20 overflow-hidden bg-gradient-to-b from-white via-purple-50/20 to-white"
     >
+      {/* Grid Pattern Background */}
+      <div className="absolute inset-0 -z-10">
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:14px_24px]"></div>
+      </div>
+
+      {/* Floating Gradient Orbs */}
+      <div className="absolute top-10 right-20 w-64 h-64 bg-gradient-to-br from-purple-300 to-purple-100 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
+      <div className="absolute bottom-10 left-20 w-64 h-64 bg-gradient-to-br from-indigo-300 to-indigo-100 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
       <div className="px-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
         <motion.div
           variants={itemVariants}
           className="max-w-xl mx-auto text-center xl:max-w-3xl"
         >
-          <h2 className="text-3xl font-bold text-gray-900 sm:text-4xl xl:text-4xl font-pj">
-            Gestión de Proyectos
+          {/* Badge Superior */}
+          <div className="inline-flex items-center gap-2 px-4 py-2 mb-6 rounded-full bg-gradient-to-r from-purple-500/10 via-indigo-500/10 to-purple-500/10 border border-purple-200/50 backdrop-blur-sm">
+            <RocketLaunchIcon className="h-4 w-4 text-purple-600" />
+            <span className="text-sm font-semibold text-purple-600">
+              Proyectos Profesionales
+            </span>
+          </div>
+
+          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 font-pj">
+            <span className="relative inline-block">
+              Gestión de Proyectos
+              <span className="absolute bottom-1 left-0 w-full h-3 bg-purple-200/50 -z-10 transform -skew-x-12"></span>
+            </span>
           </h2>
-          <p className="max-w-xl mx-auto mt-4 text-base leading-7 text-gray-600 sm:mt-8 font-pj">
+          <p className="max-w-xl mx-auto mt-6 text-lg leading-7 text-gray-600 font-pj">
             Planifica y supervisa proyectos y mantenimientos con herramientas
-            especializadas.
+            especializadas y control total del presupuesto.
           </p>
         </motion.div>
 
-        <motion.div
-          variants={itemVariants}
-          className="relative mt-8 sm:mt-16 md:max-w-md md:mx-auto px-6"
-        >
-          <motion.div variants={gradientVariants} className="absolute inset-0">
-            <div
-              className="w-full h-full max-w-lg rotate-180 blur-lg filter px-6"
-              style={{
-                background:
-                  "linear-gradient(70deg, #915DF4 15%, #9333ea 25%, #7e22ce 50%, #6b21a8 75%, #915DF4 100%)",
-              }}
-            ></div>
-          </motion.div>
-
-          <motion.div
-            variants={itemVariants}
-            className="flex flex-col items-center sm:flex-row sm:justify-center sm:space-x-16"
-          >
-            <motion.div variants={itemVariants} className="flex items-center">
-              <p className="text-4xl font-medium text-gray-900 font-pj">
-                Control
-              </p>
-              <p className="ml-5 text-sm text-gray-900 font-pj">
-                De
-                <br />
-                Gastos
-              </p>
+        {/* Grid de 2 columnas: Tarjetas a la izquierda, Imagen a la derecha */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 mt-12 sm:mt-16 items-center">
+          {/* Columna Izquierda - Feature Highlights Cards */}
+          <motion.div variants={itemVariants} className="space-y-6">
+            <motion.div
+              variants={itemVariants}
+              className="group relative p-6 rounded-2xl bg-white/50 backdrop-blur-sm border border-purple-100 hover:border-purple-300 transition-all duration-300 hover:shadow-lg"
+            >
+              <div className="flex items-start gap-4">
+                <div className="flex-shrink-0">
+                  <div className="p-3 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl shadow-lg">
+                    <CurrencyDollarIcon className="h-6 w-6 text-white" />
+                  </div>
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900 font-pj mb-2">
+                    Control de Gastos
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    Seguimiento detallado de presupuestos y gastos en tiempo
+                    real
+                  </p>
+                  <div className="flex gap-2 mt-3">
+                    <span className="px-3 py-1 text-xs font-medium text-purple-600 bg-purple-50 rounded-full">
+                      Presupuestos
+                    </span>
+                    <span className="px-3 py-1 text-xs font-medium text-indigo-600 bg-indigo-50 rounded-full">
+                      Reportes
+                    </span>
+                  </div>
+                </div>
+              </div>
             </motion.div>
 
             <motion.div
               variants={itemVariants}
-              className="flex items-center mt-6 sm:mt-0"
+              className="group relative p-6 rounded-2xl bg-white/50 backdrop-blur-sm border border-indigo-100 hover:border-indigo-300 transition-all duration-300 hover:shadow-lg"
             >
-              <p className="text-4xl font-medium text-gray-900 font-pj">
-                Gestión
-              </p>
-              <p className="ml-5 text-sm text-gray-900 font-pj">
-                De
-                <br />
-                Tareas
-              </p>
+              <div className="flex items-start gap-4">
+                <div className="flex-shrink-0">
+                  <div className="p-3 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl shadow-lg">
+                    <ClipboardDocumentCheckIcon className="h-6 w-6 text-white" />
+                  </div>
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900 font-pj mb-2">
+                    Gestión de Tareas
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    Organiza y asigna tareas con seguimiento completo del
+                    progreso
+                  </p>
+                  <div className="flex gap-2 mt-3">
+                    <span className="px-3 py-1 text-xs font-medium text-indigo-600 bg-indigo-50 rounded-full">
+                      Kanban
+                    </span>
+                    <span className="px-3 py-1 text-xs font-medium text-purple-600 bg-purple-50 rounded-full">
+                      Asignaciones
+                    </span>
+                  </div>
+                </div>
+              </div>
             </motion.div>
           </motion.div>
-        </motion.div>
 
-        <motion.div
-          variants={itemVariants}
-          className="max-w-4xl mx-auto mt-10 sm:mt-16"
-        >
-          <img
-            className="w-full rounded-lg shadow-xl"
-            src="https://res.cloudinary.com/dz5tntwl1/image/upload/v1744309604/OmniPixel/Captura_de_pantalla_2025-04-10_a_la_s_12.26.29_p.m._a4ib43.png"
-            alt="Panel de gestión de proyectos"
-          />
-        </motion.div>
+          {/* Columna Derecha - Imagen */}
+          <motion.div variants={itemVariants}>
+            <div className="relative group">
+              <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-2xl blur opacity-25 group-hover:opacity-40 transition duration-300"></div>
+              <img
+                className="relative w-full rounded-2xl shadow-2xl border border-gray-200"
+                src="https://res.cloudinary.com/dz5tntwl1/image/upload/v1744309604/OmniPixel/Captura_de_pantalla_2025-04-10_a_la_s_12.26.29_p.m._a4ib43.png"
+                alt="Panel de gestión de proyectos"
+              />
+            </div>
+          </motion.div>
+        </div>
       </div>
     </motion.section>
   );

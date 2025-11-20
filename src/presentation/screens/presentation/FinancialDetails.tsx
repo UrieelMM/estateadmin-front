@@ -1,4 +1,10 @@
 import { motion } from "framer-motion";
+import {
+  SparklesIcon,
+  ChartBarIcon,
+  BellAlertIcon,
+  DocumentChartBarIcon,
+} from "@heroicons/react/24/solid";
 
 const FinancialDetails = () => {
   const containerVariants = {
@@ -43,16 +49,45 @@ const FinancialDetails = () => {
       whileInView="visible"
       viewport={{ once: true, margin: "-100px" }}
       variants={containerVariants}
-      className="py-12 bg-white sm:py-16 lg:py-20"
+      className="relative py-12 sm:py-16 lg:py-20 overflow-hidden bg-gradient-to-b from-white via-indigo-50/30 to-white"
     >
+      {/* Grid Pattern Background */}
+      <div className="absolute inset-0 -z-10">
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:14px_24px]"></div>
+      </div>
+
+      {/* Floating Gradient Orbs */}
+      <div className="absolute top-20 left-10 w-72 h-72 bg-gradient-to-br from-purple-300 to-purple-100 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
+      <div className="absolute bottom-20 right-10 w-72 h-72 bg-gradient-to-br from-indigo-300 to-indigo-100 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
+      <div className="absolute top-40 right-20 w-72 h-72 bg-gradient-to-br from-pink-300 to-pink-100 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
       <div className="px-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
         <motion.div
           variants={itemVariants}
           className="max-w-4xl px-4 mx-auto text-center sm:px-0"
         >
-          <h2 className="text-3xl font-bold text-gray-900 sm:text-4xl xl:text-4xl font-pj">
-            Gestión Financiera y Reportes Avanzados
+          {/* Badge Superior */}
+          <div className="inline-flex items-center gap-2 px-4 py-2 mb-6 rounded-full bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-pink-500/10 border border-indigo-200/50 backdrop-blur-sm">
+            <SparklesIcon className="h-4 w-4 text-indigo-600" />
+            <span className="text-sm font-semibold text-indigo-600">
+              Finanzas Inteligentes
+            </span>
+          </div>
+
+          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 font-pj">
+            <span className="relative inline-block">
+              Gestión Financiera
+              <span className="absolute bottom-1 left-0 w-full h-3 bg-indigo-200/50 -z-10 transform -skew-x-12"></span>
+            </span>
+            <br />
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600">
+              y Reportes Avanzados
+            </span>
           </h2>
+
+          <p className="mt-6 text-lg text-gray-600 max-w-2xl mx-auto">
+            Controla cada aspecto financiero de tu condominio con herramientas
+            profesionales y automatización inteligente
+          </p>
         </motion.div>
 
         <motion.div
@@ -77,16 +112,21 @@ const FinancialDetails = () => {
           >
             <motion.div
               variants={cardVariants}
-              whileHover="hover"
-              className="flex flex-col justify-between"
+              className="group relative flex flex-col justify-between"
             >
-              <motion.div
-                whileHover={{ scale: 1.0 }}
-                className="relative flex-shrink-0 mx-8 md:mx-0"
-              >
+              {/* Glassmorphism Card Background */}
+              <div className="absolute inset-0 bg-gradient-to-br from-white/80 to-indigo-50/50 backdrop-blur-sm rounded-2xl border border-white/20 shadow-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 -z-10"></div>
+
+              <motion.div className="relative flex-shrink-0 mx-8 md:mx-0">
+                {/* Icon Badge */}
+                <div className="absolute -top-4 -right-4 z-10">
+                  <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-3 rounded-xl shadow-lg">
+                    <ChartBarIcon className="h-5 w-5 text-white" />
+                  </div>
+                </div>
+
                 <motion.img
-                  whileHover={{ scale: 1.0 }}
-                  className="relative w-full h-auto mx-auto rounded-lg max-w-[200px]"
+                  className="relative w-full h-auto mx-auto rounded-lg max-w-[200px] transition-all duration-300 group-hover:drop-shadow-2xl"
                   style={{
                     filter:
                       "drop-shadow(0 0 20px rgba(68, 255, 154, 0.1)) drop-shadow(0 0 15px rgba(139, 90, 255, 0.2)) drop-shadow(0 0 15px rgba(139, 68, 255, 0.2)) drop-shadow(0 0 20px rgba(255, 102, 68, 0.1)) drop-shadow(0 0 20px rgba(235, 255, 112, 0.1))",
@@ -96,7 +136,10 @@ const FinancialDetails = () => {
                 />
               </motion.div>
 
-              <motion.div variants={itemVariants} className="mt-6 md:mt-10">
+              <motion.div
+                variants={itemVariants}
+                className="mt-6 md:mt-10 relative z-10"
+              >
                 <h3 className="text-xl font-bold text-gray-900 font-pj">
                   Pagos Sencillos
                 </h3>
@@ -105,17 +148,36 @@ const FinancialDetails = () => {
                   automáticamente los recibos y actualiza el estado de cuenta de
                   cada residente.
                 </p>
+
+                {/* Feature Tags */}
+                <div className="flex flex-wrap gap-2 mt-4">
+                  <span className="px-3 py-1 text-xs font-medium text-indigo-600 bg-indigo-50 rounded-full">
+                    Automático
+                  </span>
+                  <span className="px-3 py-1 text-xs font-medium text-purple-600 bg-purple-50 rounded-full">
+                    Seguro
+                  </span>
+                </div>
               </motion.div>
             </motion.div>
 
             <motion.div
               variants={cardVariants}
-              whileHover="hover"
-              className="flex flex-col justify-between"
+              className="group relative flex flex-col justify-between"
             >
+              {/* Glassmorphism Card Background */}
+              <div className="absolute inset-0 bg-gradient-to-br from-white/80 to-purple-50/50 backdrop-blur-sm rounded-2xl border border-white/20 shadow-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 -z-10"></div>
+
               <motion.div className="relative flex-shrink-0 mx-8 md:mx-0">
+                {/* Icon Badge */}
+                <div className="absolute -top-4 -right-4 z-10">
+                  <div className="bg-gradient-to-br from-purple-500 to-pink-600 p-3 rounded-xl shadow-lg">
+                    <BellAlertIcon className="h-5 w-5 text-white" />
+                  </div>
+                </div>
+
                 <motion.img
-                  className="relative w-full h-auto mx-auto rounded-lg max-w-[200px]"
+                  className="relative w-full h-auto mx-auto rounded-lg max-w-[200px] transition-all duration-300 group-hover:drop-shadow-2xl"
                   style={{
                     filter:
                       "drop-shadow(0 0 20px rgba(68, 255, 154, 0.1)) drop-shadow(0 0 15px rgba(139, 90, 255, 0.2)) drop-shadow(0 0 15px rgba(139, 68, 255, 0.2)) drop-shadow(0 0 20px rgba(255, 102, 68, 0.1)) drop-shadow(0 0 20px rgba(235, 255, 112, 0.1))",
@@ -125,7 +187,10 @@ const FinancialDetails = () => {
                 />
               </motion.div>
 
-              <motion.div variants={itemVariants} className="mt-6 md:mt-10">
+              <motion.div
+                variants={itemVariants}
+                className="mt-6 md:mt-10 relative z-10"
+              >
                 <h3 className="text-xl font-bold text-gray-900 font-pj">
                   Notificaciones Automáticas
                 </h3>
@@ -133,17 +198,36 @@ const FinancialDetails = () => {
                   Notificaciones instantáneas por WhatsApp y correo electrónico
                   para pagos y confirmaciones.
                 </p>
+
+                {/* Feature Tags */}
+                <div className="flex flex-wrap gap-2 mt-4">
+                  <span className="px-3 py-1 text-xs font-medium text-purple-600 bg-purple-50 rounded-full">
+                    Instantáneo
+                  </span>
+                  <span className="px-3 py-1 text-xs font-medium text-pink-600 bg-pink-50 rounded-full">
+                    Multi-canal
+                  </span>
+                </div>
               </motion.div>
             </motion.div>
 
             <motion.div
               variants={cardVariants}
-              whileHover="hover"
-              className="flex flex-col justify-between"
+              className="group relative flex flex-col justify-between"
             >
+              {/* Glassmorphism Card Background */}
+              <div className="absolute inset-0 bg-gradient-to-br from-white/80 to-pink-50/50 backdrop-blur-sm rounded-2xl border border-white/20 shadow-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 -z-10"></div>
+
               <motion.div className="relative flex-shrink-0 mx-8 md:mx-0">
+                {/* Icon Badge */}
+                <div className="absolute -top-4 -right-4 z-10">
+                  <div className="bg-gradient-to-br from-pink-500 to-indigo-600 p-3 rounded-xl shadow-lg">
+                    <DocumentChartBarIcon className="h-5 w-5 text-white" />
+                  </div>
+                </div>
+
                 <motion.img
-                  className="relative w-full h-auto mx-auto rounded-lg max-w-[200px]"
+                  className="relative w-full h-auto mx-auto rounded-lg max-w-[200px] transition-all duration-300 group-hover:drop-shadow-2xl"
                   style={{
                     filter:
                       "drop-shadow(0 0 20px rgba(68, 255, 154, 0.1)) drop-shadow(0 0 15px rgba(139, 90, 255, 0.2)) drop-shadow(0 0 15px rgba(139, 68, 255, 0.2)) drop-shadow(0 0 20px rgba(255, 102, 68, 0.1)) drop-shadow(0 0 20px rgba(235, 255, 112, 0.1))",
@@ -153,8 +237,11 @@ const FinancialDetails = () => {
                 />
               </motion.div>
 
-              <motion.div variants={itemVariants} className="mt-6 md:mt-10">
-                <h3 className="text-xl font-bold text-gray-900 font-pj">
+              <motion.div
+                variants={itemVariants}
+                className="mt-6 md:mt-10 relative z-10"
+              >
+                <h3 className="text-xl font-bold text-gray-900 font-pj ">
                   Reportes Financieros
                 </h3>
                 <p className="mt-4 text-base font-normal leading-7 text-gray-600">
@@ -162,6 +249,16 @@ const FinancialDetails = () => {
                   pendientes y estados de cuenta de cada residente en tiempo
                   real.
                 </p>
+
+                {/* Feature Tags */}
+                <div className="flex flex-wrap gap-2 mt-4">
+                  <span className="px-3 py-1 text-xs font-medium text-pink-600 bg-pink-50 rounded-full">
+                    Tiempo Real
+                  </span>
+                  <span className="px-3 py-1 text-xs font-medium text-indigo-600 bg-indigo-50 rounded-full">
+                    Detallado
+                  </span>
+                </div>
               </motion.div>
             </motion.div>
           </motion.div>
