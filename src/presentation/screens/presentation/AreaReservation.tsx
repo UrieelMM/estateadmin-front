@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { CalendarDaysIcon } from "@heroicons/react/24/outline";
 
 const AreaReservation = () => {
   const containerVariants = {
@@ -30,7 +31,7 @@ const AreaReservation = () => {
       whileInView="visible"
       viewport={{ once: true, margin: "-100px" }}
       variants={containerVariants}
-      className="py-12 bg-transparent sm:py-16 lg:py-20"
+      className="relative py-12 sm:py-16 lg:py-20"
     >
       <div className="px-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:items-center gap-y-8 md:grid-cols-2 md:gap-x-16">
@@ -47,17 +48,25 @@ const AreaReservation = () => {
           </motion.div>
 
           <motion.div variants={itemVariants}>
+            {/* Badge Superior */}
+            <div className="inline-flex items-center gap-2 px-4 py-2 mb-6 rounded-full bg-gradient-to-r from-pink-500/10 via-rose-500/10 to-pink-500/10 dark:from-pink-500/20 dark:via-rose-500/20 dark:to-pink-500/20 border border-pink-200/50 dark:border-pink-700/50 backdrop-blur-sm">
+              <CalendarDaysIcon className="h-4 w-4 text-pink-600 dark:text-pink-400" />
+              <span className="text-sm font-semibold text-pink-600 dark:text-pink-400">
+                Reservas Inteligentes
+              </span>
+            </div>
+
             <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100 sm:text-4xl xl:text-4xl font-pj">
               Reserva de Áreas Comunes
             </h2>
-            <p className="mt-4 text-base leading-7 text-gray-900 dark:text-gray-300 sm:mt-8 font-pj">
+            <p className="mt-4 text-base leading-7 text-gray-900 dark:text-gray-100 sm:mt-8 font-pj">
               Gestiona y reserva las áreas comunes de tu condominio de manera
               sencilla. Recibe notificaciones instantáneas sobre el estado de
               tus reservas y mantente informado en todo momento.
             </p>
 
             <svg
-              className="w-auto h-4 mt-8 text-gray-300 dark:text-gray-700 sm:mt-10"
+              className="w-auto h-4 mt-8 text-gray-100 dark:text-gray-700 sm:mt-10"
               viewBox="0 0 172 16"
               fill="none"
               stroke="currentColor"

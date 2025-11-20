@@ -43,17 +43,9 @@ const FeatureCards = () => {
       whileInView="visible"
       viewport={{ once: true, margin: "-100px" }}
       variants={containerVariants}
-      className="relative py-10 sm:py-16 lg:py-24 overflow-hidden bg-gradient-to-b from-white via-indigo-50/20 to-white dark:from-gray-900 dark:via-gray-800/20 dark:to-gray-900 transition-colors duration-300"
+      className="relative py-10 sm:py-16 lg:py-24"
       id="features"
     >
-      {/* Grid Pattern Background */}
-      <div className="absolute inset-0 -z-10">
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] dark:bg-[linear-gradient(to_right,#ffffff0a_1px,transparent_1px),linear-gradient(to_bottom,#ffffff0a_1px,transparent_1px)] bg-[size:14px_24px]"></div>
-      </div>
-
-      {/* Floating Gradient Orbs */}
-      <div className="absolute top-20 left-10 w-72 h-72 bg-gradient-to-br from-indigo-300 to-indigo-100 dark:from-indigo-600 dark:to-indigo-900 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
-      <div className="absolute bottom-20 right-10 w-72 h-72 bg-gradient-to-br from-purple-300 to-purple-100 dark:from-purple-600 dark:to-purple-900 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
       <div className="px-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
         <motion.div
           variants={itemVariants}
@@ -90,7 +82,7 @@ const FeatureCards = () => {
           >
             <motion.div
               variants={cardVariants}
-              className="group flex items-start p-4 rounded-xl hover:bg-white/50 dark:hover:bg-gray-800/50 backdrop-blur-sm transition-all duration-300"
+              className="group flex items-start p-4 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-purple-100 dark:border-purple-900/50 hover:border-purple-300 dark:hover:border-purple-700 transition-all duration-300 hover:shadow-lg"
             >
               <div className="flex-shrink-0">
                 <div className="p-2 bg-gradient-to-br from-indigo-500 to-purple-600 dark:from-indigo-600 dark:to-purple-700 rounded-lg group-hover:shadow-lg transition-shadow">
@@ -114,7 +106,7 @@ const FeatureCards = () => {
                 <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
                   Gestión Financiera
                 </h3>
-                <p className="mt-3 text-base text-gray-600 dark:text-gray-300">
+                <p className="mt-3 text-base text-gray-600 dark:text-gray-100">
                   Control de pagos, cobros, gastos y presupuestos en tiempo
                   real.
                 </p>
@@ -123,7 +115,7 @@ const FeatureCards = () => {
 
             <motion.div
               variants={cardVariants}
-              className="group flex items-start p-4 rounded-xl hover:bg-white/50 dark:hover:bg-gray-800/50 backdrop-blur-sm transition-all duration-300"
+              className="group flex items-start p-4 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-purple-100 dark:border-purple-900/50 hover:border-purple-300 dark:hover:border-purple-700 transition-all duration-300 hover:shadow-lg"
             >
               <div className="flex-shrink-0">
                 <div className="p-2 bg-gradient-to-br from-purple-500 to-pink-600 dark:from-purple-600 dark:to-pink-700 rounded-lg group-hover:shadow-lg transition-shadow">
@@ -147,7 +139,7 @@ const FeatureCards = () => {
                 <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
                   Gestión de Proyectos
                 </h3>
-                <p className="mt-3 text-base text-gray-600 dark:text-gray-300">
+                <p className="mt-3 text-base text-gray-600 dark:text-gray-100">
                   Planificación y seguimiento de obras y mantenimientos con
                   control de presupuesto.
                 </p>
@@ -156,7 +148,7 @@ const FeatureCards = () => {
 
             <motion.div
               variants={cardVariants}
-              className="group flex items-start p-4 rounded-xl hover:bg-white/50 dark:hover:bg-gray-800/50 backdrop-blur-sm transition-all duration-300"
+              className="group flex items-start p-4 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-purple-100 dark:border-purple-900/50 hover:border-purple-300 dark:hover:border-purple-700 transition-all duration-300 hover:shadow-lg"
             >
               <div className="flex-shrink-0">
                 <div className="p-2 bg-gradient-to-br from-indigo-500 to-blue-600 dark:from-indigo-600 dark:to-blue-700 rounded-lg group-hover:shadow-lg transition-shadow">
@@ -180,7 +172,7 @@ const FeatureCards = () => {
                 <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
                   Comunicación Eficiente
                 </h3>
-                <p className="mt-3 text-base text-gray-600 dark:text-gray-300">
+                <p className="mt-3 text-base text-gray-600 dark:text-gray-100">
                   Sistema de notificaciones por WhatsApp y correo electrónico.
                 </p>
               </div>
@@ -212,7 +204,7 @@ const FeatureCards = () => {
                 <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
                   Diseño Moderno y Accesible
                 </h3>
-                <p className="mt-3 text-base text-gray-600 dark:text-gray-300">
+                <p className="mt-3 text-base text-gray-600 dark:text-gray-100">
                   Interfaz intuitiva con modo oscuro y diseño responsivo para
                   una mejor experiencia de usuario.
                 </p>

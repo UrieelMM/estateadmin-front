@@ -1,12 +1,22 @@
+import { WrenchScrewdriverIcon } from "@heroicons/react/24/outline";
+
 const MaintenanceTickets = () => {
   return (
-    <section className="py-12 bg-transparent sm:py-16 lg:py-20">
+    <section className="relative py-12 sm:py-16 lg:py-20">
       <div className="px-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
         <div className="max-w-xl mx-auto text-center xl:max-w-2xl">
+          {/* Badge Superior */}
+          <div className="inline-flex items-center gap-2 px-4 py-2 mb-6 rounded-full bg-gradient-to-r from-blue-500/10 via-cyan-500/10 to-blue-500/10 dark:from-blue-500/20 dark:via-cyan-500/20 dark:to-blue-500/20 border border-blue-200/50 dark:border-blue-700/50 backdrop-blur-sm">
+            <WrenchScrewdriverIcon className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+            <span className="text-sm font-semibold text-blue-600 dark:text-blue-400">
+              Mantenimiento Eficiente
+            </span>
+          </div>
+
           <h2 className="text-3xl font-bold leading-tight text-gray-900 dark:text-gray-100 sm:text-4xl xl:text-5xl">
             Sistema de Tickets de Mantenimiento Eficiente
           </h2>
-          <p className="mt-4 text-base text-gray-600 dark:text-gray-300">
+          <p className="mt-4 text-base text-gray-600 dark:text-gray-100">
             Gestiona todas las solicitudes de mantenimiento de tu condominio con
             nuestro avanzado sistema de tickets.
           </p>
@@ -33,7 +43,7 @@ const MaintenanceTickets = () => {
                 <h3 className="mt-8 text-2xl font-bold text-gray-900 dark:text-gray-100 sm:mt-20">
                   Seguimiento en Tiempo Real
                 </h3>
-                <p className="mt-6 text-base text-gray-600 dark:text-gray-300">
+                <p className="mt-6 text-base text-gray-600 dark:text-gray-100">
                   Mantén a los residentes informados sobre el progreso de sus
                   solicitudes. Cada actualización se registra cronológicamente,
                   creando un historial completo y transparente del servicio.
@@ -60,7 +70,7 @@ const MaintenanceTickets = () => {
                 <h3 className="mt-8 text-2xl font-bold text-gray-900 dark:text-gray-100 sm:mt-20">
                   Métricas Detalladas
                 </h3>
-                <p className="mt-6 text-base text-gray-600 dark:text-gray-300">
+                <p className="mt-6 text-base text-gray-600 dark:text-gray-100">
                   Analiza el desempeño del servicio de mantenimiento con
                   métricas clave como tiempos de respuesta, solución y
                   satisfacción. Identifica tendencias y mejora continuamente la
@@ -101,13 +111,13 @@ const MaintenanceTickets = () => {
                   <h3 className="mt-8 text-2xl font-bold text-gray-900 dark:text-gray-100 sm:mt-20">
                     Comunicación Integrada
                   </h3>
-                  <p className="mt-6 text-base text-gray-600 dark:text-gray-300">
+                  <p className="mt-6 text-base text-gray-600 dark:text-gray-100">
                     Sistema de comunicación bidireccional que permite a los
                     residentes y administradores intercambiar información, fotos
                     y documentos relacionados con cada solicitud de
                     mantenimiento.
                   </p>
-                  <p className="mt-6 text-base text-gray-600 dark:text-gray-300">
+                  <p className="mt-6 text-base text-gray-600 dark:text-gray-100">
                     Las notificaciones automáticas mantienen a todos informados
                     sobre cada cambio de estado o actualización importante.
                   </p>
@@ -134,7 +144,7 @@ const MaintenanceTickets = () => {
                 <h3 className="mt-8 text-2xl font-bold text-gray-900 dark:text-gray-100 sm:mt-20">
                   Gestión Eficiente
                 </h3>
-                <p className="mt-6 text-base text-gray-600 dark:text-gray-300">
+                <p className="mt-6 text-base text-gray-600 dark:text-gray-100">
                   Asigna, prioriza y categoriza tickets para optimizar recursos
                   y tiempos de respuesta. El sistema permite filtrar por
                   urgencia, tipo, estado y ubicación, facilitando la toma de

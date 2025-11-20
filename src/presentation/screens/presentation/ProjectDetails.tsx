@@ -35,16 +35,8 @@ const ProjectDetails = () => {
       whileInView="visible"
       viewport={{ once: true, margin: "-100px" }}
       variants={containerVariants}
-      className="relative py-12 sm:py-16 lg:py-20 overflow-hidden bg-gradient-to-b from-white via-purple-50/20 to-white dark:from-gray-900 dark:via-purple-900/10 dark:to-gray-900 transition-colors duration-300"
+      className="relative py-12 sm:py-16 lg:py-20"
     >
-      {/* Grid Pattern Background */}
-      <div className="absolute inset-0 -z-10">
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] dark:bg-[linear-gradient(to_right,#ffffff0a_1px,transparent_1px),linear-gradient(to_bottom,#ffffff0a_1px,transparent_1px)] bg-[size:14px_24px]"></div>
-      </div>
-
-      {/* Floating Gradient Orbs */}
-      <div className="absolute top-10 right-20 w-64 h-64 bg-gradient-to-br from-purple-300 to-purple-100 dark:from-purple-600 dark:to-purple-900 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
-      <div className="absolute bottom-10 left-20 w-64 h-64 bg-gradient-to-br from-indigo-300 to-indigo-100 dark:from-indigo-600 dark:to-indigo-900 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
       <div className="px-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
         <motion.div
           variants={itemVariants}
@@ -59,12 +51,9 @@ const ProjectDetails = () => {
           </div>
 
           <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-gray-100 font-pj">
-            <span className="relative inline-block">
-              Gestión de Proyectos
-              <span className="absolute bottom-1 left-0 w-full h-3 bg-purple-200/50 dark:bg-purple-900/50 -z-10 transform -skew-x-12"></span>
-            </span>
+            <span className="relative inline-block">Gestión de Proyectos</span>
           </h2>
-          <p className="max-w-xl mx-auto mt-6 text-lg leading-7 text-gray-600 dark:text-gray-300 font-pj">
+          <p className="max-w-xl mx-auto mt-6 text-lg leading-7 text-gray-600 dark:text-gray-100 font-pj">
             Planifica y supervisa proyectos y mantenimientos con herramientas
             especializadas y control total del presupuesto.
           </p>
@@ -88,7 +77,7 @@ const ProjectDetails = () => {
                   <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 font-pj mb-2">
                     Control de Gastos
                   </h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-300">
+                  <p className="text-sm text-gray-600 dark:text-gray-100">
                     Seguimiento detallado de presupuestos y gastos en tiempo
                     real
                   </p>
@@ -118,7 +107,7 @@ const ProjectDetails = () => {
                   <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 font-pj mb-2">
                     Gestión de Tareas
                   </h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-300">
+                  <p className="text-sm text-gray-600 dark:text-gray-100">
                     Organiza y asigna tareas con seguimiento completo del
                     progreso
                   </p>

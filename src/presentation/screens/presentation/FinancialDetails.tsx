@@ -49,17 +49,8 @@ const FinancialDetails = () => {
       whileInView="visible"
       viewport={{ once: true, margin: "-100px" }}
       variants={containerVariants}
-      className="relative py-12 sm:py-16 lg:py-20 overflow-hidden bg-gradient-to-b from-white via-indigo-50/30 to-white dark:from-gray-900 dark:via-indigo-900/10 dark:to-gray-900 transition-colors duration-300"
+      className="relative py-12 sm:py-16 lg:py-20"
     >
-      {/* Grid Pattern Background */}
-      <div className="absolute inset-0 -z-10">
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] dark:bg-[linear-gradient(to_right,#ffffff0a_1px,transparent_1px),linear-gradient(to_bottom,#ffffff0a_1px,transparent_1px)] bg-[size:14px_24px]"></div>
-      </div>
-
-      {/* Floating Gradient Orbs */}
-      <div className="absolute top-20 left-10 w-72 h-72 bg-gradient-to-br from-purple-300 to-purple-100 dark:from-purple-600 dark:to-purple-900 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
-      <div className="absolute bottom-20 right-10 w-72 h-72 bg-gradient-to-br from-indigo-300 to-indigo-100 dark:from-indigo-600 dark:to-indigo-900 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
-      <div className="absolute top-40 right-20 w-72 h-72 bg-gradient-to-br from-pink-300 to-pink-100 dark:from-pink-600 dark:to-pink-900 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
       <div className="px-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
         <motion.div
           variants={itemVariants}
@@ -74,17 +65,14 @@ const FinancialDetails = () => {
           </div>
 
           <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-gray-100 font-pj">
-            <span className="relative inline-block">
-              Gestión Financiera
-              <span className="absolute bottom-1 left-0 w-full h-3 bg-indigo-200/50 dark:bg-indigo-900/50 -z-10 transform -skew-x-12"></span>
-            </span>
+            <span className="relative inline-block">Gestión Financiera</span>
             <br />
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600">
+            <span className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-gray-100 font-pj">
               y Reportes Avanzados
             </span>
           </h2>
 
-          <p className="mt-6 text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+          <p className="mt-6 text-lg text-gray-600 dark:text-gray-100 max-w-2xl mx-auto">
             Controla cada aspecto financiero de tu condominio con herramientas
             profesionales y automatización inteligente
           </p>
@@ -115,7 +103,7 @@ const FinancialDetails = () => {
               className="group relative flex flex-col justify-between"
             >
               {/* Glassmorphism Card Background */}
-              <div className="absolute inset-0 bg-gradient-to-br from-white/80 to-indigo-50/50 dark:from-gray-800/80 dark:to-indigo-900/30 backdrop-blur-sm rounded-2xl border border-white/20 dark:border-gray-700/20 shadow-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 -z-10"></div>
+              <div className="absolute inset-0 bg-gradient-to-br from-white/80 to-indigo-50/50 dark:from-gray-800/80 dark:to-indigo-900/30 backdrop-blur-sm rounded-2xl border border-white/20 dark:border-gray-700/20 shadow-xl opacity-0 transition-opacity duration-300 -z-10"></div>
 
               <motion.div className="relative flex-shrink-0 mx-8 md:mx-0">
                 {/* Icon Badge */}
@@ -143,7 +131,7 @@ const FinancialDetails = () => {
                 <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 font-pj">
                   Pagos Sencillos
                 </h3>
-                <p className="mt-4 text-base font-normal leading-7 text-gray-600 dark:text-gray-300">
+                <p className="mt-4 text-base font-normal leading-7 text-gray-600 dark:text-gray-100">
                   Realiza pagos de manera rápida y segura. El sistema genera
                   automáticamente los recibos y actualiza el estado de cuenta de
                   cada residente.
@@ -166,12 +154,12 @@ const FinancialDetails = () => {
               className="group relative flex flex-col justify-between"
             >
               {/* Glassmorphism Card Background */}
-              <div className="absolute inset-0 bg-gradient-to-br from-white/80 to-purple-50/50 backdrop-blur-sm rounded-2xl border border-white/20 shadow-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 -z-10"></div>
+              <div className="absolute inset-0 bg-gradient-to-br from-white/80 to-purple-50/50 backdrop-blur-sm rounded-2xl border border-white/20 shadow-xl opacity-0 transition-opacity duration-300 -z-10"></div>
 
               <motion.div className="relative flex-shrink-0 mx-8 md:mx-0">
                 {/* Icon Badge */}
                 <div className="absolute -top-4 -right-4 z-10">
-                  <div className="bg-gradient-to-br from-purple-500 to-pink-600 p-3 rounded-xl shadow-lg">
+                  <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-3 rounded-xl shadow-lg">
                     <BellAlertIcon className="h-5 w-5 text-white" />
                   </div>
                 </div>
@@ -194,7 +182,7 @@ const FinancialDetails = () => {
                 <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 font-pj">
                   Notificaciones Automáticas
                 </h3>
-                <p className="mt-4 text-base font-normal leading-7 text-gray-600 dark:text-gray-300">
+                <p className="mt-4 text-base font-normal leading-7 text-gray-600 dark:text-gray-100">
                   Notificaciones instantáneas por WhatsApp y correo electrónico
                   para pagos y confirmaciones.
                 </p>
@@ -216,12 +204,12 @@ const FinancialDetails = () => {
               className="group relative flex flex-col justify-between"
             >
               {/* Glassmorphism Card Background */}
-              <div className="absolute inset-0 bg-gradient-to-br from-white/80 to-pink-50/50 backdrop-blur-sm rounded-2xl border border-white/20 shadow-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 -z-10"></div>
+              <div className="absolute inset-0 bg-gradient-to-br from-white/80 to-pink-50/50 backdrop-blur-sm rounded-2xl border border-white/20 shadow-xl opacity-0 transition-opacity duration-300 -z-10"></div>
 
               <motion.div className="relative flex-shrink-0 mx-8 md:mx-0">
                 {/* Icon Badge */}
                 <div className="absolute -top-4 -right-4 z-10">
-                  <div className="bg-gradient-to-br from-pink-500 to-indigo-600 p-3 rounded-xl shadow-lg">
+                  <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-3 rounded-xl shadow-lg">
                     <DocumentChartBarIcon className="h-5 w-5 text-white" />
                   </div>
                 </div>
@@ -244,7 +232,7 @@ const FinancialDetails = () => {
                 <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 font-pj ">
                   Reportes Financieros
                 </h3>
-                <p className="mt-4 text-base font-normal leading-7 text-gray-600 dark:text-gray-300">
+                <p className="mt-4 text-base font-normal leading-7 text-gray-600 dark:text-gray-100">
                   Accede a reportes detallados de ingresos, gastos, pagos
                   pendientes y estados de cuenta de cada residente en tiempo
                   real.

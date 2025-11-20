@@ -201,6 +201,23 @@ select[size] optgroup {
   }
 }
 
+/* Animación de pulso muy lenta para gradient blobs */
+@keyframes slow-pulse {
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.05);
+  }
+}
+
+.animate-slow-pulse {
+  animation: slow-pulse 8s ease-in-out infinite;
+}
+
 /* Animación de brillo */
 @keyframes shimmer {
   0% {

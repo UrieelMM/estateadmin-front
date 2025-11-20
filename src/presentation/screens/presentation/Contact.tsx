@@ -52,7 +52,7 @@ const Contact = () => {
   };
 
   return (
-    <section className="py-12 bg-transparent sm:py-16 lg:py-20" id="contact">
+    <section className="relative py-12 sm:py-16 lg:py-20" id="contact">
       <div className="px-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
         <div className="max-w-2xl mx-auto text-center">
           <h2 className="text-4xl font-bold text-gray-900 dark:text-gray-100 font-pj">
@@ -61,7 +61,7 @@ const Contact = () => {
               EstateAdmin
             </span>
           </h2>
-          <p className="max-w-md mx-auto mt-5 text-base font-normal text-gray-600 dark:text-gray-300 font-pj">
+          <p className="max-w-md mx-auto mt-5 text-base font-normal text-gray-600 dark:text-gray-100 font-pj">
             Únete a la comunidad de administradores que ya están disfrutando de
             una gestión más eficiente y moderna de sus condominios.
           </p>
@@ -84,7 +84,7 @@ const Contact = () => {
               name="email"
               id="email"
               placeholder="Ingresa tu correo electrónico"
-              className="block w-full px-5 py-6 text-base font-normal text-gray-800 dark:text-gray-100 placeholder-gray-600 dark:placeholder-gray-400 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl focus:border-indigo-300 dark:focus:border-indigo-500 font-pj focus:outline-none transition-colors duration-300"
+              className="block w-full px-5 py-6 text-base font-normal text-gray-800 dark:text-gray-100 placeholder-gray-600 dark:placeholder-gray-400 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-600 rounded-xl focus:border-indigo-300 dark:focus:border-indigo-500 font-pj focus:outline-none transition-colors duration-300"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}

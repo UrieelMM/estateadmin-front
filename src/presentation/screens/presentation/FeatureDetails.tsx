@@ -9,6 +9,7 @@ import {
   MoonIcon,
   ShieldCheckIcon,
   BellAlertIcon,
+  SparklesIcon,
 } from "@heroicons/react/24/outline";
 
 const FeatureDetails = () => {
@@ -123,16 +124,21 @@ const FeatureDetails = () => {
   };
 
   return (
-    <section
-      className="py-16 bg-white dark:bg-gray-900 sm:py-20 lg:py-24 transition-colors duration-300"
-      id="features-detail"
-    >
+    <section className="relative py-16 sm:py-20 lg:py-24" id="features-detail">
       <div className="px-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
         <div className="max-w-3xl mx-auto text-center mb-16">
+          {/* Badge Superior */}
+          <div className="inline-flex items-center gap-2 px-4 py-2 mb-6 rounded-full bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-indigo-500/10 dark:from-indigo-500/20 dark:via-purple-500/20 dark:to-indigo-500/20 border border-indigo-200/50 dark:border-indigo-700/50 backdrop-blur-sm">
+            <SparklesIcon className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+            <span className="text-sm font-semibold text-indigo-600 dark:text-indigo-400">
+              Características Destacadas
+            </span>
+          </div>
+
           <h2 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100 sm:text-4xl">
             Características que transforman la gestión
           </h2>
-          <p className="mt-4 text-lg leading-8 text-gray-600 dark:text-gray-300">
+          <p className="mt-4 text-lg leading-8 text-gray-600 dark:text-gray-100">
             EstateAdmin integra todas las herramientas que necesitas para
             administrar tu condominio de manera eficiente, transparente y
             moderna.
@@ -169,7 +175,7 @@ const FeatureDetails = () => {
               <h3 className="mt-6 text-lg font-semibold text-gray-900 dark:text-gray-100">
                 {feature.title}
               </h3>
-              <p className="mt-4 text-base text-gray-600 dark:text-gray-300">
+              <p className="mt-4 text-base text-gray-600 dark:text-gray-100">
                 {feature.description}
               </p>
             </motion.div>
