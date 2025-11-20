@@ -1,11 +1,14 @@
 import { Helmet } from "react-helmet-async";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { ArrowLeftIcon } from "@heroicons/react/24/solid";
+import { ArrowLeftIcon, SunIcon, MoonIcon } from "@heroicons/react/24/solid";
+import { useLocalDarkMode } from "../../../hooks/useLocalDarkMode";
 import logo from "../../../assets/logo.png";
 import Footer from "./Footer";
 
 const AboutUs = () => {
+  const { isDarkMode, toggleDarkMode } = useLocalDarkMode();
+
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -30,7 +33,7 @@ const AboutUs = () => {
   };
 
   return (
-    <div className="bg-white min-h-screen">
+    <div className="bg-white dark:bg-gray-900 min-h-screen transition-colors duration-300">
       <Helmet>
         <title>
           Sobre Nosotros - EstateAdmin | Gestión Inteligente de Condominios
@@ -90,27 +93,51 @@ const AboutUs = () => {
         <link rel="canonical" href="https://estate-admin.com/sobre-nosotros" />
       </Helmet>
 
-      <header className="bg-white shadow-sm">
+      <header className="bg-white dark:bg-gray-800 shadow-sm transition-colors duration-300">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
           <Link to="/" className="flex items-center">
             <img className="h-10 w-auto" src={logo} alt="EstateAdmin Logo" />
-            <span className="ml-3 text-xl font-bold text-indigo-600">
+            <span className="ml-3 text-xl font-bold text-indigo-600 dark:text-indigo-400">
               EstateAdmin
             </span>
           </Link>
-          <Link
-            to="/"
-            className="text-sm font-medium text-indigo-600 hover:text-indigo-800"
-          >
-            <ArrowLeftIcon className="h-5 w-5 inline mr-1" />
-            Volver al inicio
-          </Link>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={toggleDarkMode}
+              className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 transition-all duration-300"
+              aria-label="Toggle dark mode"
+            >
+              <div className="relative w-5 h-5">
+                <SunIcon
+                  className={`absolute inset-0 w-5 h-5 text-yellow-500 transition-all duration-500 transform ${
+                    !isDarkMode
+                      ? "opacity-100 rotate-0 scale-100"
+                      : "opacity-0 rotate-180 scale-75"
+                  }`}
+                />
+                <MoonIcon
+                  className={`absolute inset-0 w-5 h-5 text-indigo-400 transition-all duration-500 transform ${
+                    isDarkMode
+                      ? "opacity-100 rotate-0 scale-100"
+                      : "opacity-0 -rotate-180 scale-75"
+                  }`}
+                />
+              </div>
+            </button>
+            <Link
+              to="/"
+              className="text-sm font-medium text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300"
+            >
+              <ArrowLeftIcon className="h-5 w-5 inline mr-1" />
+              Volver al inicio
+            </Link>
+          </div>
         </div>
       </header>
 
       <main>
         {/* Hero Section */}
-        <section className="relative py-20 overflow-hidden bg-gradient-to-b from-indigo-50 to-white">
+        <section className="relative py-20 overflow-hidden bg-gradient-to-b from-indigo-50 to-white dark:from-gray-800 dark:to-gray-900 transition-colors duration-300">
           <div className="absolute inset-x-0 -top-40 transform-gpu overflow-hidden blur-3xl sm:-top-80">
             <div
               className="relative left-[calc(50%-11rem)] aspect-[1155/678] w-[36.125rem] -translate-x-1/2 rotate-[30deg] bg-gradient-to-tr from-[#9c80ff] to-[#9089fc] opacity-30 sm:left-[calc(50%-30rem)] sm:w-[72.1875rem]"
@@ -122,10 +149,10 @@ const AboutUs = () => {
           </div>
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center">
-              <h1 className="text-4xl font-bold tracking-tight text-indigo-600 sm:text-5xl md:text-6xl">
+              <h1 className="text-4xl font-bold tracking-tight text-indigo-600 dark:text-indigo-400 sm:text-5xl md:text-6xl">
                 Sobre Nosotros
               </h1>
-              <p className="mt-4 max-w-3xl mx-auto text-xl text-gray-600">
+              <p className="mt-4 max-w-3xl mx-auto text-xl text-gray-600 dark:text-gray-300">
                 Conoce la historia, visión y propósito detrás de EstateAdmin
               </p>
             </div>
@@ -153,18 +180,18 @@ const AboutUs = () => {
                 variants={itemVariants}
                 className="mt-10 lg:mt-0 lg:order-1"
               >
-                <h2 className="text-3xl font-bold text-gray-900 sm:text-4xl">
+                <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100 sm:text-4xl">
                   ¿Quiénes somos?
                 </h2>
-                <div className="w-20 h-1 bg-indigo-600 mt-4 mb-6"></div>
-                <p className="mt-4 text-lg text-gray-600 leading-relaxed">
+                <div className="w-20 h-1 bg-indigo-600 dark:bg-indigo-400 mt-4 mb-6"></div>
+                <p className="mt-4 text-lg text-gray-600 dark:text-gray-300 leading-relaxed">
                   EstateAdmin nació como respuesta a la creciente necesidad de
                   digitalizar la gestión de condominios en México. Somos un
                   equipo multidisciplinario de profesionales apasionados por la
                   tecnología y la innovación, comprometidos con transformar la
                   forma en que se administran las propiedades residenciales.
                 </p>
-                <p className="mt-4 text-lg text-gray-600 leading-relaxed">
+                <p className="mt-4 text-lg text-gray-600 dark:text-gray-300 leading-relaxed">
                   Nuestra plataforma fue diseñada tras escuchar atentamente los
                   desafíos que enfrentan administradores, propietarios y
                   residentes en la gestión diaria de sus comunidades. Combinamos
@@ -183,7 +210,7 @@ const AboutUs = () => {
           whileInView="visible"
           viewport={{ once: true, margin: "-100px" }}
           variants={containerVariants}
-          className="py-16 sm:py-24 bg-indigo-50"
+          className="py-16 sm:py-24 bg-indigo-50 dark:bg-gray-800 transition-colors duration-300"
         >
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="lg:grid lg:grid-cols-2 lg:gap-16 items-center">
@@ -195,18 +222,18 @@ const AboutUs = () => {
                 />
               </motion.div>
               <motion.div variants={itemVariants} className="mt-10 lg:mt-0">
-                <h2 className="text-3xl font-bold text-gray-900 sm:text-4xl">
+                <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100 sm:text-4xl">
                   Nuestra visión
                 </h2>
-                <div className="w-20 h-1 bg-indigo-600 mt-4 mb-6"></div>
-                <p className="mt-4 text-lg text-gray-600 leading-relaxed">
+                <div className="w-20 h-1 bg-indigo-600 dark:bg-indigo-400 mt-4 mb-6"></div>
+                <p className="mt-4 text-lg text-gray-600 dark:text-gray-300 leading-relaxed">
                   En EstateAdmin visualizamos un futuro donde la administración
                   de condominios sea sinónimo de eficiencia, transparencia y
                   colaboración. Aspiramos a ser el estándar de oro en soluciones
                   tecnológicas para comunidades residenciales en toda
                   Latinoamérica.
                 </p>
-                <p className="mt-4 text-lg text-gray-600 leading-relaxed">
+                <p className="mt-4 text-lg text-gray-600 dark:text-gray-300 leading-relaxed">
                   Creemos firmemente que la tecnología debe servir para unir a
                   las personas y facilitar su día a día. Por eso, trabajamos
                   incansablemente para desarrollar herramientas que no solo
@@ -214,7 +241,7 @@ const AboutUs = () => {
                   fomenten un sentido de comunidad y bienestar entre los
                   residentes.
                 </p>
-                <p className="mt-4 text-lg text-gray-600 leading-relaxed">
+                <p className="mt-4 text-lg text-gray-600 dark:text-gray-300 leading-relaxed">
                   Nuestra visión se extiende hacia la creación de comunidades
                   residenciales más inteligentes, sostenibles y armoniosas,
                   donde la convivencia y la gestión de recursos se optimicen a
@@ -246,24 +273,24 @@ const AboutUs = () => {
                 variants={itemVariants}
                 className="mt-10 lg:mt-0 lg:order-1"
               >
-                <h2 className="text-3xl font-bold text-gray-900 sm:text-4xl">
+                <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100 sm:text-4xl">
                   Nuestro objetivo
                 </h2>
-                <div className="w-20 h-1 bg-indigo-600 mt-4 mb-6"></div>
-                <p className="mt-4 text-lg text-gray-600 leading-relaxed">
+                <div className="w-20 h-1 bg-indigo-600 dark:bg-indigo-400 mt-4 mb-6"></div>
+                <p className="mt-4 text-lg text-gray-600 dark:text-gray-300 leading-relaxed">
                   Nuestro objetivo principal es revolucionar la administración
                   de condominios en México y Latinoamérica, ofreciendo una
                   plataforma intuitiva, potente y accesible que resuelva de
                   manera efectiva los desafíos cotidianos de la gestión
                   inmobiliaria.
                 </p>
-                <p className="mt-4 text-lg text-gray-600 leading-relaxed">
+                <p className="mt-4 text-lg text-gray-600 dark:text-gray-300 leading-relaxed">
                   Nos hemos propuesto reducir en un 50% el tiempo dedicado a
                   tareas administrativas, eliminar la morosidad en pagos de
                   mantenimiento y mejorar la comunicación entre todos los
                   miembros de la comunidad residencial.
                 </p>
-                <p className="mt-4 text-lg text-gray-600 leading-relaxed">
+                <p className="mt-4 text-lg text-gray-600 dark:text-gray-300 leading-relaxed">
                   Para 2026, aspiramos a estar presentes en al menos 1,000
                   condominios en toda la región, contribuyendo
                   significativamente a la transformación digital del sector
@@ -284,25 +311,25 @@ const AboutUs = () => {
         </motion.section>
 
         {/* CTA Section */}
-        <section className="bg-indigo-500 py-16">
+        <section className="bg-indigo-500 dark:bg-indigo-600 py-16 transition-colors duration-300">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <h2 className="text-3xl font-bold text-white">
+            <h2 className="text-3xl font-bold text-white dark:text-gray-100">
               ¿Listo para transformar la gestión de tu condominio?
             </h2>
-            <p className="mt-4 text-xl text-indigo-100 max-w-3xl mx-auto">
+            <p className="mt-4 text-xl text-indigo-100 dark:text-gray-200 max-w-3xl mx-auto">
               Únete a miles de administradores y residentes que ya disfrutan de
               los beneficios de EstateAdmin
             </p>
             <div className="mt-8 flex justify-center gap-x-4">
               <Link
                 to="/contacto"
-                className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-indigo-700 bg-white hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white"
+                className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-indigo-700 dark:text-indigo-600 bg-white dark:bg-gray-100 hover:bg-indigo-50 dark:hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white transition-colors duration-300"
               >
                 Solicitar demo
               </Link>
               <Link
                 to="/"
-                className="inline-flex items-center px-6 py-3 border border-white text-base font-medium rounded-md text-white hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white"
+                className="inline-flex items-center px-6 py-3 border border-white dark:border-gray-300 text-base font-medium rounded-md text-white dark:text-gray-100 hover:bg-indigo-600 dark:hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white transition-colors duration-300"
               >
                 Conocer más
               </Link>

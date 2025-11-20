@@ -3,11 +3,13 @@ import { useState } from "react";
 import { toast } from "react-hot-toast";
 import * as Sentry from "@sentry/react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeftIcon } from "@heroicons/react/24/solid";
+import { ArrowLeftIcon, SunIcon, MoonIcon } from "@heroicons/react/24/solid";
 import { Helmet } from "react-helmet-async";
+import { useLocalDarkMode } from "../../../hooks/useLocalDarkMode";
 
 const ContactForm = () => {
   const navigate = useNavigate();
+  const { isDarkMode, toggleDarkMode } = useLocalDarkMode();
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -159,7 +161,7 @@ const ContactForm = () => {
       whileInView="visible"
       viewport={{ once: true, margin: "-100px" }}
       variants={containerVariants}
-      className="min-h-screen bg-white"
+      className="min-h-screen bg-white dark:bg-gray-900 transition-colors duration-300"
     >
       <Helmet>
         <title>Contacta con EstateAdmin | Solicita información y soporte</title>
@@ -184,18 +186,42 @@ const ContactForm = () => {
           className="flex-1 flex items-center justify-center p-8 lg:p-12"
         >
           <div className="w-full max-w-md">
-            <button
-              onClick={() => navigate("/presentation")}
-              className="mb-6 flex items-center text-indigo-600 hover:text-indigo-700"
-            >
-              <ArrowLeftIcon className="h-5 w-5 mr-2" />
-              Volver
-            </button>
+            <div className="mb-6 flex items-center justify-between">
+              <button
+                onClick={() => navigate("/")}
+                className="flex items-center text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300"
+              >
+                <ArrowLeftIcon className="h-5 w-5 mr-2" />
+                Volver
+              </button>
+              <button
+                onClick={toggleDarkMode}
+                className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 transition-all duration-300"
+                aria-label="Toggle dark mode"
+              >
+                <div className="relative w-5 h-5">
+                  <SunIcon
+                    className={`absolute inset-0 w-5 h-5 text-yellow-500 transition-all duration-500 transform ${
+                      !isDarkMode
+                        ? "opacity-100 rotate-0 scale-100"
+                        : "opacity-0 rotate-180 scale-75"
+                    }`}
+                  />
+                  <MoonIcon
+                    className={`absolute inset-0 w-5 h-5 text-indigo-400 transition-all duration-500 transform ${
+                      isDarkMode
+                        ? "opacity-100 rotate-0 scale-100"
+                        : "opacity-0 -rotate-180 scale-75"
+                    }`}
+                  />
+                </div>
+              </button>
+            </div>
             <div className="text-center lg:text-left">
-              <h2 className="text-3xl font-bold text-indigo-500 sm:text-4xl font-pj">
+              <h2 className="text-3xl font-bold text-indigo-500 dark:text-indigo-400 sm:text-4xl font-pj">
                 Contáctanos
               </h2>
-              <p className="mt-4 text-base leading-7 text-gray-600">
+              <p className="mt-4 text-base leading-7 text-gray-600 dark:text-gray-300">
                 Déjanos tus datos y nos pondremos en contacto contigo lo antes
                 posible.
               </p>
@@ -206,12 +232,12 @@ const ContactForm = () => {
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="p-4 bg-indigo-50 border border-indigo-200 rounded-lg"
+                  className="p-4 bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-700 rounded-lg transition-colors duration-300"
                 >
-                  <h3 className="text-lg font-medium text-indigo-800">
+                  <h3 className="text-lg font-medium text-indigo-800 dark:text-indigo-300">
                     ¡Gracias por contactarnos!
                   </h3>
-                  <p className="mt-2 text-indigo-700">
+                  <p className="mt-2 text-indigo-700 dark:text-indigo-400">
                     Hemos recibido tu mensaje y nos pondremos en contacto
                     contigo lo antes posible.
                   </p>
@@ -226,7 +252,7 @@ const ContactForm = () => {
                         message: "",
                       });
                     }}
-                    className="mt-4 text-sm font-medium text-indigo-600 hover:text-indigo-500"
+                    className="mt-4 text-sm font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300"
                   >
                     Enviar otro mensaje
                   </button>
@@ -236,7 +262,7 @@ const ContactForm = () => {
                   <motion.div variants={itemVariants}>
                     <label
                       htmlFor="name"
-                      className="block text-sm font-medium text-gray-700"
+                      className="block text-sm font-medium text-gray-700 dark:text-gray-300"
                     >
                       Nombre *
                     </label>
@@ -247,7 +273,7 @@ const ContactForm = () => {
                       placeholder="Nombre"
                       value={formData.name}
                       onChange={handleChange}
-                      className={`w-full mt-1 px-2 h-[42px] border border-indigo-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500  ${
+                      className={`w-full mt-1 px-2 h-[42px] border border-indigo-300 dark:border-indigo-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:focus:ring-indigo-400 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 transition-colors duration-300 ${
                         errors.name ? "border-red-500" : ""
                       }`}
                     />
@@ -259,7 +285,7 @@ const ContactForm = () => {
                   <motion.div variants={itemVariants}>
                     <label
                       htmlFor="email"
-                      className="block text-sm font-medium text-gray-700"
+                      className="block text-sm font-medium text-gray-700 dark:text-gray-300"
                     >
                       Email *
                     </label>
@@ -270,7 +296,7 @@ const ContactForm = () => {
                       placeholder="Email"
                       value={formData.email}
                       onChange={handleChange}
-                      className={`w-full mt-1 px-2 h-[42px] border border-indigo-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500  ${
+                      className={`w-full mt-1 px-2 h-[42px] border border-indigo-300 dark:border-indigo-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:focus:ring-indigo-400 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 transition-colors duration-300 ${
                         errors.email ? "border-red-500" : ""
                       }`}
                     />
@@ -284,7 +310,7 @@ const ContactForm = () => {
                   <motion.div variants={itemVariants}>
                     <label
                       htmlFor="phone"
-                      className="block text-sm font-medium text-gray-700"
+                      className="block text-sm font-medium text-gray-700 dark:text-gray-300"
                     >
                       Teléfono
                     </label>
@@ -295,7 +321,7 @@ const ContactForm = () => {
                       placeholder="Teléfono"
                       value={formData.phone}
                       onChange={handleChange}
-                      className={`w-full mt-1 px-2 h-[42px] border border-indigo-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500  ${
+                      className={`w-full mt-1 px-2 h-[42px] border border-indigo-300 dark:border-indigo-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:focus:ring-indigo-400 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 transition-colors duration-300 ${
                         errors.phone ? "border-red-500" : ""
                       }`}
                     />
@@ -309,7 +335,7 @@ const ContactForm = () => {
                   <motion.div variants={itemVariants}>
                     <label
                       htmlFor="message"
-                      className="block text-sm font-medium text-gray-700"
+                      className="block text-sm font-medium text-gray-700 dark:text-gray-300"
                     >
                       Mensaje
                     </label>
@@ -320,7 +346,7 @@ const ContactForm = () => {
                       placeholder="Mensaje"
                       value={formData.message}
                       onChange={handleChange}
-                      className={`w-full mt-1 px-2 py-2 h-[100px] border border-indigo-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500  ${
+                      className={`w-full mt-1 px-2 py-2 h-[100px] border border-indigo-300 dark:border-indigo-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:focus:ring-indigo-400 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 transition-colors duration-300 ${
                         errors.message ? "border-red-500" : ""
                       }`}
                     />

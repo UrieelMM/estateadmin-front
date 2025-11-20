@@ -9,7 +9,7 @@ import {
   SunIcon,
   MoonIcon,
 } from "@heroicons/react/24/solid";
-import { useTheme } from "../../../context/Theme/ThemeContext";
+import { useLocalDarkMode } from "../../../hooks/useLocalDarkMode";
 import { Helmet } from "react-helmet-async";
 import logo from "../../../assets/logo.png";
 import Footer from "./Footer";
@@ -31,7 +31,7 @@ const navigation = [
 const Hero = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [_mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-  const { isDarkMode, toggleDarkMode } = useTheme();
+  const { isDarkMode, toggleDarkMode } = useLocalDarkMode();
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {

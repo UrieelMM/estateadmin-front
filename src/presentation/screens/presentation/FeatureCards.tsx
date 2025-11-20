@@ -180,7 +180,7 @@ const FeatureCards = () => {
 
             <motion.div
               variants={cardVariants}
-              className="group flex items-start p-4 rounded-xl hover:bg-white/50 dark:hover:bg-gray-800/50 backdrop-blur-sm transition-all duration-300"
+              className="group flex items-start p-4 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-purple-100 dark:border-purple-900/50 hover:border-purple-300 dark:hover:border-purple-700 transition-all duration-300 hover:shadow-lg"
             >
               <div className="flex-shrink-0">
                 <div className="p-2 bg-gradient-to-br from-purple-500 to-indigo-600 dark:from-purple-600 dark:to-indigo-700 rounded-lg group-hover:shadow-lg transition-shadow">
