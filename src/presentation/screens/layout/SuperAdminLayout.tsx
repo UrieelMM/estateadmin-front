@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { Link, NavLink, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { Disclosure } from "@headlessui/react";
 import {
@@ -13,9 +13,9 @@ import {
   ShieldCheckIcon,
   DocumentTextIcon,
   DocumentPlusIcon,
+  EnvelopeIcon,
 } from "@heroicons/react/24/solid";
 import {
-  ChevronRightIcon,
   Bars3Icon,
   ShieldExclamationIcon,
 } from "@heroicons/react/16/solid";
@@ -34,7 +34,7 @@ interface SuperAdminLayoutProps {
 
 const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ children }) => {
   const navigate = useNavigate();
-  const location = useLocation();
+
   const { user, logoutUser } = useAuthStore();
 
   const [isSuperAdmin, setIsSuperAdmin] = useState<boolean>(false);
@@ -156,17 +156,19 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ children }) => {
             <Disclosure.Panel className="md:hidden">
               <div className="space-y-1 px-2 pb-3 pt-2 sm:px-3">
                 {superAdminRoutes.map((route) => (
-                  <Link
+                  <NavLink
                     key={route.to}
                     to={`/super-admin/${route.to}`}
-                    className={`${
-                      location.pathname.includes(route.to)
-                        ? "bg-indigo-800 text-white"
-                        : "text-indigo-200 hover:bg-indigo-700 hover:text-white"
-                    } block rounded-md px-3 py-2 text-base font-medium`}
+                    className={({ isActive }) =>
+                      `${
+                        isActive
+                          ? "bg-indigo-800 text-white"
+                          : "text-indigo-200 hover:bg-indigo-700 hover:text-white"
+                      } block rounded-md px-3 py-2 text-base font-medium`
+                    }
                   >
                     {route.name}
-                  </Link>
+                  </NavLink>
                 ))}
               </div>
               <div className="border-t border-indigo-800 pb-3 pt-4">
@@ -236,32 +238,31 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ children }) => {
                   case "new-customer-form":
                     Icon = DocumentPlusIcon;
                     break;
+                  case "emails":
+                    Icon = EnvelopeIcon;
+                    break;
                   default:
                     Icon = ChartBarIcon;
                 }
 
                 return (
-                  <Link
+                  <NavLink
                     key={route.to}
                     to={`/super-admin/${route.to}`}
-                    className={`${
-                      location.pathname.includes(route.to)
-                        ? "bg-indigo-700 text-white"
-                        : "text-indigo-100 hover:bg-indigo-700"
-                    } group flex items-center px-3 py-2 text-sm font-medium rounded-md`}
+                    className={({ isActive }) =>
+                      `${
+                        isActive
+                          ? "bg-indigo-700 text-white"
+                          : "text-indigo-100 hover:bg-indigo-700"
+                      } group flex items-center px-3 py-2 text-sm font-medium rounded-md`
+                    }
                   >
                     <Icon
                       className="mr-3 h-5 w-5 flex-shrink-0"
                       aria-hidden="true"
                     />
                     {route.name}
-                    {location.pathname.includes(route.to) && (
-                      <ChevronRightIcon
-                        className="ml-auto h-4 w-4"
-                        aria-hidden="true"
-                      />
-                    )}
-                  </Link>
+                  </NavLink>
                 );
               })}
             </nav>

@@ -6,6 +6,7 @@ import SystemSettings from "../presentation/screens/superAdmin/SystemSettings";
 import UserManagement from "../presentation/screens/superAdmin/UserManagement";
 import NewsAndGuides from "../presentation/screens/superAdmin/NewsAndGuides";
 import { NewCustomerFormManager } from "../presentation/screens/superAdmin/newCustomerInformationForm";
+import EmailManagement from "../presentation/screens/superAdmin/emails/EmailManagement";
 
 interface Route {
   to: string;
@@ -56,5 +57,11 @@ export const superAdminRoutes: Route[] = [
     path: "super-admin/news-and-guides",
     Component: NewsAndGuides,
     name: "Novedades y Guías",
+  },
+  {
+    to: "emails",
+    path: "super-admin/emails",
+    Component: EmailManagement,
+    name: "Correos",
   },
 ];
