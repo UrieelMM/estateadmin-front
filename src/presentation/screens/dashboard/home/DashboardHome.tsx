@@ -7,8 +7,7 @@ import { useCalendarEventsStore } from "../../../../store/useReservationStore";
 import dayjs from "dayjs";
 import { Link } from "react-router-dom";
 import ImageSlider from "../../../components/shared/sliders/ImageSlider";
-import { useAppTour } from "../../../../hooks/useAppTour";
-import TourButton from "../../../components/shared/TourButton";
+
 
 const NextEvents = () => {
   const { events, fetchEvents } = useCalendarEventsStore();
@@ -64,12 +63,11 @@ const NextEvents = () => {
 };
 
 const DashboardHome = () => {
-  // Inicializar el tour de la aplicación
-  const { startTour } = useAppTour();
+
 
   return (
     <>
-      <TourButton onClick={startTour} />
+
       <div className="flex flex-col gap-6 px-4 py-4 md:px-8">
       {/* Fila 1: Solo Cards Summary (KPIs) */}
       <div className="w-full">

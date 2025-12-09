@@ -26,6 +26,7 @@ import { getFirestore, doc, getDoc } from "firebase/firestore";
 import { useSyncClientPlan } from "../../../hooks/useSyncClientPlan";
 import { useClientPlanStore } from "../../../store/clientPlanStore";
 import SupportModal from "../../components/shared/forms/SupportModal";
+import TutorialsMenu from "../../components/shared/Help/TutorialsMenu";
 
 // Función global de diagnóstico (accesible desde la consola del navegador)
 declare global {
@@ -194,7 +195,7 @@ const LayoutDashboard = ({ children }: Props) => {
       <div className="hidden xl:block">
         <aside
           className={classNames(
-            "fixed inset-y-0 left-0 border-r bg-gray-50 border-gray-200 dark:border-gray-700 dark:bg-gray-800",
+            "fixed inset-y-0 left-0 border-r bg-gray-50 border-gray-200 dark:border-gray-700 dark:bg-gray-800 z-50",
             "h-screen flex flex-col transition-all duration-300 ease-in-out",
             isDesktopMenuCollapsed ? "w-16" : "w-52 md:w-56"
           )}
@@ -303,6 +304,7 @@ const LayoutDashboard = ({ children }: Props) => {
                                     key={subItem.name}
                                     as={Link}
                                     to={subItem.href}
+                                    id={`nav-sub-desktop-${subItem.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "-")}`}
                                     className="group w-full flex items-center pl-11 pr-2 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md hover:bg-indigo-100 dark:hover:bg-gray-700"
                                   >
                                     {subItem.name}
@@ -322,7 +324,13 @@ const LayoutDashboard = ({ children }: Props) => {
 
           {/* Footer fijo */}
           <div className="flex-none py-6">
-            <ul>
+            <ul className="space-y-2">
+              <li className={classNames(
+                "mx-auto",
+                isDesktopMenuCollapsed ? "w-full px-2" : "w-40"
+              )}>
+                 <TutorialsMenu collapsed={isDesktopMenuCollapsed} />
+              </li>
               <li
                 className={classNames(
                   "bg-gradient-to-tr from-[#9f86f81c] to-[#746dfc17] shadow-lg flex justify-center items-center rounded-lg mx-auto",
@@ -487,6 +495,7 @@ const LayoutDashboard = ({ children }: Props) => {
                                   key={subItem.name}
                                   as={Link}
                                   to={subItem.href}
+                                   id={`nav-sub-mobile-${subItem.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "-")}`}
                                   className="group w-full flex items-center pl-11 pr-2 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md hover:bg-indigo-100 dark:hover:bg-gray-700"
                                 >
                                   {subItem.name}
@@ -505,7 +514,10 @@ const LayoutDashboard = ({ children }: Props) => {
 
           {/* Footer fijo */}
           <div className="flex-none py-6">
-            <ul>
+            <ul className="space-y-2">
+               <li className="w-40 mx-auto">
+                 <TutorialsMenu />
+               </li>
               <li className="w-40 h-36 mb-8 bg-gradient-to-tr from-[#9f86f81c] to-[#746dfc17] shadow-lg flex justify-center items-center rounded-lg mx-auto">
                 <div className="group flex-col justify-center items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md">
                   <div className="flex justify-center items-center">

@@ -367,11 +367,8 @@ const Hero = () => {
             </div>
 
             <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-gray-900 dark:text-gray-100 mt-4 mb-6">
-              Gestión{" "}
-              <span className="relative inline-block">
-                <span className="relative z-10">Inteligente</span>
-              </span>
-              <br className="hidden sm:block" /> de Condominios
+              Tecnología que une y{" "}
+              <br className="hidden sm:block" /> cuentas que cuadran
             </h2>
 
             <p className="mt-8 text-lg md:text-xl leading-8 text-gray-600 dark:text-gray-100 max-w-3xl mx-auto">
