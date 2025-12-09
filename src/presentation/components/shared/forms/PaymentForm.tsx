@@ -17,6 +17,7 @@ import toast from "react-hot-toast";
 import { usePaymentSummaryStore } from "../../../../store/paymentSummaryStore";
 import { useUnidentifiedPaymentsStore } from "../../../../store/useUnidentifiedPaymentsStore";
 import { useCondominiumStore } from "../../../../store/useCondominiumStore";
+import { useFileCompression } from "../../../../hooks/useFileCompression";
 
 interface FormParcelReceptionProps {
   open: boolean;
@@ -106,6 +107,8 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
     }));
 
   const { fetchPayments } = useUnidentifiedPaymentsStore();
+
+  const { compressFile, isCompressing } = useFileCompression();
 
   useEffect(() => {
     if (open) {
@@ -374,10 +377,29 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
   };
 
   const dropzoneOptions = {
-    accept: [".xls", ".xlsx"] as any,
-    onDrop: (acceptedFiles: File[]) => {
-      setFile(acceptedFiles[0]);
-      setFileName(acceptedFiles[0].name);
+    accept: {
+      "application/vnd.ms-excel": [".xls"],
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [
+        ".xlsx",
+      ],
+      "image/*": [".png", ".jpg", ".jpeg"],
+      "application/pdf": [".pdf"],
+    },
+    onDrop: async (acceptedFiles: File[]) => {
+      const originalFile = acceptedFiles[0];
+      if (originalFile) {
+        try {
+          const processedFile = await compressFile(originalFile);
+          setFile(processedFile);
+          setFileName(processedFile.name);
+          toast.success("Archivo procesado correctamente");
+        } catch (error) {
+          console.error("Error processing file:", error);
+          setFile(originalFile);
+          setFileName(originalFile.name);
+          toast.error("Error al procesar el archivo, se usará el original");
+        }
+      }
     },
   };
   const { getRootProps, getInputProps, isDragActive } =
@@ -850,7 +872,9 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                                   <p className="mt-4 text-sm leading-6 font-medium text-indigo-600">
                                     {isDragActive
                                       ? "Suelta el archivo aquí..."
-                                      : "Arrastra y suelta el comprobante aquí o haz click para seleccionarlo"}
+                                      : isCompressing
+                                      ? "Procesando archivo..."
+                                      : "Arrastra y suelta el comprobante (PDF o Imagen) aquí o haz click"}
                                   </p>
                                 )}
                                 <p className="text-xs leading-5 text-gray-600">
@@ -899,6 +923,8 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                             className="animate-spin h-5 w-5 mr-3 border-t-2 border-b-2 border-indigo-100 rounded-full"
                             viewBox="0 0 24 24"
                           ></svg>
+                        ) : isCompressing ? (
+                          "Procesando..."
                         ) : (
                           "Guardar"
                         )}

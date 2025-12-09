@@ -9,16 +9,67 @@ import {
 import useUserStore from "../../../../../store/UserDataStore";
 
 // Función auxiliar para convertir una URL de imagen a base64
+// Función auxiliar para convertir una URL de imagen a base64 con optimización
 async function getBase64FromUrl(url: string): Promise<string> {
   const response = await fetch(url);
   const blob = await response.blob();
+
   return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onerror = reject;
-    reader.onloadend = () => {
-      resolve(reader.result as string);
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+
+    img.onload = () => {
+      // Crear canvas para redimensionar y comprimir
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+
+      if (!ctx) {
+        reject(new Error("No se pudo obtener el contexto del canvas"));
+        return;
+      }
+
+      // Establecer dimensiones máximas para la firma (reducidas para optimizar)
+      const maxWidth = 300; // Reducido de posibles dimensiones más grandes
+      const maxHeight = 150; // Altura máxima optimizada para firmas
+
+      let { width, height } = img;
+
+      // Calcular nuevas dimensiones manteniendo aspect ratio
+      if (width > maxWidth || height > maxHeight) {
+        const ratio = Math.min(maxWidth / width, maxHeight / height);
+        width = width * ratio;
+        height = height * ratio;
+      }
+
+      // Configurar canvas con las nuevas dimensiones
+      canvas.width = width;
+      canvas.height = height;
+
+      // Fondo blanco para firmas con transparencia
+      ctx.fillStyle = "white";
+      ctx.fillRect(0, 0, width, height);
+
+      // Dibujar la imagen redimensionada
+      ctx.drawImage(img, 0, 0, width, height);
+
+      // Convertir a base64 con compresión JPEG (más eficiente que PNG para fotos/firmas)
+      const base64 = canvas.toDataURL("image/jpeg", 0.7); // 70% de calidad es suficiente para firmas
+      resolve(base64);
     };
-    reader.readAsDataURL(blob);
+
+    img.onerror = () => {
+      // Fallback: usar el método original si hay error con la optimización
+      const reader = new FileReader();
+      reader.onerror = reject;
+      reader.onloadend = () => {
+        resolve(reader.result as string);
+      };
+      reader.readAsDataURL(blob);
+    };
+
+    // Crear URL del blob para cargar en la imagen
+    const objectUrl = URL.createObjectURL(blob);
+    img.src = objectUrl;
   });
 }
 
@@ -75,23 +126,23 @@ const PDFReportGeneratorMaintenance: React.FC<PDFReportGeneratorProps> = ({
       maximumFractionDigits: 2,
     }).format(value);
 
-  // Definir encabezado de la tabla global
+  // Definir encabezado de la tabla global con meses abreviados para mejor distribución
   const tableHead = [
     [
-      "Nombre y Número de Condomino",
-      "Enero",
-      "Febrero",
-      "Marzo",
-      "Abril",
-      "Mayo",
-      "Junio",
-      "Julio",
-      "Agosto",
-      "Septiembre",
-      "Octubre",
-      "Noviembre",
-      "Diciembre",
-      "Monto pendiente",
+      "Nombre y Condomino",
+      "Ene",
+      "Feb",
+      "Mar",
+      "Abr",
+      "May",
+      "Jun",
+      "Jul",
+      "Ago",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dic",
+      "Pendiente",
     ],
   ];
 
@@ -214,11 +265,21 @@ const PDFReportGeneratorMaintenance: React.FC<PDFReportGeneratorProps> = ({
         fillColor: [75, 68, 224],
         textColor: 255,
         fontStyle: "bold",
+        halign: "center",
       },
-      styles: { fontSize: 10 },
+      styles: { fontSize: 9, cellPadding: 2 },
+      columnStyles: {
+        0: { cellWidth: 40 }, // Nombre
+        // Las columnas de meses (1-12) se ajustan automáticamente o se pueden definir si es necesario
+        13: { cellWidth: 25, halign: "right" }, // Pendiente
+      },
       theme: "grid",
       margin: { left: 14, right: 14 },
       didParseCell: (data) => {
+        // Alinear columnas numéricas a la derecha (solo en el cuerpo de la tabla)
+        if (data.section === "body" && data.column.index > 0) {
+          data.cell.styles.halign = "right";
+        }
         // Agregar sombreado alternado en las filas de datos (excluyendo el encabezado)
         if (data.row.index > 0 && data.row.index % 2 === 0) {
           data.cell.styles.fillColor = [249, 250, 251]; // gray-50
@@ -238,7 +299,14 @@ const PDFReportGeneratorMaintenance: React.FC<PDFReportGeneratorProps> = ({
     if (signatureUrl) {
       try {
         const signatureImage = await getBase64FromUrl(signatureUrl);
-        doc.addImage(signatureImage, "PNG", margin, adminSectionY - 20, 50, 20);
+        doc.addImage(
+          signatureImage,
+          "JPEG",
+          margin,
+          adminSectionY - 20,
+          50,
+          20
+        ); // Usar JPEG y dimensiones optimizadas
       } catch (error) {
         console.error("Error al cargar la firma:", error);
       }
