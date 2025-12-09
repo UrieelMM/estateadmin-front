@@ -168,7 +168,7 @@ const TaskManagement: React.FC = () => {
         </div>
         <button
           onClick={handleCreateTicket}
-          className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
+          className="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors"
         >
           <PlusIcon className="h-5 w-5 mr-2" />
           Crear Ticket

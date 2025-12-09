@@ -139,7 +139,7 @@ const EmployeeList: React.FC = () => {
           <motion.button
             whileTap={{ scale: 0.95 }}
             onClick={handleCreateEmployee}
-            className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors duration-200"
+            className="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors duration-200"
           >
             <PlusIcon className="h-4 w-4 mr-2" />
             Nuevo Empleado

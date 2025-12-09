@@ -11,12 +11,14 @@ import {
   EyeIcon,
   PencilIcon,
   TrashIcon,
+  ArrowDownTrayIcon,
 } from "@heroicons/react/24/outline";
 import { StarIcon as StarIconSolid } from "@heroicons/react/24/solid";
 import {
   usePersonalAdministrationStore,
   PerformanceEvaluation,
 } from "../../../../store/PersonalAdministration";
+import { generatePerformanceEvaluationPDF } from "./PerformanceEvaluationPDF";
 
 interface EvaluationModalProps {
   isOpen: boolean;
@@ -518,6 +520,21 @@ const EvaluationModal: React.FC<EvaluationModalProps> = ({
 
           {/* Botones */}
           <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200 dark:border-gray-700">
+            {mode === "view" && (
+               <button
+                type="button"
+                onClick={async () => {
+                  if (evaluation) {
+                    const employee = employees.find(e => e.id === evaluation.employeeId);
+                    await generatePerformanceEvaluationPDF(evaluation, employee);
+                  }
+                }}
+                className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg flex items-center"
+              >
+                <ArrowDownTrayIcon className="h-4 w-4 mr-2" />
+                Generar PDF
+              </button>
+            )}
             <button
               type="button"
               onClick={onClose}
@@ -656,7 +673,7 @@ const PerformanceEvaluations: React.FC = () => {
         </div>
         <button
           onClick={handleCreateEvaluation}
-          className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
+          className="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors"
         >
           <PlusIcon className="h-5 w-5 mr-2" />
           Nueva Evaluación
