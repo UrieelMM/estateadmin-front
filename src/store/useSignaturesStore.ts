@@ -97,6 +97,7 @@ interface SignaturesState {
   adminPhone: string;
   adminEmail: string;
   logoBase64: string;
+  signatureUrl: string;
   signatureBase64: string;
   loading: boolean;
   error: string | null;
@@ -112,6 +113,7 @@ export const useSignaturesStore = create<SignaturesState>()((set, get) => ({
   adminPhone: "",
   adminEmail: "",
   logoBase64: "",
+  signatureUrl: "",
   signatureBase64: "",
   loading: false,
   error: null,
@@ -149,6 +151,7 @@ export const useSignaturesStore = create<SignaturesState>()((set, get) => ({
         let adminPhone = "";
         let adminEmail = "";
         let logoBase64 = "";
+        let signatureUrl = "";
         let signatureBase64 = "";
 
         if (clientDocSnap.exists()) {
@@ -159,6 +162,7 @@ export const useSignaturesStore = create<SignaturesState>()((set, get) => ({
 
           const logoUrl = clientData.logoReports || "";
           const signUrl = clientData.signatureUrl || "";
+          signatureUrl = signUrl;
 
           // Cargar logo si existe
           if (logoUrl) {
@@ -175,9 +179,6 @@ export const useSignaturesStore = create<SignaturesState>()((set, get) => ({
             try {
               signatureBase64 = await getBase64FromUrl(signUrl, false);
               // Validar que la firma se cargó correctamente
-              if (!signatureBase64 || signatureBase64.length < 100) {
-                throw new Error("Firma no válida o muy pequeña");
-              }
             } catch (signError) {
               console.warn(
                 `Error al cargar firma (intento ${
@@ -190,18 +191,22 @@ export const useSignaturesStore = create<SignaturesState>()((set, get) => ({
                 await new Promise((resolve) => setTimeout(resolve, 1000)); // Esperar 1 segundo antes del retry
                 continue;
               } else {
-                throw signError;
+                console.warn(
+                  "No se pudo cargar la firma después de los reintentos. Se continuará sin firma optimizada."
+                );
+                signatureBase64 = ""; // Fallback a vacío, pero permitimos continuar para guardar signatureUrl
               }
             }
           }
         }
 
-        // Si llegamos aquí, la carga fue exitosa
+        // Si llegamos aquí, la carga fue exitosa (o con fallbacks)
         set({
           adminCompany,
           adminPhone,
           adminEmail,
           logoBase64,
+          signatureUrl,
           signatureBase64,
           loading: false,
           initialized: true,
@@ -210,8 +215,9 @@ export const useSignaturesStore = create<SignaturesState>()((set, get) => ({
         });
         return;
       } catch (error: any) {
+        // Error CRÍTICO (ej. Firestore falló, no hay usuario, etc) - Detiene todo
         console.error(
-          `Error al cargar firmas (intento ${currentRetry + 1}/${maxRetries}):`,
+          `Error crítico al cargar datos (intento ${currentRetry + 1}/${maxRetries}):`,
           error
         );
 

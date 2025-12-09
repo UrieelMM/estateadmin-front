@@ -88,10 +88,9 @@ const MaintenancePDFReportGenerator: React.FC<MaintenancePDFReportProps> = ({
     adminPhone,
     adminEmail,
     logoBase64,
-    signatureBase64,
+    signatureUrl,
     fetchSignatures,
     ensureSignaturesLoaded,
-    isSignatureAvailable,
   } = useSignaturesStore();
   const [providers, setProviders] = useState<Record<string, string>>({});
 
@@ -135,6 +134,70 @@ const MaintenancePDFReportGenerator: React.FC<MaintenancePDFReportProps> = ({
       console.error("Error al cargar proveedores:", error);
     }
   };
+
+  // Función auxiliar para convertir una URL de imagen a base64 con optimización
+async function getBase64FromUrl(url: string): Promise<string> {
+  const response = await fetch(url);
+  const blob = await response.blob();
+
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+
+    img.onload = () => {
+      // Crear canvas para redimensionar y comprimir
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+
+      if (!ctx) {
+        reject(new Error("No se pudo obtener el contexto del canvas"));
+        return;
+      }
+
+      // Establecer dimensiones máximas para la firma (reducidas para optimizar)
+      const maxWidth = 300; // Reducido de posibles dimensiones más grandes
+      const maxHeight = 150; // Altura máxima optimizada para firmas
+
+      let { width, height } = img;
+
+      // Calcular nuevas dimensiones manteniendo aspect ratio
+      if (width > maxWidth || height > maxHeight) {
+        const ratio = Math.min(maxWidth / width, maxHeight / height);
+        width = width * ratio;
+        height = height * ratio;
+      }
+
+      // Configurar canvas con las nuevas dimensiones
+      canvas.width = width;
+      canvas.height = height;
+
+      // Fondo blanco para firmas con transparencia
+      ctx.fillStyle = "white";
+      ctx.fillRect(0, 0, width, height);
+
+      // Dibujar la imagen redimensionada
+      ctx.drawImage(img, 0, 0, width, height);
+
+      // Convertir a base64 con compresión JPEG (más eficiente que PNG para fotos/firmas)
+      const base64 = canvas.toDataURL("image/jpeg", 0.7); // 70% de calidad es suficiente para firmas
+      resolve(base64);
+    };
+
+    img.onerror = () => {
+      // Fallback: usar el método original si hay error con la optimización
+      const reader = new FileReader();
+      reader.onerror = reject;
+      reader.onloadend = () => {
+        resolve(reader.result as string);
+      };
+      reader.readAsDataURL(blob);
+    };
+
+    // Crear URL del blob para cargar en la imagen
+    const objectUrl = URL.createObjectURL(blob);
+    img.src = objectUrl;
+  });
+}
 
   // Obtener proveedores al cargar el componente
   useEffect(() => {
@@ -967,30 +1030,6 @@ const MaintenancePDFReportGenerator: React.FC<MaintenancePDFReportProps> = ({
       // Asegurarse de que las firmas se carguen correctamente
       await fetchSignatures();
 
-      // Verificar si la firma está cargada, reintentar si es necesario
-      if (!signatureBase64 || !logoBase64) {
-        console.log(
-          "Firma o logo no disponible, intentando cargar de nuevo..."
-        );
-        // Reintentar hasta 3 veces con un pequeño retraso
-        for (let i = 0; i < 3 && (!signatureBase64 || !logoBase64); i++) {
-          await new Promise((resolve) => setTimeout(resolve, 500));
-          await fetchSignatures();
-          console.log(
-            `Reintento ${
-              i + 1
-            }: Firma: ${!!signatureBase64}, Logo: ${!!logoBase64}`
-          );
-        }
-      }
-
-      // Si después de los reintentos aún no hay firma o logo, mostrar advertencia pero continuar
-      if (!signatureBase64) {
-        console.warn(
-          "No se pudo cargar la firma del administrador después de reintentar."
-        );
-      }
-
       if (!logoBase64) {
         console.warn("No se pudo cargar el logo después de reintentar.");
       }
@@ -1100,15 +1139,21 @@ const MaintenancePDFReportGenerator: React.FC<MaintenancePDFReportProps> = ({
       const margin = 14;
       const adminSectionY = pageHeight - 80;
 
-      if (isSignatureAvailable() && signatureBase64) {
-        doc.addImage(
-          signatureBase64,
-          "JPEG",
-          margin,
-          adminSectionY - 20,
-          50,
-          20
-        );
+      // Gestión de firma
+      if (signatureUrl) {
+         try {
+           const processedSignature = await getBase64FromUrl(signatureUrl);
+           doc.addImage(
+             processedSignature,
+             "JPEG",
+             margin,
+             adminSectionY - 20,
+             50,
+             20
+           );
+         } catch (error) {
+           console.error("Error al procesar la firma:", error);
+         }
       }
 
       doc.setFontSize(12);
