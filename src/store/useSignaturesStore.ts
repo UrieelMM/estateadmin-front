@@ -30,8 +30,8 @@ async function getBase64FromUrl(
         maxWidth = 400; // Logos pueden ser un poco más grandes
         maxHeight = 400;
       } else {
-        maxWidth = 300; // Firmas más pequeñas
-        maxHeight = 150;
+        maxWidth = 200; // Firmas más pequeñas y optimizadas
+        maxHeight = 100;
       }
 
       let { width, height } = img;
@@ -55,7 +55,7 @@ async function getBase64FromUrl(
       ctx.drawImage(img, 0, 0, width, height);
 
       // Convertir a base64 con compresión JPEG (más eficiente)
-      const quality = isLogo ? 0.8 : 0.7; // 80% para logos, 70% para firmas
+      const quality = isLogo ? 0.8 : 0.5; // 80% para logos, 50% para firmas (mayor compresión)
       const base64 = canvas.toDataURL("image/jpeg", quality);
       resolve(base64);
     };
