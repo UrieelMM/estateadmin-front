@@ -11,6 +11,7 @@ import {
 } from "../../../../store/useParcelStore";
 import { useDropzone } from "react-dropzone";
 import toast from "react-hot-toast";
+import { useFileCompression } from "../../../../hooks/useFileCompression";
 
 interface ParcelDeliveryFormProps {
   open: boolean;
@@ -36,6 +37,7 @@ const ParcelDeliveryForm = ({
 
   const { isLoading, getParcelById, updateDeliveryDetails } =
     useParcelReceptionStore();
+  const { compressFile, isCompressing } = useFileCompression();
 
   // Cargar información del paquete
   useEffect(() => {
@@ -111,11 +113,19 @@ const ParcelDeliveryForm = ({
     },
     maxFiles: 1,
     maxSize: 10485760, // 10MB
-    onDrop: (acceptedFiles: File[]) => {
+    onDrop: async (acceptedFiles: File[]) => {
       if (acceptedFiles.length > 0) {
-        setFile(acceptedFiles[0]);
-        setFileName(acceptedFiles[0].name);
-        setFormErrors({ ...formErrors, file: "" });
+        try {
+          const compressed = await compressFile(acceptedFiles[0]);
+          setFile(compressed);
+          setFileName(compressed.name);
+          setFormErrors({ ...formErrors, file: "" });
+          toast.success("Imagen procesada");
+        } catch (error) {
+          console.error(error);
+          setFile(acceptedFiles[0]);
+          setFileName(acceptedFiles[0].name);
+        }
       }
     },
     onDropRejected: () => {
@@ -356,6 +366,8 @@ const ParcelDeliveryForm = ({
                                 <p className="pl-1">
                                   {isDragActive
                                     ? "Suelta la imagen aquí..."
+                                    : isCompressing
+                                    ? "Procesando imagen..."
                                     : "Arrastra y suelta una imagen o haz clic para seleccionar"}
                                 </p>
                               )}
@@ -384,9 +396,9 @@ const ParcelDeliveryForm = ({
                     <button
                       type="submit"
                       className="inline-flex w-full justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 sm:col-start-2"
-                      disabled={isLoading || loading}
+                      disabled={isLoading || loading || isCompressing}
                     >
-                      {isLoading || loading ? (
+                      {isLoading || loading || isCompressing ? (
                         <div className="flex items-center justify-center">
                           <svg
                             className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"

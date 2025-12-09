@@ -14,6 +14,7 @@ import {
   formatCentsToMXN,
   formatMXNToCents,
 } from "../../../../../utils/curreyncy";
+import { useFileCompression } from "../../../../../hooks/useFileCompression";
 
 interface CommonAreaFormProps {
   isOpen: boolean;
@@ -27,6 +28,7 @@ const CommonAreaForm = ({
   areaToEdit = null,
 }: CommonAreaFormProps) => {
   const { createCommonArea, updateCommonArea, loading } = useCommonAreasStore();
+  const { compressFile, isCompressing } = useFileCompression();
 
   // Estado para los campos del formulario
   const [name, setName] = useState("");
@@ -93,16 +95,31 @@ const CommonAreaForm = ({
     setAmenities(newAmenities);
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const filesArray = Array.from(e.target.files);
+      const processedFiles: File[] = [];
+
+      for (const file of filesArray) {
+        try {
+          const processed = await compressFile(file);
+          processedFiles.push(processed);
+        } catch (error) {
+          console.error("Error compressing file:", error);
+          processedFiles.push(file);
+        }
+      }
+
+      if (processedFiles.length > 0) {
+        toast.success("Imágenes procesadas");
+      }
 
       // Crear previews para las imágenes seleccionadas
-      const newImagePreviews = filesArray.map((file) =>
+      const newImagePreviews = processedFiles.map((file) =>
         URL.createObjectURL(file)
       );
 
-      setImageFiles((prevFiles) => [...prevFiles, ...filesArray]);
+      setImageFiles((prevFiles) => [...prevFiles, ...processedFiles]);
       setImagePreviews((prevPreviews) => [
         ...prevPreviews,
         ...newImagePreviews,
@@ -435,10 +452,10 @@ const CommonAreaForm = ({
             </button>
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || isCompressing}
               className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? "Guardando..." : areaToEdit ? "Actualizar" : "Crear"}
+              {loading || isCompressing ? "Procesando..." : areaToEdit ? "Actualizar" : "Crear"}
             </button>
           </div>
         </form>

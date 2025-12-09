@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 import { useConfigStore } from "../../../../store/useConfigStore";
+import { useFileCompression } from "../../../../hooks/useFileCompression";
 import { useFinancialAccountsStore } from "../../../../store/useAccountsStore";
 import { useTheme } from "../../../../context/Theme/ThemeContext";
 import { useCondominiumStore } from "../../../../store/useCondominiumStore";
@@ -75,6 +76,8 @@ const InitialSetupSteps = () => {
 
   const { config, fetchConfig, updateConfig } = useConfigStore();
   const { createAccount } = useFinancialAccountsStore();
+  
+  const { compressFile, isCompressing } = useFileCompression();
 
   // Cargar configuración inicial y condominios
   useEffect(() => {
@@ -149,24 +152,48 @@ const InitialSetupSteps = () => {
   const prevStep = () => setCurrentStep((prev) => prev - 1);
 
   // Handlers para archivos
-  const handleLogoReportsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLogoReportsChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setLogoReportsFile(e.target.files[0]);
-      setLogoReportsPreview(URL.createObjectURL(e.target.files[0]));
+      try {
+        const compressed = await compressFile(e.target.files[0]);
+        setLogoReportsFile(compressed);
+        setLogoReportsPreview(URL.createObjectURL(compressed));
+        toast.success("Logo para reportes procesado");
+      } catch (error) {
+        console.error(error);
+        setLogoReportsFile(e.target.files[0]);
+        setLogoReportsPreview(URL.createObjectURL(e.target.files[0]));
+      }
     }
   };
 
-  const handleSignReportsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSignReportsChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setSignReportsFile(e.target.files[0]);
-      setSignReportsPreview(URL.createObjectURL(e.target.files[0]));
+      try {
+        const compressed = await compressFile(e.target.files[0]);
+        setSignReportsFile(compressed);
+        setSignReportsPreview(URL.createObjectURL(compressed));
+        toast.success("Firma procesada");
+      } catch (error) {
+        console.error(error);
+        setSignReportsFile(e.target.files[0]);
+        setSignReportsPreview(URL.createObjectURL(e.target.files[0]));
+      }
     }
   };
 
-  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLogoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setLogoFile(e.target.files[0]);
-      setLogoPreview(URL.createObjectURL(e.target.files[0]));
+       try {
+        const compressed = await compressFile(e.target.files[0]);
+        setLogoFile(compressed);
+        setLogoPreview(URL.createObjectURL(compressed));
+        toast.success("Logo procesado");
+      } catch (error) {
+        console.error(error);
+        setLogoFile(e.target.files[0]);
+        setLogoPreview(URL.createObjectURL(e.target.files[0]));
+      }
     }
   };
 
@@ -748,7 +775,7 @@ const InitialSetupSteps = () => {
                 disabled={isSubmitting}
                 className="flex items-center bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-700 dark:hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded transition-colors disabled:opacity-50"
               >
-                {isSubmitting ? (
+                {isSubmitting || isCompressing ? (
                   <>
                     <svg
                       className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"

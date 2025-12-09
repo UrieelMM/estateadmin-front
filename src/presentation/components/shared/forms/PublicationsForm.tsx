@@ -6,6 +6,7 @@ import { usePublicationStore } from "../../../../store/usePublicationStore";
 import "react-quill/dist/quill.snow.css";
 import { useCondominiumStore } from "../../../../store/useCondominiumStore";
 import toast from "react-hot-toast";
+import { useFileCompression } from "../../../../hooks/useFileCompression";
 
 interface PublicationFormProps {
   isOpen: boolean;
@@ -63,6 +64,7 @@ const PublicationsForm = ({ isOpen, onClose }: PublicationFormProps) => {
   const [fileName, setFileName] = useState("");
   const [content, setContent] = useState<string>("");
   const addPublication = usePublicationStore((state) => state.addPublication);
+  const { compressFile, isCompressing } = useFileCompression();
 
   useEffect(() => {
     if (selectedCondominium) {
@@ -119,10 +121,25 @@ const PublicationsForm = ({ isOpen, onClose }: PublicationFormProps) => {
 
   const dropzoneOptions = {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    accept: [".xls", ".xlsx"] as any,
-    onDrop: (acceptedFiles: File[]) => {
-      setFile(acceptedFiles[0]);
-      setFileName(acceptedFiles[0].name);
+    accept: {
+      "application/vnd.ms-excel": [".xls"],
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [
+        ".xlsx",
+      ],
+      "image/*": [".png", ".jpg", ".jpeg"],
+      "application/pdf": [".pdf"],
+    },
+    onDrop: async (acceptedFiles: File[]) => {
+      try {
+        const compressed = await compressFile(acceptedFiles[0]);
+        setFile(compressed);
+        setFileName(compressed.name);
+        toast.success("Archivo procesado");
+      } catch (error) {
+        console.error(error);
+        setFile(acceptedFiles[0]);
+        setFileName(acceptedFiles[0].name);
+      }
     },
   };
 
@@ -243,6 +260,8 @@ const PublicationsForm = ({ isOpen, onClose }: PublicationFormProps) => {
                 <p className="mt-4 text-sm leading-6 font-medium text-indigo-600">
                   {isDragActive
                     ? "Suelta el archivo aquí..."
+                    : isCompressing
+                    ? "Procesando archivo..."
                     : "Arrastra y suelta el archivo aquí o haz click para seleccionarlo"}
                 </p>
               )}
@@ -253,8 +272,8 @@ const PublicationsForm = ({ isOpen, onClose }: PublicationFormProps) => {
             <button onClick={onClose} type="submit" className="btn-secundary">
               Cancelar
             </button>
-            <button type="submit" className="btn-primary">
-              Enviar
+            <button type="submit" className="btn-primary" disabled={isCompressing}>
+              {isCompressing ? "Procesando..." : "Enviar"}
             </button>
           </div>
         </form>

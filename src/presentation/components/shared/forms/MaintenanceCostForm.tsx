@@ -8,6 +8,8 @@ import {
 } from "../../../../store/useMaintenanceStore";
 import { useTicketsStore } from "../../../screens/dashboard/maintenance/tickets/ticketsStore";
 import useProviderStore from "../../../../store/providerStore";
+import toast from "react-hot-toast";
+import { useFileCompression } from "../../../../hooks/useFileCompression";
 
 interface MaintenanceCostFormProps {
   isOpen: boolean;
@@ -26,6 +28,7 @@ const MaintenanceCostForm = ({
   const { providers, fetchProviders } = useProviderStore();
   const [loading, setLoading] = useState(false);
   const [invoiceFile, setInvoiceFile] = useState<File | null>(null);
+  const { compressFile, isCompressing } = useFileCompression();
 
   const [formData, setFormData] = useState<MaintenanceCost>({
     description: "",
@@ -113,9 +116,16 @@ const MaintenanceCostForm = ({
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      setInvoiceFile(e.target.files[0]);
+      try {
+        const compressed = await compressFile(e.target.files[0]);
+        setInvoiceFile(compressed);
+        toast.success("Factura procesada");
+      } catch (error) {
+        console.error(error);
+        setInvoiceFile(e.target.files[0]);
+      }
     }
   };
 
@@ -440,10 +450,10 @@ const MaintenanceCostForm = ({
                   <div className="mt-5 sm:mt-6 sm:grid sm:grid-cols-2 sm:gap-3 sm:grid-flow-row-dense">
                     <button
                       type="submit"
-                      disabled={loading}
+                      disabled={loading || isCompressing}
                       className="inline-flex w-full justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:col-start-2 sm:text-sm disabled:bg-gray-300 disabled:cursor-not-allowed dark:disabled:bg-gray-700"
                     >
-                      {loading ? (
+                      {loading || isCompressing ? (
                         <span className="flex items-center">
                           <svg
                             className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"

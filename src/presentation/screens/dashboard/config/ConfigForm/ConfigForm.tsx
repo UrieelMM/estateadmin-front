@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
+import { useFileCompression } from "../../../../../hooks/useFileCompression";
 import { useConfigStore } from "../../../../../store/useConfigStore";
 import { countriesList } from "../../../../../utils/countriesList";
 // import { useDropzone } from "react-dropzone";
@@ -35,6 +36,7 @@ import ClientInvoicesTable from "../../client/invoices/ClientInvoicesTable";
 const ConfigForm = () => {
   const { config, loading, error, fetchConfig, updateConfig, hasMaintenanceApp, checkMaintenanceAppAccess } =
     useConfigStore();
+  const { compressFile, isCompressing: isCompressingFile } = useFileCompression();
   const { isDarkMode, toggleDarkMode } = useTheme(); // <-- Valor del ThemeContext (debe ser boolean)
   const [userRole, setUserRole] = useState<string>("");
 
@@ -448,11 +450,20 @@ const ConfigForm = () => {
                           type="file"
                           id="logo"
                           accept="image/png, image/jpeg"
-                          onChange={(e) =>
-                            setLogoFile(
-                              e.target.files ? e.target.files[0] : null
-                            )
-                          }
+                          onChange={async (e) => {
+                              if (e.target.files && e.target.files[0]) {
+                                try {
+                                  const compressed = await compressFile(e.target.files[0]);
+                                  setLogoFile(compressed);
+                                  toast.success("Logo procesado y listo");
+                                } catch (error) {
+                                  console.error(error);
+                                  setLogoFile(e.target.files[0]);
+                                }
+                              } else {
+                                setLogoFile(null);
+                              }
+                          }}
                           className="hidden"
                         />
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
@@ -508,11 +519,20 @@ const ConfigForm = () => {
                           type="file"
                           id="signature"
                           accept="image/png, image/jpeg"
-                          onChange={(e) =>
-                            setSignatureFile(
-                              e.target.files ? e.target.files[0] : null
-                            )
-                          }
+                          onChange={async (e) => {
+                              if (e.target.files && e.target.files[0]) {
+                                try {
+                                  const compressed = await compressFile(e.target.files[0]);
+                                  setSignatureFile(compressed);
+                                  toast.success("Firma procesada y lista");
+                                } catch (error) {
+                                  console.error(error);
+                                  setSignatureFile(e.target.files[0]);
+                                }
+                              } else {
+                                setSignatureFile(null);
+                              }
+                          }}
                           className="hidden"
                         />
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
@@ -568,11 +588,20 @@ const ConfigForm = () => {
                           type="file"
                           id="logoReports"
                           accept="image/png, image/jpeg"
-                          onChange={(e) =>
-                            setLogoReportsFile(
-                              e.target.files ? e.target.files[0] : null
-                            )
-                          }
+                          onChange={async (e) => {
+                              if (e.target.files && e.target.files[0]) {
+                                try {
+                                  const compressed = await compressFile(e.target.files[0]);
+                                  setLogoReportsFile(compressed);
+                                  toast.success("Logo para reportes procesado y listo");
+                                } catch (error) {
+                                  console.error(error);
+                                  setLogoReportsFile(e.target.files[0]);
+                                }
+                              } else {
+                                setLogoReportsFile(null);
+                              }
+                          }}
                           className="hidden"
                         />
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
@@ -699,7 +728,7 @@ const ConfigForm = () => {
                   disabled={loading}
                   className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 >
-                  {loading ? (
+                  {loading || isCompressingFile ? (
                     <>
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                       Actualizando...

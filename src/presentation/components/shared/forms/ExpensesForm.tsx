@@ -21,6 +21,7 @@ import { getFirestore, collection, getDocs } from "firebase/firestore";
 import { getAuth, getIdTokenResult } from "firebase/auth";
 import { useExpenseSummaryStore } from "../../../../store/expenseSummaryStore";
 import useProviderStore from "../../../../store/providerStore";
+import { useFileCompression } from "../../../../hooks/useFileCompression";
 
 interface ExpenseFormProps {
   open: boolean;
@@ -56,17 +57,30 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ open, setOpen }) => {
   >([]);
   const [providerId, setProviderId] = useState<string>("");
   const { providers, fetchProviders } = useProviderStore();
+  const { compressFile, isCompressing } = useFileCompression();
 
   const { addExpense } = useExpenseStore();
   const { fetchSummary, selectedYear, setupRealtimeListeners } =
     useExpenseSummaryStore();
 
   const dropzoneOptions = {
-    onDrop: (acceptedFiles: File[]) => {
+    onDrop: async (acceptedFiles: File[]) => {
       if (acceptedFiles && acceptedFiles.length > 0) {
-        setFile(acceptedFiles[0]);
-        setFileName(acceptedFiles[0].name);
+        try {
+          const compressed = await compressFile(acceptedFiles[0]);
+          setFile(compressed);
+          setFileName(compressed.name);
+          toast.success("Comprobante procesado");
+        } catch (error) {
+          console.error(error);
+          setFile(acceptedFiles[0]);
+          setFileName(acceptedFiles[0].name);
+        }
       }
+    },
+    accept: {
+      "image/*": [".jpeg", ".jpg", ".png"],
+      "application/pdf": [".pdf"],
     },
   };
   const { getRootProps, getInputProps, isDragActive } =
@@ -475,6 +489,8 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ open, setOpen }) => {
                                     <p className="mt-4 text-sm leading-6 font-medium text-indigo-600">
                                       {isDragActive
                                         ? "Suelta el archivo aquí..."
+                                        : isCompressing
+                                        ? "Procesando archivo..."
                                         : "Arrastra y suelta el comprobante aquí o haz click para seleccionarlo"}
                                     </p>
                                   )}
@@ -500,9 +516,10 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ open, setOpen }) => {
                       </button>
                       <button
                         type="submit"
-                        className="ml-4 inline-flex justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-600"
+                        disabled={loading || isCompressing}
+                        className="ml-4 inline-flex justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-600 disabled:opacity-50"
                       >
-                        {loading ? (
+                        {loading || isCompressing ? (
                           <svg
                             className="animate-spin h-5 w-5 mr-3 border-t-2 border-b-2 border-white rounded-full"
                             viewBox="0 0 24 24"

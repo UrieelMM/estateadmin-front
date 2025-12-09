@@ -5,6 +5,7 @@ import { useCommonAreasStore } from "../../../../../store/useCommonAreasStore";
 import { usePersonalAdministrationStore } from "../../../../../store/PersonalAdministration";
 import { getAuth } from "firebase/auth";
 import toast from "react-hot-toast";
+import { useFileCompression } from "../../../../../hooks/useFileCompression";
 import { componentStyles } from "./ticketFormStyles";
 
 interface TicketFormProps {
@@ -229,6 +230,7 @@ const TicketForm: React.FC<TicketFormProps> = ({ initialTicket, onClose }) => {
   const { createTicket, updateTicket, loading } = useTicketsStore();
   const { commonAreas, fetchCommonAreas } = useCommonAreasStore();
   const { employees } = usePersonalAdministrationStore();
+  const { compressFile, isCompressing } = useFileCompression();
 
   // Estados principales del formulario con valores iniciales
   const [title, setTitle] = useState(initialTicket?.title || "");
@@ -277,13 +279,29 @@ const TicketForm: React.FC<TicketFormProps> = ({ initialTicket, onClose }) => {
 
   const isEdit = Boolean(initialTicket && initialTicket.id);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      let selected = Array.from(e.target.files);
-      if (selected.length + files.length > 5) {
-        selected = selected.slice(0, 5 - files.length);
+      const selectedFiles = Array.from(e.target.files);
+      const processedFiles: File[] = [];
+
+      for (const file of selectedFiles) {
+        try {
+          const processed = await compressFile(file);
+          processedFiles.push(processed);
+        } catch (error) {
+          console.error("Error compressing file:", error);
+          processedFiles.push(file);
+        }
       }
-      setFiles((prev) => [...prev, ...selected].slice(0, 5));
+
+      setFiles((prev) => {
+        const combined = [...prev, ...processedFiles];
+        return combined.slice(0, 5);
+      });
+      
+      if (processedFiles.length > 0) {
+        toast.success("Archivos procesados");
+      }
     }
   };
 
@@ -723,7 +741,7 @@ const TicketForm: React.FC<TicketFormProps> = ({ initialTicket, onClose }) => {
         <div className="flex flex-col gap-2">
           <label
             className={`${componentStyles.fileUpload.button} ${
-              files.length >= 5 ? "opacity-50 cursor-not-allowed" : ""
+              files.length >= 5 || isCompressing ? "opacity-50 cursor-not-allowed" : ""
             }`}
           >
             <svg
@@ -747,7 +765,7 @@ const TicketForm: React.FC<TicketFormProps> = ({ initialTicket, onClose }) => {
               ref={fileInputRef}
               onChange={handleFileChange}
               accept="*"
-              disabled={files.length >= 5}
+              disabled={files.length >= 5 || isCompressing}
             />
           </label>
 

@@ -16,6 +16,8 @@ import {
   formatCentsToMXN,
   formatMXNToCents,
 } from "../../../../utils/curreyncy";
+import toast from "react-hot-toast";
+import { useFileCompression } from "../../../../hooks/useFileCompression";
 
 // Componente para mostrar alertas de contratos próximos a vencer
 const ExpiringContractsAlert = ({
@@ -375,6 +377,7 @@ interface ContractFormProps {
 const ContractForm = ({ isOpen, onClose, contract }: ContractFormProps) => {
   const { createContract, updateContract, loading } =
     useMaintenanceContractStore();
+  const { compressFile, isCompressing } = useFileCompression();
   const [formData, setFormData] = useState<Partial<MaintenanceContract>>({
     providerName: contract?.providerName || "",
     serviceType: contract?.serviceType || "",
@@ -420,22 +423,42 @@ const ContractForm = ({ isOpen, onClose, contract }: ContractFormProps) => {
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
-    setContractFile(file);
-
-    // Crear una vista previa del archivo si existe
+    
     if (file) {
-      // Solo para PDFs y archivos de imagen
-      if (file.type.includes("pdf") || file.type.includes("image")) {
-        const reader = new FileReader();
-        reader.onload = () => {
-          setFilePreview(reader.result as string);
-        };
-        reader.readAsDataURL(file);
-      } else {
-        setFilePreview(null);
+      try {
+        const processed = await compressFile(file);
+        setContractFile(processed);
+        
+        // Crear una vista previa del archivo si existe
+        // Solo para PDFs y archivos de imagen
+        if (processed.type.includes("pdf") || processed.type.includes("image")) {
+          const reader = new FileReader();
+          reader.onload = () => {
+             setFilePreview(reader.result as string);
+          };
+          reader.readAsDataURL(processed);
+        } else {
+          setFilePreview(null);
+        }
+        
+        toast.success("Archivo procesado");
+      } catch (error) {
+        console.error(error);
+        setContractFile(file);
+        // Fallback preview logic for original file if compression fails
+        if (file.type.includes("pdf") || file.type.includes("image")) {
+          const reader = new FileReader();
+          reader.onload = () => {
+             setFilePreview(reader.result as string);
+          };
+          reader.readAsDataURL(file);
+        }
       }
+    } else {
+        setContractFile(null);
+        setFilePreview(null);
     }
   };
 
@@ -718,10 +741,10 @@ const ContractForm = ({ isOpen, onClose, contract }: ContractFormProps) => {
             </button>
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || isCompressing}
               className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-70 disabled:cursor-not-allowed"
             >
-              {loading ? (
+              {loading || isCompressing ? (
                 <span className="flex items-center">
                   <svg
                     className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"

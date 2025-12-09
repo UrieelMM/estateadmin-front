@@ -8,6 +8,7 @@ import {
 } from "../../../../store/useMaintenanceStore";
 import "react-quill/dist/quill.snow.css";
 import toast from "react-hot-toast";
+import { useFileCompression } from "../../../../hooks/useFileCompression";
 
 interface MaintenanceReportFormProps {
   isOpen: boolean;
@@ -81,6 +82,7 @@ const MaintenanceReportForm: React.FC<MaintenanceReportFormProps> = ({
   initialData,
 }) => {
   const { createReport, updateReport } = useMaintenanceReportStore();
+  const { compressFile, isCompressing } = useFileCompression();
 
   const [fecha, setFecha] = useState<string>("");
   const [area, setArea] = useState<string>("");
@@ -112,15 +114,26 @@ const MaintenanceReportForm: React.FC<MaintenanceReportFormProps> = ({
     }
   }, [initialData]);
 
-  const onDrop = (acceptedFiles: File[]) => {
+  const onDrop = async (acceptedFiles: File[]) => {
     if (acceptedFiles.length) {
-      setFile(acceptedFiles[0]);
-      setFileName(acceptedFiles[0].name);
+      try {
+        const compressed = await compressFile(acceptedFiles[0]);
+        setFile(compressed);
+        setFileName(compressed.name);
+        toast.success("Archivo procesado");
+      } catch (error) {
+        console.error(error);
+        setFile(acceptedFiles[0]);
+        setFileName(acceptedFiles[0].name);
+      }
     }
   };
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    accept: { "application/pdf": [".pdf"] },
+    accept: { 
+      "application/pdf": [".pdf"],
+      "image/*": [".png", ".jpg", ".jpeg"] 
+    },
     onDrop,
   });
 
@@ -262,10 +275,12 @@ const MaintenanceReportForm: React.FC<MaintenanceReportFormProps> = ({
                 <p className="mt-4 text-sm text-indigo-600">
                   {isDragActive
                     ? "Suelta el archivo aquí..."
-                    : "Arrastra y suelta el archivo PDF aquí o haz click para seleccionarlo"}
+                    : isCompressing
+                    ? "Procesando archivo..."
+                    : "Arrastra y suelta el archivo (PDF o Imagen) aquí o haz click"}
                 </p>
               )}
-              <p className="text-xs text-gray-500">Archivo PDF (máximo 20MB)</p>
+              <p className="text-xs text-gray-500">Archivo PDF o Imagen (máximo 20MB)</p>
             </div>
           </div>
 
@@ -273,8 +288,8 @@ const MaintenanceReportForm: React.FC<MaintenanceReportFormProps> = ({
             <button onClick={onClose} type="button" className="btn-secundary">
               Cancelar
             </button>
-            <button type="submit" className="btn-primary">
-              {initialData ? "Actualizar" : "Crear"}
+            <button type="submit" className="btn-primary" disabled={isCompressing}>
+              {isCompressing ? "Procesando..." : (initialData ? "Actualizar" : "Crear")}
             </button>
           </div>
         </form>
