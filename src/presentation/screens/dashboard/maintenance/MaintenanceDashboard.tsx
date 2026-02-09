@@ -161,7 +161,7 @@ const MaintenanceDashboard: React.FC = () => {
       const endDate = `${currentYear}-12-31`;
 
       // Cargar gastos filtrados por año
-      await fetchCosts({ startDate, endDate });
+      await fetchCosts({ startDate, endDate }, { rememberFilters: false });
 
       // Obtener datos por categoría
       const categoryResults = await getCostSummaryByCategory(
@@ -251,6 +251,11 @@ const MaintenanceDashboard: React.FC = () => {
       dailyTrend,
     });
   };
+
+  // Recalcular estadísticas si cambian los tickets
+  useEffect(() => {
+    calculateTicketStatistics();
+  }, [tickets]);
 
   // Prepara datos para gráfico de reportes por área
   const prepareReportsByAreaData = () => {
@@ -474,8 +479,8 @@ const MaintenanceDashboard: React.FC = () => {
     // Top categoría con más gastos
     const topCategory =
       categoryData.length > 0
-        ? categoryData.sort((a, b) => b.total - a.total)[0]
-        : { category: "N/A", total: 0 };
+        ? [...categoryData].sort((a, b) => b.total - a.total)[0]
+        : { category: "Sin datos", total: 0 };
 
     return {
       totalExpenses,
@@ -489,16 +494,69 @@ const MaintenanceDashboard: React.FC = () => {
     };
   };
 
+  const getDateValue = (value: any): Date | null => {
+    if (!value) return null;
+    if (value instanceof Date) return value;
+    if (typeof value?.toDate === "function") {
+      return value.toDate();
+    }
+    const parsed = new Date(value);
+    return isNaN(parsed.getTime()) ? null : parsed;
+  };
+
+  const calculateFirstResponseTime = () => {
+    const responseActions = new Set([
+      "comment_added",
+      "status_changed",
+      "assigned",
+      "edited",
+    ]);
+    const responseTimes: number[] = [];
+
+    tickets.forEach((ticket) => {
+      const createdAtDate = getDateValue(ticket.createdAt);
+      if (!createdAtDate || !ticket.history || ticket.history.length === 0) {
+        return;
+      }
+      const createdAt = moment(createdAtDate);
+      let firstResponse: moment.Moment | null = null;
+
+      ticket.history.forEach((item) => {
+        if (!responseActions.has(item.action)) return;
+        const itemDate = getDateValue(item.date);
+        if (!itemDate) return;
+        const itemMoment = moment(itemDate);
+        if (itemMoment.diff(createdAt, "minutes") <= 0) return;
+        if (!firstResponse || itemMoment.isBefore(firstResponse)) {
+          firstResponse = itemMoment;
+        }
+      });
+
+      if (firstResponse) {
+        const diffHours = firstResponse.diff(createdAt, "hours", true);
+        if (diffHours >= 0) {
+          responseTimes.push(diffHours);
+        }
+      }
+    });
+
+    if (responseTimes.length === 0) return "N/D";
+    const avg =
+      responseTimes.reduce((sum, value) => sum + value, 0) /
+      responseTimes.length;
+    return avg.toFixed(1);
+  };
+
   // Calcular contadores para KPIs con datos reales
   const calculateKPIs = () => {
     if (!tickets || tickets.length === 0) {
       return {
         activeTicketsCount: 0,
-        resolvedTicketsCount: 0,
+        inProgressTicketsCount: 0,
         activeContractsCount: 0,
         expiringContractsCount: 0,
         pendingAppointmentsCount: 0,
-        firstResponseTime: "0.0",
+        firstResponseTime: "N/D",
       };
     }
 
@@ -508,7 +566,7 @@ const MaintenanceDashboard: React.FC = () => {
     ).length;
 
     // Tickets en proceso
-    const resolvedTicketsCount = tickets.filter(
+    const inProgressTicketsCount = tickets.filter(
       (t) => t.status === "en_progreso"
     ).length;
 
@@ -531,12 +589,12 @@ const MaintenanceDashboard: React.FC = () => {
       (a) => a.status === "pending" || a.status === "in_progress"
     ).length;
 
-    // Calcular tiempo promedio de primera respuesta (asumimos 6.2h si no hay datos reales)
-    const firstResponseTime = tickets.length > 0 ? "6.2" : "0.0";
+    // Calcular tiempo promedio de primera respuesta (basado en historial)
+    const firstResponseTime = calculateFirstResponseTime();
 
     return {
       activeTicketsCount,
-      resolvedTicketsCount,
+      inProgressTicketsCount,
       activeContractsCount,
       expiringContractsCount,
       pendingAppointmentsCount,
@@ -664,7 +722,7 @@ const MaintenanceDashboard: React.FC = () => {
                 {kpis.activeTicketsCount}
               </h3>
               <p className="text-xs mt-1 text-gray-500 dark:text-gray-400">
-                En Proceso: {kpis.resolvedTicketsCount}
+                En Proceso: {kpis.inProgressTicketsCount}
               </p>
             </div>
             <div className="rounded-full bg-orange-50 dark:bg-orange-900/20 p-3 group-hover:bg-orange-100 dark:group-hover:bg-orange-800/30 transition-all">
@@ -928,10 +986,14 @@ const MaintenanceDashboard: React.FC = () => {
                 Tiempo de Respuesta
               </div>
               <div className="text-2xl font-bold text-green-800 dark:text-green-200">
-                {kpis.firstResponseTime}h
+                {kpis.firstResponseTime === "N/D"
+                  ? "N/D"
+                  : `${kpis.firstResponseTime}h`}
               </div>
               <div className="text-xs text-green-600 dark:text-green-400 mt-1">
-                Primera respuesta
+                {kpis.firstResponseTime === "N/D"
+                  ? "Sin datos suficientes"
+                  : "Primera respuesta"}
               </div>
             </div>
 

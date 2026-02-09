@@ -9,6 +9,9 @@ import {
   getDocs,
   setDoc,
   doc as createDoc,
+  getDoc,
+  updateDoc,
+  deleteDoc,
 } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
@@ -18,7 +21,7 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 export interface ExpenseRecord {
   id: string; // ID del documento en Firestore
   folio: string; // "EA-xxxxxx"
-  amount: number; // Monto del egreso en centavos
+  amount: number; // Monto del egreso en pesos
   concept: string; // Concepto (select con ~30 tipos)
   paymentType: string; // Tipo de pago (efectivo, transferencia, etc.)
   expenseDate: string; // Fecha del egreso (ej: "2025-06-30 14:00")
@@ -33,13 +36,29 @@ export interface ExpenseRecord {
  * Datos para crear un egreso.
  */
 export interface ExpenseCreateInput {
-  amount: number; // en centavos
+  amount: number; // en pesos
   concept: string;
   paymentType: string;
   expenseDate: string; // "YYYY-MM-DD HH:mm"
   description?: string;
   file?: File; // Comprobante, factura, etc.
+  invoiceUrl?: string; // URL existente del comprobante (opcional)
   financialAccountId: string; // Nuevo campo requerido
+  providerId?: string;
+}
+
+/**
+ * Datos para actualizar un egreso.
+ */
+export interface ExpenseUpdateInput {
+  amount?: number; // en pesos
+  concept?: string;
+  paymentType?: string;
+  expenseDate?: string;
+  description?: string;
+  file?: File; // Comprobante, factura, etc.
+  invoiceUrl?: string; // URL existente del comprobante (opcional)
+  financialAccountId?: string;
   providerId?: string;
 }
 
@@ -54,7 +73,15 @@ interface ExpenseState {
   /**
    * addExpense: Crea un nuevo egreso con subida de archivo opcional a Storage.
    */
-  addExpense: (data: ExpenseCreateInput) => Promise<void>;
+  addExpense: (data: ExpenseCreateInput) => Promise<string>;
+  /**
+   * updateExpense: Actualiza un egreso existente.
+   */
+  updateExpense: (expenseId: string, data: ExpenseUpdateInput) => Promise<void>;
+  /**
+   * deleteExpense: Elimina un egreso existente.
+   */
+  deleteExpense: (expenseId: string) => Promise<void>;
   /**
    * refreshExpenses: Actualiza la lista de egresos.
    */
@@ -198,6 +225,8 @@ export const useExpenseStore = create<ExpenseState>()((set, get) => ({
       // Agregar URL del archivo si existe
       if (invoiceUrl) {
         expenseData.invoiceUrl = invoiceUrl;
+      } else if (data.invoiceUrl) {
+        expenseData.invoiceUrl = data.invoiceUrl;
       }
 
       // Crear documento con ID automático de Firestore
@@ -209,9 +238,114 @@ export const useExpenseStore = create<ExpenseState>()((set, get) => ({
 
       // Actualizar la lista de egresos
       await get().refreshExpenses();
+      return newDocRef.id;
     } catch (error) {
       console.error("Error al crear egreso:", error);
       set({ error: "Error al registrar el egreso" });
+      throw error;
+    } finally {
+      set({ loading: false });
+    }
+  },
+
+  updateExpense: async (expenseId: string, data: ExpenseUpdateInput) => {
+    set({ loading: true, error: null });
+    try {
+      const auth = getAuth();
+      const user = auth.currentUser;
+      if (!user) throw new Error("Usuario no autenticado");
+
+      const tokenResult = await getIdTokenResult(user);
+      const clientId = tokenResult.claims["clientId"] as string;
+      const condominiumId = localStorage.getItem("condominiumId");
+      if (!condominiumId) throw new Error("Condominio no seleccionado");
+
+      const db = getFirestore();
+      const expenseDocRef = createDoc(
+        db,
+        `clients/${clientId}/condominiums/${condominiumId}/expenses`,
+        expenseId
+      );
+
+      const currentSnap = await getDoc(expenseDocRef);
+      if (!currentSnap.exists()) {
+        throw new Error("Egreso no encontrado");
+      }
+
+      const currentData = currentSnap.data();
+      const folio = currentData.folio || expenseId;
+
+      let invoiceUrl = data.invoiceUrl;
+      if (data.file) {
+        const storage = getStorage();
+        const fileRef = ref(
+          storage,
+          `clients/${clientId}/condominiums/${condominiumId}/expenses/${folio}/${data.file.name}`
+        );
+        await uploadBytes(fileRef, data.file);
+        invoiceUrl = await getDownloadURL(fileRef);
+      }
+
+      const updateData: any = {};
+
+      if (data.amount !== undefined) {
+        updateData.amount = Math.round(data.amount * 100);
+      }
+      if (data.concept !== undefined) updateData.concept = data.concept;
+      if (data.paymentType !== undefined) updateData.paymentType = data.paymentType;
+      if (data.expenseDate !== undefined) updateData.expenseDate = data.expenseDate;
+      if (data.description !== undefined) updateData.description = data.description;
+      if (data.financialAccountId !== undefined) {
+        updateData.financialAccountId = data.financialAccountId;
+      }
+      if (data.providerId !== undefined) updateData.providerId = data.providerId;
+      if (invoiceUrl !== undefined) updateData.invoiceUrl = invoiceUrl;
+
+      if (Object.keys(updateData).length === 0) {
+        set({ loading: false });
+        return;
+      }
+
+      await updateDoc(expenseDocRef, updateData);
+      await get().refreshExpenses();
+    } catch (error: any) {
+      console.error("Error al actualizar egreso:", error);
+      set({ error: "Error al actualizar el egreso" });
+      throw error;
+    } finally {
+      set({ loading: false });
+    }
+  },
+
+  deleteExpense: async (expenseId: string) => {
+    set({ loading: true, error: null });
+    try {
+      const auth = getAuth();
+      const user = auth.currentUser;
+      if (!user) throw new Error("Usuario no autenticado");
+
+      const tokenResult = await getIdTokenResult(user);
+      const clientId = tokenResult.claims["clientId"] as string;
+      const condominiumId = localStorage.getItem("condominiumId");
+      if (!condominiumId) throw new Error("Condominio no seleccionado");
+
+      const db = getFirestore();
+      const expenseDocRef = createDoc(
+        db,
+        `clients/${clientId}/condominiums/${condominiumId}/expenses`,
+        expenseId
+      );
+
+      const currentSnap = await getDoc(expenseDocRef);
+      if (currentSnap.exists()) {
+        await deleteDoc(expenseDocRef);
+      }
+
+      await get().refreshExpenses();
+    } catch (error: any) {
+      console.error("Error al eliminar egreso:", error);
+      set({ error: "Error al eliminar el egreso" });
+      throw error;
     } finally {
       set({ loading: false });
     }

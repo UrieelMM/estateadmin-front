@@ -7,9 +7,11 @@ import {
   DocumentArrowDownIcon,
   ExclamationTriangleIcon,
   ExclamationCircleIcon,
+  CurrencyDollarIcon,
 } from "@heroicons/react/24/outline";
 import {
   MaintenanceContract,
+  MaintenanceCost,
   useMaintenanceContractStore,
 } from "../../../../store/useMaintenanceStore";
 import {
@@ -18,6 +20,7 @@ import {
 } from "../../../../utils/curreyncy";
 import toast from "react-hot-toast";
 import { useFileCompression } from "../../../../hooks/useFileCompression";
+import MaintenanceCostForm from "../../../components/shared/forms/MaintenanceCostForm";
 
 // Componente para mostrar alertas de contratos próximos a vencer
 const ExpiringContractsAlert = ({
@@ -129,6 +132,9 @@ const MaintenanceContracts = () => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [contractToDelete, setContractToDelete] = useState<string | null>(null);
   const [contractToDeleteName, setContractToDeleteName] = useState<string>("");
+  const [isCostFormOpen, setIsCostFormOpen] = useState(false);
+  const [costInitialData, setCostInitialData] =
+    useState<MaintenanceCost | null>(null);
 
   const {
     contracts,
@@ -181,6 +187,23 @@ const MaintenanceContracts = () => {
       await deleteContract(contractToDelete);
       handleCloseDeleteModal();
     }
+  };
+
+  const handleOpenCostForm = (contract: MaintenanceContract) => {
+    const initialCost: MaintenanceCost = {
+      description: `Contrato: ${contract.serviceType} - ${contract.providerName}`,
+      amount: contract.value || 0,
+      date: new Date().toISOString().split("T")[0],
+      category: "Servicios",
+      provider: contract.providerName,
+      providerId: "",
+      status: "pending",
+      notes: contract.notes || "",
+      contractId: contract.id,
+    };
+
+    setCostInitialData(initialCost);
+    setIsCostFormOpen(true);
   };
 
   return (
@@ -321,6 +344,13 @@ const MaintenanceContracts = () => {
                         <PencilIcon className="h-5 w-5" />
                       </button>
                       <button
+                        onClick={() => handleOpenCostForm(contract)}
+                        className="text-emerald-600 hover:text-emerald-900 dark:text-emerald-400 dark:hover:text-emerald-300"
+                        title="Registrar gasto"
+                      >
+                        <CurrencyDollarIcon className="h-5 w-5" />
+                      </button>
+                      <button
                         onClick={() =>
                           handleOpenDeleteModal(
                             contract.id!,
@@ -363,6 +393,17 @@ const MaintenanceContracts = () => {
         onConfirm={handleDeleteContract}
         contractName={contractToDeleteName}
       />
+
+      {isCostFormOpen && (
+        <MaintenanceCostForm
+          isOpen={isCostFormOpen}
+          onClose={() => {
+            setIsCostFormOpen(false);
+            setCostInitialData(null);
+          }}
+          initialData={costInitialData || undefined}
+        />
+      )}
     </div>
   );
 };

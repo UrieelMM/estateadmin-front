@@ -89,6 +89,7 @@ export type MaintenanceCost = {
   invoiceFile?: string;
   provider?: string;
   providerId?: string; // ID del proveedor
+  expenseId?: string; // ID del egreso asociado
   status: "pending" | "paid" | "cancelled";
   paymentDate?: string;
   paymentMethod?: string;
@@ -116,6 +117,7 @@ type MaintenanceReportState = {
   reports: MaintenanceReport[];
   loading: boolean;
   error: string | null;
+  lastFilters: MaintenanceReportFilters | null;
   // Obtiene los reportes, pudiendo aplicar filtros por año, mes y área
   fetchReports: (filters?: MaintenanceReportFilters) => Promise<void>;
   // Crea un reporte. Se espera el objeto report sin id y sin evidenciaUrl (que se completa al subir el archivo)
@@ -175,11 +177,16 @@ type MaintenanceCostState = {
   costs: MaintenanceCost[];
   loading: boolean;
   error: string | null;
+  lastFilters: {
+    startDate?: string;
+    endDate?: string;
+    category?: string;
+  } | null;
   fetchCosts: (filters?: {
     startDate?: string;
     endDate?: string;
     category?: string;
-  }) => Promise<void>;
+  }, options?: { rememberFilters?: boolean }) => Promise<void>;
   createCost: (cost: MaintenanceCost, file?: File) => Promise<void>;
   updateCost: (
     costId: string,
@@ -224,9 +231,10 @@ export const useMaintenanceReportStore = create<MaintenanceReportState>()(
     reports: [],
     loading: false,
     error: null,
+    lastFilters: null,
 
     fetchReports: async (filters) => {
-      set({ loading: true, error: null });
+      set({ loading: true, error: null, lastFilters: filters || null });
       try {
         // Se obtiene el condominiumId guardado en localStorage
         const condominiumId = localStorage.getItem("condominiumId");
@@ -347,8 +355,8 @@ export const useMaintenanceReportStore = create<MaintenanceReportState>()(
         await addDoc(reportsRef, reportData);
 
         set({ loading: false });
-        // Se refrescan los reportes
-        await get().fetchReports();
+        // Se refrescan los reportes respetando filtros
+        await get().fetchReports(get().lastFilters || undefined);
       } catch (error: any) {
         set({ error: error.message, loading: false });
         throw error;
@@ -402,7 +410,7 @@ export const useMaintenanceReportStore = create<MaintenanceReportState>()(
         await updateDoc(reportDocRef, updateData);
 
         set({ loading: false });
-        await get().fetchReports();
+        await get().fetchReports(get().lastFilters || undefined);
       } catch (error: any) {
         set({ error: error.message, loading: false });
         throw error;
@@ -437,7 +445,7 @@ export const useMaintenanceReportStore = create<MaintenanceReportState>()(
         await deleteDoc(reportDocRef);
 
         set({ loading: false });
-        await get().fetchReports();
+        await get().fetchReports(get().lastFilters || undefined);
       } catch (error: any) {
         set({ error: error.message, loading: false });
         throw error;
@@ -1081,9 +1089,23 @@ export const useMaintenanceCostStore = create<MaintenanceCostState>()(
     costs: [],
     loading: false,
     error: null,
+    lastFilters: null,
 
-    fetchCosts: async (filters) => {
-      set({ loading: true, error: null });
+    fetchCosts: async (filters, options) => {
+      const rememberFilters = options?.rememberFilters ?? true;
+      const nextState: {
+        loading: boolean;
+        error: string | null;
+        lastFilters?: {
+          startDate?: string;
+          endDate?: string;
+          category?: string;
+        } | null;
+      } = { loading: true, error: null };
+      if (rememberFilters) {
+        nextState.lastFilters = filters || null;
+      }
+      set(nextState);
       try {
         const condominiumId = localStorage.getItem("condominiumId");
         if (!condominiumId) {
@@ -1146,6 +1168,7 @@ export const useMaintenanceCostStore = create<MaintenanceCostState>()(
             invoiceNumber: data.invoiceNumber || "",
             invoiceFile: data.invoiceFile || "",
             provider: data.provider || "",
+            expenseId: data.expenseId || "",
             status: data.status,
             paymentDate: data.paymentDate || "",
             paymentMethod: data.paymentMethod || "",
@@ -1288,8 +1311,34 @@ export const useMaintenanceCostStore = create<MaintenanceCostState>()(
           "maintenanceCosts"
         );
 
+        // Registrar también como un egreso general antes de crear el costo
+        const expenseId = await registerMaintenanceCostAsExpense(
+          costData,
+          file,
+          invoiceFile
+        );
+
+        if (expenseId) {
+          costToSave.expenseId = expenseId;
+        }
+
         // Guardar en la colección de maintenanceCosts
-        await addDoc(costsRef, costToSave);
+        try {
+          await addDoc(costsRef, costToSave);
+        } catch (error) {
+          if (expenseId) {
+            try {
+              const expenseStore = useExpenseStore.getState();
+              await expenseStore.deleteExpense(expenseId);
+            } catch (cleanupError) {
+              console.error(
+                "Error al revertir egreso tras fallo al guardar costo:",
+                cleanupError
+              );
+            }
+          }
+          throw error;
+        }
 
         // Si este costo está vinculado a un presupuesto, actualizar el progreso del presupuesto
         if (cost.budgetId) {
@@ -1297,11 +1346,8 @@ export const useMaintenanceCostStore = create<MaintenanceCostState>()(
           await budgetStore.calculateBudgetProgress(cost.budgetId);
         }
 
-        // Registrar también como un egreso general
-        await registerMaintenanceCostAsExpense(cost, file, invoiceFile);
-
         set({ loading: false });
-        await get().fetchCosts();
+        await get().fetchCosts(get().lastFilters || undefined);
       } catch (error: any) {
         set({ error: error.message, loading: false });
         throw error;
@@ -1357,16 +1403,24 @@ export const useMaintenanceCostStore = create<MaintenanceCostState>()(
 
         // Obtener datos completos antes de actualizar para registrar como egreso
         const currentCostDoc = await getDoc(costDocRef);
-        if (currentCostDoc.exists()) {
-          const currentCost = currentCostDoc.data() as MaintenanceCost;
-          const updatedCost = { ...currentCost, ...updateData, id: costId };
+        if (!currentCostDoc.exists()) {
+          throw new Error("El costo no existe");
+        }
 
-          // Registrar como un egreso general (actualiza si existe o crea nuevo)
-          await registerMaintenanceCostAsExpense(
-            updatedCost,
-            file,
-            updateData.invoiceFile || currentCost.invoiceFile
-          );
+        const currentCost = currentCostDoc.data() as MaintenanceCost;
+        const updatedCost = { ...currentCost, ...updateData, id: costId };
+        const invoiceUrl = updateData.invoiceFile || currentCost.invoiceFile;
+
+        // Registrar como un egreso general (actualiza si existe o crea nuevo)
+        const expenseId = await registerMaintenanceCostAsExpense(
+          updatedCost,
+          file,
+          invoiceUrl,
+          currentCost.expenseId
+        );
+
+        if (expenseId && expenseId !== currentCost.expenseId) {
+          updateData.expenseId = expenseId;
         }
 
         await updateDoc(costDocRef, updateData);
@@ -1379,7 +1433,7 @@ export const useMaintenanceCostStore = create<MaintenanceCostState>()(
         }
 
         set({ loading: false });
-        await get().fetchCosts();
+        await get().fetchCosts(get().lastFilters || undefined);
       } catch (error: any) {
         set({ error: error.message, loading: false });
         throw error;
@@ -1416,6 +1470,12 @@ export const useMaintenanceCostStore = create<MaintenanceCostState>()(
 
         const costDoc = await getDoc(costDocRef);
         const budgetId = costDoc.exists() ? costDoc.data().budgetId : null;
+        const expenseId = costDoc.exists() ? costDoc.data().expenseId : null;
+
+        if (expenseId) {
+          const expenseStore = useExpenseStore.getState();
+          await expenseStore.deleteExpense(expenseId);
+        }
 
         await deleteDoc(costDocRef);
 
@@ -1426,7 +1486,7 @@ export const useMaintenanceCostStore = create<MaintenanceCostState>()(
         }
 
         set({ loading: false });
-        await get().fetchCosts();
+        await get().fetchCosts(get().lastFilters || undefined);
       } catch (error: any) {
         set({ error: error.message, loading: false });
         throw error;
@@ -1474,6 +1534,7 @@ export const useMaintenanceCostStore = create<MaintenanceCostState>()(
             invoiceNumber: data.invoiceNumber || "",
             invoiceFile: data.invoiceFile || "",
             provider: data.provider || "",
+            expenseId: data.expenseId || "",
             status: data.status,
             paymentDate: data.paymentDate || "",
             paymentMethod: data.paymentMethod || "",
@@ -1529,6 +1590,7 @@ export const useMaintenanceCostStore = create<MaintenanceCostState>()(
             invoiceNumber: data.invoiceNumber || "",
             invoiceFile: data.invoiceFile || "",
             provider: data.provider || "",
+            expenseId: data.expenseId || "",
             status: data.status,
             paymentDate: data.paymentDate || "",
             paymentMethod: data.paymentMethod || "",
@@ -1584,6 +1646,7 @@ export const useMaintenanceCostStore = create<MaintenanceCostState>()(
             invoiceNumber: data.invoiceNumber || "",
             invoiceFile: data.invoiceFile || "",
             provider: data.provider || "",
+            expenseId: data.expenseId || "",
             status: data.status,
             paymentDate: data.paymentDate || "",
             paymentMethod: data.paymentMethod || "",
@@ -1617,7 +1680,7 @@ export const useMaintenanceCostStore = create<MaintenanceCostState>()(
         }
 
         // Obtener todos los costos en el rango de fechas
-        await get().fetchCosts({ startDate, endDate });
+        await get().fetchCosts({ startDate, endDate }, { rememberFilters: false });
         const costs = get().costs;
 
         // Agrupar por categoría y sumar
@@ -1651,7 +1714,7 @@ export const useMaintenanceCostStore = create<MaintenanceCostState>()(
         const endDate = `${year}-12-31`;
 
         // Obtener todos los costos del año
-        await get().fetchCosts({ startDate, endDate });
+        await get().fetchCosts({ startDate, endDate }, { rememberFilters: false });
         const costs = get().costs;
 
         // Inicializar resumen para los 12 meses
@@ -1764,6 +1827,7 @@ export const useMaintenanceBudgetStore = create<MaintenanceBudgetState>()(
               ticketId: costData.ticketId || "",
               contractId: costData.contractId || "",
               provider: costData.provider || "",
+              expenseId: costData.expenseId || "",
               notes: costData.notes || "",
             });
 
@@ -2072,43 +2136,47 @@ export const useMaintenanceBudgetStore = create<MaintenanceBudgetState>()(
 async function registerMaintenanceCostAsExpense(
   cost: MaintenanceCost,
   file?: File,
-  invoiceUrl?: string
-) {
-  try {
-    const expenseStore = useExpenseStore.getState();
+  invoiceUrl?: string,
+  existingExpenseId?: string
+): Promise<string | null> {
+  const expenseStore = useExpenseStore.getState();
 
-    // Construir un concepto descriptivo para el egreso
-    let concept = `Mantenimiento - ${cost.category}`;
+  // Construir un concepto descriptivo para el egreso
+  let concept = `Mantenimiento - ${cost.category}`;
 
-    // Añadir información adicional si está relacionado con ticket, cita o contrato
-    if (cost.ticketId) {
-      concept += ` - Ticket relacionado`;
-    } else if (cost.appointmentId) {
-      concept += ` - Visita relacionada`;
-    } else if (cost.contractId) {
-      concept += ` - Contrato relacionado`;
-    }
-
-    // Convertir fecha a formato esperado por expenseStore (YYYY-MM-DD HH:mm)
-    const formattedDate = moment(cost.date).format("YYYY-MM-DD HH:mm");
-
-    // Configurar los datos para el registro del egreso
-    await expenseStore.addExpense({
-      amount: cost.amount / 100, // El expense store espera pesos, no centavos
-      concept,
-      paymentType: cost.paymentMethod || "Efectivo", // Usar el método de pago si existe, o "Efectivo" por defecto
-      expenseDate: formattedDate,
-      description: `${
-        cost.description || cost.notes || ""
-      } - Ref: Costo de mantenimiento`,
-      file: invoiceUrl ? undefined : file, // Solo pasar el archivo si no tenemos ya una URL
-      financialAccountId: "default", // Usar una cuenta financiera por defecto o ajustar según sea necesario
-      providerId: cost.providerId, // Usar el ID del proveedor si existe
-    });
-  } catch (error) {
-    console.error(
-      "Error al registrar costo de mantenimiento como egreso:",
-      error
-    );
+  // Añadir información adicional si está relacionado con ticket, cita o contrato
+  if (cost.ticketId) {
+    concept += ` - Ticket relacionado`;
+  } else if (cost.appointmentId) {
+    concept += ` - Visita relacionada`;
+  } else if (cost.contractId) {
+    concept += ` - Contrato relacionado`;
   }
+
+  // Convertir fecha a formato esperado por expenseStore (YYYY-MM-DD HH:mm)
+  const formattedDate = moment(cost.date).format("YYYY-MM-DD HH:mm");
+
+  // Configurar los datos para el registro del egreso
+  const expenseData = {
+    amount: cost.amount / 100, // El expense store espera pesos, no centavos
+    concept,
+    paymentType: cost.paymentMethod || "Efectivo", // Usar el método de pago si existe, o "Efectivo" por defecto
+    expenseDate: formattedDate,
+    description: `${
+      cost.description || cost.notes || ""
+    } - Ref: Costo de mantenimiento`,
+    file: invoiceUrl ? undefined : file, // Solo pasar el archivo si no tenemos ya una URL
+    invoiceUrl, // Usar URL existente si se proporciona
+    financialAccountId: "default", // Usar una cuenta financiera por defecto o ajustar según sea necesario
+    providerId: cost.providerId, // Usar el ID del proveedor si existe
+  };
+
+  if (existingExpenseId) {
+    const { financialAccountId: _accountId, ...updateData } = expenseData;
+    await expenseStore.updateExpense(existingExpenseId, updateData);
+    return existingExpenseId;
+  }
+
+  const newExpenseId = await expenseStore.addExpense(expenseData);
+  return newExpenseId;
 }

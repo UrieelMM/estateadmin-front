@@ -63,7 +63,7 @@ const MaintenanceCostSummary = () => {
         const endDate = `${year}-12-31`;
 
         // Cargar gastos filtrados por año
-        await fetchCosts({ startDate, endDate });
+        await fetchCosts({ startDate, endDate }, { rememberFilters: false });
 
         // Obtener datos por categoría
         const categoryResults = await getCostSummaryByCategory(
@@ -76,8 +76,6 @@ const MaintenanceCostSummary = () => {
         const monthlyResults = await getCostSummaryByMonth(year);
         setMonthlyData(monthlyResults);
 
-        // Calcular datos de proveedores y estado
-        calculateAdditionalMetrics();
       } catch (error) {
         console.error("Error al cargar datos de resumen:", error);
       } finally {
@@ -87,6 +85,12 @@ const MaintenanceCostSummary = () => {
 
     loadSummaryData();
   }, [year]);
+
+  useEffect(() => {
+    if (!loading) {
+      calculateAdditionalMetrics();
+    }
+  }, [costs, loading]);
 
   // Función para calcular métricas adicionales
   const calculateAdditionalMetrics = () => {
@@ -174,7 +178,8 @@ const MaintenanceCostSummary = () => {
 
   const getAvgMonthlyExpense = () => {
     if (monthlyData.length === 0) return 0;
-    return getTotalExpenses() / monthlyData.filter((m) => m.total > 0).length;
+    const activeMonths = monthlyData.filter((m) => m.total > 0).length;
+    return activeMonths > 0 ? getTotalExpenses() / activeMonths : 0;
   };
 
   const getMaxMonthExpense = () => {

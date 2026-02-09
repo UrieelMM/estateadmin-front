@@ -136,6 +136,12 @@ const MaintenanceCostsTable = ({ onEdit }: MaintenanceCostsTableProps) => {
                             Proveedor: {cost.provider}
                           </div>
                         )}
+                        {cost.contract && (
+                          <div className="text-xs text-gray-500 dark:text-gray-400">
+                            Contrato: {cost.contract.providerName} -{" "}
+                            {cost.contract.serviceType}
+                          </div>
+                        )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
                         {moment(cost.date).format("DD MMM YYYY")}

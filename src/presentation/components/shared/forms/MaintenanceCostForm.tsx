@@ -5,6 +5,7 @@ import {
   MaintenanceCost,
   useMaintenanceCostStore,
   useMaintenanceAppointmentStore,
+  useMaintenanceContractStore,
 } from "../../../../store/useMaintenanceStore";
 import { useTicketsStore } from "../../../screens/dashboard/maintenance/tickets/ticketsStore";
 import useProviderStore from "../../../../store/providerStore";
@@ -24,6 +25,7 @@ const MaintenanceCostForm = ({
 }: MaintenanceCostFormProps) => {
   const { createCost, updateCost } = useMaintenanceCostStore();
   const { appointments, fetchAppointments } = useMaintenanceAppointmentStore();
+  const { contracts, fetchContracts } = useMaintenanceContractStore();
   const { tickets, fetchTickets } = useTicketsStore();
   const { providers, fetchProviders } = useProviderStore();
   const [loading, setLoading] = useState(false);
@@ -48,6 +50,7 @@ const MaintenanceCostForm = ({
         await Promise.all([
           fetchAppointments(),
           fetchTickets(),
+          fetchContracts(),
           fetchProviders(),
         ]);
       };
@@ -111,10 +114,69 @@ const MaintenanceCostForm = ({
         providerId: value,
         provider: selectedProvider ? selectedProvider.name : "",
       });
+    } else if (name === "contractId") {
+      const selectedContract = contracts.find(
+        (contract) => contract.id === value
+      );
+      const matchedProvider = selectedContract
+        ? providers.find(
+            (provider) => provider.name === selectedContract.providerName
+          )
+        : undefined;
+
+      setFormData((prev) => ({
+        ...prev,
+        contractId: value,
+        providerId: prev.providerId || matchedProvider?.id || "",
+        provider:
+          prev.provider ||
+          matchedProvider?.name ||
+          selectedContract?.providerName ||
+          "",
+        description:
+          prev.description ||
+          (selectedContract
+            ? `Contrato: ${selectedContract.serviceType} - ${selectedContract.providerName}`
+            : ""),
+        amount:
+          prev.amount && prev.amount > 0
+            ? prev.amount
+            : selectedContract?.value || prev.amount,
+        category:
+          prev.category === "Materiales"
+            ? "Servicios"
+            : prev.category,
+      }));
     } else {
       setFormData({ ...formData, [name]: value });
     }
   };
+
+  useEffect(() => {
+    if (!isOpen) return;
+    if (!formData.contractId || formData.providerId) return;
+
+    const selectedContract = contracts.find(
+      (contract) => contract.id === formData.contractId
+    );
+    if (!selectedContract) return;
+
+    const matchedProvider = providers.find(
+      (provider) => provider.name === selectedContract.providerName
+    );
+
+    if (matchedProvider || selectedContract.providerName) {
+      setFormData((prev) => ({
+        ...prev,
+        providerId: matchedProvider?.id || prev.providerId || "",
+        provider:
+          prev.provider ||
+          matchedProvider?.name ||
+          selectedContract.providerName ||
+          "",
+      }));
+    }
+  }, [isOpen, formData.contractId, formData.providerId, contracts, providers]);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -372,7 +434,7 @@ const MaintenanceCostForm = ({
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                         Relacionar con
                       </label>
-                      <div className="mt-1 grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="mt-1 grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
                           <label
                             htmlFor="ticketId"
@@ -416,6 +478,28 @@ const MaintenanceCostForm = ({
                                 value={appointment.id}
                               >
                                 {appointment.date} - {appointment.title}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label
+                            htmlFor="contractId"
+                            className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                          >
+                            Contrato
+                          </label>
+                          <select
+                            id="contractId"
+                            name="contractId"
+                            value={formData.contractId || ""}
+                            onChange={handleChange}
+                            className="w-full mt-1 pl-2 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
+                          >
+                            <option value="">No relacionado</option>
+                            {contracts.map((contract) => (
+                              <option key={contract.id} value={contract.id}>
+                                {contract.providerName} - {contract.serviceType}
                               </option>
                             ))}
                           </select>
