@@ -4,82 +4,103 @@
 // Contenido estático para la guía de Mantenimiento
 export const MAINTENANCE_GUIDE_CONTENT = `
 <article class="prose prose-indigo lg:prose-lg max-w-none">
-  <h2>Módulo de Mantenimiento: Guía Completa</h2>
-  
-  <p>El módulo de mantenimiento permite a los administradores gestionar de manera eficiente todas las actividades de mantenimiento preventivo y correctivo dentro del condominio, asegurando el buen estado de las instalaciones comunes y mejorando la calidad de vida de los residentes.</p>
-  
-  <h3>Objetivos del Módulo</h3>
-  
+  <h2>Control de Mantenimiento: guía paso a paso</h2>
+  <p>Este módulo centraliza todo el ciclo de mantenimiento: reportes, tickets, visitas, contratos y costos. El objetivo es mantener trazabilidad completa desde la detección del problema hasta el cierre y su reflejo financiero.</p>
+
+  <h3>Antes de empezar</h3>
   <ul>
-    <li>Planificar y programar actividades de mantenimiento de manera sistemática</li>
-    <li>Realizar seguimiento de solicitudes de reparación de los residentes</li>
-    <li>Gestionar proveedores de servicios de mantenimiento</li>
-    <li>Mantener un registro histórico de todas las intervenciones</li>
-    <li>Optimizar los recursos económicos destinados al mantenimiento</li>
+    <li>Selecciona el condominio correcto en el panel principal.</li>
+    <li>Si trabajarás con proveedores recurrentes, registra sus datos para facilitar el control de costos.</li>
+    <li>Define un criterio de áreas (Lobby, Jardín, Estacionamiento, etc.) para mantener consistencia en reportes y estadísticas.</li>
   </ul>
-  
-  <h3>Funciones Principales</h3>
-  
-  <h4>1. Programación de Mantenimientos</h4>
-  <p>La interfaz de programación permite establecer calendarios de mantenimiento preventivo para diferentes áreas e instalaciones del condominio:</p>
-  
-  <pre><code>
-  // Ejemplo de estructura de un mantenimiento programado
-  {
-    id: "mant-001",
-    area: "Piscina",
-    title: "Limpieza y tratamiento químico",
-    frequency: "weekly",
-    assignedTo: "Servicio de Mantenimiento ABC",
-    estimatedCost: 2500,
-    description: "Limpieza completa y balance químico del agua"
-  }
-  </code></pre>
-  
-  <h4>2. Gestión de Solicitudes</h4>
-  <p>Los residentes pueden enviar solicitudes de reparación o mantenimiento a través de la aplicación, adjuntando descripciones y fotografías del problema. Los administradores pueden:</p>
-  
-  <ul>
-    <li>Clasificar las solicitudes por prioridad (alta, media, baja)</li>
-    <li>Asignar responsables internos o externos</li>
-    <li>Establecer fechas límite de resolución</li>
-    <li>Notificar a los residentes sobre el avance</li>
-  </ul>
-  
-  <h4>3. Seguimiento de Proveedores</h4>
-  <p>El sistema permite mantener una base de datos de proveedores de servicios con evaluaciones de desempeño, facilitando la selección para futuros mantenimientos.</p>
-  
-  <h3>Pasos para Utilizar el Módulo</h3>
-  
+
+  <h3>Flujo recomendado (de punta a punta)</h3>
   <ol>
-    <li>
-      <strong>Acceso al módulo:</strong> Desde el panel de navegación principal, seleccione "Mantenimiento".
-      <img src="https://images.unsplash.com/photo-1576013551627-0cc20b96c2a7?q=80&w=1080&h=720&auto=format&fit=crop" alt="Panel de Mantenimiento" class="rounded-lg shadow-md my-4" />
-    </li>
-    <li>
-      <strong>Crear un nuevo mantenimiento programado:</strong> Haga clic en "Nuevo Mantenimiento" y complete el formulario con la información requerida.
-    </li>
-    <li>
-      <strong>Visualizar calendario:</strong> Utilice la vista de calendario para tener una perspectiva clara de todos los mantenimientos programados.
-    </li>
-    <li>
-      <strong>Generar reportes:</strong> Acceda a la sección de reportes para obtener estadísticas sobre los mantenimientos realizados, costos acumulados y tiempo de respuesta.
-    </li>
+    <li>Registra un reporte o un ticket para documentar el problema.</li>
+    <li>Agenda una visita si requiere inspección o intervención técnica.</li>
+    <li>Ejecuta el servicio y registra el costo asociado.</li>
+    <li>Actualiza el estado del ticket y cierra el caso.</li>
+    <li>Genera reportes PDF para informar avances y gastos.</li>
   </ol>
-  
-  <h3>Mejores Prácticas</h3>
-  
+
+  <h3>Panel de Control</h3>
+  <p>El panel te muestra indicadores clave y gráficas para tomar decisiones rápidas:</p>
   <ul>
-    <li>Programe los mantenimientos preventivos con suficiente antelación</li>
-    <li>Establezca prioridades claras para las solicitudes urgentes</li>
-    <li>Mantenga comunicación constante con los residentes sobre el estado de sus solicitudes</li>
-    <li>Documente adecuadamente todas las intervenciones, incluyendo fotografías de antes y después</li>
-    <li>Realice evaluaciones periódicas de los proveedores de servicios</li>
+    <li>KPIs de reportes, tickets activos, citas, contratos y costos.</li>
+    <li>Gráficas por área, estado de tickets y tendencia semanal.</li>
+    <li>Generación de reporte PDF por rango de fechas.</li>
   </ul>
-  
-  <h3>Conclusión</h3>
-  
-  <p>Una gestión eficiente del mantenimiento no solo preserva el valor de la propiedad, sino que también mejora significativamente la satisfacción de los residentes. Este módulo proporciona todas las herramientas necesarias para lograrlo de manera organizada y transparente.</p>
+  <div class="note p-4 bg-blue-50 rounded-lg my-4">
+    <p class="mb-0"><strong>Tip:</strong> Usa rangos de fechas reales (por ejemplo, último mes) para que el PDF sea útil en juntas o reportes al comité.</p>
+  </div>
+
+  <h3>Reportes de mantenimiento</h3>
+  <ol>
+    <li>Entra a <strong>Reportes</strong> y selecciona <strong>Registrar Reporte</strong>.</li>
+    <li>Completa <strong>Fecha, Área, Encargado</strong> y el <strong>Detalle</strong>.</li>
+    <li>Adjunta evidencia (PDF o imagen) si aplica.</li>
+    <li>Filtra por año, mes o área para análisis rápido.</li>
+    <li>Usa editar o eliminar para mantener la información limpia.</li>
+  </ol>
+
+  <h3>Tickets</h3>
+  <p>Los tickets te permiten dar seguimiento granular a problemas y solicitudes.</p>
+  <ul>
+    <li>Estados principales: <strong>Abierto</strong>, <strong>En Progreso</strong> y <strong>Cerrado</strong>.</li>
+    <li>Asigna prioridad, responsable y adjunta evidencia.</li>
+    <li>El historial registra cambios de estado, archivos y comentarios.</li>
+    <li>Puedes fusionar tickets cuando se trate del mismo incidente.</li>
+  </ul>
+  <div class="note p-4 bg-blue-50 rounded-lg my-4">
+    <p class="mb-0"><strong>Tip:</strong> Antes de cerrar un ticket, asegúrate de registrar el costo si hubo gastos asociados.</p>
+  </div>
+
+  <h3>Agenda de Visitas</h3>
+  <ul>
+    <li>Programa citas desde el calendario o la lista.</li>
+    <li>Convierte tickets en visitas con un par de clics.</li>
+    <li>Estados disponibles: Programada, En progreso, Completada o Cancelada.</li>
+    <li>Relaciona la visita con un contrato o ticket para trazabilidad.</li>
+  </ul>
+
+  <h3>Contratos</h3>
+  <ul>
+    <li>Registra proveedor, tipo de servicio, periodo y valor.</li>
+    <li>Adjunta el archivo del contrato (PDF/Word/Imagen).</li>
+    <li>Recibe alertas de vencimiento para renovaciones oportunas.</li>
+    <li>Desde la tabla puedes <strong>registrar un gasto</strong> directamente con el valor del contrato (editable).</li>
+  </ul>
+
+  <h3>Costos</h3>
+  <p>Este módulo controla los gastos reales de mantenimiento y los vincula con egresos.</p>
+  <ul>
+    <li>Registra categoría, monto, fecha, proveedor y estado de pago.</li>
+    <li>Relaciona el gasto a ticket, visita o contrato.</li>
+    <li>Adjunta la factura o comprobante.</li>
+    <li>El gasto se registra automáticamente como egreso financiero.</li>
+    <li>Usa filtros por fecha y categoría para análisis rápido.</li>
+  </ul>
+
+  <h3>App de Mantenimiento (si está habilitada)</h3>
+  <ul>
+    <li>Visualiza reportes enviados por el personal en campo.</li>
+    <li>Filtra por día, semana o mes.</li>
+    <li>Consulta evidencia multimedia (fotos o videos).</li>
+  </ul>
+
+  <h3>Buenas prácticas</h3>
+  <ul>
+    <li>Usa siempre las mismas áreas para evitar estadísticas inconsistentes.</li>
+    <li>Relaciona cada gasto con un ticket o contrato cuando sea posible.</li>
+    <li>Documenta evidencia antes y después para mayor transparencia.</li>
+    <li>Cierra tickets a tiempo para mantener KPIs reales.</li>
+  </ul>
+
+  <h3>Problemas comunes</h3>
+  <ul>
+    <li><strong>No veo un ticket para convertirlo a visita:</strong> solo aparecen tickets Abiertos o En Progreso sin visita.</li>
+    <li><strong>No encuentro un costo en egresos:</strong> revisa filtros de fecha o categoría en el módulo financiero.</li>
+  </ul>
 </article>
 `;
 
@@ -394,260 +415,183 @@ export const RESERVATION_SYSTEM_CONTENT = `
 `;
 
 export const INVENTORY_MANAGEMENT_CONTENT = `
-        <article class="prose prose-indigo lg:prose-lg max-w-none">
-          <h2>Sistema de Gestión de Inventario</h2>
-          
-          <p>El módulo de inventario permite gestionar eficientemente todos los recursos físicos del condominio, desde materiales de mantenimiento hasta herramientas y equipos, asegurando un control adecuado y transparencia en su uso.</p>
-          
-          <h3>Características Principales</h3>
-          
-          <ul>
-            <li>Registro detallado de todos los activos e insumos</li>
-            <li>Control de stock con alertas de niveles bajos</li>
-            <li>Seguimiento del uso y asignación de herramientas</li>
-            <li>Historial completo de movimientos</li>
-            <li>Reportes de inventario y valoración de activos</li>
-          </ul>
-          
-          <h3>Beneficios</h3>
-          
-          <ol>
-            <li>Prevención de pérdidas y extravíos</li>
-            <li>Optimización de recursos y compras</li>
-            <li>Mayor eficiencia en tareas de mantenimiento</li>
-            <li>Transparencia en la administración</li>
-            <li>Reducción de costos operativos</li>
-          </ol>
-          
-          <blockquote>
-            <p>"Un sistema de inventario bien administrado no solo protege los activos del condominio, sino que también optimiza los recursos disponibles y mejora la eficiencia del personal."</p>
-          </blockquote>
-          
-          <p>Estamos trabajando para ofrecerte contenido más detallado sobre esta característica. ¡Vuelve pronto para más información!</p>
-        </article>
+<article class="prose prose-indigo lg:prose-lg max-w-none">
+  <h2>Inventario: guía práctica para administradores</h2>
+  <p>Este módulo te ayuda a controlar materiales, herramientas y equipos del condominio. Permite saber qué hay, dónde está, cuánto queda y quién lo usa.</p>
+
+  <h3>Antes de empezar</h3>
+  <ul>
+    <li>Crea al menos una categoría de inventario.</li>
+    <li>Define ubicaciones estándar (Bodega, Cuarto de máquinas, Oficina, etc.).</li>
+  </ul>
+
+  <h3>Secciones principales</h3>
+  <ul>
+    <li><strong>Inventario:</strong> lista de ítems y operaciones de stock.</li>
+    <li><strong>Categorías:</strong> clasificación por tipo de material o uso.</li>
+    <li><strong>Movimientos:</strong> historial de entradas, salidas y cambios.</li>
+    <li><strong>Alertas:</strong> ítems con stock bajo.</li>
+  </ul>
+
+  <h3>Registrar un ítem</h3>
+  <ol>
+    <li>Entra a <strong>Inventario</strong> y selecciona <strong>Añadir ítem</strong>.</li>
+    <li>Completa nombre, tipo, categoría y estado.</li>
+    <li>Indica stock inicial, stock mínimo y ubicación.</li>
+    <li>Agrega precio, proveedor, notas o imágenes si aplica.</li>
+  </ol>
+  <div class="note p-4 bg-blue-50 rounded-lg my-4">
+    <p class="mb-0"><strong>Tip:</strong> usa el stock mínimo para recibir alertas automáticas y evitar faltantes en mantenimiento.</p>
+  </div>
+
+  <h3>Operaciones de stock</h3>
+  <ul>
+    <li><strong>Agregar stock:</strong> registra entradas por compras o reposición.</li>
+    <li><strong>Consumir stock:</strong> descuenta materiales usados en tareas.</li>
+    <li><strong>Transferir:</strong> mueve un ítem a otra ubicación.</li>
+    <li><strong>Cambiar estado:</strong> activo, inactivo, en mantenimiento o descontinuado.</li>
+  </ul>
+  <p>Cada operación genera un movimiento con fecha, usuario y notas.</p>
+
+  <h3>Movimientos (historial)</h3>
+  <p>En la sección de movimientos puedes revisar:</p>
+  <ul>
+    <li>Quién realizó cada acción.</li>
+    <li>Cantidad anterior y nueva.</li>
+    <li>Cambios de ubicación o estado.</li>
+  </ul>
+
+  <h3>Alertas de stock bajo</h3>
+  <p>Los ítems con stock igual o menor al mínimo aparecen en <strong>Alertas</strong> para que el administrador reponga a tiempo.</p>
+
+  <h3>Buenas prácticas</h3>
+  <ul>
+    <li>Usa categorías y ubicaciones consistentes.</li>
+    <li>Registra consumos reales para mantener el inventario actualizado.</li>
+    <li>Revisa alertas al menos una vez por semana.</li>
+    <li>Adjunta imágenes a herramientas clave para identificación rápida.</li>
+  </ul>
+</article>
 `;
 
 export const INCOMES_AND_EXPENSES_CONTENT = `
 <article class="prose prose-indigo lg:prose-lg max-w-none">
-          <h2>Control de Ingresos y Egresos</h2>
-          
-          <p>El módulo de Ingresos y Egresos proporciona un sistema completo para el registro, seguimiento y análisis de todos los movimientos financieros del condominio, asegurando una gestión transparente y eficiente de los recursos económicos.</p>
-          
-          <h3>Funcionalidades Principales</h3>
-          
-          <h4>1. Registro de Ingresos</h4>
-          
-          <p>Permite registrar y categorizar todos los ingresos del condominio:</p>
-          
-          <ul>
-            <li>Cuotas de mantenimiento regulares</li>
-            <li>Cuotas extraordinarias para proyectos específicos</li>
-            <li>Ingresos por renta de espacios comunes</li>
-            <li>Donaciones y otros ingresos</li>
-          </ul>
-          
-          <img src="https://images.unsplash.com/photo-1554224155-1696413565d3?q=80&w=1080&h=720&auto=format&fit=crop" alt="Análisis financiero" class="rounded-lg shadow-md my-4" />
-          
-          <h4>2. Control de Egresos</h4>
-          
-          <p>Gestión detallada de todos los gastos, con capacidades para:</p>
-          
-          <ul>
-            <li>Clasificación por categorías (servicios, mantenimiento, administrativos)</li>
-            <li>Asignación a proyectos o áreas específicas</li>
-            <li>Validación y aprobación de gastos por niveles</li>
-            <li>Adjuntar facturas y comprobantes digitales</li>
-          </ul>
-          
-          <h4>3. Informes Financieros</h4>
-          
-          <p>Generación de reportes detallados para análisis y toma de decisiones:</p>
-          
-          <ul>
-            <li>Balance general de ingresos y egresos</li>
-            <li>Reportes por categoría y período</li>
-            <li>Comparativos entre períodos</li>
-            <li>Proyecciones de flujo de caja</li>
-          </ul>
-          
-          <pre><code>
-// Ejemplo de estructura de un reporte financiero
-{
-  periodo: "Enero 2023",
-  ingresos: {
-    cuotasRegulares: 150000,
-    cuotasExtraordinarias: 25000,
-    rentaEspacios: 5000,
-    otros: 2500,
-    total: 182500
-  },
-  egresos: {
-    serviciosBasicos: 28000,
-    mantenimiento: 45000,
-    seguridadVigilancia: 35000,
-    administrativos: 20000,
-    otros: 5000,
-    total: 133000
-  },
-  saldo: 49500,
-  saldoAcumulado: 186500
-}
-          </code></pre>
-          
-          <h3>Beneficios del Sistema</h3>
-          
-          <ol>
-            <li>Mayor transparencia en el manejo de los recursos</li>
-            <li>Reducción de errores en el registro contable</li>
-            <li>Detección temprana de desviaciones presupuestarias</li>
-            <li>Facilidad para auditorías internas y externas</li>
-            <li>Mejor planificación financiera a largo plazo</li>
-          </ol>
-          
-          <blockquote>
-            <p>"La salud financiera de un condominio depende directamente de la precisión y transparencia con que se gestionan sus ingresos y egresos. Este sistema proporciona las herramientas necesarias para mantener un control riguroso sobre cada peso que entra y sale."</p>
-          </blockquote>
-          
-          <h3>Integración con Otros Módulos</h3>
-          
-          <p>El módulo de Ingresos y Egresos se integra perfectamente con otros componentes del sistema:</p>
-          
-          <ul>
-            <li><strong>Módulo de Cobranza:</strong> Seguimiento automático de pagos recibidos</li>
-            <li><strong>Módulo de Presupuestos:</strong> Comparativa entre lo planificado y lo ejecutado</li>
-            <li><strong>Módulo de Proyectos:</strong> Asignación de gastos a proyectos específicos</li>
-            <li><strong>Módulo de Reportes:</strong> Generación de informes para propietarios</li>
-          </ul>
-          
-          <h3>Conclusión</h3>
-          
-          <p>Una gestión financiera transparente y eficiente es fundamental para mantener la confianza de los propietarios y asegurar la estabilidad económica del condominio. Este módulo proporciona todas las herramientas necesarias para lograrlo, simplificando la complejidad inherente al manejo de las finanzas comunitarias.</p>
-        </article>
+  <h2>Ingresos y Egresos: control financiero completo</h2>
+  <p>Este módulo concentra todo el flujo financiero del condominio: ingresos, pagos, egresos, reportes y balance general. Está diseñado para asegurar trazabilidad, transparencia y control real de los fondos.</p>
+
+  <h3>Antes de empezar</h3>
+  <ul>
+    <li>Configura cuentas financieras (bancos o cajas) para registrar pagos y gastos.</li>
+    <li>Define conceptos y categorías de egresos para reportes claros.</li>
+    <li>Si aplicarás cargos, crea primero los cargos correspondientes a los condominos.</li>
+  </ul>
+
+  <h3>Ingresos y pagos</h3>
+  <p>Accede a <strong>Ingresos y Pagos</strong> para registrar y analizar cobros.</p>
+  <ol>
+    <li>Selecciona <strong>Registrar pago</strong>.</li>
+    <li>Elige el condómino y los cargos a cubrir.</li>
+    <li>Indica monto pagado, fecha, método de pago y cuenta financiera.</li>
+    <li>Adjunta comprobante si aplica.</li>
+  </ol>
+  <ul>
+    <li><strong>Resumen general:</strong> vista consolidada de ingresos.</li>
+    <li><strong>Resumen por cuenta:</strong> compara el desempeño por cuenta bancaria o caja.</li>
+    <li><strong>Historial por condómino:</strong> detalle de pagos individuales.</li>
+    <li><strong>Morosidad:</strong> identifica unidades con pagos pendientes.</li>
+    <li><strong>Pagos no identificados:</strong> administra depósitos sin referencia.</li>
+  </ul>
+
+  <h3>Egresos</h3>
+  <p>En la sección <strong>Egresos</strong> puedes registrar y analizar gastos.</p>
+  <ol>
+    <li>Presiona <strong>Registrar Gasto</strong>.</li>
+    <li>Selecciona el concepto, monto, fecha y cuenta.</li>
+    <li>Adjunta comprobante o factura.</li>
+    <li>Relaciona proveedor si aplica para reportes por proveedor.</li>
+  </ol>
+  <ul>
+    <li><strong>Resumen general:</strong> vista por categorías y montos.</li>
+    <li><strong>Historial:</strong> detalle completo de registros.</li>
+    <li><strong>Egresos por proveedor:</strong> análisis por proveedor.</li>
+  </ul>
+  <div class="note p-4 bg-blue-50 rounded-lg my-4">
+    <p class="mb-0"><strong>Nota:</strong> Los costos de mantenimiento registrados en su módulo se reflejan automáticamente como egresos.</p>
+  </div>
+
+  <h3>Balance general</h3>
+  <p>En <strong>Balance</strong> puedes comparar ingresos y egresos en un solo lugar para evaluar la salud financiera del condominio.</p>
+
+  <h3>Recibos y facturas</h3>
+  <p>Descarga recibos y comprobantes cuando necesites respaldos para auditoría o comunicación con propietarios.</p>
+
+  <h3>Buenas prácticas</h3>
+  <ul>
+    <li>Registra todos los movimientos con comprobante cuando sea posible.</li>
+    <li>Revisa morosidad de forma mensual para mantener flujo de caja.</li>
+    <li>Usa proveedores y categorías consistentes para reportes confiables.</li>
+    <li>Conciliar ingresos vs egresos antes de cierres de mes.</li>
+  </ul>
+</article>
 `;
 
 export const PROJECTS_MANAGEMENT_CONTENT = `
 <article class="prose prose-indigo lg:prose-lg max-w-none">
-          <h2>Gestión de Proyectos</h2>
-          
-          <p>El módulo de Gestión de Proyectos permite planificar, ejecutar y dar seguimiento a todas las iniciativas de mejora, renovación o nueva implementación dentro del condominio, desde pequeñas reparaciones hasta grandes obras de infraestructura.</p>
-          
-          <h3>Características Principales</h3>
-          
-          <h4>1. Planificación de Proyectos</h4>
-          
-          <p>Herramientas completas para la definición y planificación:</p>
-          
-          <ul>
-            <li>Definición de objetivos, alcance y entregables</li>
-            <li>Establecimiento de cronogramas y plazos</li>
-            <li>Asignación de responsables por tarea</li>
-            <li>Presupuestación detallada</li>
-            <li>Identificación de riesgos potenciales</li>
-          </ul>
-          
-          <img src="https://images.unsplash.com/photo-1507207611509-ec012433ff52?q=80&w=1080&h=720&auto=format&fit=crop" alt="Diagrama de Gantt de proyecto" class="rounded-lg shadow-md my-4" />
-          
-          <h4>2. Seguimiento de Ejecución</h4>
-          
-          <p>Monitoreo en tiempo real del avance de los proyectos:</p>
-          
-          <ul>
-            <li>Actualización de estado de tareas</li>
-            <li>Registro de horas y recursos utilizados</li>
-            <li>Seguimiento del gasto vs. presupuesto</li>
-            <li>Gestión de cambios y desviaciones</li>
-            <li>Documentación de avances con fotografías</li>
-          </ul>
-          
-          <div class="note p-4 bg-blue-50 rounded-lg my-4">
-            <p class="mb-0"><strong>Nota:</strong> La documentación fotográfica del antes, durante y después es esencial para mantener informados a los propietarios sobre el avance de los proyectos.</p>
-          </div>
-          
-          <h4>3. Gestión de Proveedores</h4>
-          
-          <p>Administración eficiente de los proveedores involucrados:</p>
-          
-          <ul>
-            <li>Registro de cotizaciones comparativas</li>
-            <li>Generación de órdenes de compra y contratos</li>
-            <li>Seguimiento de entregas y plazos</li>
-            <li>Evaluación de desempeño</li>
-            <li>Historial de relaciones comerciales</li>
-          </ul>
-          
-          <h4>4. Comunicación y Transparencia</h4>
-          
-          <p>Herramientas para mantener informados a todos los interesados:</p>
-          
-          <ol>
-            <li>Tablero de proyectos visible para residentes</li>
-            <li>Notificaciones automáticas de avances importantes</li>
-            <li>Repositorio de documentación accesible</li>
-            <li>Foros de discusión para retroalimentación</li>
-            <li>Encuestas de satisfacción tras la finalización</li>
-          </ol>
-          
-          <pre><code>
-// Ejemplo de estructura de un proyecto
-{
-  id: "PROJ-2023-05",
-  nombre: "Renovación de Áreas Verdes",
-  fechaInicio: "2023-05-10",
-  fechaFinPrevista: "2023-07-30",
-  estado: "En ejecución",
-  presupuestoAprobado: 125000,
-  gastoActual: 82500,
-  avanceFisico: 65, // porcentaje
-  responsablePrincipal: "Comité de Paisajismo",
-  proveedorPrincipal: "Jardines Modernos SA",
-  fases: [
-    {
-      nombre: "Diseño paisajístico",
-      estado: "Completado",
-      avance: 100
-    },
-    {
-      nombre: "Preparación del terreno",
-      estado: "Completado",
-      avance: 100
-    },
-    {
-      nombre: "Instalación de sistema de riego",
-      estado: "En progreso",
-      avance: 80
-    },
-    {
-      nombre: "Plantación",
-      estado: "Iniciado",
-      avance: 35
-    },
-    {
-      nombre: "Instalación de iluminación",
-      estado: "Pendiente",
-      avance: 0
-    }
-  ]
-}
-          </code></pre>
-          
-          <h3>Beneficios</h3>
-          
-          <ul>
-            <li>Mayor control sobre tiempos y costos de ejecución</li>
-            <li>Reducción de imprevistos y mejor gestión de riesgos</li>
-            <li>Transparencia en el uso de fondos comunes</li>
-            <li>Documentación completa para referencia futura</li>
-            <li>Participación informada de la comunidad</li>
-          </ul>
-          
-          <blockquote>
-            <p>"Un proyecto bien gestionado genera confianza en la administración y aumenta la satisfacción de los residentes, quienes pueden ver cómo sus contribuciones se transforman en mejoras tangibles para la comunidad."</p>
-          </blockquote>
-          
-          <h3>Conclusión</h3>
-          
-          <p>La gestión profesional de proyectos es clave para optimizar recursos y asegurar resultados de calidad en todas las iniciativas del condominio. Este módulo proporciona un marco estructurado que guía cada proyecto desde su concepción hasta su conclusión exitosa, documentando cada paso para mantener la transparencia y permitir el aprendizaje continuo.</p>
-        </article>
+  <h2>Gestión de Proyectos: guía completa</h2>
+  <p>Este módulo permite planear, ejecutar y documentar proyectos del condominio, desde remodelaciones pequeñas hasta obras mayores. Incluye presupuesto, tareas, cotizaciones y reportes.</p>
+
+  <h3>Crear un proyecto</h3>
+  <ol>
+    <li>Entra a <strong>Gestión de Proyectos</strong> y selecciona <strong>Nuevo proyecto</strong>.</li>
+    <li>Completa nombre, descripción, fechas y presupuesto inicial.</li>
+    <li>Guarda para activar el tablero del proyecto.</li>
+  </ol>
+
+  <h3>Dashboard del proyecto</h3>
+  <ul>
+    <li>Resumen de presupuesto inicial, presupuesto restante y porcentaje usado.</li>
+    <li>Tiempo transcurrido y días restantes.</li>
+    <li>Gráficas de presupuesto y distribución de gastos.</li>
+  </ul>
+
+  <h3>Registrar gastos del proyecto</h3>
+  <ol>
+    <li>Presiona <strong>Registrar Gasto</strong> dentro del proyecto.</li>
+    <li>Captura monto, categoría y notas.</li>
+    <li>El gasto se descuenta del presupuesto disponible.</li>
+  </ol>
+
+  <h3>Gestión de tareas (Kanban)</h3>
+  <p>Organiza el trabajo con columnas de estado:</p>
+  <ul>
+    <li>Planifica tareas y asigna responsables.</li>
+    <li>Mueve las tarjetas conforme avanza el proyecto.</li>
+    <li>Usa el tablero para reuniones de seguimiento.</li>
+  </ul>
+
+  <h3>Cotizaciones</h3>
+  <ul>
+    <li>Registra hasta 5 cotizaciones por proyecto.</li>
+    <li>Compara proveedores antes de autorizar el gasto.</li>
+    <li>Guarda evidencia de la selección.</li>
+  </ul>
+
+  <h3>Exportación y reporte</h3>
+  <p>Puedes exportar el proyecto para presentar avances y costos al comité o propietarios.</p>
+
+  <h3>Cierre del proyecto</h3>
+  <ul>
+    <li>Marca el proyecto como finalizado cuando se completen tareas y gastos.</li>
+    <li>Si el proyecto se cancela, actualiza su estado para mantener histórico claro.</li>
+  </ul>
+
+  <h3>Buenas prácticas</h3>
+  <ul>
+    <li>Actualiza el estado del proyecto con cada avance importante.</li>
+    <li>Registra todos los gastos para mantener presupuesto real.</li>
+    <li>Documenta cotizaciones y decisiones para transparencia.</li>
+  </ul>
+</article>
 `;
 
 // Información de muestra para las 3 guías adicionales
