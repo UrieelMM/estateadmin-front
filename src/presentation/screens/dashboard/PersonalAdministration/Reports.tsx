@@ -20,8 +20,13 @@ interface ReportData {
 }
 
 const Reports: React.FC = () => {
-  const { employees, generateAttendanceReport, generatePerformanceReport } =
-    usePersonalAdministrationStore();
+  const {
+    employees,
+    shifts,
+    evaluations,
+    generateAttendanceReport,
+    generatePerformanceReport,
+  } = usePersonalAdministrationStore();
   const { tickets } = useTicketsStore();
 
   const [selectedReport, setSelectedReport] = useState<
@@ -43,7 +48,15 @@ const Reports: React.FC = () => {
 
   useEffect(() => {
     generateReports();
-  }, [selectedReport, dateRange, selectedEmployee]);
+  }, [
+    selectedReport,
+    dateRange,
+    selectedEmployee,
+    employees,
+    shifts,
+    evaluations,
+    tickets,
+  ]);
 
   const generateTicketReport = (startDate: Date, endDate: Date) => {
     const filteredTickets = tickets.filter(
@@ -85,7 +98,9 @@ const Reports: React.FC = () => {
     setLoading(true);
     try {
       const startDate = new Date(dateRange.startDate);
+      startDate.setHours(0, 0, 0, 0);
       const endDate = new Date(dateRange.endDate);
+      endDate.setHours(23, 59, 59, 999);
 
       const attendance = generateAttendanceReport(startDate, endDate);
       const performance = generatePerformanceReport(
@@ -93,9 +108,15 @@ const Reports: React.FC = () => {
       );
       const ticketReport = generateTicketReport(startDate, endDate);
 
+      const performanceArray = Array.isArray(performance)
+        ? performance
+        : performance
+        ? [performance]
+        : [];
+
       setReportData({
         attendance,
-        performance: Array.isArray(performance) ? performance : [performance],
+        performance: performanceArray,
         tickets: ticketReport,
       });
     } catch (error) {
@@ -112,10 +133,17 @@ const Reports: React.FC = () => {
   const getAttendanceStats = () => {
     if (reportData.attendance.length === 0) return null;
 
-    const totalEmployees = reportData.attendance.length;
+    const employeesWithShifts = reportData.attendance.filter(
+      (emp) => emp.totalShifts > 0
+    );
+    const totalEmployees = employeesWithShifts.length;
     const avgAttendanceRate =
-      reportData.attendance.reduce((sum, emp) => sum + emp.attendanceRate, 0) /
-      totalEmployees;
+      totalEmployees > 0
+        ? employeesWithShifts.reduce(
+            (sum, emp) => sum + emp.attendanceRate,
+            0
+          ) / totalEmployees
+        : 0;
     const totalShifts = reportData.attendance.reduce(
       (sum, emp) => sum + emp.totalShifts,
       0
@@ -186,9 +214,16 @@ const Reports: React.FC = () => {
       (sum, emp) => sum + emp.openTickets,
       0
     );
+    const employeesWithTickets = reportData.tickets.filter(
+      (emp) => emp.totalTickets > 0
+    );
     const avgCompletionRate =
-      reportData.tickets.reduce((sum, emp) => sum + emp.completionRate, 0) /
-      reportData.tickets.length;
+      employeesWithTickets.length > 0
+        ? employeesWithTickets.reduce(
+            (sum, emp) => sum + emp.completionRate,
+            0
+          ) / employeesWithTickets.length
+        : 0;
 
     return {
       totalTickets,
@@ -374,7 +409,7 @@ const Reports: React.FC = () => {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                  Total Empleados
+                  Empleados con turnos
                 </p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">
                   {attendanceStats.totalEmployees}

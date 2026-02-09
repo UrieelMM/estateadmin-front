@@ -18,6 +18,24 @@ import {
   ActivityLog,
 } from "../../../../store/PersonalAdministration";
 
+const normalizeActivityType = (type: string) =>
+  type === "tarea" ? "ticket" : type;
+
+const getActivityLabel = (type: string) => {
+  switch (normalizeActivityType(type)) {
+    case "rondin":
+      return "Rondín";
+    case "mantenimiento":
+      return "Mantenimiento";
+    case "incidente":
+      return "Incidente";
+    case "ticket":
+      return "Ticket";
+    default:
+      return "Otro";
+  }
+};
+
 interface ActivityDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -79,8 +97,8 @@ const ActivityDetailModal: React.FC<ActivityDetailModalProps> = ({
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Tipo de Actividad
                 </label>
-                <p className="text-sm text-gray-900 dark:text-white capitalize">
-                  {activity.type}
+                <p className="text-sm text-gray-900 dark:text-white">
+                  {getActivityLabel(activity.type)}
                 </p>
               </div>
 
@@ -215,7 +233,8 @@ const ActivityDetailModal: React.FC<ActivityDetailModalProps> = ({
 };
 
 const ActivityLogComponent: React.FC = () => {
-  const { employees, getActivityLogs } = usePersonalAdministrationStore();
+  const { employees, getActivityLogs, activityLogs } =
+    usePersonalAdministrationStore();
 
   const [filters, setFilters] = useState({
     employeeId: "",
@@ -260,17 +279,17 @@ const ActivityLogComponent: React.FC = () => {
     );
 
     setFilteredActivities(activities);
-  }, [filters, searchTerm, getActivityLogs]);
+  }, [filters, searchTerm, getActivityLogs, activityLogs]);
 
   const getActivityIcon = (type: string) => {
-    switch (type) {
+    switch (normalizeActivityType(type)) {
       case "rondin":
         return ClockIcon;
       case "mantenimiento":
         return WrenchScrewdriverIcon;
       case "incidente":
         return ExclamationTriangleIcon;
-      case "tarea":
+      case "ticket":
         return CheckCircleIcon;
       default:
         return DocumentTextIcon;
@@ -278,14 +297,14 @@ const ActivityLogComponent: React.FC = () => {
   };
 
   const getActivityColor = (type: string) => {
-    switch (type) {
+    switch (normalizeActivityType(type)) {
       case "rondin":
         return "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300";
       case "mantenimiento":
         return "bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-300";
       case "incidente":
         return "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300";
-      case "tarea":
+      case "ticket":
         return "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300";
       default:
         return "bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-300";
@@ -398,7 +417,7 @@ const ActivityLogComponent: React.FC = () => {
                   <option value="rondin">Rondín</option>
                   <option value="mantenimiento">Mantenimiento</option>
                   <option value="incidente">Incidente</option>
-                  <option value="tarea">Tarea</option>
+                  <option value="ticket">Ticket</option>
                   <option value="otro">Otro</option>
                 </select>
               </div>
@@ -477,8 +496,7 @@ const ActivityLogComponent: React.FC = () => {
                           activity.type
                         )}`}
                       >
-                        {activity.type.charAt(0).toUpperCase() +
-                          activity.type.slice(1)}
+                        {getActivityLabel(activity.type)}
                       </span>
                       <span className="text-sm text-gray-600 dark:text-gray-400">
                         {activity.area}

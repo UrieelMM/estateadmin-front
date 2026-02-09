@@ -9,6 +9,7 @@ import {
 import { QRCodeSVG } from "qrcode.react";
 import { usePersonalAdministrationStore } from "../../../../store/PersonalAdministration";
 import { getAuth, getIdTokenResult } from "firebase/auth";
+import ActionModal from "../../../components/shared/modals/ActionModal";
 
 const ScheduleManagement: React.FC = () => {
   const {
@@ -29,6 +30,60 @@ const ScheduleManagement: React.FC = () => {
   const [qrUrl, setQrUrl] = useState("");
   const [generatingQR, setGeneratingQR] = useState(false);
   const qrRef = useRef<HTMLDivElement>(null);
+  const [actionModal, setActionModal] = useState<{
+    open: boolean;
+    title: string;
+    message: string;
+    variant: "info" | "success" | "warning" | "danger";
+    confirmLabel: string;
+    cancelLabel: string;
+    showCancel: boolean;
+    onConfirm?: () => void;
+  }>({
+    open: false,
+    title: "",
+    message: "",
+    variant: "info",
+    confirmLabel: "Aceptar",
+    cancelLabel: "Cancelar",
+    showCancel: false,
+  });
+
+  const openAlertModal = (
+    title: string,
+    message: string,
+    variant: "info" | "success" | "warning" | "danger" = "info",
+    confirmLabel = "Aceptar"
+  ) => {
+    setActionModal({
+      open: true,
+      title,
+      message,
+      variant,
+      confirmLabel,
+      cancelLabel: "Cancelar",
+      showCancel: false,
+    });
+  };
+
+  const openConfirmModal = (
+    title: string,
+    message: string,
+    onConfirm: () => void,
+    variant: "info" | "success" | "warning" | "danger" = "warning",
+    confirmLabel = "Confirmar"
+  ) => {
+    setActionModal({
+      open: true,
+      title,
+      message,
+      variant,
+      confirmLabel,
+      cancelLabel: "Cancelar",
+      showCancel: true,
+      onConfirm,
+    });
+  };
 
   // Cargar empleados, QR activo y registros de asistencia al montar el componente
   useEffect(() => {
@@ -159,7 +214,11 @@ const ScheduleManagement: React.FC = () => {
       setShowQRModal(true);
     } catch (error: any) {
       console.error("Error al generar QR:", error);
-      alert("Error al generar el código QR");
+      openAlertModal(
+        "Error",
+        "Error al generar el código QR.",
+        "danger"
+      );
     } finally {
       setGeneratingQR(false);
     }
@@ -168,19 +227,29 @@ const ScheduleManagement: React.FC = () => {
   const handleDeactivateQR = async () => {
     if (!activeQR) return;
 
-    if (
-      window.confirm(
-        "¿Estás seguro de que deseas desactivar el código QR actual?"
-      )
-    ) {
-      try {
-        await deactivateQR(activeQR.id);
-        alert("Código QR desactivado exitosamente");
-      } catch (error) {
-        console.error("Error al desactivar QR:", error);
-        alert("Error al desactivar el código QR");
-      }
-    }
+    openConfirmModal(
+      "Desactivar código QR",
+      "¿Estás seguro de que deseas desactivar el código QR actual?",
+      async () => {
+        try {
+          await deactivateQR(activeQR.id);
+          openAlertModal(
+            "Código QR desactivado",
+            "El código QR fue desactivado exitosamente.",
+            "success"
+          );
+        } catch (error) {
+          console.error("Error al desactivar QR:", error);
+          openAlertModal(
+            "Error",
+            "Error al desactivar el código QR.",
+            "danger"
+          );
+        }
+      },
+      "warning",
+      "Desactivar"
+    );
   };
 
   const printQR = () => {
@@ -594,8 +663,22 @@ const ScheduleManagement: React.FC = () => {
 
                   <button
                     onClick={() => {
-                      navigator.clipboard.writeText(qrUrl);
-                      alert("URL copiada al portapapeles");
+                      navigator.clipboard
+                        .writeText(qrUrl)
+                        .then(() =>
+                          openAlertModal(
+                            "URL copiada",
+                            "La URL se copió al portapapeles.",
+                            "success"
+                          )
+                        )
+                        .catch(() =>
+                          openAlertModal(
+                            "Error",
+                            "No se pudo copiar la URL al portapapeles.",
+                            "danger"
+                          )
+                        );
                     }}
                     className="flex-1 inline-flex items-center justify-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200"
                   >
@@ -726,6 +809,23 @@ const ScheduleManagement: React.FC = () => {
           </div>
         </div>
       )}
+      <ActionModal
+        open={actionModal.open}
+        setOpen={(open) =>
+          setActionModal((prev) => ({
+            ...prev,
+            open,
+            onConfirm: open ? prev.onConfirm : undefined,
+          }))
+        }
+        title={actionModal.title}
+        message={actionModal.message}
+        variant={actionModal.variant}
+        confirmLabel={actionModal.confirmLabel}
+        cancelLabel={actionModal.cancelLabel}
+        showCancel={actionModal.showCancel}
+        onConfirm={actionModal.onConfirm}
+      />
     </div>
   );
 };

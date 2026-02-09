@@ -12,7 +12,10 @@ import { getMaintenanceTemplate, MaintenanceData } from "./templates/maintenance
 
 import { getCustomTemplate, CustomData } from "./templates/customTemplate";
 
+import useSuperAdminStore from "../../../../store/superAdmin/SuperAdminStore";
+
 const EmailManagement: React.FC = () => {
+  const { clients } = useSuperAdminStore();
   const [recipientType, setRecipientType] = useState<"all" | "single" | "multiple">("all");
   const [selectedRecipients, setSelectedRecipients] = useState<string[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
@@ -28,7 +31,7 @@ const EmailManagement: React.FC = () => {
       if (selectedTemplate.id === "welcome") {
         setTemplateData({
           clientName: "{Nombre Cliente}",
-          dashboardUrl: "https://app.estateadmin.com/login",
+          dashboardUrl: "https://estate-admin.com/login",
         } as WelcomeData);
       } else if (selectedTemplate.id === "marketing") {
         setTemplateData({
@@ -71,6 +74,15 @@ const EmailManagement: React.FC = () => {
     return "";
   };
 
+  const getSubject = () => {
+    if (!selectedTemplate) return "";
+    
+    if (selectedTemplate.id === "welcome") return "Bienvenido a EstateAdmin";
+    if (selectedTemplate.id === "marketing") return (templateData as MarketingData).title || "Novedades de EstateAdmin";
+    if (selectedTemplate.id === "maintenance") return "Aviso de Mantenimiento";
+    return "Notificación de EstateAdmin";
+  };
+
   const handleSendEmail = async () => {
     if (!selectedTemplate) {
       toast.error("Por favor selecciona un template");
@@ -83,26 +95,73 @@ const EmailManagement: React.FC = () => {
     }
 
     setSending(true);
-    // Simular envío con los datos dinámicos
-    const emailPayload = {
-      recipients: recipientType === "all" ? "all" : selectedRecipients,
-      templateId: selectedTemplate.id,
-      data: templateData,
-      files: files.map(f => f.name),
-    };
-    
-    console.log("Sending email:", emailPayload);
 
-    setTimeout(() => {
-      setSending(false);
-      toast.success("Correos enviados exitosamente (Simulación)");
+    try {
+      const formData = new FormData();
+      
+      // 1. Recipients
+      let recipientsValue: string | string[] = "all";
+      
+      if (recipientType !== "all") {
+        // Map IDs to Emails
+        recipientsValue = selectedRecipients
+          .map(id => clients.find(c => c.id === id)?.email)
+          .filter((email): email is string => !!email);
+          
+        if (recipientsValue.length === 0) {
+           throw new Error("No se encontraron emails para los destinatarios seleccionados");
+        }
+      }
+
+      formData.append("recipients", JSON.stringify(recipientsValue));
+
+      // 2. Template ID - FORCE CUSTOM to use client-side HTML
+      formData.append("templateId", "custom");
+
+      // 3. Data - Send HTML and Subject
+      const htmlContent = getHtmlContent();
+      const subject = getSubject();
+      
+      formData.append("data", JSON.stringify({
+        htmlContent,
+        subject
+      }));
+
+      // 4. Files
+      files.forEach((file) => {
+        formData.append("files", file);
+      });
+
+      const serverUrl = import.meta.env.VITE_URL_SERVER_MARKETING;
+      if (!serverUrl) {
+        throw new Error("VITE_URL_SERVER_MARKETING is not defined");
+      }
+
+      const response = await fetch(`${serverUrl}/api/emails/send`, {
+        method: "POST",
+        body: formData,
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || "Error al enviar correos");
+      }
+
+      toast.success("Correos enviados exitosamente");
+      
       // Reset form
       setFiles([]);
       setSelectedRecipients([]);
       setRecipientType("all");
       setSelectedTemplate(null);
       setTemplateData({});
-    }, 2000);
+    } catch (error: any) {
+      console.error("Email send error:", error);
+      toast.error(error.message || "Acción fallida");
+    } finally {
+      setSending(false);
+    }
   };
 
   return (

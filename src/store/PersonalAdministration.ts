@@ -12,6 +12,7 @@ import {
   query,
   where,
   orderBy,
+  writeBatch,
 } from "firebase/firestore";
 import {
   ref,
@@ -27,6 +28,9 @@ import { centsToPesos } from "../utils/curreyncy";
 const safeDate = (dateValue: any): Date => {
   if (!dateValue) return new Date();
   if (dateValue instanceof Date) return dateValue;
+  if (dateValue.toDate && typeof dateValue.toDate === "function") {
+    return dateValue.toDate();
+  }
 
   const momentDate = moment(dateValue);
   if (momentDate.isValid()) {
@@ -44,6 +48,9 @@ const safeDate = (dateValue: any): Date => {
 const safeOptionalDate = (dateValue: any): Date | undefined => {
   if (!dateValue) return undefined;
   if (dateValue instanceof Date) return dateValue;
+  if (dateValue.toDate && typeof dateValue.toDate === "function") {
+    return dateValue.toDate();
+  }
 
   const momentDate = moment(dateValue);
   if (momentDate.isValid()) {
@@ -75,6 +82,22 @@ const sanitizeForFirestore = (obj: any): any => {
       continue;
     } else if (value === null) {
       sanitized[key] = null;
+    } else if (Array.isArray(value)) {
+      const sanitizedArray = value
+        .map((item) => {
+          if (item === undefined) return undefined;
+          if (item === null) return null;
+          if (
+            typeof item === "object" &&
+            item !== null &&
+            !(item instanceof Date)
+          ) {
+            return sanitizeForFirestore(item);
+          }
+          return item;
+        })
+        .filter((item) => item !== undefined);
+      sanitized[key] = sanitizedArray;
     } else if (
       typeof value === "object" &&
       value !== null &&
@@ -182,7 +205,13 @@ export interface PerformanceEvaluation {
 export interface ActivityLog {
   id: string;
   employeeId: string;
-  type: "rondin" | "mantenimiento" | "incidente" | "ticket" | "otro";
+  type:
+    | "rondin"
+    | "mantenimiento"
+    | "incidente"
+    | "ticket"
+    | "tarea"
+    | "otro";
   description: string;
   area: string;
   timestamp: Date;
@@ -282,12 +311,16 @@ export interface PersonalAdministrationActions {
   ) => { employee: PersonalProfile; document: PersonalDocument }[];
 
   // Turnos y asistencia
-  createShift: (shift: Omit<WorkShift, "id">) => void;
-  updateShift: (id: string, updates: Partial<WorkShift>) => void;
-  deleteShift: (id: string) => void;
-  checkIn: (shiftId: string) => void;
-  checkOut: (shiftId: string) => void;
-  generateWeeklySchedule: (startDate: Date, employees: string[]) => void;
+  fetchShifts: () => Promise<void>;
+  createShift: (shift: Omit<WorkShift, "id">) => Promise<void>;
+  updateShift: (id: string, updates: Partial<WorkShift>) => Promise<void>;
+  deleteShift: (id: string) => Promise<void>;
+  checkIn: (shiftId: string) => Promise<void>;
+  checkOut: (shiftId: string) => Promise<void>;
+  generateWeeklySchedule: (
+    startDate: Date,
+    employees: string[]
+  ) => Promise<void>;
   getAttendanceReport: (
     employeeId: string,
     startDate: Date,
@@ -321,16 +354,18 @@ export interface PersonalAdministrationActions {
   // Evaluaciones
   createEvaluation: (
     evaluation: Omit<PerformanceEvaluation, "id" | "createdAt">
-  ) => void;
+  ) => Promise<void>;
+  fetchEvaluations: () => Promise<void>;
   updateEvaluation: (
     id: string,
     updates: Partial<PerformanceEvaluation>
-  ) => void;
-  deleteEvaluation: (id: string) => void;
+  ) => Promise<void>;
+  deleteEvaluation: (id: string) => Promise<void>;
   getEmployeeEvaluations: (employeeId: string) => PerformanceEvaluation[];
 
   // Bitácora
-  addActivityLog: (log: Omit<ActivityLog, "id">) => void;
+  fetchActivityLogs: (startDate?: Date, endDate?: Date) => Promise<void>;
+  addActivityLog: (log: Omit<ActivityLog, "id">) => Promise<void>;
   getActivityLogs: (
     employeeId?: string,
     type?: string,
@@ -364,6 +399,18 @@ export interface PersonalAdministrationActions {
     condominiumId: string,
     employeeId: string
   ) => string;
+  getShiftsCollectionPath: (
+    clientId: string,
+    condominiumId: string
+  ) => string;
+  getEvaluationsCollectionPath: (
+    clientId: string,
+    condominiumId: string
+  ) => string;
+  getActivityLogsCollectionPath: (
+    clientId: string,
+    condominiumId: string
+  ) => string;
 }
 
 export type PersonalAdministrationStore = PersonalAdministrationState &
@@ -396,6 +443,24 @@ export const usePersonalAdministrationStore =
       employeeId: string
     ) => {
       return `clients/${clientId}/condominiums/${condominiumId}/employees/${employeeId}`;
+    },
+
+    getShiftsCollectionPath: (clientId: string, condominiumId: string) => {
+      return `clients/${clientId}/condominiums/${condominiumId}/personalShifts`;
+    },
+
+    getEvaluationsCollectionPath: (
+      clientId: string,
+      condominiumId: string
+    ) => {
+      return `clients/${clientId}/condominiums/${condominiumId}/personalEvaluations`;
+    },
+
+    getActivityLogsCollectionPath: (
+      clientId: string,
+      condominiumId: string
+    ) => {
+      return `clients/${clientId}/condominiums/${condominiumId}/personalActivityLogs`;
     },
 
     // Fetch employees from Firestore
@@ -469,6 +534,166 @@ export const usePersonalAdministrationStore =
       } catch (error) {
         console.error("Error fetching employees:", error);
         set({ error: "Error al cargar empleados", loading: false });
+      }
+    },
+
+    fetchShifts: async () => {
+      try {
+        const auth = getAuth();
+        const user = auth.currentUser;
+        if (!user) throw new Error("Usuario no autenticado");
+
+        const tokenResult = await getIdTokenResult(user);
+        const clientId = tokenResult.claims["clientId"] as string;
+        const condominiumId = localStorage.getItem("condominiumId");
+
+        if (!clientId) throw new Error("No se encontró clientId en los claims");
+        if (!condominiumId) throw new Error("Condominio no seleccionado");
+
+        const collectionPath = get().getShiftsCollectionPath(
+          clientId,
+          condominiumId
+        );
+        const shiftsRef = collection(db, collectionPath);
+        const q = query(shiftsRef, orderBy("date", "asc"));
+        const querySnapshot = await getDocs(q);
+
+        const shifts: WorkShift[] = [];
+        querySnapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          shifts.push({
+            id: docSnap.id,
+            employeeId: data.employeeId || "",
+            date: safeFirestoreDate(data.date),
+            startTime: data.startTime || "",
+            endTime: data.endTime || "",
+            type: data.type || "regular",
+            status: data.status || "programado",
+            checkInTime: data.checkInTime
+              ? safeFirestoreDate(data.checkInTime)
+              : undefined,
+            checkOutTime: data.checkOutTime
+              ? safeFirestoreDate(data.checkOutTime)
+              : undefined,
+            notes: data.notes || "",
+          });
+        });
+
+        set({
+          shifts,
+          currentWeekShifts: shifts,
+        });
+      } catch (error) {
+        console.error("Error fetching shifts:", error);
+        set({ error: "Error al cargar turnos" });
+      }
+    },
+
+    fetchEvaluations: async () => {
+      try {
+        const auth = getAuth();
+        const user = auth.currentUser;
+        if (!user) throw new Error("Usuario no autenticado");
+
+        const tokenResult = await getIdTokenResult(user);
+        const clientId = tokenResult.claims["clientId"] as string;
+        const condominiumId = localStorage.getItem("condominiumId");
+
+        if (!clientId) throw new Error("No se encontró clientId en los claims");
+        if (!condominiumId) throw new Error("Condominio no seleccionado");
+
+        const collectionPath = get().getEvaluationsCollectionPath(
+          clientId,
+          condominiumId
+        );
+        const evaluationsRef = collection(db, collectionPath);
+        const q = query(evaluationsRef, orderBy("createdAt", "desc"));
+        const querySnapshot = await getDocs(q);
+
+        const evaluations: PerformanceEvaluation[] = [];
+        querySnapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          evaluations.push({
+            id: docSnap.id,
+            employeeId: data.employeeId || "",
+            evaluatorId: data.evaluatorId || "",
+            period: {
+              startDate: safeFirestoreDate(data.period?.startDate),
+              endDate: safeFirestoreDate(data.period?.endDate),
+            },
+            criteria: {
+              punctuality: data.criteria?.punctuality ?? 0,
+              taskCompletion: data.criteria?.taskCompletion ?? 0,
+              residentRelations: data.criteria?.residentRelations ?? 0,
+              teamwork: data.criteria?.teamwork ?? 0,
+              initiative: data.criteria?.initiative ?? 0,
+            },
+            overallScore: data.overallScore ?? 0,
+            comments: data.comments || "",
+            improvementAreas: Array.isArray(data.improvementAreas)
+              ? data.improvementAreas
+              : [],
+            goals: Array.isArray(data.goals) ? data.goals : [],
+            createdAt: safeFirestoreDate(data.createdAt),
+          });
+        });
+
+        set({ evaluations });
+      } catch (error) {
+        console.error("Error fetching evaluations:", error);
+        set({ error: "Error al cargar evaluaciones" });
+      }
+    },
+
+    fetchActivityLogs: async (startDate, endDate) => {
+      try {
+        const auth = getAuth();
+        const user = auth.currentUser;
+        if (!user) throw new Error("Usuario no autenticado");
+
+        const tokenResult = await getIdTokenResult(user);
+        const clientId = tokenResult.claims["clientId"] as string;
+        const condominiumId = localStorage.getItem("condominiumId");
+
+        if (!clientId) throw new Error("No se encontró clientId en los claims");
+        if (!condominiumId) throw new Error("Condominio no seleccionado");
+
+        const collectionPath = get().getActivityLogsCollectionPath(
+          clientId,
+          condominiumId
+        );
+        const logsRef = collection(db, collectionPath);
+
+        let q = query(logsRef, orderBy("timestamp", "desc"));
+        if (startDate && endDate) {
+          q = query(
+            logsRef,
+            where("timestamp", ">=", startDate),
+            where("timestamp", "<=", endDate),
+            orderBy("timestamp", "desc")
+          );
+        }
+
+        const querySnapshot = await getDocs(q);
+        const activityLogs: ActivityLog[] = [];
+        querySnapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          activityLogs.push({
+            id: docSnap.id,
+            employeeId: data.employeeId || "",
+            type: data.type || "otro",
+            description: data.description || "",
+            area: data.area || "",
+            timestamp: safeFirestoreDate(data.timestamp),
+            evidence: data.evidence,
+            relatedModules: data.relatedModules,
+          });
+        });
+
+        set({ activityLogs });
+      } catch (error) {
+        console.error("Error fetching activity logs:", error);
+        set({ error: "Error al cargar bitácora" });
       }
     },
 
@@ -563,7 +788,7 @@ export const usePersonalAdministrationStore =
           loading: false,
         }));
 
-        get().addActivityLog({
+        void get().addActivityLog({
           employeeId: docRef.id,
           type: "otro",
           description: `Nuevo empleado registrado: ${employeeData.personalInfo.firstName} ${employeeData.personalInfo.lastName}`,
@@ -853,7 +1078,7 @@ export const usePersonalAdministrationStore =
             loading: false,
           }));
 
-          get().addActivityLog({
+          void get().addActivityLog({
             employeeId,
             type: "otro",
             description: `Documento agregado: ${documentData.name}`,
@@ -1014,85 +1239,232 @@ export const usePersonalAdministrationStore =
     },
 
     // Turnos y asistencia
-    createShift: (shiftData) => {
-      const newShift: WorkShift = {
-        ...shiftData,
-        id: uuidv4(),
-        date: safeDate(shiftData.date),
-        checkInTime: shiftData.checkInTime
-          ? safeOptionalDate(shiftData.checkInTime)
-          : undefined,
-        checkOutTime: shiftData.checkOutTime
-          ? safeOptionalDate(shiftData.checkOutTime)
-          : undefined,
-      };
+    createShift: async (shiftData) => {
+      try {
+        const auth = getAuth();
+        const user = auth.currentUser;
+        if (!user) throw new Error("Usuario no autenticado");
 
-      set((state) => ({
-        shifts: [...state.shifts, newShift],
-      }));
+        const tokenResult = await getIdTokenResult(user);
+        const clientId = tokenResult.claims["clientId"] as string;
+        const condominiumId = localStorage.getItem("condominiumId");
 
-      get().addActivityLog({
-        employeeId: shiftData.employeeId,
-        type: "otro",
-        description: `Turno programado: ${shiftData.startTime} - ${shiftData.endTime}`,
-        area: "Recursos Humanos",
-        timestamp: new Date(),
-      });
+        if (!clientId) throw new Error("No se encontró clientId en los claims");
+        if (!condominiumId) throw new Error("Condominio no seleccionado");
+
+        const collectionPath = get().getShiftsCollectionPath(
+          clientId,
+          condominiumId
+        );
+        const shiftsRef = collection(db, collectionPath);
+
+        const newShiftData = {
+          employeeId: shiftData.employeeId,
+          date: safeDate(shiftData.date),
+          startTime: shiftData.startTime,
+          endTime: shiftData.endTime,
+          type: shiftData.type,
+          status: shiftData.status,
+          checkInTime: shiftData.checkInTime
+            ? safeOptionalDate(shiftData.checkInTime)
+            : undefined,
+          checkOutTime: shiftData.checkOutTime
+            ? safeOptionalDate(shiftData.checkOutTime)
+            : undefined,
+          notes: shiftData.notes || "",
+          createdAt: new Date(),
+        };
+
+        const sanitizedShift = sanitizeForFirestore(newShiftData);
+        const docRef = await addDoc(shiftsRef, sanitizedShift);
+
+        const newShift: WorkShift = {
+          ...newShiftData,
+          id: docRef.id,
+        };
+
+        set((state) => ({
+          shifts: [...state.shifts, newShift],
+        }));
+
+        void get().addActivityLog({
+          employeeId: shiftData.employeeId,
+          type: "otro",
+          description: `Turno programado: ${shiftData.startTime} - ${shiftData.endTime}`,
+          area: "Recursos Humanos",
+          timestamp: new Date(),
+        });
+      } catch (error) {
+        console.error("Error creating shift:", error);
+        set({ error: "Error al crear turno" });
+      }
     },
 
-    updateShift: (id, updates) => {
-      set((state) => ({
-        shifts: state.shifts.map((shift) =>
-          shift.id === id ? { ...shift, ...updates } : shift
-        ),
-      }));
+    updateShift: async (id, updates) => {
+      try {
+        const auth = getAuth();
+        const user = auth.currentUser;
+        if (!user) throw new Error("Usuario no autenticado");
+
+        const tokenResult = await getIdTokenResult(user);
+        const clientId = tokenResult.claims["clientId"] as string;
+        const condominiumId = localStorage.getItem("condominiumId");
+
+        if (!clientId) throw new Error("No se encontró clientId en los claims");
+        if (!condominiumId) throw new Error("Condominio no seleccionado");
+
+        const collectionPath = get().getShiftsCollectionPath(
+          clientId,
+          condominiumId
+        );
+        const shiftRef = doc(db, collectionPath, id);
+
+        const updateData: any = {};
+        if (updates.employeeId !== undefined) {
+          updateData.employeeId = updates.employeeId;
+        }
+        if (updates.date !== undefined) {
+          updateData.date = safeDate(updates.date);
+        }
+        if (updates.startTime !== undefined) {
+          updateData.startTime = updates.startTime;
+        }
+        if (updates.endTime !== undefined) {
+          updateData.endTime = updates.endTime;
+        }
+        if (updates.type !== undefined) {
+          updateData.type = updates.type;
+        }
+        if (updates.status !== undefined) {
+          updateData.status = updates.status;
+        }
+        if (updates.checkInTime !== undefined) {
+          updateData.checkInTime = updates.checkInTime
+            ? safeDate(updates.checkInTime)
+            : null;
+        }
+        if (updates.checkOutTime !== undefined) {
+          updateData.checkOutTime = updates.checkOutTime
+            ? safeDate(updates.checkOutTime)
+            : null;
+        }
+        if (updates.notes !== undefined) {
+          updateData.notes = updates.notes;
+        }
+
+        const sanitizedUpdate = sanitizeForFirestore(updateData);
+        await updateDoc(shiftRef, sanitizedUpdate);
+
+        set((state) => ({
+          shifts: state.shifts.map((shift) =>
+            shift.id === id ? { ...shift, ...updateData } : shift
+          ),
+        }));
+      } catch (error) {
+        console.error("Error updating shift:", error);
+        set({ error: "Error al actualizar turno" });
+      }
     },
 
-    deleteShift: (id) => {
-      set((state) => ({
-        shifts: state.shifts.filter((shift) => shift.id !== id),
-      }));
+    deleteShift: async (id) => {
+      try {
+        const auth = getAuth();
+        const user = auth.currentUser;
+        if (!user) throw new Error("Usuario no autenticado");
+
+        const tokenResult = await getIdTokenResult(user);
+        const clientId = tokenResult.claims["clientId"] as string;
+        const condominiumId = localStorage.getItem("condominiumId");
+
+        if (!clientId) throw new Error("No se encontró clientId en los claims");
+        if (!condominiumId) throw new Error("Condominio no seleccionado");
+
+        const collectionPath = get().getShiftsCollectionPath(
+          clientId,
+          condominiumId
+        );
+        const shiftRef = doc(db, collectionPath, id);
+        await deleteDoc(shiftRef);
+
+        set((state) => ({
+          shifts: state.shifts.filter((shift) => shift.id !== id),
+        }));
+      } catch (error) {
+        console.error("Error deleting shift:", error);
+        set({ error: "Error al eliminar turno" });
+      }
     },
 
-    checkIn: (shiftId) => {
-      get().updateShift(shiftId, {
+    checkIn: async (shiftId) => {
+      await get().updateShift(shiftId, {
         checkInTime: new Date(),
         status: "completado",
       });
     },
 
-    checkOut: (shiftId) => {
-      get().updateShift(shiftId, {
+    checkOut: async (shiftId) => {
+      await get().updateShift(shiftId, {
         checkOutTime: new Date(),
       });
     },
 
-    generateWeeklySchedule: (startDate, employeeIds) => {
-      const shifts: WorkShift[] = [];
-      const days = 7;
-      const baseDate = moment(startDate);
+    generateWeeklySchedule: async (startDate, employeeIds) => {
+      try {
+        const auth = getAuth();
+        const user = auth.currentUser;
+        if (!user) throw new Error("Usuario no autenticado");
 
-      for (let day = 0; day < days; day++) {
-        const shiftDate = baseDate.clone().add(day, "days").toDate();
+        const tokenResult = await getIdTokenResult(user);
+        const clientId = tokenResult.claims["clientId"] as string;
+        const condominiumId = localStorage.getItem("condominiumId");
 
-        employeeIds.forEach((employeeId) => {
-          const shift: WorkShift = {
-            id: uuidv4(),
-            employeeId,
-            date: shiftDate,
-            startTime: "08:00",
-            endTime: "16:00",
-            type: "regular",
-            status: "programado",
-          };
-          shifts.push(shift);
-        });
+        if (!clientId) throw new Error("No se encontró clientId en los claims");
+        if (!condominiumId) throw new Error("Condominio no seleccionado");
+
+        const collectionPath = get().getShiftsCollectionPath(
+          clientId,
+          condominiumId
+        );
+        const shiftsRef = collection(db, collectionPath);
+        const batch = writeBatch(db);
+
+        const shifts: WorkShift[] = [];
+        const days = 7;
+        const baseDate = moment(startDate);
+
+        for (let day = 0; day < days; day++) {
+          const shiftDate = baseDate.clone().add(day, "days").toDate();
+
+          employeeIds.forEach((employeeId) => {
+            const newDocRef = doc(shiftsRef);
+            const shiftData = {
+              employeeId,
+              date: shiftDate,
+              startTime: "08:00",
+              endTime: "16:00",
+              type: "regular",
+              status: "programado",
+              createdAt: new Date(),
+            };
+
+            batch.set(newDocRef, sanitizeForFirestore(shiftData));
+            shifts.push({
+              id: newDocRef.id,
+              ...shiftData,
+            });
+          });
+        }
+
+        await batch.commit();
+
+        set((state) => ({
+          shifts: [...state.shifts, ...shifts],
+          currentWeekShifts: shifts,
+        }));
+      } catch (error) {
+        console.error("Error generating weekly schedule:", error);
+        set({ error: "Error al generar turnos" });
       }
-
-      set((state) => ({
-        shifts: [...state.shifts, ...shifts],
-        currentWeekShifts: shifts,
-      }));
     },
 
     getAttendanceReport: (employeeId, startDate, endDate) => {
@@ -1111,53 +1483,168 @@ export const usePersonalAdministrationStore =
     },
 
     // Evaluaciones
-    createEvaluation: (evaluationData) => {
-      const overallScore =
-        Object.values(evaluationData.criteria).reduce(
-          (sum, score) => sum + score,
-          0
-        ) / 5;
+    createEvaluation: async (evaluationData) => {
+      try {
+        const auth = getAuth();
+        const user = auth.currentUser;
+        if (!user) throw new Error("Usuario no autenticado");
 
-      const newEvaluation: PerformanceEvaluation = {
-        ...evaluationData,
-        id: uuidv4(),
-        overallScore,
-        period: {
-          startDate: safeDate(evaluationData.period.startDate),
-          endDate: safeDate(evaluationData.period.endDate),
-        },
-        createdAt: new Date(),
-      };
+        const tokenResult = await getIdTokenResult(user);
+        const clientId = tokenResult.claims["clientId"] as string;
+        const condominiumId = localStorage.getItem("condominiumId");
 
-      set((state) => ({
-        evaluations: [...state.evaluations, newEvaluation],
-      }));
+        if (!clientId) throw new Error("No se encontró clientId en los claims");
+        if (!condominiumId) throw new Error("Condominio no seleccionado");
 
-      get().addActivityLog({
-        employeeId: evaluationData.employeeId,
-        type: "otro",
-        description: `Nueva evaluación de desempeño registrada (Puntuación: ${overallScore.toFixed(
-          1
-        )}/5)`,
-        area: "Recursos Humanos",
-        timestamp: new Date(),
-      });
+        const overallScore =
+          Object.values(evaluationData.criteria).reduce(
+            (sum, score) => sum + score,
+            0
+          ) / 5;
+
+        const newEvaluationData = {
+          employeeId: evaluationData.employeeId,
+          evaluatorId: evaluationData.evaluatorId,
+          period: {
+            startDate: safeDate(evaluationData.period.startDate),
+            endDate: safeDate(evaluationData.period.endDate),
+          },
+          criteria: evaluationData.criteria,
+          overallScore,
+          comments: evaluationData.comments || "",
+          improvementAreas: evaluationData.improvementAreas || [],
+          goals: evaluationData.goals || [],
+          createdAt: new Date(),
+        };
+
+        const collectionPath = get().getEvaluationsCollectionPath(
+          clientId,
+          condominiumId
+        );
+        const evaluationsRef = collection(db, collectionPath);
+        const sanitizedEvaluation = sanitizeForFirestore(newEvaluationData);
+        const docRef = await addDoc(evaluationsRef, sanitizedEvaluation);
+
+        const newEvaluation: PerformanceEvaluation = {
+          id: docRef.id,
+          ...newEvaluationData,
+        };
+
+        set((state) => ({
+          evaluations: [...state.evaluations, newEvaluation],
+        }));
+
+        void get().addActivityLog({
+          employeeId: evaluationData.employeeId,
+          type: "otro",
+          description: `Nueva evaluación de desempeño registrada (Puntuación: ${overallScore.toFixed(
+            1
+          )}/5)`,
+          area: "Recursos Humanos",
+          timestamp: new Date(),
+        });
+      } catch (error) {
+        console.error("Error creating evaluation:", error);
+        set({ error: "Error al crear evaluación" });
+      }
     },
 
-    updateEvaluation: (id, updates) => {
-      set((state) => ({
-        evaluations: state.evaluations.map((evaluation) =>
-          evaluation.id === id ? { ...evaluation, ...updates } : evaluation
-        ),
-      }));
+    updateEvaluation: async (id, updates) => {
+      try {
+        const auth = getAuth();
+        const user = auth.currentUser;
+        if (!user) throw new Error("Usuario no autenticado");
+
+        const tokenResult = await getIdTokenResult(user);
+        const clientId = tokenResult.claims["clientId"] as string;
+        const condominiumId = localStorage.getItem("condominiumId");
+
+        if (!clientId) throw new Error("No se encontró clientId en los claims");
+        if (!condominiumId) throw new Error("Condominio no seleccionado");
+
+        const collectionPath = get().getEvaluationsCollectionPath(
+          clientId,
+          condominiumId
+        );
+        const evaluationRef = doc(db, collectionPath, id);
+
+        const updateData: any = {};
+        if (updates.employeeId !== undefined) {
+          updateData.employeeId = updates.employeeId;
+        }
+        if (updates.evaluatorId !== undefined) {
+          updateData.evaluatorId = updates.evaluatorId;
+        }
+        if (updates.period) {
+          updateData.period = {
+            startDate: safeDate(updates.period.startDate),
+            endDate: safeDate(updates.period.endDate),
+          };
+        }
+        if (updates.criteria) {
+          updateData.criteria = updates.criteria;
+          updateData.overallScore =
+            Object.values(updates.criteria).reduce(
+              (sum, score) => sum + score,
+              0
+            ) / 5;
+        }
+        if (updates.comments !== undefined) {
+          updateData.comments = updates.comments;
+        }
+        if (updates.improvementAreas !== undefined) {
+          updateData.improvementAreas = updates.improvementAreas;
+        }
+        if (updates.goals !== undefined) {
+          updateData.goals = updates.goals;
+        }
+        if (updates.overallScore !== undefined) {
+          updateData.overallScore = updates.overallScore;
+        }
+
+        const sanitizedUpdate = sanitizeForFirestore(updateData);
+        await updateDoc(evaluationRef, sanitizedUpdate);
+
+        set((state) => ({
+          evaluations: state.evaluations.map((evaluation) =>
+            evaluation.id === id ? { ...evaluation, ...updateData } : evaluation
+          ),
+        }));
+      } catch (error) {
+        console.error("Error updating evaluation:", error);
+        set({ error: "Error al actualizar evaluación" });
+      }
     },
 
-    deleteEvaluation: (id) => {
-      set((state) => ({
-        evaluations: state.evaluations.filter(
-          (evaluation) => evaluation.id !== id
-        ),
-      }));
+    deleteEvaluation: async (id) => {
+      try {
+        const auth = getAuth();
+        const user = auth.currentUser;
+        if (!user) throw new Error("Usuario no autenticado");
+
+        const tokenResult = await getIdTokenResult(user);
+        const clientId = tokenResult.claims["clientId"] as string;
+        const condominiumId = localStorage.getItem("condominiumId");
+
+        if (!clientId) throw new Error("No se encontró clientId en los claims");
+        if (!condominiumId) throw new Error("Condominio no seleccionado");
+
+        const collectionPath = get().getEvaluationsCollectionPath(
+          clientId,
+          condominiumId
+        );
+        const evaluationRef = doc(db, collectionPath, id);
+        await deleteDoc(evaluationRef);
+
+        set((state) => ({
+          evaluations: state.evaluations.filter(
+            (evaluation) => evaluation.id !== id
+          ),
+        }));
+      } catch (error) {
+        console.error("Error deleting evaluation:", error);
+        set({ error: "Error al eliminar evaluación" });
+      }
     },
 
     getEmployeeEvaluations: (employeeId) => {
@@ -1168,22 +1655,53 @@ export const usePersonalAdministrationStore =
     },
 
     // Bitácora
-    addActivityLog: (logData) => {
-      const newLog: ActivityLog = {
-        ...logData,
-        id: uuidv4(),
-      };
+    addActivityLog: async (logData) => {
+      try {
+        const auth = getAuth();
+        const user = auth.currentUser;
+        if (!user) throw new Error("Usuario no autenticado");
 
-      set((state) => ({
-        activityLogs: [...state.activityLogs, newLog],
-      }));
+        const tokenResult = await getIdTokenResult(user);
+        const clientId = tokenResult.claims["clientId"] as string;
+        const condominiumId = localStorage.getItem("condominiumId");
+
+        if (!clientId) throw new Error("No se encontró clientId en los claims");
+        if (!condominiumId) throw new Error("Condominio no seleccionado");
+
+        const collectionPath = get().getActivityLogsCollectionPath(
+          clientId,
+          condominiumId
+        );
+        const logsRef = collection(db, collectionPath);
+
+        const newLogData = {
+          ...logData,
+          timestamp: safeDate(logData.timestamp),
+        };
+
+        const sanitizedLog = sanitizeForFirestore(newLogData);
+        const docRef = await addDoc(logsRef, sanitizedLog);
+
+        const newLog: ActivityLog = {
+          id: docRef.id,
+          ...newLogData,
+        };
+
+        set((state) => ({
+          activityLogs: [...state.activityLogs, newLog],
+        }));
+      } catch (error) {
+        console.error("Error adding activity log:", error);
+      }
     },
 
     getActivityLogs: (employeeId, type, startDate, endDate) => {
       const { activityLogs } = get();
       return activityLogs.filter((log) => {
         const matchesEmployee = !employeeId || log.employeeId === employeeId;
-        const matchesType = !type || log.type === type;
+        const normalizedType = type === "tarea" ? "ticket" : type;
+        const normalizedLogType = log.type === "tarea" ? "ticket" : log.type;
+        const matchesType = !type || normalizedLogType === normalizedType;
 
         let matchesStartDate = true;
         let matchesEndDate = true;
@@ -1293,6 +1811,7 @@ export const usePersonalAdministrationStore =
 
           return {
             employee,
+            evaluations: employeeEvaluations,
             averageScore,
             totalEvaluations: employeeEvaluations.length,
           };
@@ -1572,7 +2091,7 @@ export const usePersonalAdministrationStore =
 
         // Hacer check-in en el primer turno programado
         const shift = todayShifts[0];
-        get().updateShift(shift.id, {
+        await get().updateShift(shift.id, {
           checkInTime: new Date(),
           status: "completado",
         });
@@ -1593,7 +2112,7 @@ export const usePersonalAdministrationStore =
         });
 
         // Registrar en bitácora general
-        get().addActivityLog({
+        void get().addActivityLog({
           employeeId: employee.id,
           type: "otro",
           description: `Check-in realizado vía QR - ${employee.personalInfo.firstName} ${employee.personalInfo.lastName}`,
@@ -1678,7 +2197,7 @@ export const usePersonalAdministrationStore =
 
         // Hacer check-out en el primer turno activo
         const shift = activeShifts[0];
-        get().updateShift(shift.id, {
+        await get().updateShift(shift.id, {
           checkOutTime: new Date(),
         });
 
@@ -1698,7 +2217,7 @@ export const usePersonalAdministrationStore =
         });
 
         // Registrar en bitácora general
-        get().addActivityLog({
+        void get().addActivityLog({
           employeeId: employee.id,
           type: "otro",
           description: `Check-out realizado vía QR - ${employee.personalInfo.firstName} ${employee.personalInfo.lastName}`,

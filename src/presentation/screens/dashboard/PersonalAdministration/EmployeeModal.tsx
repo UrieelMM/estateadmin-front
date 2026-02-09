@@ -20,6 +20,7 @@ import {
 } from "firebase/firestore";
 import { getAuth, getIdTokenResult } from "firebase/auth";
 import toast from "react-hot-toast";
+import ActionModal from "../../../components/shared/modals/ActionModal";
 
 interface MaintenanceAppUser {
   id: string;
@@ -106,6 +107,60 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
   const [maintenanceUsers, setMaintenanceUsers] = useState<MaintenanceAppUser[]>([]);
   const [selectedMaintenanceUser, setSelectedMaintenanceUser] = useState<string>("");
   const [loadingUsers, setLoadingUsers] = useState(false);
+  const [actionModal, setActionModal] = useState<{
+    open: boolean;
+    title: string;
+    message: string;
+    variant: "info" | "success" | "warning" | "danger";
+    confirmLabel: string;
+    cancelLabel: string;
+    showCancel: boolean;
+    onConfirm?: () => void;
+  }>({
+    open: false,
+    title: "",
+    message: "",
+    variant: "info",
+    confirmLabel: "Aceptar",
+    cancelLabel: "Cancelar",
+    showCancel: false,
+  });
+
+  const openAlertModal = (
+    title: string,
+    message: string,
+    variant: "info" | "success" | "warning" | "danger" = "info",
+    confirmLabel = "Aceptar"
+  ) => {
+    setActionModal({
+      open: true,
+      title,
+      message,
+      variant,
+      confirmLabel,
+      cancelLabel: "Cancelar",
+      showCancel: false,
+    });
+  };
+
+  const openConfirmModal = (
+    title: string,
+    message: string,
+    onConfirm: () => void,
+    variant: "info" | "success" | "warning" | "danger" = "danger",
+    confirmLabel = "Confirmar"
+  ) => {
+    setActionModal({
+      open: true,
+      title,
+      message,
+      variant,
+      confirmLabel,
+      cancelLabel: "Cancelar",
+      showCancel: true,
+      onConfirm,
+    });
+  };
 
   // Cargar usuarios de App de Mantenimiento al abrir el modal en modo crear
   useEffect(() => {
@@ -256,13 +311,21 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
     if (file) {
       // Validar tipo de archivo
       if (!file.type.startsWith("image/")) {
-        alert("Por favor selecciona un archivo de imagen válido");
+        openAlertModal(
+          "Archivo inválido",
+          "Por favor selecciona un archivo de imagen válido.",
+          "warning"
+        );
         return;
       }
 
       // Validar tamaño (máximo 5MB)
       if (file.size > 5 * 1024 * 1024) {
-        alert("La imagen no puede ser mayor a 5MB");
+        openAlertModal(
+          "Imagen demasiado grande",
+          "La imagen no puede ser mayor a 5MB.",
+          "warning"
+        );
         return;
       }
 
@@ -283,7 +346,11 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
     if (file) {
       // Validar tamaño (máximo 10MB)
       if (file.size > 10 * 1024 * 1024) {
-        alert("El archivo no puede ser mayor a 10MB");
+        openAlertModal(
+          "Archivo demasiado grande",
+          "El archivo no puede ser mayor a 10MB.",
+          "warning"
+        );
         return;
       }
 
@@ -298,19 +365,28 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setUploading(true);
 
     try {
       // Validar que las fechas requeridas no estén vacías
       if (!formData.personalInfo.birthDate) {
-        alert("La fecha de nacimiento es obligatoria");
+        openAlertModal(
+          "Dato obligatorio",
+          "La fecha de nacimiento es obligatoria.",
+          "warning"
+        );
         return;
       }
 
       if (!formData.employmentInfo.startDate) {
-        alert("La fecha de ingreso es obligatoria");
+        openAlertModal(
+          "Dato obligatorio",
+          "La fecha de ingreso es obligatoria.",
+          "warning"
+        );
         return;
       }
+
+      setUploading(true);
 
       const employeeData: any = {
         personalInfo: {
@@ -342,7 +418,11 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
       onClose();
     } catch (error) {
       console.error("Error al guardar empleado:", error);
-      alert("Error al guardar el empleado");
+      openAlertModal(
+        "Error",
+        "Ocurrió un error al guardar el empleado.",
+        "danger"
+      );
     } finally {
       setUploading(false);
     }
@@ -376,7 +456,11 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
         if (fileInput) fileInput.value = "";
       } catch (error) {
         console.error("Error al agregar documento:", error);
-        alert("Error al agregar el documento");
+        openAlertModal(
+          "Error",
+          "Ocurrió un error al agregar el documento.",
+          "danger"
+        );
       } finally {
         setUploading(false);
       }
@@ -384,12 +468,14 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
   };
 
   const handleDeleteDocument = (documentId: string) => {
-    if (
-      employee &&
-      window.confirm("¿Estás seguro de que deseas eliminar este documento?")
-    ) {
-      deleteDocument(employee.id, documentId);
-    }
+    if (!employee) return;
+    openConfirmModal(
+      "Eliminar documento",
+      "¿Estás seguro de que deseas eliminar este documento? Esta acción no se puede deshacer.",
+      () => deleteDocument(employee.id, documentId),
+      "danger",
+      "Eliminar"
+    );
   };
 
   // Función para generar número de empleado automáticamente
@@ -430,25 +516,26 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <AnimatePresence>
-      <div className="fixed inset-0 z-50 overflow-y-auto">
-        <div className="flex min-h-screen items-center justify-center p-4">
-          {/* Backdrop */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black bg-opacity-50"
-            onClick={onClose}
-          />
+    <>
+      <AnimatePresence>
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex min-h-screen items-center justify-center p-4">
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black bg-opacity-50"
+              onClick={onClose}
+            />
 
-          {/* Modal */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            className="relative bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden"
-          >
+            {/* Modal */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="relative bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden"
+            >
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
               <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
@@ -1253,10 +1340,28 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
                 </button>
               </div>
             )}
-          </motion.div>
+            </motion.div>
+          </div>
         </div>
-      </div>
-    </AnimatePresence>
+      </AnimatePresence>
+      <ActionModal
+        open={actionModal.open}
+        setOpen={(open) =>
+          setActionModal((prev) => ({
+            ...prev,
+            open,
+            onConfirm: open ? prev.onConfirm : undefined,
+          }))
+        }
+        title={actionModal.title}
+        message={actionModal.message}
+        variant={actionModal.variant}
+        confirmLabel={actionModal.confirmLabel}
+        cancelLabel={actionModal.cancelLabel}
+        showCancel={actionModal.showCancel}
+        onConfirm={actionModal.onConfirm}
+      />
+    </>
   );
 };
 

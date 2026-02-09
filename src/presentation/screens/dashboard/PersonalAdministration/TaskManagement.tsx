@@ -125,10 +125,13 @@ const TaskManagement: React.FC = () => {
   const totalTickets = tickets.length;
   const assignedTickets = tickets.filter((ticket) => ticket.assignedTo).length;
   const unassignedTickets = totalTickets - assignedTickets;
+  const statsWithTickets = employeeStats.filter(
+    (stat) => stat.totalTickets > 0
+  );
   const avgCompletionRate =
-    employeeStats.length > 0
-      ? employeeStats.reduce((sum, stat) => sum + stat.completionRate, 0) /
-        employeeStats.length
+    statsWithTickets.length > 0
+      ? statsWithTickets.reduce((sum, stat) => sum + stat.completionRate, 0) /
+        statsWithTickets.length
       : 0;
 
   const getStatusColor = (status: "abierto" | "en_progreso" | "cerrado") => {
@@ -434,7 +437,11 @@ const TaskManagement: React.FC = () => {
           <p className="text-gray-600 dark:text-gray-400 mb-6">
             {searchTerm || selectedEmployee
               ? "No se encontraron empleados con los filtros aplicados."
-              : "No hay empleados con tickets asignados."}
+              : employees.length === 0
+              ? "No hay empleados registrados."
+              : tickets.length === 0
+              ? "No hay tickets registrados."
+              : "No hay datos de tickets para mostrar."}
           </p>
           <button
             onClick={handleCreateTicket}

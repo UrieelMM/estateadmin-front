@@ -71,8 +71,10 @@ const PersonalDashboard: React.FC = () => {
     employees,
     shifts,
     getExpiringDocuments,
-    getFilteredEmployees,
     fetchEmployees,
+    fetchShifts,
+    fetchEvaluations,
+    fetchActivityLogs,
   } = usePersonalAdministrationStore();
   const { tickets } = useTicketsStore();
 
@@ -87,10 +89,12 @@ const PersonalDashboard: React.FC = () => {
   useEffect(() => {
     // Cargar empleados desde Firestore
     fetchEmployees();
-  }, [fetchEmployees]);
+    fetchShifts();
+    fetchEvaluations();
+    fetchActivityLogs();
+  }, [fetchEmployees, fetchShifts, fetchEvaluations, fetchActivityLogs]);
 
   useEffect(() => {
-    const filteredEmployees = getFilteredEmployees();
     const activeEmployees = employees.filter(
       (emp) => emp.employmentInfo.status === "activo"
     );
@@ -102,13 +106,13 @@ const PersonalDashboard: React.FC = () => {
     const expiringDocs = getExpiringDocuments(30);
 
     setStats({
-      totalEmployees: filteredEmployees.length,
+      totalEmployees: employees.length,
       activeEmployees: activeEmployees.length,
       openTickets: openTickets.length,
       todayShifts: todayShifts.length,
       expiringDocuments: expiringDocs.length,
     });
-  }, [employees, tickets, shifts, getFilteredEmployees, getExpiringDocuments]);
+  }, [employees, tickets, shifts, getExpiringDocuments]);
 
   const ActiveComponent =
     tabs.find((tab) => tab.id === activeTab)?.component || EmployeeList;

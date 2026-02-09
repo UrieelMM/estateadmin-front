@@ -19,6 +19,7 @@ import {
   PerformanceEvaluation,
 } from "../../../../store/PersonalAdministration";
 import { generatePerformanceEvaluationPDF } from "./PerformanceEvaluationPDF";
+import ActionModal from "../../../components/shared/modals/ActionModal";
 
 interface EvaluationModalProps {
   isOpen: boolean;
@@ -574,6 +575,43 @@ const PerformanceEvaluations: React.FC = () => {
     "create"
   );
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [actionModal, setActionModal] = useState<{
+    open: boolean;
+    title: string;
+    message: string;
+    variant: "info" | "success" | "warning" | "danger";
+    confirmLabel: string;
+    cancelLabel: string;
+    showCancel: boolean;
+    onConfirm?: () => void;
+  }>({
+    open: false,
+    title: "",
+    message: "",
+    variant: "info",
+    confirmLabel: "Aceptar",
+    cancelLabel: "Cancelar",
+    showCancel: false,
+  });
+
+  const openConfirmModal = (
+    title: string,
+    message: string,
+    onConfirm: () => void,
+    variant: "info" | "success" | "warning" | "danger" = "danger",
+    confirmLabel = "Eliminar"
+  ) => {
+    setActionModal({
+      open: true,
+      title,
+      message,
+      variant,
+      confirmLabel,
+      cancelLabel: "Cancelar",
+      showCancel: true,
+      onConfirm,
+    });
+  };
 
   const filteredEvaluations = evaluations.filter((evaluation) => {
     const employee = employees.find((emp) => emp.id === evaluation.employeeId);
@@ -652,11 +690,13 @@ const PerformanceEvaluations: React.FC = () => {
   };
 
   const handleDeleteEvaluation = (evaluationId: string) => {
-    if (
-      window.confirm("¿Estás seguro de que deseas eliminar esta evaluación?")
-    ) {
-      deleteEvaluation(evaluationId);
-    }
+    openConfirmModal(
+      "Eliminar evaluación",
+      "¿Estás seguro de que deseas eliminar esta evaluación? Esta acción no se puede deshacer.",
+      () => deleteEvaluation(evaluationId),
+      "danger",
+      "Eliminar"
+    );
   };
 
   return (
@@ -908,6 +948,23 @@ const PerformanceEvaluations: React.FC = () => {
         onClose={() => setIsModalOpen(false)}
         evaluation={selectedEvaluation}
         mode={modalMode}
+      />
+      <ActionModal
+        open={actionModal.open}
+        setOpen={(open) =>
+          setActionModal((prev) => ({
+            ...prev,
+            open,
+            onConfirm: open ? prev.onConfirm : undefined,
+          }))
+        }
+        title={actionModal.title}
+        message={actionModal.message}
+        variant={actionModal.variant}
+        confirmLabel={actionModal.confirmLabel}
+        cancelLabel={actionModal.cancelLabel}
+        showCancel={actionModal.showCancel}
+        onConfirm={actionModal.onConfirm}
       />
     </div>
   );
