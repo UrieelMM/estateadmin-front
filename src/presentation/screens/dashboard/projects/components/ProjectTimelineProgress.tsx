@@ -57,6 +57,12 @@ const ProjectTimelineProgress: React.FC<ProjectTimelineProgressProps> = ({
 
   const timelineEvents = useMemo(() => {
     const events: TimelineEvent[] = [];
+    const totalSpent = expenses.reduce(
+      (sum, expense) => sum + expense.amount,
+      0
+    );
+    const budgetUsedPercent =
+      project.initialBudget > 0 ? (totalSpent / project.initialBudget) * 100 : 0;
 
     // 1. Evento de creación del proyecto
     events.push({
@@ -69,7 +75,7 @@ const ProjectTimelineProgress: React.FC<ProjectTimelineProgressProps> = ({
         "es-MX",
         { minimumFractionDigits: 2 }
       )}`,
-      date: project.createdAt,
+      date: project.startDate || project.createdAt,
       amount: project.initialBudget,
       icon: PlayIcon,
       color: "blue",
@@ -139,49 +145,45 @@ const ProjectTimelineProgress: React.FC<ProjectTimelineProgressProps> = ({
     });
 
     // 5. Hitos de presupuesto automáticos
-    const totalSpent = expenses.reduce(
-      (sum, expense) => sum + expense.amount,
-      0
-    );
-    const budgetUsedPercent = (totalSpent / project.initialBudget) * 100;
+    if (project.initialBudget > 0) {
+      const budgetMilestones = [25, 50, 75, 90, 100];
+      budgetMilestones.forEach((milestone) => {
+        if (budgetUsedPercent >= milestone) {
+          // Encontrar el gasto que hizo que se alcanzara este hito
+          let runningTotal = 0;
+          let milestoneDate = project.createdAt;
 
-    const budgetMilestones = [25, 50, 75, 90, 100];
-    budgetMilestones.forEach((milestone) => {
-      if (budgetUsedPercent >= milestone) {
-        // Encontrar el gasto que hizo que se alcanzara este hito
-        let runningTotal = 0;
-        let milestoneDate = project.createdAt;
+          for (const expense of [...expenses].sort(
+            (a, b) =>
+              new Date(a.expenseDate).getTime() -
+              new Date(b.expenseDate).getTime()
+          )) {
+            runningTotal += expense.amount;
+            const percentAtExpense = (runningTotal / project.initialBudget) * 100;
 
-        for (const expense of [...expenses].sort(
-          (a, b) =>
-            new Date(a.expenseDate).getTime() -
-            new Date(b.expenseDate).getTime()
-        )) {
-          runningTotal += expense.amount;
-          const percentAtExpense = (runningTotal / project.initialBudget) * 100;
-
-          if (percentAtExpense >= milestone) {
-            milestoneDate = expense.registerDate;
-            break;
+            if (percentAtExpense >= milestone) {
+              milestoneDate = expense.registerDate;
+              break;
+            }
           }
-        }
 
-        events.push({
-          id: `budget-milestone-${milestone}`,
-          type: "budget_milestone",
-          title: `${milestone}% del Presupuesto Utilizado`,
-          description: `Se ha utilizado el ${milestone}% del presupuesto inicial ($${(
-            project.initialBudget *
-            (milestone / 100)
-          ).toLocaleString("es-MX", { minimumFractionDigits: 2 })})`,
-          date: milestoneDate,
-          amount: project.initialBudget * (milestone / 100),
-          icon: milestone >= 90 ? ExclamationTriangleIcon : BanknotesIcon,
-          color: milestone >= 90 ? "red" : milestone >= 75 ? "yellow" : "green",
-          importance: milestone >= 75 ? "high" : "medium",
-        });
-      }
-    });
+          events.push({
+            id: `budget-milestone-${milestone}`,
+            type: "budget_milestone",
+            title: `${milestone}% del Presupuesto Utilizado`,
+            description: `Se ha utilizado el ${milestone}% del presupuesto inicial ($${(
+              project.initialBudget *
+              (milestone / 100)
+            ).toLocaleString("es-MX", { minimumFractionDigits: 2 })})`,
+            date: milestoneDate,
+            amount: project.initialBudget * (milestone / 100),
+            icon: milestone >= 90 ? ExclamationTriangleIcon : BanknotesIcon,
+            color: milestone >= 90 ? "red" : milestone >= 75 ? "yellow" : "green",
+            importance: milestone >= 75 ? "high" : "medium",
+          });
+        }
+      });
+    }
 
     // 6. Evento de finalización/cancelación del proyecto
     if (project.status === "completed" && project.completedAt) {
@@ -274,8 +276,8 @@ const ProjectTimelineProgress: React.FC<ProjectTimelineProgressProps> = ({
             importantes
           </span>
         </div>
-        <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-600">
-          <div
+                <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-600">
+                  <div
             className={`h-2.5 rounded-full transition-all duration-300 ${
               project.status === "completed"
                 ? "bg-green-500"
@@ -283,31 +285,26 @@ const ProjectTimelineProgress: React.FC<ProjectTimelineProgressProps> = ({
                 ? "bg-red-500"
                 : "bg-blue-500"
             }`}
-            style={{
-              width: `${Math.min(
-                100,
-                Math.max(
-                  5,
-                  project.status === "completed"
-                    ? 100
-                    : project.status === "cancelled"
-                    ? (expenses.reduce(
-                        (sum, expense) => sum + expense.amount,
-                        0
-                      ) /
-                        project.initialBudget) *
-                      100
-                    : (expenses.reduce(
-                        (sum, expense) => sum + expense.amount,
-                        0
-                      ) /
-                        project.initialBudget) *
-                      100
-                )
-              )}%`,
-            }}
-          />
-        </div>
+                    style={{
+                      width: `${Math.min(
+                        100,
+                        Math.max(
+                          5,
+                          project.status === "completed"
+                            ? 100
+                            : project.initialBudget > 0
+                            ? (expenses.reduce(
+                                (sum, expense) => sum + expense.amount,
+                                0
+                              ) /
+                                project.initialBudget) *
+                              100
+                            : 0
+                        )
+                      )}%`,
+                    }}
+                  />
+                </div>
         <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
           <span>Inicio</span>
           <span>
@@ -315,13 +312,20 @@ const ProjectTimelineProgress: React.FC<ProjectTimelineProgressProps> = ({
               ? "Finalizado"
               : project.status === "cancelled"
               ? "Cancelado"
-              : `${(
-                  (expenses.reduce((sum, expense) => sum + expense.amount, 0) /
-                    project.initialBudget) *
-                  100
-                ).toFixed(1)}% completado`}
-          </span>
-        </div>
+                    : `${
+                        project.initialBudget > 0
+                          ? (
+                              (expenses.reduce(
+                                (sum, expense) => sum + expense.amount,
+                                0
+                              ) /
+                                project.initialBudget) *
+                              100
+                            ).toFixed(1)
+                          : "0.0"
+                      }% completado`}
+                </span>
+              </div>
       </div>
 
       {(() => {

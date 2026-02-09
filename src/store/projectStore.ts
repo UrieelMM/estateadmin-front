@@ -190,12 +190,18 @@ interface ProjectState {
   /**
    * fetchProjectExpenses: Carga todos los gastos asociados a un proyecto.
    */
-  fetchProjectExpenses: (projectId: string) => Promise<void>;
+  fetchProjectExpenses: (
+    projectId: string,
+    options?: { silent?: boolean }
+  ) => Promise<void>;
 
   /**
    * fetchProjectQuotes: Carga todas las cotizaciones asociadas a un proyecto.
    */
-  fetchProjectQuotes: (projectId: string) => Promise<void>;
+  fetchProjectQuotes: (
+    projectId: string,
+    options?: { silent?: boolean }
+  ) => Promise<void>;
 
   /**
    * addProject: Crea un nuevo proyecto.
@@ -328,15 +334,36 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
       const q = query(projectsRef, orderBy("createdAt", "desc"));
       const snap = await getDocs(q);
 
+      // Cargar gastos una sola vez para evitar consultas N+1 por proyecto
+      const expensesRef = collection(
+        db,
+        `clients/${clientId}/condominiums/${condominiumId}/expenses`
+      );
+      const expensesSnap = await getDocs(expensesRef);
+      const totalExpensesByProject: Record<string, number> = {};
+      expensesSnap.docs.forEach((expenseDoc) => {
+        const expenseData = expenseDoc.data();
+        const projectId = expenseData.projectId;
+        const amount =
+          typeof expenseData.amount === "number" ? expenseData.amount : 0;
+        if (typeof projectId !== "string" || !projectId) return;
+        totalExpensesByProject[projectId] =
+          (totalExpensesByProject[projectId] || 0) + amount;
+      });
+
       const projects: Project[] = [];
 
       for (const docSnap of snap.docs) {
         const data = docSnap.data();
+        const initialBudgetCents =
+          typeof data.initialBudget === "number" ? data.initialBudget : 0;
+        const projectExpensesCents = totalExpensesByProject[docSnap.id] || 0;
+
         const project: Project = {
           id: docSnap.id,
           name: data.name || "",
           description: data.description || "",
-          initialBudget: centsToPesos(data.initialBudget),
+          initialBudget: centsToPesos(initialBudgetCents),
           startDate: data.startDate || "",
           endDate: data.endDate || "",
           status: (data.status as ProjectStatus) || ProjectStatus.IN_PROGRESS,
@@ -345,14 +372,7 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
           completedAt: data.completedAt || undefined,
         };
 
-        // Calcular presupuesto actual
-        const currentBudgetCents = await calculateCurrentBudget(
-          db,
-          clientId,
-          condominiumId,
-          docSnap.id,
-          data.initialBudget
-        );
+        const currentBudgetCents = initialBudgetCents - projectExpensesCents;
         project.currentBudget = centsToPesos(currentBudgetCents);
 
         projects.push(project);
@@ -369,7 +389,15 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
   },
 
   fetchProjectById: async (projectId: string) => {
-    set({ loading: true, error: null });
+    const { currentProject } = get();
+    const isSameProject = currentProject?.id === projectId;
+    set({
+      loading: true,
+      error: null,
+      currentProject: isSameProject ? currentProject : null,
+      projectExpenses: isSameProject ? get().projectExpenses : [],
+      projectQuotes: isSameProject ? get().projectQuotes : [],
+    });
     try {
       const auth = getAuth();
       const user = auth.currentUser;
@@ -416,13 +444,15 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
       );
       project.currentBudget = centsToPesos(currentBudgetCents);
 
-      set({ currentProject: project, loading: false, error: null });
+      set({ currentProject: project, error: null });
 
-      // Cargar los gastos asociados a este proyecto
-      await get().fetchProjectExpenses(projectId);
+      // Cargar datos relacionados en modo silencioso para mantener la transición consistente
+      await Promise.all([
+        get().fetchProjectExpenses(projectId, { silent: true }),
+        get().fetchProjectQuotes(projectId, { silent: true }),
+      ]);
 
-      // Cargar las cotizaciones asociadas a este proyecto
-      await get().fetchProjectQuotes(projectId);
+      set({ loading: false });
     } catch (error: any) {
       console.error("Error al cargar proyecto:", error);
       set({
@@ -432,8 +462,16 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
     }
   },
 
-  fetchProjectExpenses: async (projectId: string) => {
-    set({ loading: true, error: null });
+  fetchProjectExpenses: async (
+    projectId: string,
+    options?: { silent?: boolean }
+  ) => {
+    const silent = options?.silent ?? false;
+    if (silent) {
+      set({ error: null });
+    } else {
+      set({ loading: true, error: null });
+    }
     try {
       const auth = getAuth();
       const user = auth.currentUser;
@@ -475,18 +513,34 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
         };
       });
 
-      set({ projectExpenses: expenses, loading: false, error: null });
+      if (silent) {
+        set({ projectExpenses: expenses, error: null });
+      } else {
+        set({ projectExpenses: expenses, loading: false, error: null });
+      }
     } catch (error: any) {
       console.error("Error al cargar gastos del proyecto:", error);
-      set({
-        loading: false,
-        error: error.message || "Error al cargar gastos del proyecto",
-      });
+      if (silent) {
+        set({ error: error.message || "Error al cargar gastos del proyecto" });
+      } else {
+        set({
+          loading: false,
+          error: error.message || "Error al cargar gastos del proyecto",
+        });
+      }
     }
   },
 
-  fetchProjectQuotes: async (projectId: string) => {
-    set({ loading: true, error: null });
+  fetchProjectQuotes: async (
+    projectId: string,
+    options?: { silent?: boolean }
+  ) => {
+    const silent = options?.silent ?? false;
+    if (silent) {
+      set({ error: null });
+    } else {
+      set({ loading: true, error: null });
+    }
     try {
       const auth = getAuth();
       const user = auth.currentUser;
@@ -531,13 +585,23 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
         };
       });
 
-      set({ projectQuotes: quotes, loading: false, error: null });
+      if (silent) {
+        set({ projectQuotes: quotes, error: null });
+      } else {
+        set({ projectQuotes: quotes, loading: false, error: null });
+      }
     } catch (error: any) {
       console.error("Error al cargar cotizaciones del proyecto:", error);
-      set({
-        loading: false,
-        error: error.message || "Error al cargar cotizaciones del proyecto",
-      });
+      if (silent) {
+        set({
+          error: error.message || "Error al cargar cotizaciones del proyecto",
+        });
+      } else {
+        set({
+          loading: false,
+          error: error.message || "Error al cargar cotizaciones del proyecto",
+        });
+      }
     }
   },
 
@@ -633,8 +697,19 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
       if (data.endDate !== undefined) updateData.endDate = data.endDate;
       if (data.status !== undefined) {
         updateData.status = data.status;
-        if (data.status === ProjectStatus.COMPLETED) {
+        const existingProject =
+          get().projects.find((project) => project.id === projectId) ||
+          get().currentProject;
+        const statusChanged = existingProject?.status !== data.status;
+
+        if (
+          statusChanged &&
+          (data.status === ProjectStatus.COMPLETED ||
+            data.status === ProjectStatus.CANCELLED)
+        ) {
           updateData.completedAt = new Date().toISOString();
+        } else if (statusChanged && data.status === ProjectStatus.IN_PROGRESS) {
+          updateData.completedAt = "";
         }
       }
 
@@ -957,20 +1032,20 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
       if (data.category !== undefined) updateData.category = data.category;
 
       // Manejar campos adicionales, asegurando que no se envíen valores undefined
-      if (data.deliveryDate) {
-        updateData.deliveryDate = data.deliveryDate;
+      if (data.deliveryDate !== undefined) {
+        updateData.deliveryDate = data.deliveryDate || "";
       }
 
-      if (data.startDate) {
-        updateData.startDate = data.startDate;
+      if (data.startDate !== undefined) {
+        updateData.startDate = data.startDate || "";
       }
 
-      if (data.warranty) {
-        updateData.warranty = data.warranty;
+      if (data.warranty !== undefined) {
+        updateData.warranty = data.warranty || "";
       }
 
-      if (data.termsAndConditions) {
-        updateData.termsAndConditions = data.termsAndConditions;
+      if (data.termsAndConditions !== undefined) {
+        updateData.termsAndConditions = data.termsAndConditions || "";
       }
 
       // Procesar y subir nuevos archivos si existen

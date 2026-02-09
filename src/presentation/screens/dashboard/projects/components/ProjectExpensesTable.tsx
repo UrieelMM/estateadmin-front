@@ -65,8 +65,14 @@ const ProjectExpensesTable: React.FC<ProjectExpensesTableProps> = ({
   // Si no hay gastos, mostrar mensaje
   if (expenses.length === 0) {
     return (
-      <div className="p-6 text-center text-gray-500">
-        No hay gastos registrados para este proyecto
+      <div className="p-8 text-center">
+        <DocumentTextIcon className="mx-auto h-10 w-10 text-gray-400 dark:text-gray-500" />
+        <p className="mt-3 text-gray-600 dark:text-gray-300">
+          Aun no hay gastos registrados para este proyecto.
+        </p>
+        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+          Usa el boton "Registrar Gasto" para capturar el primero.
+        </p>
       </div>
     );
   }
@@ -177,7 +183,7 @@ const ProjectExpensesTable: React.FC<ProjectExpensesTableProps> = ({
                           Detalles del Gasto
                         </h4>
                         <p className="mt-1 text-sm text-gray-600">
-                          {expense.description || "Sin descripción"}
+                          {expense.description || "Sin descripcion adicional."}
                         </p>
 
                         <h4 className="mt-4 text-sm font-medium text-gray-900 dark:text-gray-100">

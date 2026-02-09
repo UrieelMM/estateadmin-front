@@ -86,9 +86,14 @@ const KanbanBoardModal: React.FC<KanbanBoardModalProps> = ({
               <Dialog.Panel className="relative transform rounded-xl bg-white dark:bg-gray-900 text-left shadow-xl transition-all w-[95vw] h-[95vh] flex flex-col">
                 {/* Header del modal */}
                 <div className="flex justify-between items-center border-b rounded-lg border-gray-200 dark:border-gray-700 p-4 bg-indigo-700 dark:bg-gray-800">
-                  <Dialog.Title className="text-lg font-medium text-white">
-                    Tablero Kanban: {projectName}
-                  </Dialog.Title>
+                  <div>
+                    <Dialog.Title className="text-lg font-medium text-white">
+                      Tablero Kanban: {projectName}
+                    </Dialog.Title>
+                    <p className="text-xs text-indigo-100 mt-0.5">
+                      Arrastra tareas entre columnas para actualizar su estado.
+                    </p>
+                  </div>
                   <button
                     type="button"
                     className="text-indigo-200 hover:text-white"
@@ -108,8 +113,11 @@ const KanbanBoardModal: React.FC<KanbanBoardModalProps> = ({
                       projectName={projectName}
                     />
                   ) : (
-                    <div className="flex justify-center items-center h-64">
+                    <div className="flex flex-col justify-center items-center h-64">
                       <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-3">
+                        Preparando tablero de tareas...
+                      </p>
                     </div>
                   )}
                 </div>

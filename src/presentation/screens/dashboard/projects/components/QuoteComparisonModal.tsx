@@ -82,12 +82,6 @@ const QuoteComparisonModal: React.FC<QuoteComparisonModalProps> = ({
       .sort((a, b) => a.amount - b.amount);
   }, [currentCategory, quotesByCategory]);
 
-  // Verificar si hay una cotización seleccionada en la categoría actual
-  const hasSelectedQuote = useMemo(() => {
-    if (!currentCategory) return false;
-    return quotesByCategory[currentCategory].some((quote) => quote.isSelected);
-  }, [currentCategory, quotesByCategory]);
-
   // Función para manejar la selección de una cotización
   const handleSelectQuote = async (quoteId: string) => {
     try {
@@ -530,7 +524,7 @@ const QuoteComparisonModal: React.FC<QuoteComparisonModalProps> = ({
                                       <CheckCircleIcon className="h-5 w-5 mr-1" />
                                       Seleccionada
                                     </span>
-                                  ) : !hasSelectedQuote ? (
+                                  ) : (
                                     <button
                                       onClick={() =>
                                         handleSelectQuote(quote.id)
@@ -542,10 +536,6 @@ const QuoteComparisonModal: React.FC<QuoteComparisonModalProps> = ({
                                         ? "Seleccionando..."
                                         : "Seleccionar"}
                                     </button>
-                                  ) : (
-                                    <span className="text-gray-500 dark:text-gray-400">
-                                      No disponible
-                                    </span>
                                   )}
                                 </td>
                               ))}

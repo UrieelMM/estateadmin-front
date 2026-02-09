@@ -245,15 +245,15 @@ const QuoteEditModal: React.FC<QuoteEditModalProps> = ({
         amount: parseFloat(values.amount),
         description: values.description,
         validUntil: values.validUntil,
-        contactName: values.contactName || undefined,
-        contactEmail: values.contactEmail || undefined,
-        contactPhone: values.contactPhone || undefined,
-        notes: values.notes || undefined,
+        contactName: values.contactName,
+        contactEmail: values.contactEmail,
+        contactPhone: values.contactPhone,
+        notes: values.notes,
         files: selectedFiles.length > 0 ? selectedFiles : undefined,
-        deliveryDate: values.deliveryDate || undefined,
-        startDate: values.startDate || undefined,
-        warranty: values.warranty || undefined,
-        termsAndConditions: values.termsAndConditions || undefined,
+        deliveryDate: values.deliveryDate,
+        startDate: values.startDate,
+        warranty: values.warranty,
+        termsAndConditions: values.termsAndConditions,
       };
 
       await updateProjectQuote(quote.id, data);

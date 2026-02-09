@@ -56,6 +56,26 @@ export interface ProjectTask {
   notes?: string; // Additional notes
 }
 
+function normalizeAssignedTo(value: unknown): string {
+  if (typeof value === "string") return value;
+  if (Array.isArray(value)) {
+    return value
+      .filter(
+        (item): item is string =>
+          typeof item === "string" && item.trim().length > 0
+      )
+      .join(", ");
+  }
+  return "";
+}
+
+function normalizeAttachments(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter(
+    (item): item is string => typeof item === "string" && item.length > 0
+  );
+}
+
 // Input for creating a new task
 export interface ProjectTaskCreateInput {
   projectId: string;
@@ -159,12 +179,14 @@ export const useProjectTaskStore = create<ProjectTaskState>()((set, get) => ({
           description: data.description,
           status: data.status,
           priority: data.priority,
-          assignedTo: data.assignedTo || [],
+          assignedTo: normalizeAssignedTo(data.assignedTo),
           dueDate: data.dueDate,
           createdAt: data.createdAt,
           updatedAt: data.updatedAt,
           tags: data.tags || [],
           order: data.order || 0,
+          attachments: normalizeAttachments(data.attachments),
+          notes: typeof data.notes === "string" ? data.notes : "",
         };
       });
 
@@ -217,12 +239,14 @@ export const useProjectTaskStore = create<ProjectTaskState>()((set, get) => ({
         description: data.description,
         status: data.status,
         priority: data.priority,
-        assignedTo: data.assignedTo || "",
+        assignedTo: normalizeAssignedTo(data.assignedTo),
         dueDate: data.dueDate,
         createdAt: timestamp,
         updatedAt: timestamp,
         tags: data.tags || [],
         order: tasksInStatus, // Place at the end of the column
+        attachments: normalizeAttachments(data.attachments),
+        notes: typeof data.notes === "string" ? data.notes : "",
       };
 
       // Save the task
@@ -273,11 +297,25 @@ export const useProjectTaskStore = create<ProjectTaskState>()((set, get) => ({
         `clients/${clientId}/condominiums/${condominiumId}/projects/${projectId}/tasks/${taskId}`
       );
 
-      // Update the task
-      const updateData = {
-        ...data,
+      // Build update payload without undefined values to keep writes consistent
+      const updateData: any = {
         updatedAt: new Date().toISOString(),
       };
+      if (data.title !== undefined) updateData.title = data.title;
+      if (data.description !== undefined) updateData.description = data.description;
+      if (data.status !== undefined) updateData.status = data.status;
+      if (data.priority !== undefined) updateData.priority = data.priority;
+      if (data.assignedTo !== undefined) {
+        updateData.assignedTo = normalizeAssignedTo(data.assignedTo);
+      }
+      if (data.dueDate !== undefined) updateData.dueDate = data.dueDate;
+      if (data.tags !== undefined) updateData.tags = data.tags;
+      if (data.attachments !== undefined) {
+        updateData.attachments = normalizeAttachments(data.attachments);
+      }
+      if (data.notes !== undefined) {
+        updateData.notes = typeof data.notes === "string" ? data.notes : "";
+      }
 
       await updateDoc(taskRef, updateData);
 

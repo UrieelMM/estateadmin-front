@@ -1437,7 +1437,7 @@ export const usePersonalAdministrationStore =
 
           employeeIds.forEach((employeeId) => {
             const newDocRef = doc(shiftsRef);
-            const shiftData = {
+            const shiftData: Omit<WorkShift, "id"> & { createdAt: Date } = {
               employeeId,
               date: shiftDate,
               startTime: "08:00",
@@ -1448,10 +1448,16 @@ export const usePersonalAdministrationStore =
             };
 
             batch.set(newDocRef, sanitizeForFirestore(shiftData));
-            shifts.push({
+            const shiftForState: WorkShift = {
               id: newDocRef.id,
-              ...shiftData,
-            });
+              employeeId: shiftData.employeeId,
+              date: shiftData.date,
+              startTime: shiftData.startTime,
+              endTime: shiftData.endTime,
+              type: shiftData.type,
+              status: shiftData.status,
+            };
+            shifts.push(shiftForState);
           });
         }
 

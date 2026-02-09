@@ -46,6 +46,7 @@ const ProjectQuotesSection: React.FC<ProjectQuotesSectionProps> = ({
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedQuote, setSelectedQuote] = useState<ProjectQuote | null>(null);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [selectingQuoteId, setSelectingQuoteId] = useState<string | null>(null);
 
   // Filtrar cotizaciones para este proyecto
   const quotes = projectQuotes.filter((quote) => quote.projectId === projectId);
@@ -70,16 +71,6 @@ const ProjectQuotesSection: React.FC<ProjectQuotesSectionProps> = ({
 
     return grouped;
   }, [quotes]);
-
-  // Determinar si algunas categorías tienen cotizaciones seleccionadas
-  const selectedCategories = useMemo(() => {
-    const selected: Record<string, boolean> = {};
-    QUOTE_CATEGORIES.forEach((category) => {
-      selected[category] =
-        quotesByCategory[category]?.some((q) => q.isSelected) || false;
-    });
-    return selected;
-  }, [quotesByCategory]);
 
   // Determinar si se pueden agregar más cotizaciones por categoría
   const canAddMoreQuotesByCategory = useMemo(() => {
@@ -124,11 +115,19 @@ const ProjectQuotesSection: React.FC<ProjectQuotesSectionProps> = ({
 
   // Función para seleccionar una cotización
   const handleSelectQuote = async (quoteId: string) => {
+    setSelectingQuoteId(quoteId);
     try {
       await selectProjectQuote(quoteId);
+      const selectError = useProjectStore.getState().error;
+      if (selectError) {
+        toast.error(selectError);
+        return;
+      }
       toast.success("Cotización seleccionada correctamente");
     } catch (error: any) {
       toast.error(error.message || "Error al seleccionar la cotización");
+    } finally {
+      setSelectingQuoteId(null);
     }
   };
 
@@ -165,6 +164,9 @@ const ProjectQuotesSection: React.FC<ProjectQuotesSectionProps> = ({
           </h3>
           <p className="text-gray-600 dark:text-gray-400 text-sm mt-1">
             {quotes.length} cotizaciones en total
+          </p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            Puedes registrar hasta 5 cotizaciones por categoria.
           </p>
         </div>
 
@@ -205,7 +207,11 @@ const ProjectQuotesSection: React.FC<ProjectQuotesSectionProps> = ({
       {quotes.length === 0 ? (
         <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg text-center">
           <p className="text-gray-500 dark:text-gray-400">
-            No hay cotizaciones registradas para este proyecto.
+            Aun no hay cotizaciones registradas para este proyecto.
+          </p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            Agrega cotizaciones para comparar proveedores y seleccionar la mejor
+            opcion por categoria.
           </p>
           <button
             onClick={() => setIsNewQuoteModalOpen(true)}
@@ -399,9 +405,9 @@ const ProjectQuotesSection: React.FC<ProjectQuotesSectionProps> = ({
                     <tbody className="bg-white divide-y divide-gray-200 dark:bg-gray-800 dark:divide-gray-700">
                       {quotesByCategory[category].map((quote) => {
                         const expired = isQuoteExpired(quote.validUntil);
-                        // Solo necesitamos saber si hay una cotización seleccionada en esta categoría
                         const hasSelectedQuoteInCategory =
-                          selectedCategories[category];
+                          quotesByCategory[category]?.some((q) => q.isSelected) ||
+                          false;
 
                         return (
                           <tr key={quote.id}>
@@ -487,14 +493,20 @@ const ProjectQuotesSection: React.FC<ProjectQuotesSectionProps> = ({
 
                                 {quote.status !== QuoteStatus.SELECTED &&
                                   !expired &&
-                                  !hasSelectedQuoteInCategory && (
+                                  (
                                     <button
                                       onClick={() =>
                                         handleSelectQuote(quote.id)
                                       }
-                                      className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300"
-                                      title="Seleccionar cotización"
-                                      disabled={loading}
+                                      className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300 disabled:opacity-60 disabled:cursor-not-allowed"
+                                      title={
+                                        selectingQuoteId === quote.id
+                                          ? "Seleccionando cotizacion..."
+                                          : hasSelectedQuoteInCategory
+                                          ? "Reemplazar cotización seleccionada"
+                                          : "Seleccionar cotización"
+                                      }
+                                      disabled={loading || selectingQuoteId === quote.id}
                                     >
                                       <CheckCircleIcon className="h-5 w-5" />
                                     </button>

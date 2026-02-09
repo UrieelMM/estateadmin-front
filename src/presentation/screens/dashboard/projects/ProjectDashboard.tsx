@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import {
   Project,
   ProjectStatus,
+  QUOTE_CATEGORIES,
   useProjectStore,
 } from "../../../../store/projectStore";
 import { toast } from "react-hot-toast";
@@ -13,6 +14,7 @@ import {
   ClipboardDocumentListIcon,
   DocumentTextIcon,
   ArrowsPointingOutIcon,
+  FlagIcon,
 } from "@heroicons/react/24/solid";
 import EditProjectModal from "./components/EditProjectModal";
 import NewExpenseModal from "./components/NewExpenseModal";
@@ -27,6 +29,8 @@ import ProjectTimelineProgress from "./components/ProjectTimelineProgress";
 import ProjectTimelineStats from "./components/ProjectTimelineStats";
 import ProjectQuotesSection from "./components/ProjectQuotesSection";
 import NewQuoteModal from "./components/NewQuoteModal";
+import MilestonesList from "./components/MilestonesList";
+import NewMilestoneModal from "./components/NewMilestoneModal";
 
 interface ProjectDashboardProps {
   project: Project;
@@ -40,6 +44,8 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ project }) => {
   const [isKanbanModalOpen, setIsKanbanModalOpen] = useState(false);
   const [isNewQuoteModalOpen, setIsNewQuoteModalOpen] = useState(false);
   const [isQuotesSectionExpanded, setIsQuotesSectionExpanded] = useState(false);
+  const [isNewMilestoneModalOpen, setIsNewMilestoneModalOpen] = useState(false);
+  const [isStatusUpdating, setIsStatusUpdating] = useState(false);
 
   // Calcular días transcurridos y restantes
   const today = new Date();
@@ -52,6 +58,14 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ project }) => {
   const daysRemaining = Math.floor(
     (endDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
   );
+  const safeDaysElapsed = Math.max(daysElapsed, 0);
+  const daysRemainingLabel =
+    daysRemaining >= 0
+      ? `${daysRemaining} días`
+      : `${Math.abs(daysRemaining)} días de retraso`;
+  const projectDescription =
+    project.description?.trim() ||
+    "Este proyecto no tiene descripción capturada aún.";
 
   // Calcular porcentaje de presupuesto utilizado
   const budgetUsedPercent =
@@ -61,13 +75,26 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ project }) => {
 
   // Manejar cambio de estado del proyecto
   const handleStatusChange = async (newStatus: ProjectStatus) => {
+    if (newStatus === project.status) {
+      return;
+    }
+
+    setIsStatusUpdating(true);
     try {
       await updateProject(project.id, { status: newStatus });
+      const updateError = useProjectStore.getState().error;
+      if (updateError) {
+        toast.error(updateError);
+        return;
+      }
+
       toast.success(
-        `Estado del proyecto actualizado a: ${getStatusLabel(newStatus)}`
+        `Estado actualizado: ${getStatusLabel(newStatus)}`
       );
-    } catch (error) {
-      toast.error("Error al actualizar el estado del proyecto");
+    } catch {
+      toast.error("No se pudo actualizar el estado del proyecto.");
+    } finally {
+      setIsStatusUpdating(false);
     }
   };
 
@@ -89,7 +116,16 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ project }) => {
   const quotes = projectQuotes.filter(
     (quote) => quote.projectId === project.id
   );
-  const canAddMoreQuotes = quotes.length < 5;
+  const quotesByCategory = QUOTE_CATEGORIES.reduce<Record<string, number>>(
+    (acc, category) => {
+      acc[category] = quotes.filter((quote) => quote.category === category).length;
+      return acc;
+    },
+    {}
+  );
+  const canAddMoreQuotes = QUOTE_CATEGORIES.some(
+    (category) => (quotesByCategory[category] || 0) < 5
+  );
 
   return (
     <div className="space-y-6 p-4">
@@ -101,8 +137,13 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ project }) => {
             <ProjectStatusBadge status={project.status} />
           </h2>
           <p className="text-gray-600 text-sm mt-1 max-w-xl dark:text-gray-400">
-            {project.description}
+            {projectDescription}
           </p>
+          {isStatusUpdating && (
+            <p className="text-xs text-indigo-600 dark:text-indigo-300 mt-2">
+              Actualizando estado del proyecto...
+            </p>
+          )}
         </div>
 
         <div className="flex flex-col items-end gap-2">
@@ -111,7 +152,8 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ project }) => {
               <>
                 <button
                   onClick={() => handleStatusChange(ProjectStatus.COMPLETED)}
-                  className="inline-flex items-center px-1.5 py-1.5 text-xs font-medium rounded-md text-white bg-[#38b000] hover:bg-[#5ab630]"
+                  disabled={isStatusUpdating}
+                  className="inline-flex items-center px-1.5 py-1.5 text-xs font-medium rounded-md text-white bg-[#38b000] hover:bg-[#5ab630] disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   <CheckCircleIcon className="h-4 w-4 mr-1" />
                   Marcar como Finalizado
@@ -119,7 +161,8 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ project }) => {
 
                 <button
                   onClick={() => handleStatusChange(ProjectStatus.CANCELLED)}
-                  className="inline-flex items-center px-1.5 py-1.5 text-xs font-medium rounded-md text-white bg-[#ea282b] hover:bg-[#ed5154]"
+                  disabled={isStatusUpdating}
+                  className="inline-flex items-center px-1.5 py-1.5 text-xs font-medium rounded-md text-white bg-[#ea282b] hover:bg-[#ed5154] disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   <XCircleIcon className="h-4 w-4 mr-1" />
                   Cancelar Proyecto
@@ -190,7 +233,7 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ project }) => {
 
           <ProjectSummaryCard
             title="Tiempo Transcurrido"
-            value={`${daysElapsed} días`}
+            value={`${safeDaysElapsed} días`}
             subtitle={`Desde: ${new Date(project.startDate).toLocaleDateString(
               "es-MX"
             )}`}
@@ -200,7 +243,7 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ project }) => {
 
           <ProjectSummaryCard
             title="Tiempo Restante"
-            value={daysRemaining > 0 ? `${daysRemaining} días` : "Vencido"}
+            value={daysRemaining >= 0 ? daysRemainingLabel : "Vencido"}
             subtitle={`Hasta: ${new Date(project.endDate).toLocaleDateString(
               "es-MX"
             )}`}
@@ -243,6 +286,9 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ project }) => {
             </h3>
             <p className="text-gray-600 dark:text-gray-400 text-sm mt-1">
               Total de registros: {projectExpenses.length}
+            </p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              Haz clic en un gasto para ver sus detalles completos.
             </p>
           </div>
           <ProjectExpensesTable expenses={projectExpenses} />
@@ -292,7 +338,10 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ project }) => {
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
                   <p className="text-sm text-gray-500 dark:text-gray-400">
-                    {quotes.length} de 5 cotizaciones
+                    {quotes.length} cotizaciones totales
+                  </p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500">
+                    Límite: hasta 5 por categoría
                   </p>
                   {quotes.length >= 2 && (
                     <button
@@ -402,6 +451,25 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ project }) => {
             quotes={projectQuotes}
           />
         </div>
+
+        {/* Sección de Hitos del Proyecto */}
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow dark:shadow-lg">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center">
+              <FlagIcon className="h-5 w-5 text-indigo-500 mr-2" />
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                Hitos del Proyecto
+              </h3>
+            </div>
+            <button
+              onClick={() => setIsNewMilestoneModalOpen(true)}
+              className="inline-flex items-center px-3 py-2 text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none"
+            >
+              Nuevo Hito
+            </button>
+          </div>
+          <MilestonesList projectId={project.id} />
+        </div>
       </div>
 
       {/* Modales */}
@@ -427,6 +495,11 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ project }) => {
         onClose={() => setIsNewQuoteModalOpen(false)}
         projectId={project.id}
         projectName={project.name}
+      />
+      <NewMilestoneModal
+        isOpen={isNewMilestoneModalOpen}
+        onClose={() => setIsNewMilestoneModalOpen(false)}
+        projectId={project.id}
       />
 
       {/* Vista expandida de cotizaciones */}

@@ -26,19 +26,31 @@ const ProjectTimelineStats: React.FC<ProjectTimelineStatsProps> = ({
   const totalQuotes = quotes.length;
   const selectedQuotes = quotes.filter((q) => q.isSelected).length;
   const totalExpenses = expenses.length;
-  const significantExpenses = expenses.filter(
-    (expense) => expense.amount >= project.initialBudget * 0.1
-  ).length;
+  const significantExpenses =
+    project.initialBudget > 0
+      ? expenses.filter((expense) => expense.amount >= project.initialBudget * 0.1)
+          .length
+      : 0;
 
   const totalSpent = expenses.reduce((sum, expense) => sum + expense.amount, 0);
-  const budgetUsedPercent = (totalSpent / project.initialBudget) * 100;
+  const budgetUsedPercent =
+    project.initialBudget > 0 ? (totalSpent / project.initialBudget) * 100 : 0;
 
-  // Calcular días desde el inicio
-  const startDate = new Date(project.createdAt);
+  // Calcular días desde el inicio planificado del proyecto
+  const parsedStartDate = new Date(project.startDate);
+  const startDate = Number.isNaN(parsedStartDate.getTime())
+    ? new Date(project.createdAt)
+    : parsedStartDate;
   const today = new Date();
   const daysActive = Math.floor(
     (today.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)
   );
+  const projectStatusLabel =
+    project.status === "completed"
+      ? "Finalizado"
+      : project.status === "cancelled"
+      ? "Cancelado"
+      : "En progreso";
 
   const stats = [
     {
@@ -73,7 +85,7 @@ const ProjectTimelineStats: React.FC<ProjectTimelineStatsProps> = ({
     {
       name: "Días Activo",
       value: daysActive.toString(),
-      subtitle: project.status === "completed" ? "Finalizado" : "En progreso",
+      subtitle: projectStatusLabel,
       icon: ClockIcon,
       color: "indigo",
     },

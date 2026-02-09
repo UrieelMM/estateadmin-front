@@ -519,24 +519,17 @@ const MaintenanceDashboard: React.FC = () => {
         return;
       }
       const createdAt = moment(createdAtDate);
-      let firstResponse: moment.Moment | null = null;
 
-      ticket.history.forEach((item) => {
-        if (!responseActions.has(item.action)) return;
-        const itemDate = getDateValue(item.date);
-        if (!itemDate) return;
-        const itemMoment = moment(itemDate);
-        if (itemMoment.diff(createdAt, "minutes") <= 0) return;
-        if (!firstResponse || itemMoment.isBefore(firstResponse)) {
-          firstResponse = itemMoment;
-        }
-      });
+      const firstResponseDiffHours = ticket.history
+        .filter((item) => responseActions.has(item.action))
+        .map((item) => getDateValue(item.date))
+        .filter((itemDate): itemDate is Date => itemDate !== null)
+        .map((itemDate) => moment(itemDate).diff(createdAt, "hours", true))
+        .filter((diffHours) => diffHours > 0)
+        .sort((a, b) => a - b)[0];
 
-      if (firstResponse) {
-        const diffHours = firstResponse.diff(createdAt, "hours", true);
-        if (diffHours >= 0) {
-          responseTimes.push(diffHours);
-        }
+      if (typeof firstResponseDiffHours === "number") {
+        responseTimes.push(firstResponseDiffHours);
       }
     });
 

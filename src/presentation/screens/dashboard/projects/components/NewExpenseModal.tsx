@@ -18,6 +18,18 @@ interface NewExpenseModalProps {
 
 // Financial account interface is already defined in the payment store
 
+const createInitialExpenseFormData = (
+  projectName: string
+): Omit<ProjectExpenseCreateInput, "projectId"> => ({
+  amount: 0,
+  concept: `Proyecto - ${projectName}`,
+  tags: [],
+  paymentType: "transfer",
+  expenseDate: new Date().toISOString().split("T")[0] + "T00:00",
+  description: "",
+  financialAccountId: "",
+});
+
 const NewExpenseModal: React.FC<NewExpenseModalProps> = ({
   isOpen,
   onClose,
@@ -30,15 +42,7 @@ const NewExpenseModal: React.FC<NewExpenseModalProps> = ({
 
   const [formData, setFormData] = useState<
     Omit<ProjectExpenseCreateInput, "projectId">
-  >({
-    amount: 0,
-    concept: "",
-    tags: [],
-    paymentType: "transfer",
-    expenseDate: new Date().toISOString().split("T")[0] + "T00:00",
-    description: "",
-    financialAccountId: "",
-  });
+  >(createInitialExpenseFormData(projectName));
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
@@ -46,11 +50,11 @@ const NewExpenseModal: React.FC<NewExpenseModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       fetchFinancialAccounts();
-      // Establecer el concepto predeterminado con el nombre del proyecto
-      setFormData((prev) => ({
-        ...prev,
-        concept: `Proyecto - ${projectName}`,
-      }));
+      setFormData(createInitialExpenseFormData(projectName));
+      setSelectedFile(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     }
   }, [isOpen, fetchFinancialAccounts, projectName]);
 
@@ -146,15 +150,7 @@ const NewExpenseModal: React.FC<NewExpenseModalProps> = ({
       onClose();
 
       // Resetear formulario
-      setFormData({
-        amount: 0,
-        concept: "",
-        tags: [],
-        paymentType: "transfer",
-        expenseDate: new Date().toISOString().split("T")[0] + "T00:00",
-        description: "",
-        financialAccountId: "",
-      });
+      setFormData(createInitialExpenseFormData(projectName));
       setSelectedFile(null);
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
@@ -296,9 +292,8 @@ const NewExpenseModal: React.FC<NewExpenseModalProps> = ({
                           name="concept"
                           id="concept"
                           value={formData.concept}
-                          className="px-2 mt-1 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500 cursot-not-allowed"
-                          disabled
-                          readOnly
+                          onChange={handleChange}
+                          className="px-2 mt-1 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
                         />
                       </div>
 

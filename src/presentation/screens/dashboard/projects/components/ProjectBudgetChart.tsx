@@ -13,8 +13,12 @@ const ProjectBudgetChart: React.FC<ProjectBudgetChartProps> = ({
   const chartRef = useRef<HTMLCanvasElement>(null);
   const chartInstanceRef = useRef<Chart | null>(null);
 
-  // Calcular el presupuesto usado
-  const usedBudget = initialBudget - currentBudget;
+  const safeInitialBudget = Math.max(initialBudget, 0);
+  const safeCurrentBudget = Math.max(currentBudget, 0);
+  // Calcular el presupuesto usado evitando valores negativos
+  const usedBudget = Math.max(safeInitialBudget - safeCurrentBudget, 0);
+  const usedPercentage =
+    safeInitialBudget > 0 ? (usedBudget / safeInitialBudget) * 100 : 0;
 
   // Formatear los valores para mostrar
   const formatCurrency = (value: number) => {
@@ -39,7 +43,7 @@ const ProjectBudgetChart: React.FC<ProjectBudgetChartProps> = ({
             labels: ["Presupuesto Utilizado", "Presupuesto Restante"],
             datasets: [
               {
-                data: [usedBudget, currentBudget],
+                data: [usedBudget, safeCurrentBudget],
                 backgroundColor: ["#F5A4A4", "#818CF8"],
                 borderWidth: 0,
               },
@@ -62,9 +66,11 @@ const ProjectBudgetChart: React.FC<ProjectBudgetChartProps> = ({
                   label: (context) => {
                     const label = context.label || "";
                     const value = context.raw as number;
-                    const percentage = ((value / initialBudget) * 100).toFixed(
-                      1
-                    );
+                    const chartTotal = usedBudget + safeCurrentBudget;
+                    const percentage =
+                      chartTotal > 0
+                        ? ((value / chartTotal) * 100).toFixed(1)
+                        : "0.0";
                     return `${label}: ${formatCurrency(
                       value
                     )} (${percentage}%)`;
@@ -84,7 +90,7 @@ const ProjectBudgetChart: React.FC<ProjectBudgetChartProps> = ({
         chartInstanceRef.current = null;
       }
     };
-  }, [initialBudget, currentBudget, usedBudget]);
+  }, [safeCurrentBudget, usedBudget]);
 
   return (
     <div className="relative h-full">
@@ -95,7 +101,7 @@ const ProjectBudgetChart: React.FC<ProjectBudgetChartProps> = ({
         <div className="text-center">
           <p className="text-sm text-gray-500 dark:text-gray-400">Utilizado</p>
           <p className="text-xl font-bold text-gray-700 dark:text-gray-100">
-            {((usedBudget / initialBudget) * 100).toFixed(1)}%
+            {usedPercentage.toFixed(1)}%
           </p>
           <p className="text-sm text-gray-500 dark:text-gray-400">
             {formatCurrency(usedBudget)}
