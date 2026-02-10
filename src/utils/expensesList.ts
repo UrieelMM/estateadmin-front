@@ -12,6 +12,7 @@ export const EXPENSE_CONCEPTS = [
     "Mantenimiento de Estacionamiento",
     "Fumigación y Control de Plagas",
     "Mantenimiento de Gimnasio",
+    "Reparación de Ventanas",
     "Reemplazo de Luminarias",
     "Mantenimiento de Portones Eléctricos",
     "Sistema de Intercomunicación",

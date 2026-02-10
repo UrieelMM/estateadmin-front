@@ -1,5 +1,5 @@
-import { Fragment, useEffect, useState } from "react";
-import { Transition, Dialog } from "@headlessui/react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { Transition, Dialog, Combobox } from "@headlessui/react";
 import {
   PhotoIcon,
   XMarkIcon,
@@ -10,6 +10,7 @@ import {
   PencilIcon,
   UserGroupIcon,
 } from "@heroicons/react/24/solid";
+import { CheckIcon, ChevronUpDownIcon } from "@heroicons/react/20/solid";
 import { useDropzone } from "react-dropzone";
 import toast from "react-hot-toast";
 import {
@@ -56,6 +57,10 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ open, setOpen }) => {
     FinancialAccount[]
   >([]);
   const [providerId, setProviderId] = useState<string>("");
+  const [providerSearch, setProviderSearch] = useState<string>("");
+  const [conceptSearch, setConceptSearch] = useState<string>("");
+  const providerComboboxButtonRef = useRef<HTMLButtonElement | null>(null);
+  const conceptComboboxButtonRef = useRef<HTMLButtonElement | null>(null);
   const { providers, fetchProviders } = useProviderStore();
   const { compressFile, isCompressing } = useFileCompression();
 
@@ -130,8 +135,38 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ open, setOpen }) => {
       setLoading(false);
       setFinancialAccountId("");
       setProviderId("");
+      setProviderSearch("");
+      setConceptSearch("");
     }
   }, [open]);
+
+  const filteredProviders = useMemo(() => {
+    const term = providerSearch.trim().toLowerCase();
+    if (!term) return providers;
+
+    return providers.filter((provider) => {
+      const providerName = (provider.name || "").toLowerCase();
+      const providerService = (provider.serviceLabel || "").toLowerCase();
+      return providerName.includes(term) || providerService.includes(term);
+    });
+  }, [providers, providerSearch]);
+
+  const filteredExpenseConcepts = useMemo(() => {
+    const term = conceptSearch.trim().toLowerCase();
+    if (!term) return EXPENSE_CONCEPTS;
+
+    return EXPENSE_CONCEPTS.filter((expenseConcept) =>
+      expenseConcept.toLowerCase().includes(term)
+    );
+  }, [conceptSearch]);
+
+  const getProviderLabel = (id: string) => {
+    if (!id) return "";
+    const provider = providers.find((item) => item.id === id);
+    return provider
+      ? `${provider.name} - ${provider.serviceLabel}`
+      : "Proveedor no disponible";
+  };
 
   // Función para formatear a moneda mexicana (solo visual)
   const formatCurrency = (value: number) =>
@@ -292,28 +327,99 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ open, setOpen }) => {
                                 Proveedor (opcional)
                               </label>
                               <div className="mt-2 relative">
-                                <div className="absolute left-2 top-1/2 flex items-center transform -translate-y-1/2">
-                                  <UserGroupIcon className="h-5 w-5 text-gray-400" />
-                                </div>
-                                <select
-                                  id="providerId"
-                                  name="providerId"
+                                <Combobox
                                   value={providerId}
-                                  onChange={(e) =>
-                                    setProviderId(e.target.value)
-                                  }
-                                  className="block w-full rounded-md border-0 pl-10 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
+                                  onChange={(value: string) => {
+                                    setProviderId(value);
+                                    setProviderSearch("");
+                                  }}
                                 >
-                                  <option value="">-- Sin proveedor --</option>
-                                  {providers.map((provider) => (
-                                    <option
-                                      key={provider.id}
-                                      value={provider.id}
+                                  <div className="relative">
+                                    <div className="absolute left-2 top-1/2 flex items-center transform -translate-y-1/2 z-10">
+                                      <UserGroupIcon className="h-5 w-5 text-gray-400" />
+                                    </div>
+                                    <Combobox.Input
+                                      id="providerId"
+                                      name="providerId"
+                                      className="block w-full rounded-md border-0 pl-10 pr-10 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
+                                      displayValue={(id: string) =>
+                                        getProviderLabel(id)
+                                      }
+                                      onChange={(event) =>
+                                        setProviderSearch(event.target.value)
+                                      }
+                                      onFocus={() =>
+                                        providerComboboxButtonRef.current?.click()
+                                      }
+                                      placeholder="Buscar proveedor por nombre o servicio"
+                                    />
+                                    <Combobox.Button
+                                      ref={providerComboboxButtonRef}
+                                      className="absolute inset-y-0 right-0 flex items-center pr-2"
                                     >
-                                      {provider.name} - {provider.serviceLabel}
-                                    </option>
-                                  ))}
-                                </select>
+                                      <ChevronUpDownIcon className="h-5 w-5 text-gray-400" />
+                                    </Combobox.Button>
+                                  </div>
+                                  <Combobox.Options className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white dark:bg-gray-800 py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
+                                    <Combobox.Option
+                                      value=""
+                                      className={({ active }) =>
+                                        `relative cursor-default select-none py-2 pl-8 pr-4 ${
+                                          active
+                                            ? "bg-indigo-600 text-white"
+                                            : "text-gray-900 dark:text-gray-100"
+                                        }`
+                                      }
+                                    >
+                                      -- Sin proveedor --
+                                    </Combobox.Option>
+                                    {filteredProviders.length === 0 ? (
+                                      <div className="relative cursor-default select-none py-2 px-4 text-gray-700 dark:text-gray-300">
+                                        Sin resultados
+                                      </div>
+                                    ) : (
+                                      filteredProviders.map((provider) => (
+                                        <Combobox.Option
+                                          key={provider.id}
+                                          value={provider.id}
+                                          className={({ active }) =>
+                                            `relative cursor-default select-none py-2 pl-8 pr-4 ${
+                                              active
+                                                ? "bg-indigo-600 text-white"
+                                                : "text-gray-900 dark:text-gray-100"
+                                            }`
+                                          }
+                                        >
+                                          {({ active }) => (
+                                            <>
+                                              <span
+                                                className={`block truncate ${
+                                                  providerId === provider.id
+                                                    ? "font-medium"
+                                                    : "font-normal"
+                                                }`}
+                                              >
+                                                {provider.name} -{" "}
+                                                {provider.serviceLabel}
+                                              </span>
+                                              {providerId === provider.id && (
+                                                <span
+                                                  className={`absolute inset-y-0 left-0 flex items-center pl-2 ${
+                                                    active
+                                                      ? "text-white"
+                                                      : "text-indigo-600"
+                                                  }`}
+                                                >
+                                                  <CheckIcon className="h-4 w-4" />
+                                                </span>
+                                              )}
+                                            </>
+                                          )}
+                                        </Combobox.Option>
+                                      ))
+                                    )}
+                                  </Combobox.Options>
+                                </Combobox>
                               </div>
                             </div>
 
@@ -326,25 +432,98 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ open, setOpen }) => {
                                 Concepto de Egreso
                               </label>
                               <div className="mt-2 relative">
-                                <div className="absolute left-2 top-1/2 flex items-center transform -translate-y-1/2">
-                                  <ClipboardIcon className="h-5 w-5 text-gray-400" />
-                                </div>
-                                <select
-                                  id="concept"
-                                  name="concept"
-                                  className="block w-full rounded-md border-0 pl-10 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
+                                <Combobox
                                   value={concept}
-                                  onChange={(e) => setConcept(e.target.value)}
+                                  onChange={(value: string) => {
+                                    setConcept(value);
+                                    setConceptSearch("");
+                                  }}
                                 >
-                                  <option value="">
-                                    -- Selecciona un concepto --
-                                  </option>
-                                  {EXPENSE_CONCEPTS.map((c) => (
-                                    <option key={c} value={c}>
-                                      {c}
-                                    </option>
-                                  ))}
-                                </select>
+                                  <div className="relative">
+                                    <div className="absolute left-2 top-1/2 flex items-center transform -translate-y-1/2 z-10">
+                                      <ClipboardIcon className="h-5 w-5 text-gray-400" />
+                                    </div>
+                                    <Combobox.Input
+                                      id="concept"
+                                      name="concept"
+                                      className="block w-full rounded-md border-0 pl-10 pr-10 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
+                                      displayValue={(value: string) => value}
+                                      onChange={(event) =>
+                                        setConceptSearch(event.target.value)
+                                      }
+                                      onFocus={() =>
+                                        conceptComboboxButtonRef.current?.click()
+                                      }
+                                      placeholder="Buscar concepto de egreso"
+                                    />
+                                    <Combobox.Button
+                                      ref={conceptComboboxButtonRef}
+                                      className="absolute inset-y-0 right-0 flex items-center pr-2"
+                                    >
+                                      <ChevronUpDownIcon className="h-5 w-5 text-gray-400" />
+                                    </Combobox.Button>
+                                  </div>
+                                  <Combobox.Options className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white dark:bg-gray-800 py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
+                                    <Combobox.Option
+                                      value=""
+                                      className={({ active }) =>
+                                        `relative cursor-default select-none py-2 pl-8 pr-4 ${
+                                          active
+                                            ? "bg-indigo-600 text-white"
+                                            : "text-gray-900 dark:text-gray-100"
+                                        }`
+                                      }
+                                    >
+                                      -- Selecciona un concepto --
+                                    </Combobox.Option>
+                                    {filteredExpenseConcepts.length === 0 ? (
+                                      <div className="relative cursor-default select-none py-2 px-4 text-gray-700 dark:text-gray-300">
+                                        Sin resultados
+                                      </div>
+                                    ) : (
+                                      filteredExpenseConcepts.map(
+                                        (expenseConcept) => (
+                                          <Combobox.Option
+                                            key={expenseConcept}
+                                            value={expenseConcept}
+                                            className={({ active }) =>
+                                              `relative cursor-default select-none py-2 pl-8 pr-4 ${
+                                                active
+                                                  ? "bg-indigo-600 text-white"
+                                                  : "text-gray-900 dark:text-gray-100"
+                                              }`
+                                            }
+                                          >
+                                            {({ active }) => (
+                                              <>
+                                                <span
+                                                  className={`block truncate ${
+                                                    concept === expenseConcept
+                                                      ? "font-medium"
+                                                      : "font-normal"
+                                                  }`}
+                                                >
+                                                  {expenseConcept}
+                                                </span>
+                                                {concept === expenseConcept && (
+                                                  <span
+                                                    className={`absolute inset-y-0 left-0 flex items-center pl-2 ${
+                                                      active
+                                                        ? "text-white"
+                                                        : "text-indigo-600"
+                                                    }`}
+                                                  >
+                                                    <CheckIcon className="h-4 w-4" />
+                                                  </span>
+                                                )}
+                                              </>
+                                            )}
+                                          </Combobox.Option>
+                                        )
+                                      )
+                                    )}
+                                  </Combobox.Options>
+                                </Combobox>
                               </div>
                             </div>
 

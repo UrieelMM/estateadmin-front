@@ -1,5 +1,5 @@
-import { Fragment, useEffect, useState } from "react";
-import { Transition, Dialog } from "@headlessui/react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { Transition, Dialog, Combobox } from "@headlessui/react";
 import {
   PhotoIcon,
   XMarkIcon,
@@ -9,6 +9,7 @@ import {
   ClipboardIcon,
   CalendarIcon,
 } from "@heroicons/react/16/solid";
+import { CheckIcon, ChevronUpDownIcon } from "@heroicons/react/20/solid";
 import useUserStore from "../../../../store/UserDataStore";
 import { UserData } from "../../../../interfaces/UserData";
 import { usePaymentStore } from "../../../../store/usePaymentStore";
@@ -40,6 +41,8 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
   // Campos del formulario
   const [email, setEmail] = useState<string>("");
   const [numberCondominium, setNumberCondominium] = useState<string>("");
+  const [recipientSearch, setRecipientSearch] = useState<string>("");
+  const recipientComboboxButtonRef = useRef<HTMLButtonElement | null>(null);
 
   // Monto abonado: valor raw y su versión visual formateada
   const [amountPaid, setAmountPaid] = useState<string>("");
@@ -114,6 +117,7 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
     if (open) {
       fetchCondominiumsUsers();
       fetchFinancialAccounts();
+      setRecipientSearch("");
     }
   }, [
     fetchCondominiumsUsers,
@@ -149,10 +153,29 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
       currency: "MXN",
     }).format(value);
 
-  const handleRecipientChange = async (
-    e: React.ChangeEvent<HTMLSelectElement>
-  ) => {
-    const uid = e.target.value;
+  const availableUsers = useMemo(
+    () =>
+      users.filter(
+        (user) =>
+          user.role !== "admin" &&
+          user.role !== "super-admin" &&
+          user.role !== "security"
+      ),
+    [users]
+  );
+
+  const filteredUsers = useMemo(() => {
+    const term = recipientSearch.trim().toLowerCase();
+    if (!term) return availableUsers;
+
+    return availableUsers.filter((user) => {
+      const number = (user.number || "").toLowerCase();
+      const name = (user.name || "").toLowerCase();
+      return number.includes(term) || name.includes(term);
+    });
+  }, [availableUsers, recipientSearch]);
+
+  const handleRecipientSelection = async (uid: string) => {
     const user = users.find((u) => u.uid === uid);
     if (user) {
       setEmail(user.email);
@@ -177,6 +200,16 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
       }
       setSelectedCharges([]);
     }
+  };
+
+  const selectedRecipientUid =
+    selectedUser?.uid ||
+    users.find((u) => u.number === numberCondominium)?.uid ||
+    "";
+
+  const getRecipientLabel = (uid: string) => {
+    const user = availableUsers.find((u) => u.uid === uid);
+    return user ? `${user.number} ${user.name}` : "";
   };
 
   const handleToggleCharge = (chargeId: string, checked: boolean) => {
@@ -374,6 +407,7 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
     setPaymentDate(null);
     setFinancialAccountId("");
     setIsUnidentifiedPayment(false);
+    setRecipientSearch("");
   };
 
   const dropzoneOptions = {
@@ -508,37 +542,110 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                                 Condómino
                               </label>
                               <div className="mt-2 relative">
-                                <div className="absolute left-2 top-1/2 flex items-center transform -translate-y-1/2">
-                                  <UserIcon className="h-5 w-5 text-gray-400" />
-                                </div>
-                                <select
-                                  onChange={handleRecipientChange}
-                                  name="nameRecipient"
-                                  id="nameRecipient"
+                                <Combobox
+                                  value={selectedRecipientUid}
+                                  onChange={(uid: string) => {
+                                    if (!uid) {
+                                      setSelectedUser(null);
+                                      setEmail("");
+                                      setNumberCondominium("");
+                                      setSelectedCharges([]);
+                                      return;
+                                    }
+                                    setRecipientSearch("");
+                                    handleRecipientSelection(uid);
+                                  }}
                                   disabled={isUnidentifiedPayment}
-                                  className="px-8 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
-                                  value={
-                                    users.find(
-                                      (u) => u.number === numberCondominium
-                                    )?.uid || ""
-                                  }
                                 >
-                                  <option value="">
-                                    Selecciona un condómino
-                                  </option>
-                                  {users
-                                    .filter(
-                                      (user) =>
-                                        user.role !== "admin" &&
-                                        user.role !== "super-admin" &&
-                                        user.role !== "security"
-                                    )
-                                    .map((user) => (
-                                      <option key={user.uid} value={user.uid}>
-                                        {user.number} {user.name}
-                                      </option>
-                                    ))}
-                                </select>
+                                  <div className="relative">
+                                    <div className="absolute left-2 top-1/2 flex items-center transform -translate-y-1/2 z-10">
+                                      <UserIcon className="h-5 w-5 text-gray-400" />
+                                    </div>
+                                    <Combobox.Input
+                                      id="nameRecipient"
+                                      name="nameRecipient"
+                                      className="px-8 pr-10 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
+                                      displayValue={(uid: string) =>
+                                        getRecipientLabel(uid)
+                                      }
+                                      onChange={(event) =>
+                                        setRecipientSearch(event.target.value)
+                                      }
+                                      onFocus={() =>
+                                        recipientComboboxButtonRef.current?.click()
+                                      }
+                                      placeholder="Buscar por nombre o número de casa/departamento"
+                                    />
+                                    <Combobox.Button
+                                      ref={recipientComboboxButtonRef}
+                                      className="absolute inset-y-0 right-0 flex items-center pr-2"
+                                    >
+                                      <ChevronUpDownIcon className="h-5 w-5 text-gray-400" />
+                                    </Combobox.Button>
+                                  </div>
+
+                                  <Combobox.Options className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white dark:bg-gray-800 py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
+                                    <Combobox.Option
+                                      value=""
+                                      className={({ active }) =>
+                                        `relative cursor-default select-none py-2 pl-8 pr-4 ${
+                                          active
+                                            ? "bg-indigo-600 text-white"
+                                            : "text-gray-900 dark:text-gray-100"
+                                        }`
+                                      }
+                                    >
+                                      -- Selecciona un condómino --
+                                    </Combobox.Option>
+
+                                    {filteredUsers.length === 0 ? (
+                                      <div className="relative cursor-default select-none py-2 px-4 text-gray-700 dark:text-gray-300">
+                                        Sin resultados
+                                      </div>
+                                    ) : (
+                                      filteredUsers.map((user) => (
+                                        <Combobox.Option
+                                          key={user.uid}
+                                          value={user.uid}
+                                          className={({ active }) =>
+                                            `relative cursor-default select-none py-2 pl-8 pr-4 ${
+                                              active
+                                                ? "bg-indigo-600 text-white"
+                                                : "text-gray-900 dark:text-gray-100"
+                                            }`
+                                          }
+                                        >
+                                          {({ active }) => (
+                                            <>
+                                              <span
+                                                className={`block truncate ${
+                                                  selectedRecipientUid ===
+                                                  user.uid
+                                                    ? "font-medium"
+                                                    : "font-normal"
+                                                }`}
+                                              >
+                                                {user.number} {user.name}
+                                              </span>
+                                              {selectedRecipientUid ===
+                                                user.uid && (
+                                                <span
+                                                  className={`absolute inset-y-0 left-0 flex items-center pl-2 ${
+                                                    active
+                                                      ? "text-white"
+                                                      : "text-indigo-600"
+                                                  }`}
+                                                >
+                                                  <CheckIcon className="h-4 w-4" />
+                                                </span>
+                                              )}
+                                            </>
+                                          )}
+                                        </Combobox.Option>
+                                      ))
+                                    )}
+                                  </Combobox.Options>
+                                </Combobox>
                               </div>
                             </div>
                             {/* Fecha y hora de pago */}
