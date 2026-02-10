@@ -25,7 +25,7 @@ const BalanceGeneral: React.FC = () => {
     cleanupListeners: cleanupListenersIncomes,
     payments,
   } = usePaymentSummaryStore(
-    (state) => ({
+    ( state ) => ( {
       loading: state.loading,
       error: state.error,
       selectedYear: state.selectedYear,
@@ -37,7 +37,7 @@ const BalanceGeneral: React.FC = () => {
       setupRealtimeListeners: state.setupRealtimeListeners,
       cleanupListeners: state.cleanupListeners,
       payments: state.payments,
-    }),
+    } ),
     shallow
   );
 
@@ -48,25 +48,25 @@ const BalanceGeneral: React.FC = () => {
   // );
 
   // Calcular el total de ingresos incluyendo el saldo a favor y créditos utilizados
-  const totalIncomeWithCredit = useMemo(() => {
+  const totalIncomeWithCredit = useMemo( () => {
     const totalPaid = payments.reduce(
-      (acc, payment) => acc + payment.amountPaid,
+      ( acc, payment ) => acc + payment.amountPaid,
       0
     );
     const totalCreditUsed = payments.reduce(
-      (acc, payment) => acc + (payment.creditUsed || 0),
+      ( acc, payment ) => acc + ( payment.creditUsed || 0 ),
       0
     );
     const totalCreditBalance = payments.reduce(
-      (acc, payment) => acc + payment.creditBalance,
+      ( acc, payment ) => acc + payment.creditBalance,
       0
     );
     return (
       totalPaid +
-      (totalCreditBalance > 0 ? totalCreditBalance : 0) -
+      ( totalCreditBalance > 0 ? totalCreditBalance : 0 ) -
       totalCreditUsed
     );
-  }, [payments]);
+  }, [ payments ] );
 
   // Datos de egresos
   const {
@@ -80,7 +80,7 @@ const BalanceGeneral: React.FC = () => {
     setupRealtimeListeners: setupRealtimeListenersExpenses,
     cleanupListeners: cleanupListenersExpenses,
   } = useExpenseSummaryStore(
-    (state) => ({
+    ( state ) => ( {
       loading: state.loading,
       error: state.error,
       selectedYear: state.selectedYear,
@@ -91,40 +91,40 @@ const BalanceGeneral: React.FC = () => {
       shouldFetchData: state.shouldFetchData,
       setupRealtimeListeners: state.setupRealtimeListeners,
       cleanupListeners: state.cleanupListeners,
-    }),
+    } ),
     shallow
   );
 
   // Se asume que el año seleccionado es el mismo para ambos stores
   const selectedYear = selectedYearIncomes;
 
-  useEffect(() => {
-    const shouldFetchIncomes = shouldFetchDataIncomes(selectedYear);
-    const shouldFetchExpenses = shouldFetchDataExpenses(selectedYear);
+  useEffect( () => {
+    const shouldFetchIncomes = shouldFetchDataIncomes( selectedYear );
+    const shouldFetchExpenses = shouldFetchDataExpenses( selectedYear );
 
-    if (shouldFetchIncomes) {
-      fetchIncomes(selectedYear);
+    if ( shouldFetchIncomes ) {
+      fetchIncomes( selectedYear );
     }
-    if (shouldFetchExpenses) {
-      fetchExpenses(selectedYear);
+    if ( shouldFetchExpenses ) {
+      fetchExpenses( selectedYear );
     }
 
     // Configurar listeners cuando el componente se monta
-    setupRealtimeListenersIncomes(selectedYear);
-    setupRealtimeListenersExpenses(selectedYear);
+    setupRealtimeListenersIncomes( selectedYear );
+    setupRealtimeListenersExpenses( selectedYear );
 
     // Cleanup cuando el componente se desmonta o cambia el año
     return () => {
-      cleanupListenersIncomes(selectedYear);
-      cleanupListenersExpenses(selectedYear);
+      cleanupListenersIncomes( selectedYear );
+      cleanupListenersExpenses( selectedYear );
     };
-  }, [selectedYear]);
+  }, [ selectedYear ] );
 
   // Manejo del cambio de año
-  const handleYearChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleYearChange = ( e: React.ChangeEvent<HTMLSelectElement> ) => {
     const year = e.target.value;
-    setSelectedYearIncomes(year);
-    setSelectedYearExpenses(year);
+    setSelectedYearIncomes( year );
+    setSelectedYearExpenses( year );
   };
 
   // Consideramos que si alguno está en loading o da error, se muestra el estado
@@ -136,57 +136,57 @@ const BalanceGeneral: React.FC = () => {
 
   return (
     <div className="p-4">
-      {/* Selector de Año */}
+      {/* Selector de Año */ }
       <div className="flex flex-col md:flex-row gap-4 mb-4">
         <div>
           <label className="block font-medium mb-1">Año:</label>
           <select
-            value={selectedYear}
-            onChange={handleYearChange}
+            value={ selectedYear }
+            onChange={ handleYearChange }
             className="border border-gray-300 rounded py-2 px-8 dark:bg-gray-900 cursor-pointer"
           >
             <option value="">Todos los años</option>
-            {["2022", "2023", "2024", "2025"].map((y) => (
-              <option key={y} value={y}>
-                {y}
+            { [ "2022", "2023", "2024", "2025", "2026" ].map( ( y ) => (
+              <option key={ y } value={ y }>
+                { y }
               </option>
-            ))}
+            ) ) }
           </select>
         </div>
       </div>
 
-      {/* Loading / Error */}
-      {loading && <SkeletonLoading />}
-      {error && <p className="text-red-500">{error}</p>}
+      {/* Loading / Error */ }
+      { loading && <SkeletonLoading /> }
+      { error && <p className="text-red-500">{ error }</p> }
 
-      {/* Se muestran las secciones cuando ya no se está cargando */}
-      {!loading && (
+      {/* Se muestran las secciones cuando ya no se está cargando */ }
+      { !loading && (
         <>
-          {/* Cards con indicadores clave */}
+          {/* Cards con indicadores clave */ }
           <BalanceGeneralCards
-            totalIncome={totalIncomeWithCredit}
-            totalSpent={totalSpent}
-            netBalance={netBalance}
+            totalIncome={ totalIncomeWithCredit }
+            totalSpent={ totalSpent }
+            netBalance={ netBalance }
           />
 
-          {/* Gráfica comparativa de ingresos vs egresos */}
+          {/* Gráfica comparativa de ingresos vs egresos */ }
           <BalanceGeneralGraph
-            incomesMonthlyStats={monthlyStatsIncomes}
-            expensesMonthlyStats={monthlyStatsExpenses}
+            incomesMonthlyStats={ monthlyStatsIncomes }
+            expensesMonthlyStats={ monthlyStatsExpenses }
           />
 
-          {/* Tabla detallada con el desglose mensual */}
+          {/* Tabla detallada con el desglose mensual */ }
           <BalanceGeneralDetailTable
-            incomesMonthlyStats={monthlyStatsIncomes}
-            expensesMonthlyStats={monthlyStatsExpenses}
+            incomesMonthlyStats={ monthlyStatsIncomes }
+            expensesMonthlyStats={ monthlyStatsExpenses }
           />
 
-          {/* Reporte PDF del Balance General */}
-          <PDFBalanceGeneralReport year={selectedYear} />
+          {/* Reporte PDF del Balance General */ }
+          <PDFBalanceGeneralReport year={ selectedYear } />
         </>
-      )}
+      ) }
     </div>
   );
 };
 
-export default React.memo(BalanceGeneral);
+export default React.memo( BalanceGeneral );

@@ -9,8 +9,8 @@ import SkeletonLoading from "../../../../components/shared/loaders/SkeletonLoadi
 
 const PaymentSummaryByAccount: React.FC = () => {
   // Estados locales para controlar la carga independiente
-  const [isInitialLoading, setIsInitialLoading] = useState(true);
-  const [hasInitialized, setHasInitialized] = useState(false);
+  const [ isInitialLoading, setIsInitialLoading ] = useState( true );
+  const [ hasInitialized, setHasInitialized ] = useState( false );
 
   // Extrae datos del store de pagos
   const {
@@ -19,38 +19,38 @@ const PaymentSummaryByAccount: React.FC = () => {
     setSelectedYear,
     fetchSummary,
     loading: storeLoading,
-  } = usePaymentSummaryStore((state) => ({
+  } = usePaymentSummaryStore( ( state ) => ( {
     byFinancialAccount: state.byFinancialAccount,
     financialAccountsMap: state.financialAccountsMap,
     selectedYear: state.selectedYear,
     setSelectedYear: state.setSelectedYear,
     fetchSummary: state.fetchSummary,
     loading: state.loading,
-  }));
+  } ) );
 
   // Extrae funciones necesarias de otros stores
   const fetchAccounts = useFinancialAccountsStore(
-    (state) => state.fetchAccounts
+    ( state ) => state.fetchAccounts
   );
-  const { accounts } = useFinancialAccountsStore((state) => ({
+  const { accounts } = useFinancialAccountsStore( ( state ) => ( {
     accounts: state.accounts,
-  }));
+  } ) );
   const fetchCondominiumsUsers = useUserStore(
-    (state) => state.fetchCondominiumsUsers
+    ( state ) => state.fetchCondominiumsUsers
   );
 
   // Handler para cambio de año
-  const handleYearChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedYear(e.target.value);
+  const handleYearChange = ( e: React.ChangeEvent<HTMLSelectElement> ) => {
+    setSelectedYear( e.target.value );
   };
 
   // Efecto para cargar datos independientemente
-  useEffect(() => {
+  useEffect( () => {
     const loadIndependentData = async () => {
-      if (hasInitialized) return;
+      if ( hasInitialized ) return;
 
       try {
-        setIsInitialLoading(true);
+        setIsInitialLoading( true );
 
         // Cargar usuarios del condominio
         await fetchCondominiumsUsers();
@@ -59,13 +59,13 @@ const PaymentSummaryByAccount: React.FC = () => {
         await fetchAccounts();
 
         // Cargar resumen de pagos para el año seleccionado
-        await fetchSummary(selectedYear, true);
+        await fetchSummary( selectedYear, true );
 
-        setHasInitialized(true);
-      } catch (error) {
-        console.error("Error cargando datos independientes:", error);
+        setHasInitialized( true );
+      } catch ( error ) {
+        console.error( "Error cargando datos independientes:", error );
       } finally {
-        setIsInitialLoading(false);
+        setIsInitialLoading( false );
       }
     };
 
@@ -76,25 +76,25 @@ const PaymentSummaryByAccount: React.FC = () => {
     fetchAccounts,
     fetchSummary,
     selectedYear,
-  ]);
+  ] );
 
   // Efecto para recargar cuando cambie el año seleccionado
-  useEffect(() => {
-    if (hasInitialized) {
+  useEffect( () => {
+    if ( hasInitialized ) {
       const reloadForNewYear = async () => {
         try {
-          await fetchSummary(selectedYear, true);
-        } catch (error) {
-          console.error("Error recargando datos para nuevo año:", error);
+          await fetchSummary( selectedYear, true );
+        } catch ( error ) {
+          console.error( "Error recargando datos para nuevo año:", error );
         }
       };
 
       reloadForNewYear();
     }
-  }, [selectedYear, hasInitialized, fetchSummary]);
+  }, [ selectedYear, hasInitialized, fetchSummary ] );
 
   // Mostrar loading mientras se cargan los datos iniciales
-  if (isInitialLoading) {
+  if ( isInitialLoading ) {
     return (
       <div className="space-y-4">
         <SkeletonLoading />
@@ -103,7 +103,7 @@ const PaymentSummaryByAccount: React.FC = () => {
   }
 
   // Mostrar mensaje si no hay cuentas financieras configuradas
-  if (!accounts || accounts.length === 0) {
+  if ( !accounts || accounts.length === 0 ) {
     return (
       <div className="text-center text-gray-600 dark:text-gray-100 py-8">
         <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-6">
@@ -121,36 +121,36 @@ const PaymentSummaryByAccount: React.FC = () => {
 
   // Usar todas las cuentas disponibles, no solo las que tienen transacciones en el año
   const accountsToShow = accounts
-    .filter((account) => account.id) // Filtrar cuentas que tengan ID válido
-    .map((account) => ({
+    .filter( ( account ) => account.id ) // Filtrar cuentas que tengan ID válido
+    .map( ( account ) => ( {
       accountId: account.id!,
-      payments: byFinancialAccount[account.id!] || [],
+      payments: byFinancialAccount[ account.id! ] || [],
       name: account.name || "Cuenta sin nombre",
-    }));
+    } ) );
 
   return (
     <div className="space-y-8">
-      {/* Filtro de año */}
+      {/* Filtro de año */ }
       <div className="flex flex-col md:flex-row gap-4 mb-4">
         <div>
           <label className="block font-medium mb-1">Año:</label>
           <select
-            value={selectedYear}
-            onChange={handleYearChange}
+            value={ selectedYear }
+            onChange={ handleYearChange }
             className="border border-gray-300 rounded py-2 px-4 dark:bg-gray-900 dark:ring-0 dark:border-none"
           >
             <option value="">Todos los años</option>
-            {["2022", "2023", "2024", "2025"].map((y) => (
-              <option key={y} value={y}>
-                {y}
+            { [ "2022", "2023", "2024", "2025", "2026" ].map( ( y ) => (
+              <option key={ y } value={ y }>
+                { y }
               </option>
-            ))}
+            ) ) }
           </select>
         </div>
       </div>
 
-      {/* Indicador de carga si el store está cargando nuevos datos */}
-      {storeLoading && (
+      {/* Indicador de carga si el store está cargando nuevos datos */ }
+      { storeLoading && (
         <div className="bg-indigo-50 dark:bg-indigo-900 border border-indigo-200 dark:border-indigo-700 rounded-lg p-3 mb-4">
           <p className="text-sm text-indigo-700 dark:text-indigo-200 flex items-center">
             <svg
@@ -176,24 +176,24 @@ const PaymentSummaryByAccount: React.FC = () => {
             Actualizando datos...
           </p>
         </div>
-      )}
+      ) }
 
-      {accountsToShow.map(({ accountId, payments, name }) => (
+      { accountsToShow.map( ( { accountId, payments, name } ) => (
         <div
-          key={accountId}
+          key={ accountId }
           className="bg-gray-50 dark:bg-gray-800 shadow-lg rounded-md p-4"
         >
           <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">
-            Cuenta Financiera: {name}
+            Cuenta Financiera: { name }
           </h2>
 
-          {/* Cards de resumen para esta cuenta */}
-          <AccountSummaryCards payments={payments} accountId={accountId} />
+          {/* Cards de resumen para esta cuenta */ }
+          <AccountSummaryCards payments={ payments } accountId={ accountId } />
 
-          {/* Gráficas para esta cuenta */}
-          <AccountCharts payments={payments} />
+          {/* Gráficas para esta cuenta */ }
+          <AccountCharts payments={ payments } />
         </div>
-      ))}
+      ) ) }
     </div>
   );
 };

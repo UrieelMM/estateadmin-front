@@ -16,31 +16,31 @@ import {
 import LoadingApp from "../../../../components/shared/loaders/LoadingApp";
 import PDFReportGeneratorSingle from "./PDFReportGeneratorSingle";
 
-const chartColors = ["#8093E8", "#74B9E7", "#A7CFE6", "#B79FE6", "#C2ABE6"];
+const chartColors = [ "#8093E8", "#74B9E7", "#A7CFE6", "#B79FE6", "#C2ABE6" ];
 
 /**
  * Formato de moneda: $2,500.00
  */
-const formatCurrency = (value: number): string => {
+const formatCurrency = ( value: number ): string => {
   return (
     "$" +
-    value.toLocaleString("en-US", {
+    value.toLocaleString( "en-US", {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
-    })
+    } )
   );
 };
 
 const PaymentHistory = () => {
-  const [selectedUserUid, setSelectedUserUid] = useState<string>("");
-  const [selectedCondominiumNumber, setSelectedCondominiumNumber] =
-    useState<string>("");
+  const [ selectedUserUid, setSelectedUserUid ] = useState<string>( "" );
+  const [ selectedCondominiumNumber, setSelectedCondominiumNumber ] =
+    useState<string>( "" );
 
   // Obtener lista de condominios (usuarios)
   const fetchCondominiumsUsers = useUserStore(
-    (state) => state.fetchCondominiumsUsers
+    ( state ) => state.fetchCondominiumsUsers
   );
-  const condominiumsUsers = useUserStore((state) => state.condominiumsUsers);
+  const condominiumsUsers = useUserStore( ( state ) => state.condominiumsUsers );
 
   // Store de historial individual
   const {
@@ -60,35 +60,35 @@ const PaymentHistory = () => {
   } = usePaymentHistoryStore();
 
   // Cargar usuarios al montar
-  useEffect(() => {
+  useEffect( () => {
     fetchCondominiumsUsers();
-  }, [fetchCondominiumsUsers]);
+  }, [ fetchCondominiumsUsers ] );
 
   // Cuando el usuario selecciona un condómino, se actualiza el UID y el número
-  const handleUserChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleUserChange = ( e: React.ChangeEvent<HTMLSelectElement> ) => {
     const uid = e.target.value;
-    setSelectedUserUid(uid);
-    const user = condominiumsUsers.find((u) => u.uid === uid);
-    if (user) {
-      setSelectedCondominiumNumber(user.number ? String(user.number) : "");
+    setSelectedUserUid( uid );
+    const user = condominiumsUsers.find( ( u ) => u.uid === uid );
+    if ( user ) {
+      setSelectedCondominiumNumber( user.number ? String( user.number ) : "" );
     }
   };
 
   // Actualizar año y recargar datos
-  const handleYearChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleYearChange = ( e: React.ChangeEvent<HTMLSelectElement> ) => {
     const newYear = e.target.value;
-    setSelectedYear(newYear);
-    if (selectedCondominiumNumber) {
-      fetchPayments(selectedCondominiumNumber, newYear);
+    setSelectedYear( newYear );
+    if ( selectedCondominiumNumber ) {
+      fetchPayments( selectedCondominiumNumber, newYear );
     }
   };
 
   // Reconsultar historial si cambia el condómino o el año
-  useEffect(() => {
-    if (selectedCondominiumNumber && selectedYear) {
-      fetchPayments(selectedCondominiumNumber, selectedYear);
+  useEffect( () => {
+    if ( selectedCondominiumNumber && selectedYear ) {
+      fetchPayments( selectedCondominiumNumber, selectedYear );
     }
-  }, [selectedCondominiumNumber, selectedYear, fetchPayments]);
+  }, [ selectedCondominiumNumber, selectedYear, fetchPayments ] );
 
   const monthNames: Record<string, string> = {
     "01": "Enero",
@@ -106,7 +106,7 @@ const PaymentHistory = () => {
   };
 
   // Preparar datos para la gráfica: agrupar por mes (YYYY-MM) => { paid, pending, saldo }
-  const chartData = useMemo(() => {
+  const chartData = useMemo( () => {
     // Inicializar el resultado
     const result: Record<
       string,
@@ -120,9 +120,9 @@ const PaymentHistory = () => {
     > = {};
 
     // Inicializar todos los meses
-    for (let i = 1; i <= 12; i++) {
-      const monthPart = i.toString().padStart(2, "0");
-      result[monthPart] = {
+    for ( let i = 1; i <= 12; i++ ) {
+      const monthPart = i.toString().padStart( 2, "0" );
+      result[ monthPart ] = {
         paid: 0,
         pending: 0,
         saldo: 0,
@@ -132,17 +132,17 @@ const PaymentHistory = () => {
     }
 
     // Procesar pagos por mes
-    Object.entries(detailed).forEach(([monthKey, monthPayments]) => {
+    Object.entries( detailed ).forEach( ( [ monthKey, monthPayments ] ) => {
       // Extraer solo el mes (MM) de la clave YYYY-MM
       let monthPart = "";
-      if (monthKey.includes("-")) {
-        const [_yearPart, month] = monthKey.split("-");
+      if ( monthKey.includes( "-" ) ) {
+        const [ _yearPart, month ] = monthKey.split( "-" );
         monthPart = month;
       } else {
         monthPart = monthKey;
       }
 
-      if (!result[monthPart]) return;
+      if ( !result[ monthPart ] ) return;
 
       // Acumular pagos
       let totalPaid = 0;
@@ -150,71 +150,71 @@ const PaymentHistory = () => {
       let totalCreditBalance = 0;
 
       // Sumar todos los pagos del mes
-      monthPayments.forEach((payment) => {
+      monthPayments.forEach( ( payment ) => {
         totalPaid += payment.amountPaid;
         totalCreditUsed += payment.creditUsed || 0;
         totalCreditBalance += payment.creditBalance;
-      });
+      } );
 
       // Asignar valores
-      result[monthPart].paid = totalPaid;
-      result[monthPart].creditUsed = totalCreditUsed;
-      result[monthPart].creditBalance = totalCreditBalance;
+      result[ monthPart ].paid = totalPaid;
+      result[ monthPart ].creditUsed = totalCreditUsed;
+      result[ monthPart ].creditBalance = totalCreditBalance;
 
       // Para los cargos, usar el primer payment que tiene el referenceAmount correcto para el mes
-      if (monthPayments.length > 0) {
+      if ( monthPayments.length > 0 ) {
         // Todos los pagos del mismo mes tienen el mismo referenceAmount que es el total de cargos del mes
-        result[monthPart].pending = monthPayments[0].referenceAmount;
+        result[ monthPart ].pending = monthPayments[ 0 ].referenceAmount;
       }
 
       // Calcular saldo
-      result[monthPart].saldo =
-        result[monthPart].pending - result[monthPart].paid;
-    });
+      result[ monthPart ].saldo =
+        result[ monthPart ].pending - result[ monthPart ].paid;
+    } );
 
     return result;
-  }, [detailed]);
+  }, [ detailed ] );
 
   // Convertir objeto en array ordenada por mes
-  const chartArray = Object.entries(chartData)
-    .sort((a, b) => parseInt(a[0]) - parseInt(b[0]))
-    .map(([month, data]) => ({
-      month: monthNames[month] || month,
+  const chartArray = Object.entries( chartData )
+    .sort( ( a, b ) => parseInt( a[ 0 ] ) - parseInt( b[ 0 ] ) )
+    .map( ( [ month, data ] ) => ( {
+      month: monthNames[ month ] || month,
       paid:
         data.paid +
-        (data.creditBalance > 0 ? data.creditBalance : 0) -
+        ( data.creditBalance > 0 ? data.creditBalance : 0 ) -
         data.creditUsed,
       pending: data.pending,
       saldo: data.saldo,
-    }));
+    } ) );
 
   // Cálculos interesantes: totalPaidYear y mes con mayor recaudación se basan en el gráfico
-  const { totalPaidYear, bestMonthName } = useMemo(() => {
+  const { totalPaidYear, bestMonthName } = useMemo( () => {
     let totalPaidYear = 0;
     let monthMaxIndex = -1;
     let maxPaid = 0;
 
-    chartArray.forEach((item, idx) => {
+    chartArray.forEach( ( item, idx ) => {
       totalPaidYear += item.paid;
-      if (item.paid > maxPaid) {
+      if ( item.paid > maxPaid ) {
         maxPaid = item.paid;
         monthMaxIndex = idx;
       }
-    });
+    } );
 
     const bestMonthName =
-      monthMaxIndex !== -1 ? chartArray[monthMaxIndex].month : "N/A";
+      monthMaxIndex !== -1 ? chartArray[ monthMaxIndex ].month : "N/A";
     return { totalPaidYear, bestMonthName };
-  }, [chartArray]);
+  }, [ chartArray ] );
 
   // Obtenemos el condómino seleccionado (para el PDF)
   const selectedCondo = condominiumsUsers.find(
-    (u) => u.uid === selectedUserUid
+    ( u ) => u.uid === selectedUserUid
   );
 
   return (
     <div className="p-4">
-      {/* Filtros: Selección de Condómino y Año */}
+      {/* Filtros: Selección de Condómino y Año */ }
       <div className="flex flex-col gap-4 mb-4 mt-6">
         <div>
           <h2 className="text-xl font-bold mb-4">
@@ -224,52 +224,52 @@ const PaymentHistory = () => {
             Selecciona un Condómino
           </label>
           <select
-            value={selectedUserUid}
-            onChange={handleUserChange}
+            value={ selectedUserUid }
+            onChange={ handleUserChange }
             className="w-full pl-2 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
           >
             <option value="">-- Selecciona un condómino --</option>
-            {condominiumsUsers
+            { condominiumsUsers
               .filter(
-                (user) =>
+                ( user ) =>
                   user.role !== "admin" &&
                   user.role !== "super-admin" &&
                   user.role !== "security"
               )
-              .map((user) => (
-                <option key={user.uid} value={user.uid}>
-                  {user.number} {user.name}
+              .map( ( user ) => (
+                <option key={ user.uid } value={ user.uid }>
+                  { user.number } { user.name }
                 </option>
-              ))}
+              ) ) }
           </select>
         </div>
         <div>
           <label className="block font-medium mb-1">Año</label>
           <select
-            value={selectedYear}
-            onChange={handleYearChange}
+            value={ selectedYear }
+            onChange={ handleYearChange }
             className="w-full pl-2 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
           >
-            {["2022", "2023", "2024", "2025"].map((year) => (
-              <option key={year} value={year}>
-                {year}
+            { [ "2022", "2023", "2024", "2025", "2026" ].map( ( year ) => (
+              <option key={ year } value={ year }>
+                { year }
               </option>
-            ))}
+            ) ) }
           </select>
         </div>
       </div>
 
-      {loading && <LoadingApp />}
-      {error && <p className="text-red-500">Error: {error}</p>}
+      { loading && <LoadingApp /> }
+      { error && <p className="text-red-500">Error: { error }</p> }
 
-      {/* Tarjetas con datos interesantes del año */}
+      {/* Tarjetas con datos interesantes del año */ }
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
         <div className="p-4 shadow-md rounded-md">
           <p className="text-sm text-gray-600 dark:text-gray-100">
             Total Monto Abonado
           </p>
           <p className="text-xl font-semibold">
-            {formatCurrency(totalPaidYear)}
+            { formatCurrency( totalPaidYear ) }
           </p>
         </div>
         <div className="p-4 shadow-md rounded-md">
@@ -277,90 +277,90 @@ const PaymentHistory = () => {
             Total Cargos
           </p>
           <p className="text-xl font-semibold">
-            {formatCurrency(pendingAmount)}
+            { formatCurrency( pendingAmount ) }
           </p>
         </div>
         <div className="p-4 shadow-md rounded-md">
           <p className="text-sm text-gray-600 dark:text-gray-100">Saldo</p>
           <p className="text-xl font-semibold">
-            {formatCurrency(pendingAmount - totalPaidYear)}
+            { formatCurrency( pendingAmount - totalPaidYear ) }
           </p>
         </div>
         <div className="p-4 shadow-md rounded-md">
           <p className="text-sm text-gray-600 dark:text-gray-100">
             Mes con mayor recaudación
           </p>
-          <p className="text-xl font-semibold">{bestMonthName}</p>
+          <p className="text-xl font-semibold">{ bestMonthName }</p>
         </div>
       </div>
 
-      {/* Gráfica: Resumen por Mes */}
+      {/* Gráfica: Resumen por Mes */ }
       <div className="mt-4">
         <h3 className="text-xl font-semibold mb-2">Resumen por mes</h3>
-        {chartArray.length > 0 ? (
-          <ResponsiveContainer width="100%" height={300}>
+        { chartArray.length > 0 ? (
+          <ResponsiveContainer width="100%" height={ 300 }>
             <LineChart
-              data={chartArray}
-              margin={{ top: 20, right: 20, left: 0, bottom: 0 }}
+              data={ chartArray }
+              margin={ { top: 20, right: 20, left: 0, bottom: 0 } }
             >
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="month" />
               <YAxis
-                tickFormatter={(val: number) => formatCurrency(val)}
-                width={80}
+                tickFormatter={ ( val: number ) => formatCurrency( val ) }
+                width={ 80 }
               />
-              <Tooltip formatter={(val: number) => formatCurrency(val)} />
+              <Tooltip formatter={ ( val: number ) => formatCurrency( val ) } />
               <Legend />
               <Line
                 type="monotone"
                 dataKey="paid"
                 name="Monto Abonado"
-                stroke={chartColors[0]}
-                strokeWidth={2}
-                dot={{ r: 3 }}
-                activeDot={{ r: 5 }}
+                stroke={ chartColors[ 0 ] }
+                strokeWidth={ 2 }
+                dot={ { r: 3 } }
+                activeDot={ { r: 5 } }
               />
               <Line
                 type="monotone"
                 dataKey="pending"
                 name="Cargos"
-                stroke={chartColors[1]}
-                strokeWidth={2}
-                dot={{ r: 3 }}
-                activeDot={{ r: 5 }}
+                stroke={ chartColors[ 1 ] }
+                strokeWidth={ 2 }
+                dot={ { r: 3 } }
+                activeDot={ { r: 5 } }
               />
               <Line
                 type="monotone"
                 dataKey="saldo"
                 name="Saldo"
-                stroke={chartColors[2]}
-                strokeWidth={2}
-                dot={{ r: 3 }}
-                activeDot={{ r: 5 }}
+                stroke={ chartColors[ 2 ] }
+                strokeWidth={ 2 }
+                dot={ { r: 3 } }
+                activeDot={ { r: 5 } }
               />
             </LineChart>
           </ResponsiveContainer>
         ) : (
           <p>No hay datos para mostrar en el gráfico.</p>
-        )}
+        ) }
       </div>
 
-      {/* Reporte PDF individual */}
-      {selectedUserUid && selectedCondo && (
+      {/* Reporte PDF individual */ }
+      { selectedUserUid && selectedCondo && (
         <PDFReportGeneratorSingle
-          year={selectedYear}
-          condominium={{
+          year={ selectedYear }
+          condominium={ {
             number: selectedCondo.number || "",
             name: selectedCondo.name || "",
-          }}
-          detailed={detailed}
-          detailedByConcept={detailedByConcept}
-          adminCompany={adminCompany}
-          adminPhone={adminPhone}
-          adminEmail={adminEmail}
-          logoBase64={logoBase64}
+          } }
+          detailed={ detailed }
+          detailedByConcept={ detailedByConcept }
+          adminCompany={ adminCompany }
+          adminPhone={ adminPhone }
+          adminEmail={ adminEmail }
+          logoBase64={ logoBase64 }
         />
-      )}
+      ) }
     </div>
   );
 };

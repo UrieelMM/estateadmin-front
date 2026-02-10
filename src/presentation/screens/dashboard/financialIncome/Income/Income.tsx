@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useLayoutEffect } from "react";
 import PaymentForm from "../../../../components/shared/forms/PaymentForm";
 import PaymentHistory from "./PaymentHistory";
 import PaymentSummary from "./PaymentSummary";
@@ -12,21 +12,28 @@ const Income = () => {
   const [open, setOpen] = useState(false);
   // Ahora el estado puede ser: "summary", "accountSummary", "history" o "morosidad"
   const [activeTab, setActiveTab] = useState("summary");
-  const { fetchSummary, cleanupListeners } = usePaymentSummaryStore(
+  const { fetchSummary, cleanupListeners, selectedYear, setSelectedYear } =
+    usePaymentSummaryStore(
     (state) => ({
       fetchSummary: state.fetchSummary,
       cleanupListeners: state.cleanupListeners,
+      selectedYear: state.selectedYear,
+      setSelectedYear: state.setSelectedYear,
     })
-  );
+    );
+
+  useLayoutEffect(() => {
+    // Income debe abrir por defecto en vista global ("Todos los años").
+    setSelectedYear("");
+  }, [setSelectedYear]);
 
   useEffect(() => {
     let isMounted = true;
-    const currentYear = new Date().getFullYear().toString();
 
     const loadData = async () => {
       try {
         if (isMounted) {
-          await fetchSummary(currentYear, true);
+          await fetchSummary(selectedYear, true);
         }
       } catch (error) {
         console.error("Error loading summary:", error);
@@ -37,15 +44,14 @@ const Income = () => {
 
     return () => {
       isMounted = false;
-      cleanupListeners(currentYear);
+      cleanupListeners(selectedYear);
     };
-  }, [fetchSummary, cleanupListeners]);
+  }, [fetchSummary, cleanupListeners, selectedYear]);
 
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
     if (["summary", "accountSummary"].includes(tab)) {
-      const currentYear = new Date().getFullYear().toString();
-      fetchSummary(currentYear).catch((error) => {
+      fetchSummary(selectedYear).catch((error) => {
         console.error("Error refreshing summary:", error);
       });
     }
