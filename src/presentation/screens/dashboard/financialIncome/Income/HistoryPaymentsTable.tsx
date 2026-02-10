@@ -53,6 +53,7 @@ const HistoryPaymentsTable: React.FC = () => {
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [searchResults, setSearchResults] = useState<PaymentRecord[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [folioQuery, setFolioQuery] = useState("");
 
   const {
     completedPayments,
@@ -104,25 +105,6 @@ const HistoryPaymentsTable: React.FC = () => {
     const newFilters = { ...filters, [key]: value };
     setFilters(newFilters);
 
-    if (key === "folio") {
-      if (value.trim()) {
-        setIsSearching(true);
-        try {
-          const results = await searchPaymentByFolio(value.trim());
-          setSearchResults(results);
-          setShowSearchModal(true);
-        } catch (error) {
-          console.error("Error al buscar por folio:", error);
-        } finally {
-          setIsSearching(false);
-        }
-      } else {
-        setShowSearchModal(false);
-        setSearchResults([]);
-      }
-      return;
-    }
-
     setCurrentPage(1);
     setPageCursors([null]);
     setHasMore(true);
@@ -134,6 +116,29 @@ const HistoryPaymentsTable: React.FC = () => {
     });
     setHasMore(count === ITEMS_PER_PAGE);
     setLoadingPayments(false);
+  };
+
+  const handleSearchByFolio = async () => {
+    if (isSearching) return;
+
+    const folio = folioQuery.trim();
+    if (!folio) {
+      setShowSearchModal(false);
+      setSearchResults([]);
+      return;
+    }
+
+    setIsSearching(true);
+    setShowSearchModal(true);
+    try {
+      const results = await searchPaymentByFolio(folio);
+      setSearchResults(results);
+    } catch (error) {
+      console.error("Error al buscar por folio:", error);
+      setSearchResults([]);
+    } finally {
+      setIsSearching(false);
+    }
   };
 
   // Manejo de cambio de página (anterior/siguiente o salto directo)
@@ -203,12 +208,26 @@ const HistoryPaymentsTable: React.FC = () => {
             </div>
             <input
               type="text"
-              value={filters.folio}
-              onChange={(e) => handleFilterChange("folio", e.target.value)}
+              value={folioQuery}
+              onChange={(e) => setFolioQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  handleSearchByFolio();
+                }
+              }}
               placeholder="Buscar por folio..."
               className="block w-full rounded-md border border-gray-300 bg-white py-2 pl-10 pr-3 text-sm placeholder-gray-500 focus:border-indigo-500 focus:text-gray-900 focus:placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300"
             />
           </div>
+          <button
+            type="button"
+            onClick={handleSearchByFolio}
+            disabled={isSearching}
+            className="flex items-center rounded-md bg-indigo-600 px-3 py-2 text-center text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 disabled:opacity-60 disabled:cursor-not-allowed focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+          >
+            Buscar
+          </button>
           <button
             type="button"
             onClick={() => setShowFilters(!showFilters)}
@@ -516,7 +535,7 @@ const HistoryPaymentsTable: React.FC = () => {
                     className="rounded-md bg-white dark:bg-gray-800 text-gray-400 hover:text-gray-500 focus:outline-none"
                     onClick={() => {
                       setShowSearchModal(false);
-                      setFilters((prev) => ({ ...prev, folio: "" }));
+                      setFolioQuery("");
                     }}
                   >
                     <XMarkIcon className="h-6 w-6" />

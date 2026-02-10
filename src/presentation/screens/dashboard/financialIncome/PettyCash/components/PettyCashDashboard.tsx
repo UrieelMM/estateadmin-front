@@ -35,11 +35,15 @@ const PettyCashDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [noAccount, setNoAccount] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  // Ya no necesitamos el estado del modal, usamos navegación directa
 
   // Usamos useState en lugar de useRef para manejar el estado de inicialización
   const [isInitialized, setIsInitialized] = useState<boolean>(false);
-  const [_shouldShowSetup, setShouldShowSetup] = useState<boolean>(false);
+  const isCashAccount = (account: { name: string; type?: string }) =>
+    (account.name.toLowerCase().includes("caja chica") ||
+      account.name.toLowerCase().includes("cajachica")) &&
+    account.type &&
+    (account.type.toLowerCase() === "efectivo" ||
+      account.type.toLowerCase() === "cash");
 
   // Efecto para la inicialización inicial y carga de datos
   useEffect(() => {
@@ -48,7 +52,6 @@ const PettyCashDashboard: React.FC = () => {
       if (isInitialized) return; // Evitar múltiples inicializaciones
 
       setLoading(true);
-      setShouldShowSetup(false); // Reiniciar el estado
 
       try {
         // 1. Cargar cuentas financieras
@@ -60,7 +63,6 @@ const PettyCashDashboard: React.FC = () => {
         // 3. Si hay configuración, ya está listo
         if (configData) {
           setNoAccount(false);
-          setShouldShowSetup(false);
           await fetchTransactions();
           setIsInitialized(true);
           return;
@@ -68,29 +70,19 @@ const PettyCashDashboard: React.FC = () => {
 
         // 4. Si no hay configuración, verificar si existe una cuenta adecuada
 
-        // Buscar una cuenta de caja chica activa
-        const hasCashAccount = financialAccounts.some(
-          (account) =>
-            (account.name.toLowerCase().includes("caja chica") ||
-              account.name.toLowerCase().includes("cajachica")) &&
-            account.type &&
-            (account.type.toLowerCase() === "efectivo" ||
-              account.type.toLowerCase() === "cash")
-        );
+        // Tomamos snapshot actualizado del store para evitar usar estado stale.
+        const refreshedAccounts = usePaymentStore.getState().financialAccounts;
+        const hasCashAccount = refreshedAccounts.some(isCashAccount);
 
         if (hasCashAccount) {
-          console.log("✅ Se encontró una cuenta de Caja Chica válida");
-          setShouldShowSetup(true); // Mostrar opción de configuración
           setNoAccount(false); // No mostrar mensaje de crear cuenta
         } else {
-          console.log("❌ No se encontró ninguna cuenta de Caja Chica válida");
           setNoAccount(true); // Mostrar mensaje de crear cuenta
         }
 
         // 5. Establecer como inicializado
         setIsInitialized(true);
-      } catch (error) {
-        console.error("Error durante la inicialización de Caja Chica:", error);
+      } catch {
       } finally {
         setLoading(false);
       }
@@ -98,21 +90,14 @@ const PettyCashDashboard: React.FC = () => {
 
     // Ejecutar carga de datos
     loadInitialData();
-  }, [fetchFinancialAccounts, fetchConfig, fetchTransactions]);
+  }, [fetchFinancialAccounts, fetchConfig, fetchTransactions, isInitialized]);
 
   // Efecto secundario cuando cambian las cuentas (después de inicialización)
   useEffect(() => {
     if (!isInitialized) return;
 
     // Verificar si existe una cuenta de caja chica entre las cuentas actuales
-    const hasCashAccount = financialAccounts.some(
-      (account) =>
-        (account.name.toLowerCase().includes("caja chica") ||
-          account.name.toLowerCase().includes("cajachica")) &&
-        account.type &&
-        (account.type.toLowerCase() === "efectivo" ||
-          account.type.toLowerCase() === "cash")
-    );
+    const hasCashAccount = financialAccounts.some(isCashAccount);
 
     setNoAccount(!hasCashAccount);
   }, [financialAccounts, isInitialized]);
@@ -460,19 +445,27 @@ const PettyCashDashboard: React.FC = () => {
                         </td>
                         <td
                           className={`px-4 py-3 whitespace-nowrap text-sm font-medium text-right ${
-                            transaction.type ===
-                            PettyCashTransactionType.EXPENSE
+                            transaction.type === PettyCashTransactionType.EXPENSE ||
+                            (transaction.type ===
+                              PettyCashTransactionType.ADJUSTMENT &&
+                              transaction.amount < 0)
                               ? "text-red-600 dark:text-red-400"
                               : "text-green-600 dark:text-green-400"
                           }`}
                         >
-                          {transaction.type === PettyCashTransactionType.EXPENSE
+                          {transaction.type === PettyCashTransactionType.EXPENSE ||
+                          (transaction.type ===
+                            PettyCashTransactionType.ADJUSTMENT &&
+                            transaction.amount < 0)
                             ? "-"
                             : "+"}
                           $
-                          {(transaction.amount / 100).toLocaleString("es-MX", {
-                            minimumFractionDigits: 2,
-                          })}
+                          {(Math.abs(transaction.amount) / 100).toLocaleString(
+                            "es-MX",
+                            {
+                              minimumFractionDigits: 2,
+                            }
+                          )}
                         </td>
                       </tr>
                     ))

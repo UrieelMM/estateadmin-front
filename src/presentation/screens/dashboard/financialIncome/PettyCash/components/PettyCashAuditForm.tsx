@@ -67,13 +67,20 @@ const PettyCashAuditForm: React.FC = () => {
   useEffect(() => {
     // Cargar datos iniciales
     const loadData = async () => {
-      await fetchConfig();
-      await fetchTransactions();
-      setTheoreticalAmount(currentBalance);
+      try {
+        await fetchConfig();
+        await fetchTransactions();
+      } catch (err: any) {
+        setError(err?.message || "Error al cargar datos de caja chica");
+      }
     };
 
     loadData();
   }, [fetchConfig, fetchTransactions]);
+
+  useEffect(() => {
+    setTheoreticalAmount(currentBalance);
+  }, [currentBalance]);
 
   // Actualizar diferencia cuando cambia el monto físico o teórico
   useEffect(() => {

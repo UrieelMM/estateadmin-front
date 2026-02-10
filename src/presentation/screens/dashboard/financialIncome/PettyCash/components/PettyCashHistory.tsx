@@ -35,6 +35,7 @@ const PettyCashHistory: React.FC = () => {
 
   const loadHistoricalCashBoxes = async () => {
     setLoading(true);
+    setError(null);
     try {
       const cashBoxes = await fetchHistoricalCashBoxes();
       setHistoricalCashBoxes(cashBoxes);
@@ -52,6 +53,7 @@ const PettyCashHistory: React.FC = () => {
 
   const handleLoadCashBox = async (cashBoxId: string) => {
     setLoading(true);
+    setError(null);
     try {
       await loadHistoricalCashBox(cashBoxId);
       // Redirigir a la pantalla de transacciones históricas
@@ -74,7 +76,7 @@ const PettyCashHistory: React.FC = () => {
       <div className="p-6 border-b border-gray-200 dark:border-gray-700">
         <div className="flex mb-2 justify-between items-center">
           <h2 className="text-xl font-bold text-gray-800 dark:text-white">
-            Historial de Cajas Chica
+            Historial de Cajas Chicas
           </h2>
           <div>
             <button
@@ -116,7 +118,7 @@ const PettyCashHistory: React.FC = () => {
               Sin historial
             </h3>
             <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto">
-              No hay cajas chica históricas. El historial se creará cuando
+              No hay cajas chicas históricas. El historial se creará cuando
               finalices el periodo actual y crees una nueva caja.
             </p>
           </div>
@@ -298,13 +300,13 @@ const PettyCashHistory: React.FC = () => {
                           Saldo Final
                         </p>
                         <p className="text-sm font-medium text-gray-900 dark:text-white">
-                          {selectedCashBox.finalBalance
+                          {selectedCashBox.finalBalance !== undefined
                             ? formatCurrency(selectedCashBox.finalBalance / 100)
                             : "No disponible"}
                         </p>
                       </div>
-                      {selectedCashBox.finalBalance &&
-                        selectedCashBox.initialAmount && (
+                      {selectedCashBox.finalBalance !== undefined &&
+                        selectedCashBox.initialAmount !== undefined && (
                           <div className="col-span-2">
                             <p className="text-xs text-gray-500 dark:text-gray-400">
                               Variación

@@ -38,17 +38,11 @@ const PettyCash: React.FC = () => {
   useEffect(() => {
     const preloadData = async () => {
       try {
-        // Cargar las cuentas financieras primero
-        console.log(
-          "🔍 Precargando cuentas financieras desde el componente principal..."
-        );
         await fetchFinancialAccounts();
-        console.log(
-          `✅ Cuentas precargadas: ${financialAccounts.length} cuentas disponibles`
-        );
+      } catch {
+      } finally {
+        // Evita que la pantalla quede bloqueada en loading si la precarga falla.
         setAccountsLoaded(true);
-      } catch (error) {
-        console.error("Error al precargar cuentas financieras:", error);
       }
     };
 

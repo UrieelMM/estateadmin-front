@@ -16,6 +16,7 @@ import {
   addDoc,
   updateDoc,
   getDoc,
+  deleteDoc,
 } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { useExpenseStore } from "./expenseStore";
@@ -67,10 +68,12 @@ export interface PettyCashTransaction {
   expenseDate: string; // ISO format
   createdAt: string; // ISO format
   receiptUrl?: string;
+  providerId?: string;
   provider?: {
     id: string;
     name: string;
   };
+  sourceAccountId?: string; // Cuenta origen (reposiciones)
   auditId?: string; // Referencia al Cierre relacionado
   expenseId?: string; // Referencia al egreso registrado (si aplica)
   userId: string; // Usuario que realizó la transacción
@@ -97,6 +100,7 @@ export interface PettyCashAudit {
   approvedAt?: string;
   adjustmentTransactionId?: string; // ID de la transacción de ajuste (si fue necesario)
   cashBoxPeriod?: string; // Periodo de la caja a la que pertenece el cierre
+  cashBoxId?: string; // ID de la caja a la que pertenece el cierre
 }
 
 /**
@@ -130,6 +134,7 @@ export interface PettyCashTransactionCreateInput {
   description: string;
   expenseDate: string; // ISO format
   providerId?: string; // ID del proveedor
+  sourceAccountId?: string; // ID de cuenta de origen (reposiciones)
   file?: File; // Archivo de comprobante
   auditId?: string;
   cashBoxId?: string; // ID de la caja a la que pertenece
@@ -195,7 +200,8 @@ interface PettyCashState {
   replenishFunds: (
     amount: number,
     description: string,
-    date: string
+    date: string,
+    sourceAccountId?: string
   ) => Promise<void>;
 
   // Función para calcular el saldo actual
@@ -231,6 +237,29 @@ async function generateUniqueId(): Promise<string> {
     Math.floor(Math.random() * 10)
   ).join("");
   return `PC-${randomNumbers}`;
+}
+
+// Normaliza valores de fecha (Timestamp/Date/string) a ISO
+function toIsoDate(value: any): string | undefined {
+  if (!value) return undefined;
+
+  if (typeof value === "string") {
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? undefined : date.toISOString();
+  }
+
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? undefined : value.toISOString();
+  }
+
+  if (typeof value?.toDate === "function") {
+    const date = value.toDate();
+    return date instanceof Date && !Number.isNaN(date.getTime())
+      ? date.toISOString()
+      : undefined;
+  }
+
+  return undefined;
 }
 
 // Función para obtener el usuario actual y su token
@@ -280,26 +309,27 @@ export const usePettyCashStore = create<PettyCashState>()((set, get) => ({
       }
 
       const configData = snap.docs[0].data();
+      const createdAt = toIsoDate(configData.createdAt) || new Date().toISOString();
+      const updatedAt = toIsoDate(configData.updatedAt) || createdAt;
+      const startDate = toIsoDate(configData.startDate) || createdAt;
+      const endDate = toIsoDate(configData.endDate);
       const config: PettyCashConfig = {
         id: snap.docs[0].id,
         initialAmount: configData.initialAmount,
         thresholdAmount: configData.thresholdAmount,
         accountId: configData.accountId,
         accountName: configData.accountName || "",
-        createdAt: configData.createdAt?.toDate?.()
-          ? configData.createdAt.toDate().toISOString()
-          : new Date().toISOString(),
-        updatedAt: configData.updatedAt?.toDate?.()
-          ? configData.updatedAt.toDate().toISOString()
-          : new Date().toISOString(),
-        active: configData.active || true,
+        createdAt,
+        updatedAt,
+        active:
+          typeof configData.active === "boolean" ? configData.active : true,
         period: configData.period || "",
-        startDate:
-          configData.startDate || configData.createdAt?.toDate?.()
-            ? configData.createdAt.toDate().toISOString()
-            : new Date().toISOString(),
+        startDate,
+        endDate,
         previousCashBoxId: configData.previousCashBoxId,
+        nextCashBoxId: configData.nextCashBoxId,
         finalBalance: configData.finalBalance,
+        notes: configData.notes,
       };
 
       set({ config, loading: false });
@@ -507,7 +537,9 @@ export const usePettyCashStore = create<PettyCashState>()((set, get) => ({
           expenseDate: data.expenseDate,
           createdAt: data.createdAt,
           receiptUrl: data.receiptUrl,
+          providerId: data.providerId || data.provider?.id,
           provider: data.provider,
+          sourceAccountId: data.sourceAccountId,
           auditId: data.auditId,
           expenseId: data.expenseId,
           userId: data.userId,
@@ -573,7 +605,8 @@ export const usePettyCashStore = create<PettyCashState>()((set, get) => ({
         return;
       }
 
-      const audits: PettyCashAudit[] = snap.docs.map((doc) => {
+      const currentConfig = get().config;
+      let audits: PettyCashAudit[] = snap.docs.map((doc) => {
         const data = doc.data();
         return {
           id: doc.id,
@@ -590,8 +623,20 @@ export const usePettyCashStore = create<PettyCashState>()((set, get) => ({
           approvedAt: data.approvedAt,
           adjustmentTransactionId: data.adjustmentTransactionId,
           cashBoxPeriod: data.cashBoxPeriod,
+          cashBoxId: data.cashBoxId,
         };
       });
+
+      // Filtrar por la caja actual para evitar mezclar cierres de otros periodos.
+      if (currentConfig?.id) {
+        audits = audits.filter((audit) => {
+          if (audit.cashBoxId) return audit.cashBoxId === currentConfig.id;
+          if (audit.cashBoxPeriod && currentConfig.period) {
+            return audit.cashBoxPeriod === currentConfig.period;
+          }
+          return false;
+        });
+      }
 
       // Ordenar por fecha (más reciente primero)
       audits.sort(
@@ -675,26 +720,21 @@ export const usePettyCashStore = create<PettyCashState>()((set, get) => ({
         transaction.providerId = data.providerId;
       }
 
+      if (data.sourceAccountId) {
+        transaction.sourceAccountId = data.sourceAccountId;
+      }
+
       if (data.auditId) {
         transaction.auditId = data.auditId;
       }
 
-      // Añadir el ID de la caja anterior si se proporciona (solo para transacciones iniciales)
-      if (data.previousCashBoxId) {
-        transaction.previousCashBoxId = data.previousCashBoxId;
-      }
+      let createdExpenseId: string | undefined;
+      let originalWriteError: any;
 
-      // Guardar en Firestore
-      const docRef = createDoc(transactionsRef);
-      await setDoc(docRef, transaction);
-
-      // Si es un gasto, crear entrada en el store de egresos
+      // Si es un gasto, creamos primero el egreso para evitar transacciones
+      // huérfanas en caja chica cuando falla el registro contable.
       if (data.type === PettyCashTransactionType.EXPENSE) {
-        // Crear egreso utilizando el store de egresos
         const expenseStore = useExpenseStore.getState();
-
-        // Crear objeto de egreso sin campos undefined
-        // Mapeo de categorías de inglés a español para expenses
         const categoryMap: Record<string, string> = {
           [PettyCashCategory.OFFICE_SUPPLIES]: "Papelería",
           [PettyCashCategory.CLEANING]: "Limpieza",
@@ -703,7 +743,6 @@ export const usePettyCashStore = create<PettyCashState>()((set, get) => ({
           [PettyCashCategory.MISCELLANEOUS]: "Varios",
         };
 
-        // Usar el nombre traducido si existe, o dejarlo como está
         const conceptName =
           data.category && categoryMap[data.category]
             ? categoryMap[data.category]
@@ -719,16 +758,43 @@ export const usePettyCashStore = create<PettyCashState>()((set, get) => ({
           providerId: data.providerId,
         };
 
-        // Añadir file solo si existe
         if (data.file) {
           expenseData.file = data.file;
         }
 
-        await expenseStore.addExpense(expenseData);
+        createdExpenseId = await expenseStore.addExpense(expenseData);
+        transaction.expenseId = createdExpenseId;
+      }
 
-        // Actualizar la transacción con el ID del egreso
-        // En una implementación real, deberíamos obtener el ID del egreso creado
-        // pero simplificamos aquí
+      // Añadir el ID de la caja anterior si se proporciona (solo para transacciones iniciales)
+      if (data.previousCashBoxId) {
+        transaction.previousCashBoxId = data.previousCashBoxId;
+      }
+
+      // Guardar en Firestore
+      try {
+        const docRef = createDoc(transactionsRef);
+        await setDoc(docRef, transaction);
+      } catch (writeError: any) {
+        originalWriteError = writeError;
+
+        // Compensación: si ya se creó egreso pero falló transacción de caja.
+        if (createdExpenseId) {
+          try {
+            const expenseRef = createDoc(
+              db,
+              `clients/${clientId}/condominiums/${condominiumId}/expenses/${createdExpenseId}`
+            );
+            await deleteDoc(expenseRef);
+          } catch (rollbackError: any) {
+            console.error(
+              "No se pudo revertir el egreso tras fallo de transacción de caja chica:",
+              rollbackError
+            );
+          }
+        }
+
+        throw originalWriteError;
       }
 
       // Actualizar estado
@@ -783,6 +849,7 @@ export const usePettyCashStore = create<PettyCashState>()((set, get) => ({
         userId: user.uid,
         userName: user.displayName || user.email || "Usuario",
         cashBoxPeriod: cashBoxPeriod,
+        cashBoxId: currentConfig?.id,
       };
 
       // Añadir campos opcionales solo si tienen valor
@@ -828,13 +895,24 @@ export const usePettyCashStore = create<PettyCashState>()((set, get) => ({
         throw new Error("Cierre no encontrado");
       }
 
+      const currentConfig = get().config;
+      if (currentConfig?.id) {
+        const belongsToCurrentCashBox = audit.cashBoxId
+          ? audit.cashBoxId === currentConfig.id
+          : audit.cashBoxPeriod === currentConfig.period;
+
+        if (!belongsToCurrentCashBox) {
+          throw new Error("El cierre no pertenece a la caja activa");
+        }
+      }
+
       // Si hay diferencia y se debe crear ajuste
       let adjustmentTransactionId = undefined;
       if (createAdjustment && audit.difference !== 0) {
         // Crear transacción de ajuste
         const transactionData: PettyCashTransactionCreateInput = {
           type: PettyCashTransactionType.ADJUSTMENT,
-          amount: Math.abs(centsToPesos(audit.difference)),
+          amount: centsToPesos(audit.difference),
           description:
             audit.difference > 0
               ? "Ajuste positivo por Cierre de caja"
@@ -887,6 +965,23 @@ export const usePettyCashStore = create<PettyCashState>()((set, get) => ({
         `clients/${clientId}/condominiums/${condominiumId}/pettyCashAudits/${auditId}`
       );
 
+      // Validar que el cierre pertenezca a la caja activa
+      const audit = get().audits.find((a) => a.id === auditId);
+      if (!audit) {
+        throw new Error("Cierre no encontrado");
+      }
+
+      const currentConfig = get().config;
+      if (currentConfig?.id) {
+        const belongsToCurrentCashBox = audit.cashBoxId
+          ? audit.cashBoxId === currentConfig.id
+          : audit.cashBoxPeriod === currentConfig.period;
+
+        if (!belongsToCurrentCashBox) {
+          throw new Error("El cierre no pertenece a la caja activa");
+        }
+      }
+
       // Actualizar el Cierre
       await updateDoc(auditRef, {
         status: PettyCashAuditStatus.REJECTED,
@@ -907,7 +1002,12 @@ export const usePettyCashStore = create<PettyCashState>()((set, get) => ({
   },
 
   // Reponer fondos
-  replenishFunds: async (amount: number, description: string, date: string) => {
+  replenishFunds: async (
+    amount: number,
+    description: string,
+    date: string,
+    sourceAccountId?: string
+  ) => {
     set({ loading: true, error: null });
     try {
       // Registrar la transacción de reposición
@@ -916,6 +1016,7 @@ export const usePettyCashStore = create<PettyCashState>()((set, get) => ({
         amount,
         description,
         expenseDate: date,
+        sourceAccountId,
       });
 
       // Actualizar estado
@@ -953,24 +1054,21 @@ export const usePettyCashStore = create<PettyCashState>()((set, get) => ({
 
     // Procesar cada transacción para calcular el saldo
     for (const tx of currentCashBoxTransactions) {
-      // Para transacciones iniciales
-      if (tx.type === PettyCashTransactionType.INITIAL) {
-        balance += centsToPesos(tx.amount);
+      const amountInPesos = centsToPesos(tx.amount);
+
+      if (tx.type === PettyCashTransactionType.EXPENSE) {
+        balance -= Math.abs(amountInPesos);
+        continue;
       }
-      // Sumar reposiciones y ajustes positivos
-      else if (
-        tx.type === PettyCashTransactionType.REPLENISHMENT ||
-        (tx.type === PettyCashTransactionType.ADJUSTMENT && tx.amount > 0)
-      ) {
-        balance += centsToPesos(tx.amount);
+
+      if (tx.type === PettyCashTransactionType.ADJUSTMENT) {
+        // Ajustes conservan el signo guardado en la transacción.
+        balance += amountInPesos;
+        continue;
       }
-      // Restar gastos y ajustes negativos
-      else if (
-        tx.type === PettyCashTransactionType.EXPENSE ||
-        (tx.type === PettyCashTransactionType.ADJUSTMENT && tx.amount < 0)
-      ) {
-        balance -= centsToPesos(tx.amount);
-      }
+
+      // INITIAL y REPLENISHMENT siempre suman al fondo.
+      balance += Math.abs(amountInPesos);
     }
 
     return balance;
@@ -997,16 +1095,9 @@ export const usePettyCashStore = create<PettyCashState>()((set, get) => ({
         throw new Error("Debe proporcionar un nombre para el nuevo periodo");
       }
 
-      // Logs para depuración
-      console.log("🔄 Iniciando proceso de finalización de caja...");
-      console.log("📝 Periodo actual:", currentConfig.period);
-      console.log("📝 Nuevo nombre de periodo:", newPeriodName);
-      console.log("📝 Notas de cierre:", notes);
-
       // Calcular el saldo final
       const finalBalanceAmount = get().calculateBalance();
       const finalBalanceCents = pesosToCents(finalBalanceAmount);
-      console.log("💰 Saldo final a transferir:", finalBalanceAmount);
 
       // Obtener fecha actual
       const now = new Date();
@@ -1039,7 +1130,6 @@ export const usePettyCashStore = create<PettyCashState>()((set, get) => ({
       }
 
       await updateDoc(currentConfigRef, updateData);
-      console.log("✅ Caja actual actualizada como inactiva");
 
       // 2. Crear nueva configuración de caja chica
       const configRef = collection(
@@ -1061,7 +1151,6 @@ export const usePettyCashStore = create<PettyCashState>()((set, get) => ({
       };
 
       const newConfigDocRef = await addDoc(configRef, newConfigData);
-      console.log("✅ Nueva caja creada con ID:", newConfigDocRef.id);
 
       // 3. Actualizar la caja anterior con referencia a la nueva
       await updateDoc(currentConfigRef, {
@@ -1090,7 +1179,6 @@ export const usePettyCashStore = create<PettyCashState>()((set, get) => ({
       };
 
       await setDoc(createDoc(transactionsRef), initialTransaction);
-      console.log("✅ Transacción inicial creada en la nueva caja");
 
       // 5. Cargar la nueva configuración
       const newConfig = {
@@ -1106,7 +1194,6 @@ export const usePettyCashStore = create<PettyCashState>()((set, get) => ({
 
       // 6. Cargar transacciones de la nueva caja
       await get().fetchTransactions();
-      console.log("✅ Proceso de finalización completado correctamente");
 
       return newConfigDocRef.id;
     } catch (error: any) {
@@ -1250,7 +1337,9 @@ export const usePettyCashStore = create<PettyCashState>()((set, get) => ({
             expenseDate: data.expenseDate,
             createdAt: data.createdAt,
             receiptUrl: data.receiptUrl,
+            providerId: data.providerId || data.provider?.id,
             provider: data.provider,
+            sourceAccountId: data.sourceAccountId,
             auditId: data.auditId,
             expenseId: data.expenseId,
             userId: data.userId,
@@ -1267,18 +1356,20 @@ export const usePettyCashStore = create<PettyCashState>()((set, get) => ({
         `clients/${clientId}/condominiums/${condominiumId}/pettyCashAudits`
       );
 
-      let auditQuery;
-      if (config.startDate && config.endDate) {
-        auditQuery = query(
+      // Primero intentamos por cashBoxId (modelo nuevo).
+      let auditsSnap = await getDocs(
+        query(auditsRef, where("cashBoxId", "==", cashBoxId))
+      );
+
+      // Compatibilidad con cierres legacy sin cashBoxId.
+      if (auditsSnap.empty && config.startDate && config.endDate) {
+        const fallbackQuery = query(
           auditsRef,
           where("date", ">=", config.startDate),
           where("date", "<=", config.endDate)
         );
-      } else {
-        auditQuery = query(auditsRef);
+        auditsSnap = await getDocs(fallbackQuery);
       }
-
-      const auditsSnap = await getDocs(auditQuery);
 
       const audits: PettyCashAudit[] = auditsSnap.docs.map((doc) => {
         const data = doc.data();
@@ -1296,6 +1387,8 @@ export const usePettyCashStore = create<PettyCashState>()((set, get) => ({
           approvedBy: data.approvedBy,
           approvedAt: data.approvedAt,
           adjustmentTransactionId: data.adjustmentTransactionId,
+          cashBoxPeriod: data.cashBoxPeriod,
+          cashBoxId: data.cashBoxId || cashBoxId,
         };
       });
 

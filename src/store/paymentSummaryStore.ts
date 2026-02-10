@@ -1181,7 +1181,7 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>()(
     },
 
     searchPaymentByFolio: async (folio: string): Promise<PaymentRecord[]> => {
-      set({ loadingPayments: true, completedPayments: [] });
+      set({ loadingPayments: true, error: null });
       try {
         const db = getFirestore();
         const auth = getAuth();
@@ -1314,10 +1314,7 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>()(
         });
 
         set({
-          completedPayments: paymentRecords,
           loadingPayments: false,
-          totalCompletedPayments: paymentRecords.length,
-          lastPaymentDoc: null,
           error: null,
         });
 
@@ -1327,9 +1324,6 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>()(
         set({
           error: error.message || "Error searching payment",
           loadingPayments: false,
-          completedPayments: [],
-          totalCompletedPayments: 0,
-          lastPaymentDoc: null,
         });
         return [];
       }

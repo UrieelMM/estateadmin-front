@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import moment from "moment";
 import "moment/locale/es";
@@ -44,14 +44,13 @@ const PettyCashFinalize: React.FC = () => {
     `Caja Chica ${currentMonth.charAt(0).toUpperCase() + currentMonth.slice(1)}`
   );
   const [newPeriodName, setNewPeriodName] = useState(
-    `Caja Chica ${spanishMonths[new Date().getMonth() + 1]} ${new Date().getFullYear()}`
+    `Caja Chica ${spanishMonths[new Date().getMonth()]} ${new Date().getFullYear()}`
   );
   const [notes, setNotes] = useState("");
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [hasRecentApprovedAudit, setHasRecentApprovedAudit] = useState(false);
 
   const {
     config,
@@ -70,50 +69,34 @@ const PettyCashFinalize: React.FC = () => {
 
   // Cargar audits al iniciar el componente
   useEffect(() => {
-    console.log("🔍 Cargando cierres de caja...");
     fetchAudits();
   }, [fetchAudits]);
 
-  // Verificar si hay cierres pendientes
-  const hasPendingAudits = audits.some((audit) => audit.status === "pending");
+  const auditsForCurrentCashBox = useMemo(() => {
+    if (!config) return [];
 
-  // Verificar si existe un cierre aprobado reciente
-  useEffect(() => {
-    // Logs para depuración
-    console.log("⚙️ Verificando cierres aprobados...");
-    console.log("📊 Total de audits cargados:", audits.length);
+    return audits.filter((audit) => {
+      if (audit.cashBoxId) {
+        return audit.cashBoxId === config.id;
+      }
 
-    if (!audits || audits.length === 0) {
-      console.log("❓ No hay audits disponibles");
-      setHasRecentApprovedAudit(false);
-      return;
-    }
+      if (audit.cashBoxPeriod && config.period) {
+        return audit.cashBoxPeriod === config.period;
+      }
 
-    // Mostrar todos los audits y sus estados para depuración
-    audits.forEach((audit, index) => {
-      console.log(
-        `Audit #${index + 1} - Estado: ${audit.status}, Fecha: ${audit.date}`
-      );
+      return false;
     });
+  }, [audits, config]);
 
-    // Verificar si hay al menos un audit aprobado
-    const approvedAudits = audits.filter(
-      (audit) => audit.status === "approved"
-    );
-    console.log("✅ Audits aprobados encontrados:", approvedAudits.length);
+  // Verificar si hay cierres pendientes en la caja actual
+  const hasPendingAudits = auditsForCurrentCashBox.some(
+    (audit) => audit.status === "pending"
+  );
 
-    // SOLUCIÓN SIMPLIFICADA: Si hay al menos un audit aprobado, permitimos finalizar
-    const hasApprovedAudit = approvedAudits.length > 0;
-
-    setHasRecentApprovedAudit(hasApprovedAudit);
-
-    // Mensaje de información final
-    if (hasApprovedAudit) {
-      console.log("✅ PERMITIDO: Se encontraron cierres aprobados");
-    } else {
-      console.log("❌ BLOQUEADO: No se encontraron cierres aprobados");
-    }
-  }, [audits]);
+  // Debe existir al menos un cierre aprobado de la caja actual
+  const hasRecentApprovedAudit = auditsForCurrentCashBox.some(
+    (audit) => audit.status === "approved"
+  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -248,16 +231,6 @@ const PettyCashFinalize: React.FC = () => {
                   className="inline-flex items-center px-3 py-1.5 border border-amber-300 dark:border-amber-700 rounded-md text-sm font-medium text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/30 hover:bg-amber-100 dark:hover:bg-amber-800/40 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500"
                 >
                   Realizar Cierre
-                </button>
-                <button
-                  onClick={() => {
-                    // Forzar el estado a true para permitir finalizar aunque la validación falle
-                    console.log("🔄 Forzando validación manual de cierres...");
-                    setHasRecentApprovedAudit(true);
-                  }}
-                  className="inline-flex items-center px-3 py-1.5 border border-indigo-300 dark:border-indigo-700 rounded-md text-sm font-medium text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/30 hover:bg-indigo-100 dark:hover:bg-indigo-800/40 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                >
-                  Forzar Validación
                 </button>
               </div>
             </div>

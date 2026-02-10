@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowPathIcon,
@@ -11,8 +11,11 @@ import moment from "moment";
 import "moment/locale/es";
 import {
   usePettyCashStore,
+  PettyCashTransaction,
   PettyCashTransactionType,
 } from "../../../../../../store/pettyCashStore";
+import useProviderStore from "../../../../../../store/providerStore";
+import { useFinancialAccountsStore } from "../../../../../../store/useAccountsStore";
 import PettyCashExcelExport from "./PettyCashExcelExport";
 
 moment.locale("es");
@@ -26,6 +29,8 @@ const PettyCashTransactions: React.FC = () => {
     error: storeError,
     config,
   } = usePettyCashStore();
+  const { providers, fetchProviders } = useProviderStore();
+  const { accounts, fetchAccounts } = useFinancialAccountsStore();
 
   const [filteredTransactions, setFilteredTransactions] =
     useState(transactions);
@@ -62,13 +67,41 @@ const PettyCashTransactions: React.FC = () => {
   }, [config]);
 
   useEffect(() => {
-    // Cargar transacciones cuando el componente se monte
-    console.log("Cargando transacciones...");
-    fetchTransactions();
-  }, [fetchTransactions]);
+    const loadData = async () => {
+      try {
+        await Promise.all([
+          fetchTransactions(),
+          fetchProviders(),
+          fetchAccounts(),
+        ]);
+      } catch {
+      }
+    };
+
+    loadData();
+  }, [fetchTransactions, fetchProviders, fetchAccounts]);
+
+  const providerNameById = useMemo(() => {
+    const map: Record<string, string> = {};
+    providers.forEach((provider) => {
+      if (provider.id) {
+        map[provider.id] = provider.name || "Sin nombre";
+      }
+    });
+    return map;
+  }, [providers]);
+
+  const accountNameById = useMemo(() => {
+    const map: Record<string, string> = {};
+    accounts.forEach((account) => {
+      if (account.id) {
+        map[account.id] = account.name || "Sin nombre";
+      }
+    });
+    return map;
+  }, [accounts]);
 
   useEffect(() => {
-    console.log(`Transacciones cargadas: ${transactions.length}`);
     // Aplicar filtros a las transacciones
     let filtered = [...transactions];
 
@@ -166,11 +199,33 @@ const PettyCashTransactions: React.FC = () => {
         return "Transporte y mensajería";
       case "food":
         return "Alimentos y bebidas";
+      case "miscellaneous":
+        return "Varios";
       case "other":
         return "Otros gastos";
       default:
         return "N/A";
     }
+  };
+
+  const getProviderName = (transaction: PettyCashTransaction) => {
+    if (transaction.provider?.name) {
+      return transaction.provider.name;
+    }
+
+    if (transaction.providerId) {
+      return providerNameById[transaction.providerId] || "Proveedor no encontrado";
+    }
+
+    return "-";
+  };
+
+  const getSourceAccountName = (transaction: PettyCashTransaction) => {
+    if (!transaction.sourceAccountId) {
+      return "-";
+    }
+
+    return accountNameById[transaction.sourceAccountId] || "Cuenta no encontrada";
   };
 
   // Título dinámico para la página
@@ -216,6 +271,8 @@ const PettyCashTransactions: React.FC = () => {
         <div className="flex flex-col md:flex-row justify-end md:items-center">
           <PettyCashExcelExport
             transactions={filteredTransactions}
+            providerNameById={providerNameById}
+            accountNameById={accountNameById}
             renderButton={(onClick) => (
               <button
                 onClick={onClick}
@@ -371,6 +428,18 @@ const PettyCashTransactions: React.FC = () => {
                 </th>
                 <th
                   scope="col"
+                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                >
+                  Cuenta origen
+                </th>
+                <th
+                  scope="col"
+                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                >
+                  Proveedor
+                </th>
+                <th
+                  scope="col"
                   className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
                 >
                   Monto
@@ -387,13 +456,19 @@ const PettyCashTransactions: React.FC = () => {
               {filteredTransactions.length > 0 ? (
                 filteredTransactions.map((transaction) => {
                   const typeInfo = getTransactionTypeLabel(transaction.type);
+                  const isOutflow =
+                    transaction.type === PettyCashTransactionType.EXPENSE ||
+                    (transaction.type === PettyCashTransactionType.ADJUSTMENT &&
+                      transaction.amount < 0);
                   return (
                     <tr
                       key={transaction.id}
                       className="hover:bg-gray-50 dark:hover:bg-gray-800/50"
                     >
                       <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
-                        {moment(transaction.expenseDate).format("DD/MM/YYYY")}
+                        {transaction.expenseDate
+                          ? moment(transaction.expenseDate).format("DD/MM/YYYY")
+                          : "Sin fecha"}
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap text-sm">
                         <span
@@ -410,20 +485,27 @@ const PettyCashTransactions: React.FC = () => {
                       <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
                         {transaction.description}
                       </td>
+                      <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
+                        {getSourceAccountName(transaction)}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
+                        {getProviderName(transaction)}
+                      </td>
                       <td
                         className={`px-4 py-3 whitespace-nowrap text-sm font-medium text-right ${
-                          transaction.type === PettyCashTransactionType.EXPENSE
+                          isOutflow
                             ? "text-red-600 dark:text-red-400"
                             : "text-green-600 dark:text-green-400"
                         }`}
                       >
-                        {transaction.type === PettyCashTransactionType.EXPENSE
-                          ? "-"
-                          : "+"}
+                        {isOutflow ? "-" : "+"}
                         $
-                        {(transaction.amount / 100).toLocaleString("es-MX", {
-                          minimumFractionDigits: 2,
-                        })}
+                        {(Math.abs(transaction.amount) / 100).toLocaleString(
+                          "es-MX",
+                          {
+                            minimumFractionDigits: 2,
+                          }
+                        )}
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap text-sm text-center">
                         {transaction.receiptUrl ? (
@@ -445,11 +527,13 @@ const PettyCashTransactions: React.FC = () => {
               ) : (
                 <tr>
                   <td
-                    colSpan={6}
+                    colSpan={8}
                     className="px-4 py-4 text-sm text-center text-gray-500 dark:text-gray-400"
                   >
                     {loading
                       ? "Cargando transacciones..."
+                      : transactions.length === 0
+                      ? "No hay transacciones registradas en este periodo"
                       : "No hay transacciones que coincidan con los filtros seleccionados"}
                   </td>
                 </tr>

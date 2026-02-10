@@ -12,11 +12,15 @@ moment.locale("es");
 
 interface PettyCashExcelExportProps {
   transactions: PettyCashTransaction[];
+  providerNameById?: Record<string, string>;
+  accountNameById?: Record<string, string>;
   renderButton?: (onClick: () => void) => React.ReactNode;
 }
 
 const PettyCashExcelExport: React.FC<PettyCashExcelExportProps> = ({
   transactions,
+  providerNameById = {},
+  accountNameById = {},
   renderButton,
 }) => {
   // Función de formateo de moneda
@@ -58,11 +62,33 @@ const PettyCashExcelExport: React.FC<PettyCashExcelExportProps> = ({
         return "Transporte y mensajería";
       case "food":
         return "Alimentos y bebidas";
+      case "miscellaneous":
+        return "Varios";
       case "other":
         return "Otros gastos";
       default:
         return category;
     }
+  };
+
+  const getProviderName = (transaction: PettyCashTransaction): string => {
+    if (transaction.provider?.name) {
+      return transaction.provider.name;
+    }
+
+    if (transaction.providerId) {
+      return providerNameById[transaction.providerId] || "Proveedor no encontrado";
+    }
+
+    return "-";
+  };
+
+  const getSourceAccountName = (transaction: PettyCashTransaction): string => {
+    if (!transaction.sourceAccountId) {
+      return "-";
+    }
+
+    return accountNameById[transaction.sourceAccountId] || "Cuenta no encontrada";
   };
 
   const generateExcel = async () => {
@@ -380,6 +406,8 @@ const PettyCashExcelExport: React.FC<PettyCashExcelExportProps> = ({
       "Categoría",
       "Descripción",
       "Usuario",
+      "Cuenta origen",
+      "Proveedor",
       "Monto"
     ]);
 
@@ -397,6 +425,8 @@ const PettyCashExcelExport: React.FC<PettyCashExcelExportProps> = ({
         getCategoryLabel(tx.category),
         tx.description,
         tx.userName,
+        getSourceAccountName(tx),
+        getProviderName(tx),
         tx.amount / 100 // Convertir de centavos a pesos
       ]);
     });
@@ -409,34 +439,40 @@ const PettyCashExcelExport: React.FC<PettyCashExcelExportProps> = ({
       "",
       "",
       "",
+      "",
+      "",
       totalBalance
     ]);
 
     // Aplicar estilos
-    txSheet.mergeCells("A1:G1");
-    applyStyles(txSheet, "A1:G1", titleStyle);
-    applyStyles(txSheet, "A2:G2", headerStyle);
+    txSheet.mergeCells("A1:I1");
+    applyStyles(txSheet, "A1:I1", titleStyle);
+    applyStyles(txSheet, "A2:I2", headerStyle);
     
     // Aplicar estilos a las filas de datos
     const lastRow = sortedTransactions.length + 2;
-    applyAlternatingRowStyles(txSheet, 3, lastRow, "A-G");
+    applyAlternatingRowStyles(txSheet, 3, lastRow, "A-I");
     
     // Aplicar estilo a la fila de totales
-    applyStyles(txSheet, `A${lastRow+1}:G${lastRow+1}`, totalRowStyle);
+    applyStyles(txSheet, `A${lastRow+1}:I${lastRow+1}`, totalRowStyle);
     
     // Aplicar formato de moneda a la columna de montos
-    applyStyles(txSheet, `G3:G${lastRow+1}`, currencyStyle);
+    applyStyles(txSheet, `I3:I${lastRow+1}`, currencyStyle);
     
     // Aplicar colores condicionales para montos (verde para ingresos, rojo para gastos)
     for (let r = 3; r <= lastRow; r++) {
       const typeCell = txSheet.getCell(`C${r}`);
+      const amountCell = txSheet.getCell(`I${r}`);
+      const amountValue = Number(amountCell.value || 0);
+
       if (typeCell.value === "Gasto") {
-        const amountCell = txSheet.getCell(`G${r}`);
-        applyStyles(txSheet, `G${r}:G${r}`, negativeValueStyle);
+        applyStyles(txSheet, `I${r}:I${r}`, negativeValueStyle);
         // Agregar signo negativo
         amountCell.value = -Math.abs(amountCell.value as number);
+      } else if (typeCell.value === "Ajuste" && amountValue < 0) {
+        applyStyles(txSheet, `I${r}:I${r}`, negativeValueStyle);
       } else {
-        applyStyles(txSheet, `G${r}:G${r}`, positiveValueStyle);
+        applyStyles(txSheet, `I${r}:I${r}`, positiveValueStyle);
       }
     }
 
@@ -448,6 +484,8 @@ const PettyCashExcelExport: React.FC<PettyCashExcelExportProps> = ({
       { width: 25 }, // Categoría
       { width: 40 }, // Descripción
       { width: 25 }, // Usuario
+      { width: 30 }, // Cuenta origen
+      { width: 28 }, // Proveedor
       { width: 20 }  // Monto
     ];
     txSheet.getRow(1).height = 35;
@@ -502,11 +540,14 @@ const PettyCashExcelExport: React.FC<PettyCashExcelExportProps> = ({
     for (let r = 3; r <= 2 + typeStatsRows; r++) {
       const typeCell = typeSheet.getCell(`A${r}`);
       const amountCell = typeSheet.getCell(`C${r}`);
+      const amountValue = Number(amountCell.value || 0);
       
       if (typeCell.value === "Gasto") {
         applyStyles(typeSheet, `C${r}:C${r}`, negativeValueStyle);
         // Hacer negativo el valor
         amountCell.value = -Math.abs(amountCell.value as number);
+      } else if (amountValue < 0) {
+        applyStyles(typeSheet, `C${r}:C${r}`, negativeValueStyle);
       } else {
         applyStyles(typeSheet, `C${r}:C${r}`, positiveValueStyle);
       }
@@ -599,4 +640,4 @@ const PettyCashExcelExport: React.FC<PettyCashExcelExportProps> = ({
   );
 };
 
-export default PettyCashExcelExport; 
+export default PettyCashExcelExport;

@@ -106,7 +106,8 @@ const PettyCashReplenishForm: React.FC = () => {
       await replenishFunds(
         amountValue,
         description,
-        moment(date).format("YYYY-MM-DDTHH:mm:ss")
+        moment(date).format("YYYY-MM-DDTHH:mm:ss"),
+        sourceAccountId || undefined
       );
 
       // Limpiar formulario
