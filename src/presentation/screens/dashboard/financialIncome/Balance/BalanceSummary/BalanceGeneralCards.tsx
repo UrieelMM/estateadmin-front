@@ -2,6 +2,7 @@
 import React from "react";
 import { LineChart, Line, ResponsiveContainer } from "recharts";
 import { useTheme } from "../../../../../../context/Theme/ThemeContext";
+import { motion } from "framer-motion";
 
 interface BalanceGeneralCardsProps {
   totalIncome: number;
@@ -51,21 +52,35 @@ const BalanceGeneralCards: React.FC<BalanceGeneralCardsProps> = ({
     { value: netBalance },
   ];
 
+  const healthLabel =
+    netBalance >= 0 ? "Balance positivo" : "Balance en riesgo";
+
+  const baseCardClass =
+    "rounded-2xl border p-4 shadow-sm transition-colors duration-200 hover:bg-gray-50 dark:hover:bg-gray-800/70";
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-      <div className="bg-white rounded p-4 dark:bg-gray-800 dark:text-gray-100 shadow-xl">
-        <h3 className="text-md font-bold text-indigo-600 dark:text-indigo-400">
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.2 }}
+        className={`${baseCardClass} bg-gradient-to-br from-indigo-50/70 to-white dark:from-gray-900 dark:to-gray-800 dark:text-gray-100 border-indigo-200 dark:border-indigo-900/40`}
+      >
+        <h3 className="text-xs uppercase tracking-wide font-semibold text-indigo-700 dark:text-indigo-300">
           Total Ingresos
         </h3>
-        <p className="text-xl">{formatCurrency(totalIncomeWithCredit)}</p>
+        <p className="text-xl font-semibold">{formatCurrency(totalIncomeWithCredit)}</p>
         {(availableCredit > 0 || creditUsed > 0) && (
-          <p className="text-sm text-green-600 dark:text-green-400">
+          <p className="text-xs text-green-600 dark:text-green-400 mt-1">
             {availableCredit > 0 &&
               `Saldo a favor: ${formatCurrency(availableCredit)}`}
             {creditUsed > 0 &&
               ` | Crédito usado: ${formatCurrency(creditUsed)}`}
           </p>
         )}
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+          Flujo efectivo acumulado del periodo.
+        </p>
         <div className="h-12 mt-2">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={incomeTrend}>
@@ -79,13 +94,21 @@ const BalanceGeneralCards: React.FC<BalanceGeneralCardsProps> = ({
             </LineChart>
           </ResponsiveContainer>
         </div>
-      </div>
+      </motion.div>
 
-      <div className="bg-white rounded p-4 dark:bg-gray-800 dark:text-gray-100 shadow-xl">
-        <h3 className="text-md font-bold text-indigo-600 dark:text-indigo-400">
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.2, delay: 0.04 }}
+        className={`${baseCardClass} bg-gradient-to-br from-rose-50/70 to-white dark:from-gray-900 dark:to-gray-800 dark:text-gray-100 border-rose-200 dark:border-rose-900/40`}
+      >
+        <h3 className="text-xs uppercase tracking-wide font-semibold text-rose-700 dark:text-rose-300">
           Total Egresos
         </h3>
-        <p className="text-xl">{formatCurrency(totalSpent)}</p>
+        <p className="text-xl font-semibold">{formatCurrency(totalSpent)}</p>
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+          Egresos comprometidos y ejecutados.
+        </p>
         <div className="h-12 mt-2">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={spentTrend}>
@@ -99,12 +122,30 @@ const BalanceGeneralCards: React.FC<BalanceGeneralCardsProps> = ({
             </LineChart>
           </ResponsiveContainer>
         </div>
-      </div>
-      <div className="bg-white rounded p-4 dark:bg-gray-800 dark:text-gray-100 shadow-xl">
-        <h3 className="text-md font-bold text-indigo-600 dark:text-indigo-400">
+      </motion.div>
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.2, delay: 0.08 }}
+        className={`${baseCardClass} ${
+          netBalance >= 0
+            ? "bg-gradient-to-br from-emerald-50/70 to-white dark:from-gray-900 dark:to-gray-800 border-emerald-200 dark:border-emerald-900/40"
+            : "bg-gradient-to-br from-amber-50/70 to-white dark:from-gray-900 dark:to-gray-800 border-amber-200 dark:border-amber-900/40"
+        } dark:text-gray-100`}
+      >
+        <h3
+          className={`text-xs uppercase tracking-wide font-semibold ${
+            netBalance >= 0
+              ? "text-emerald-700 dark:text-emerald-300"
+              : "text-amber-700 dark:text-amber-300"
+          }`}
+        >
           Balance Neto
         </h3>
-        <p className="text-xl">{formatCurrency(netBalance)}</p>
+        <p className="text-xl font-semibold">{formatCurrency(netBalance)}</p>
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+          {healthLabel}
+        </p>
         <div className="h-12 mt-2">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={balanceTrend}>
@@ -118,7 +159,7 @@ const BalanceGeneralCards: React.FC<BalanceGeneralCardsProps> = ({
             </LineChart>
           </ResponsiveContainer>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 };

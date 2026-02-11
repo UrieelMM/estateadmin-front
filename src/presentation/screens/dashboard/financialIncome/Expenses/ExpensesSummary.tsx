@@ -12,6 +12,7 @@ import ExpenseMonthComparisonTable from "./ExpensesSummary/ExpenseMonthCompariso
 import ExpenseSummaryCards from "./ExpensesSummary/ExpenseSummaryCards";
 import PDFExpenseReportGenerator from "./ExpensesSummary/PDFExpenseReportGenerator";
 import SkeletonLoading from "../../../../components/shared/loaders/SkeletonLoading";
+import { motion } from "framer-motion";
 
 // import ExpensePDFReportGenerator from "./ExpensePDFReportGenerator"; // Si deseas PDF
 
@@ -63,51 +64,120 @@ const ExpenseSummary: React.FC = () => {
   const showSpinner = loading && ( !monthlyStats || monthlyStats.length === 0 );
 
   return (
-    <div className="p-4">
-      {/* Selector de Año */ }
-      <div className="flex flex-col md:flex-row gap-4 mb-4">
-        <div>
-          <label className="block font-medium mb-1">Año:</label>
-          <select
-            value={ selectedYear }
-            onChange={ handleYearChange }
-            className="border border-gray-300 rounded py-2 px-8 dark:bg-gray-900 cursor-pointer"
-          >
-            <option value="">Todos los años</option>
-            { [ "2022", "2023", "2024", "2025", "2026" ].map( ( y ) => (
-              <option key={ y } value={ y }>
-                { y }
-              </option>
-            ) ) }
-          </select>
+    <div className="p-4 space-y-4">
+      <motion.section
+        initial={ { opacity: 0, y: 10 } }
+        animate={ { opacity: 1, y: 0 } }
+        transition={ { duration: 0.25 } }
+        className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-gradient-to-r from-white to-slate-50 dark:from-gray-900 dark:to-gray-800 p-4 md:p-5"
+      >
+        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+          <div>
+            <h2 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">
+              Resumen de Egresos
+            </h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              Monitorea gasto acumulado, conceptos dominantes y variación mensual.
+            </p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
+              Periodo de análisis
+            </label>
+            <select
+              value={ selectedYear }
+              onChange={ handleYearChange }
+              className="min-w-44 border border-gray-300 dark:border-gray-600 rounded-lg py-2 pl-3 pr-8 bg-white dark:bg-gray-900 cursor-pointer text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
+            >
+              <option value="">Todos los años</option>
+              { [ "2022", "2023", "2024", "2025", "2026" ].map( ( y ) => (
+                <option key={ y } value={ y }>
+                  { y }
+                </option>
+              ) ) }
+            </select>
+          </div>
         </div>
-      </div>
+      </motion.section>
 
       {/* Loading / Error */ }
       { showSpinner && <SkeletonLoading /> }
-      { error && <p className="text-red-500">{ error }</p> }
+      { error && (
+        <div className="rounded-xl border border-red-200 dark:border-red-900/40 bg-red-50 dark:bg-red-950/20 p-3">
+          <p className="text-red-700 dark:text-red-300 text-sm">{ error }</p>
+        </div>
+      ) }
 
       {/* Si ya no está loading o sí hay data, mostramos secciones */ }
       { !showSpinner && (
-        <>
+        <div className="space-y-4">
           {/* Tarjetas con totales, mes con mayor/menor gasto, etc. */ }
-          <ExpenseSummaryCards />
+          <motion.div
+            initial={ { opacity: 0, y: 10 } }
+            animate={ { opacity: 1, y: 0 } }
+            transition={ { duration: 0.2, delay: 0.03 } }
+          >
+            <ExpenseSummaryCards />
+          </motion.div>
 
           {/* Tabla detallada con truncado de descripción */ }
-          <ExpenseConceptAnalyticsAdvanced />
+          <motion.div
+            initial={ { opacity: 0, y: 10 } }
+            animate={ { opacity: 1, y: 0 } }
+            transition={ { duration: 0.2, delay: 0.06 } }
+            className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 shadow-sm"
+          >
+            <div className="mb-3">
+              <h3 className="text-base md:text-lg font-semibold text-gray-900 dark:text-gray-100">
+                Análisis por Concepto
+              </h3>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Detecta qué rubros presionan más el gasto operativo.
+              </p>
+            </div>
+            <ExpenseConceptAnalyticsAdvanced />
+          </motion.div>
 
           {/* Gráfica(s) anual(es) y estadísticas (distribución por concepto, etc.) */ }
-          <ExpenseAnnualGeneralStats />
+          <motion.div
+            initial={ { opacity: 0, y: 10 } }
+            animate={ { opacity: 1, y: 0 } }
+            transition={ { duration: 0.2, delay: 0.09 } }
+            className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 shadow-sm"
+          >
+            <ExpenseAnnualGeneralStats />
+          </motion.div>
 
           {/* Comparativa de egresos por concepto en el tiempo (tipo Growth) */ }
-          <ExpenseConceptGrowthSection />
+          <motion.div
+            initial={ { opacity: 0, y: 10 } }
+            animate={ { opacity: 1, y: 0 } }
+            transition={ { duration: 0.2, delay: 0.12 } }
+            className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 shadow-sm"
+          >
+            <ExpenseConceptGrowthSection />
+          </motion.div>
 
           {/* Tabla comparativa mensual */ }
-          <ExpenseMonthComparisonTable />
+          <motion.div
+            initial={ { opacity: 0, y: 10 } }
+            animate={ { opacity: 1, y: 0 } }
+            transition={ { duration: 0.2, delay: 0.15 } }
+            className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 shadow-sm"
+          >
+            <ExpenseMonthComparisonTable />
+          </motion.div>
 
           {/* Opcional: Generar PDF con toda la info */ }
-          <PDFExpenseReportGenerator year={ selectedYear } />
-        </>
+          <motion.div
+            initial={ { opacity: 0, y: 10 } }
+            animate={ { opacity: 1, y: 0 } }
+            transition={ { duration: 0.2, delay: 0.18 } }
+            className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 shadow-sm"
+          >
+            <PDFExpenseReportGenerator year={ selectedYear } />
+          </motion.div>
+        </div>
       ) }
     </div>
   );

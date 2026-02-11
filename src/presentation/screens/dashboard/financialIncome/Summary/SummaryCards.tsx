@@ -100,7 +100,7 @@ const SummaryCards: React.FC = React.memo(() => {
           <div
             className="bg-[#8093E8] dark:bg-[#687fe4]
                          flex h-12 w-12 items-center justify-center rounded-lg 
-                         shadow-lg group-hover:scale-110 transition-transform duration-200 shrink-0"
+                         shadow-lg transition-colors duration-200 group-hover:bg-[#6f84df] dark:group-hover:bg-[#5f75d9] shrink-0"
           >
             <BanknotesIcon className="h-6 w-6 text-white" aria-hidden="true" />
           </div>
@@ -130,7 +130,7 @@ const SummaryCards: React.FC = React.memo(() => {
           <div
             className="bg-[#8093E8] dark:bg-[#687fe4]
                          flex h-12 w-12 items-center justify-center rounded-lg 
-                         shadow-lg group-hover:scale-110 transition-transform duration-200 shrink-0"
+                         shadow-lg transition-colors duration-200 group-hover:bg-[#6f84df] dark:group-hover:bg-[#5f75d9] shrink-0"
           >
             <ExclamationCircleIcon
               className="h-6 w-6 text-white"
@@ -163,7 +163,7 @@ const SummaryCards: React.FC = React.memo(() => {
           <div
             className="bg-[#8093E8] dark:bg-[#687fe4]
                          flex h-12 w-12 items-center justify-center rounded-lg 
-                         shadow-lg group-hover:scale-110 transition-transform duration-200 shrink-0"
+                         shadow-lg transition-colors duration-200 group-hover:bg-[#6f84df] dark:group-hover:bg-[#5f75d9] shrink-0"
           >
             <ArrowTrendingUpIcon
               className="h-6 w-6 text-white"

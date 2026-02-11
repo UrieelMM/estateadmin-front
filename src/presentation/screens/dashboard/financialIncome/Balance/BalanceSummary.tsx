@@ -9,6 +9,7 @@ import BalanceGeneralDetailTable from "./BalanceSummary/BalanceGeneralDetailTabl
 import BalanceGeneralGraph from "./BalanceSummary/BalanceGeneralGraph";
 import PDFBalanceGeneralReport from "./BalanceSummary/PDFBalanceGeneralReport";
 import SkeletonLoading from "../../../../components/shared/loaders/SkeletonLoading";
+import { motion } from "framer-motion";
 
 const BalanceGeneral: React.FC = () => {
   // Datos de ingresos
@@ -135,55 +136,102 @@ const BalanceGeneral: React.FC = () => {
   const netBalance = totalIncomeWithCredit - totalSpent;
 
   return (
-    <div className="p-4">
-      {/* Selector de Año */ }
-      <div className="flex flex-col md:flex-row gap-4 mb-4">
-        <div>
-          <label className="block font-medium mb-1">Año:</label>
-          <select
-            value={ selectedYear }
-            onChange={ handleYearChange }
-            className="border border-gray-300 rounded py-2 px-8 dark:bg-gray-900 cursor-pointer"
-          >
-            <option value="">Todos los años</option>
-            { [ "2022", "2023", "2024", "2025", "2026" ].map( ( y ) => (
-              <option key={ y } value={ y }>
-                { y }
-              </option>
-            ) ) }
-          </select>
+    <div className="p-4 space-y-4">
+      <motion.section
+        initial={ { opacity: 0, y: 10 } }
+        animate={ { opacity: 1, y: 0 } }
+        transition={ { duration: 0.25 } }
+        className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-gradient-to-r from-white to-slate-50 dark:from-gray-900 dark:to-gray-800 p-4 md:p-5"
+      >
+        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+          <div>
+            <h2 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">
+              Balance General
+            </h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              Contrasta ingresos y egresos para validar salud financiera del condominio.
+            </p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
+              Periodo de análisis
+            </label>
+            <select
+              value={ selectedYear }
+              onChange={ handleYearChange }
+              className="min-w-44 border border-gray-300 dark:border-gray-600 rounded-lg py-2 pl-3 pr-8 bg-white dark:bg-gray-900 cursor-pointer text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
+            >
+              <option value="">Todos los años</option>
+              { [ "2022", "2023", "2024", "2025", "2026" ].map( ( y ) => (
+                <option key={ y } value={ y }>
+                  { y }
+                </option>
+              ) ) }
+            </select>
+          </div>
         </div>
-      </div>
+      </motion.section>
 
       {/* Loading / Error */ }
       { loading && <SkeletonLoading /> }
-      { error && <p className="text-red-500">{ error }</p> }
+      { error && (
+        <div className="rounded-xl border border-red-200 dark:border-red-900/40 bg-red-50 dark:bg-red-950/20 p-3">
+          <p className="text-red-700 dark:text-red-300 text-sm">{ error }</p>
+        </div>
+      ) }
 
       {/* Se muestran las secciones cuando ya no se está cargando */ }
       { !loading && (
-        <>
+        <div className="space-y-4">
           {/* Cards con indicadores clave */ }
-          <BalanceGeneralCards
-            totalIncome={ totalIncomeWithCredit }
-            totalSpent={ totalSpent }
-            netBalance={ netBalance }
-          />
+          <motion.div
+            initial={ { opacity: 0, y: 10 } }
+            animate={ { opacity: 1, y: 0 } }
+            transition={ { duration: 0.2, delay: 0.03 } }
+          >
+            <BalanceGeneralCards
+              totalIncome={ totalIncomeWithCredit }
+              totalSpent={ totalSpent }
+              netBalance={ netBalance }
+            />
+          </motion.div>
 
           {/* Gráfica comparativa de ingresos vs egresos */ }
-          <BalanceGeneralGraph
-            incomesMonthlyStats={ monthlyStatsIncomes }
-            expensesMonthlyStats={ monthlyStatsExpenses }
-          />
+          <motion.div
+            initial={ { opacity: 0, y: 10 } }
+            animate={ { opacity: 1, y: 0 } }
+            transition={ { duration: 0.2, delay: 0.06 } }
+            className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 shadow-sm"
+          >
+            <BalanceGeneralGraph
+              incomesMonthlyStats={ monthlyStatsIncomes }
+              expensesMonthlyStats={ monthlyStatsExpenses }
+            />
+          </motion.div>
 
           {/* Tabla detallada con el desglose mensual */ }
-          <BalanceGeneralDetailTable
-            incomesMonthlyStats={ monthlyStatsIncomes }
-            expensesMonthlyStats={ monthlyStatsExpenses }
-          />
+          <motion.div
+            initial={ { opacity: 0, y: 10 } }
+            animate={ { opacity: 1, y: 0 } }
+            transition={ { duration: 0.2, delay: 0.09 } }
+            className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 shadow-sm"
+          >
+            <BalanceGeneralDetailTable
+              incomesMonthlyStats={ monthlyStatsIncomes }
+              expensesMonthlyStats={ monthlyStatsExpenses }
+            />
+          </motion.div>
 
           {/* Reporte PDF del Balance General */ }
-          <PDFBalanceGeneralReport year={ selectedYear } />
-        </>
+          <motion.div
+            initial={ { opacity: 0, y: 10 } }
+            animate={ { opacity: 1, y: 0 } }
+            transition={ { duration: 0.2, delay: 0.12 } }
+            className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 shadow-sm"
+          >
+            <PDFBalanceGeneralReport year={ selectedYear } />
+          </motion.div>
+        </div>
       ) }
     </div>
   );

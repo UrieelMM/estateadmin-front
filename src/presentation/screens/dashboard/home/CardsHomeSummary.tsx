@@ -32,8 +32,7 @@ const Tooltip: React.FC<{ text: string }> = ({ text }) => {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -5 }}
             transition={{ type: "tween", stiffness: 20, damping: 20 }}
-            style={{ width: "200px", height: "50px" }}
-            className="absolute top-[20px] right-0 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-100 text-xs p-1 rounded z-10 w-16 whitespace-normal break-words flex text-center items-center shadow-[0_0_15px_rgba(79,70,229,0.3),0_0_250px_#8093e87b,0_0_100px_#c2abe6c5] dark:shadow-[0_0_50px_rgba(79,70,229,0.5),0_0_10px_#8093e8ac,0_0_100px_#c2abe6c1] cursor-pointer"
+            className="absolute top-[22px] right-0 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-100 text-xs p-2 rounded-lg z-10 w-52 whitespace-normal break-words border border-gray-200 dark:border-gray-700 shadow-lg"
           >
             {text}
           </motion.div>
@@ -257,13 +256,22 @@ const CardsHomeSummary: React.FC = () => {
   const shouldShowSkeleton =
     loading || localLoading || !hasCondominiumId || !dataFetchAttempted;
 
+  const ratioHealth =
+    ratio >= 35 ? "Saludable" : ratio >= 10 ? "Atención" : "Riesgo";
+  const ratioHealthClass =
+    ratio >= 35
+      ? "text-emerald-700 bg-emerald-50 dark:text-emerald-300 dark:bg-emerald-900/30"
+      : ratio >= 10
+      ? "text-amber-700 bg-amber-50 dark:text-amber-300 dark:bg-amber-900/30"
+      : "text-rose-700 bg-rose-50 dark:text-rose-300 dark:bg-rose-900/30";
+
   if (shouldShowSkeleton) {
     return (
       <div className="grid w-full grid-cols-1 gap-5 mb-8 sm:grid-cols-3">
         {[1, 2, 3, 4, 5, 6].map((index) => (
           <Card
             key={index}
-            className="p-4 shadow-md rounded-md relative animate-pulse"
+            className="p-4 shadow-sm rounded-xl border border-gray-200 dark:border-gray-700 relative animate-pulse"
           >
             <div className="h-24 bg-gray-200 dark:bg-gray-700 rounded"></div>
           </Card>
@@ -274,108 +282,146 @@ const CardsHomeSummary: React.FC = () => {
 
   return (
     <>
-      <h2 className="text-xl font-bold mb-4">Información del condominio</h2>
+      <div className="flex items-end justify-between mb-4">
+        <div>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">
+            Información del condominio
+          </h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            Datos operativos base para contexto del panel.
+          </p>
+        </div>
+      </div>
       <div className="grid w-full grid-cols-1 gap-5 mb-8 sm:grid-cols-3">
-        {userCards.map((card) => (
-          <Card
+        {userCards.map((card, index) => (
+          <motion.div
             key={card.title}
-            className={
-              `relative p-4 shadow-md rounded-xl transition duration-300 ease-in-out transform hover:translate-y-[-5px] hover:shadow-lg ` +
-              (card.title === "Total Condóminos"
-                ? "bg-gradient-to-br from-purple-50 to-white dark:from-gray-800 dark:to-gray-900"
-                : card.title === "Administradores"
-                ? "bg-gradient-to-br from-amber-50 to-white dark:from-gray-800 dark:to-gray-900"
-                : "bg-gradient-to-br from-indigo-50 to-white dark:from-gray-800 dark:to-gray-900")
-            }
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.22, delay: index * 0.05 }}
           >
-            <div className="absolute top-2 right-2">
-              <Tooltip text={card.tooltip} />
-            </div>
-            <div className="flex items-center mb-2">
-              <div className={`rounded-md p-2 ${card.iconBackground} mr-3`}>
-                <card.icon className="h-5 w-5 text-white" aria-hidden="true" />
+            <Card
+              className={
+                `relative p-4 rounded-xl border border-gray-200 dark:border-gray-700 transition-colors duration-200 hover:bg-gray-50 dark:hover:bg-gray-800/70 ` +
+                (card.title === "Total Condóminos"
+                  ? "bg-gradient-to-br from-purple-50 to-white dark:from-gray-800 dark:to-gray-900"
+                  : card.title === "Administradores"
+                  ? "bg-gradient-to-br from-amber-50 to-white dark:from-gray-800 dark:to-gray-900"
+                  : "bg-gradient-to-br from-indigo-50 to-white dark:from-gray-800 dark:to-gray-900")
+              }
+            >
+              <div className="absolute top-2 right-2">
+                <Tooltip text={card.tooltip} />
               </div>
-            </div>
-            <div className="flex flex-col gap-y-2">
-              <span className="text-sm font-medium text-default-500">
-                {card.title}:
-              </span>
-              {card.text ? (
-                <span
-                  className={
-                    `text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r ` +
-                    (card.title === "Total Condóminos"
-                      ? "from-purple-500 to-purple-600 dark:from-purple-300 dark:to-purple-400"
-                      : card.title === "Administradores"
-                      ? "from-amber-500 to-amber-600 dark:from-amber-300 dark:to-amber-400"
-                      : "from-indigo-500 to-indigo-600 dark:from-indigo-300 dark:to-indigo-400")
-                  }
-                >
-                  {card.text}
+              <div className="flex items-center mb-2">
+                <div className={`rounded-md p-2 ${card.iconBackground} mr-3`}>
+                  <card.icon className="h-5 w-5 text-white" aria-hidden="true" />
+                </div>
+              </div>
+              <div className="flex flex-col gap-y-1.5">
+                <span className="text-sm font-medium text-default-500">
+                  {card.title}
                 </span>
-              ) : (
-                <span
-                  className={
-                    `text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r ` +
-                    (card.title === "Total Condóminos"
-                      ? "from-purple-500 to-purple-600 dark:from-purple-300 dark:to-purple-400"
-                      : card.title === "Administradores"
-                      ? "from-amber-500 to-amber-600 dark:from-amber-300 dark:to-amber-400"
-                      : "from-indigo-500 to-indigo-600 dark:from-indigo-300 dark:to-indigo-400")
-                  }
-                >
-                  {card.amount}
-                </span>
-              )}
-            </div>
-          </Card>
+                {card.text ? (
+                  <span
+                    className={
+                      `text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r ` +
+                      (card.title === "Total Condóminos"
+                        ? "from-purple-500 to-purple-600 dark:from-purple-300 dark:to-purple-400"
+                        : card.title === "Administradores"
+                        ? "from-amber-500 to-amber-600 dark:from-amber-300 dark:to-amber-400"
+                        : "from-indigo-500 to-indigo-600 dark:from-indigo-300 dark:to-indigo-400")
+                    }
+                  >
+                    {card.text}
+                  </span>
+                ) : (
+                  <span
+                    className={
+                      `text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r ` +
+                      (card.title === "Total Condóminos"
+                        ? "from-purple-500 to-purple-600 dark:from-purple-300 dark:to-purple-400"
+                        : card.title === "Administradores"
+                        ? "from-amber-500 to-amber-600 dark:from-amber-300 dark:to-amber-400"
+                        : "from-indigo-500 to-indigo-600 dark:from-indigo-300 dark:to-indigo-400")
+                    }
+                  >
+                    {card.amount}
+                  </span>
+                )}
+              </div>
+            </Card>
+          </motion.div>
         ))}
       </div>
 
-      <h2 className="text-xl font-bold mb-4">
-        Estadísticas financieras del mes actual
-      </h2>
+      <div className="flex items-end justify-between mb-4">
+        <div>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">
+            Estadísticas financieras del mes actual
+          </h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            Corte operativo del mes para revisar tendencia inmediata.
+          </p>
+        </div>
+        <span
+          className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${ratioHealthClass}`}
+        >
+          Estado del ratio: {ratioHealth}
+        </span>
+      </div>
       <div className="grid w-full grid-cols-1 gap-5 mb-8 sm:grid-cols-3">
-        {financialCards.map((card) => (
-          <Card
+        {financialCards.map((card, index) => (
+          <motion.div
             key={card.title}
-            className={
-              `relative p-4 shadow-md rounded-xl transition duration-300 ease-in-out transform hover:translate-y-[-5px] hover:shadow-lg ` +
-              (card.title === "Ingresos del Mes"
-                ? "bg-gradient-to-br from-green-50 to-white dark:from-gray-800 dark:to-gray-900"
-                : card.title === "Egresos del Mes"
-                ? "bg-gradient-to-br from-red-50 to-white dark:from-gray-800 dark:to-gray-900"
-                : "bg-gradient-to-br from-blue-50 to-white dark:from-gray-800 dark:to-gray-900")
-            }
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.22, delay: index * 0.05 }}
           >
-            <div className="absolute top-2 right-2">
-              <Tooltip text={card.tooltip} />
-            </div>
-            <div className="flex items-center mb-2">
-              <div className={`rounded-md p-2 ${card.iconBackground} mr-3`}>
-                <card.icon className="h-5 w-5 text-white" aria-hidden="true" />
+            <Card
+              className={
+                `relative p-4 rounded-xl border border-gray-200 dark:border-gray-700 transition-colors duration-200 hover:bg-gray-50 dark:hover:bg-gray-800/70 ` +
+                (card.title === "Ingresos del Mes"
+                  ? "bg-gradient-to-br from-green-50 to-white dark:from-gray-800 dark:to-gray-900"
+                  : card.title === "Egresos del Mes"
+                  ? "bg-gradient-to-br from-red-50 to-white dark:from-gray-800 dark:to-gray-900"
+                  : "bg-gradient-to-br from-blue-50 to-white dark:from-gray-800 dark:to-gray-900")
+              }
+            >
+              <div className="absolute top-2 right-2">
+                <Tooltip text={card.tooltip} />
               </div>
-            </div>
-            <div className="flex flex-col gap-y-2">
-              <span className="text-sm font-medium text-default-500">
-                {card.title}:
-              </span>
-              <span
-                className={
-                  `text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r ` +
-                  (card.title === "Ingresos del Mes"
-                    ? "from-green-500 to-green-600 dark:from-green-300 dark:to-green-400"
-                    : card.title === "Egresos del Mes"
-                    ? "from-red-500 to-red-600 dark:from-red-300 dark:to-red-400"
-                    : "from-blue-500 to-blue-600 dark:from-blue-300 dark:to-blue-400")
-                }
-              >
-                {card.isPercentage
-                  ? `${ratio.toFixed(2)}%`
-                  : formatCurrency(card.amount)}
-              </span>
-            </div>
-          </Card>
+              <div className="flex items-center mb-2">
+                <div className={`rounded-md p-2 ${card.iconBackground} mr-3`}>
+                  <card.icon className="h-5 w-5 text-white" aria-hidden="true" />
+                </div>
+              </div>
+              <div className="flex flex-col gap-y-1.5">
+                <span className="text-sm font-medium text-default-500">
+                  {card.title}
+                </span>
+                <span
+                  className={
+                    `text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r ` +
+                    (card.title === "Ingresos del Mes"
+                      ? "from-green-500 to-green-600 dark:from-green-300 dark:to-green-400"
+                      : card.title === "Egresos del Mes"
+                      ? "from-red-500 to-red-600 dark:from-red-300 dark:to-red-400"
+                      : "from-blue-500 to-blue-600 dark:from-blue-300 dark:to-blue-400")
+                  }
+                >
+                  {card.isPercentage
+                    ? `${ratio.toFixed(2)}%`
+                    : formatCurrency(card.amount)}
+                </span>
+                {card.title === "Ratio Ingresos/Egresos" && (
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Objetivo sugerido: mantenerse por encima de 30%.
+                  </p>
+                )}
+              </div>
+            </Card>
+          </motion.div>
         ))}
       </div>
     </>

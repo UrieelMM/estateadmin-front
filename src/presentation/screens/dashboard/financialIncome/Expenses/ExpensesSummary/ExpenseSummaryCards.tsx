@@ -4,6 +4,7 @@ import React, { useMemo } from "react";
 import { useExpenseSummaryStore } from "../../../../../../store/expenseSummaryStore";
 import { LineChart, Line, ResponsiveContainer } from "recharts";
 import { useTheme } from "../../../../../../context/Theme/ThemeContext";
+import { motion } from "framer-motion";
 
 // Mapeo de mes: "01" -> "Enero", "02" -> "Febrero", etc.
 const MONTH_NAMES: Record<string, string> = {
@@ -103,14 +104,40 @@ const ExpenseSummaryCards: React.FC = () => {
     { value: worstMonth[1] },
   ];
 
+  const totalMonthsWithExpenses = useMemo(
+    () =>
+      new Set(
+        expenses
+          .map((expense) => expense.expenseDate?.substring(5, 7))
+          .filter(Boolean)
+      ).size,
+    [expenses]
+  );
+
+  const coverageLabel =
+    totalMonthsWithExpenses > 0
+      ? `${totalMonthsWithExpenses} mes(es) con movimiento`
+      : "Sin movimientos registrados";
+
+  const cardBaseClass =
+    "rounded-2xl border p-4 shadow-sm transition-colors duration-200 hover:bg-gray-50 dark:hover:bg-gray-800/70";
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
       {/* Tarjeta 1: Total Egresos */}
-      <div className="p-4 shadow-md rounded-md">
-        <p className="text-sm text-gray-600 dark:text-gray-100">
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.2 }}
+        className={`${cardBaseClass} border-red-200 dark:border-red-900/40 bg-gradient-to-br from-red-50/70 to-white dark:from-gray-900 dark:to-gray-800`}
+      >
+        <p className="text-xs uppercase tracking-wide font-semibold text-red-700 dark:text-red-300">
           Total Egresos
         </p>
         <p className="text-xl font-semibold">{formatCurrency(totalSpent)}</p>
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+          {coverageLabel}
+        </p>
         <div className="h-12 mt-2">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={totalSpentTrend}>
@@ -124,18 +151,26 @@ const ExpenseSummaryCards: React.FC = () => {
             </LineChart>
           </ResponsiveContainer>
         </div>
-      </div>
+      </motion.div>
 
       {/* Tarjeta 2: Concepto con más ingresos */}
-      <div className="p-4 shadow-md rounded-md">
-        <p className="text-sm text-gray-600 dark:text-gray-100">
-          Concepto con más ingresos
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.2, delay: 0.04 }}
+        className={`${cardBaseClass} border-indigo-200 dark:border-indigo-900/40 bg-gradient-to-br from-indigo-50/70 to-white dark:from-gray-900 dark:to-gray-800`}
+      >
+        <p className="text-xs uppercase tracking-wide font-semibold text-indigo-700 dark:text-indigo-300">
+          Concepto más costoso
         </p>
         <p className="text-base font-semibold text-indigo-500 dark:text-indigo-400">
           {bestConcept[0]}
         </p>
         <p className="text-xl font-semibold">
           {formatCurrency(bestConcept[1])}
+        </p>
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+          Mayor impacto acumulado en el periodo.
         </p>
         <div className="h-12 mt-2">
           <ResponsiveContainer width="100%" height="100%">
@@ -150,17 +185,25 @@ const ExpenseSummaryCards: React.FC = () => {
             </LineChart>
           </ResponsiveContainer>
         </div>
-      </div>
+      </motion.div>
 
       {/* Tarjeta 3: Mes con mayor gasto */}
-      <div className="p-4 shadow-md rounded-md">
-        <p className="text-sm text-gray-600 dark:text-gray-100">
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.2, delay: 0.08 }}
+        className={`${cardBaseClass} border-sky-200 dark:border-sky-900/40 bg-gradient-to-br from-sky-50/70 to-white dark:from-gray-900 dark:to-gray-800`}
+      >
+        <p className="text-xs uppercase tracking-wide font-semibold text-sky-700 dark:text-sky-300">
           Mes con mayor gasto
         </p>
         <p className="text-base font-semibold text-indigo-500 dark:text-indigo-400">
           {MONTH_NAMES[bestMonth[0]] || bestMonth[0]}
         </p>
         <p className="text-xl font-semibold">{formatCurrency(bestMonth[1])}</p>
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+          Punto de mayor presión presupuestal.
+        </p>
         <div className="h-12 mt-2">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={bestMonthTrend}>
@@ -174,17 +217,25 @@ const ExpenseSummaryCards: React.FC = () => {
             </LineChart>
           </ResponsiveContainer>
         </div>
-      </div>
+      </motion.div>
 
       {/* Tarjeta 4: Mes con menor gasto */}
-      <div className="p-4 shadow-md rounded-md">
-        <p className="text-sm text-gray-600 dark:text-gray-100">
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.2, delay: 0.12 }}
+        className={`${cardBaseClass} border-emerald-200 dark:border-emerald-900/40 bg-gradient-to-br from-emerald-50/70 to-white dark:from-gray-900 dark:to-gray-800`}
+      >
+        <p className="text-xs uppercase tracking-wide font-semibold text-emerald-700 dark:text-emerald-300">
           Mes con menor gasto
         </p>
         <p className="text-base font-semibold text-indigo-500 dark:text-indigo-400">
           {MONTH_NAMES[worstMonth[0]] || worstMonth[0]}
         </p>
         <p className="text-xl font-semibold">{formatCurrency(worstMonth[1])}</p>
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+          Referencia útil para calibrar objetivos.
+        </p>
         <div className="h-12 mt-2">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={worstMonthTrend}>
@@ -198,7 +249,7 @@ const ExpenseSummaryCards: React.FC = () => {
             </LineChart>
           </ResponsiveContainer>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 };
