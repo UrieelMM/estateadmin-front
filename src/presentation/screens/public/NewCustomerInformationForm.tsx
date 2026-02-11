@@ -8,6 +8,21 @@ import {
   ExclamationTriangleIcon,
   ArrowLeftIcon,
   ArrowRightIcon,
+  UserCircleIcon,
+  BuildingOffice2Icon,
+  DocumentTextIcon,
+  IdentificationIcon,
+  HomeModernIcon,
+  SparklesIcon,
+  ClockIcon,
+  EnvelopeIcon,
+  PhoneIcon,
+  BuildingOfficeIcon,
+  GlobeAltIcon,
+  BriefcaseIcon,
+  MapPinIcon,
+  HashtagIcon,
+  ShieldCheckIcon,
 } from "@heroicons/react/24/outline";
 import useNewCustomerFormStore, {
   NewCustomerInfo,
@@ -35,6 +50,22 @@ const FORM_STEPS = [
   "Información del Condominio",
   "Selección de Plan",
 ];
+
+const STEP_ICONS = [
+  UserCircleIcon,
+  BuildingOffice2Icon,
+  DocumentTextIcon,
+  IdentificationIcon,
+  HomeModernIcon,
+  SparklesIcon,
+];
+
+const getFieldClass = (hasError: boolean) =>
+  `mt-1 block w-full px-3 py-2.5 border rounded-lg transition-colors duration-200 shadow-sm text-sm bg-white/95 dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 ${
+    hasError
+      ? "border-red-300 dark:border-red-500"
+      : "border-gray-300 dark:border-gray-700"
+  }`;
 
 const PLANS = [
   {
@@ -86,7 +117,7 @@ const PersonalInfoStep: React.FC<StepProps> = ({
   touched,
   setTouched,
 }) => (
-  <div className="space-y-4">
+  <div className="space-y-4 rounded-2xl border border-gray-200 dark:border-gray-700 bg-gradient-to-b from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 p-5 md:p-6">
     <h3 className="text-lg font-medium leading-6 text-gray-900 dark:text-white">
       Información Personal
     </h3>
@@ -100,7 +131,10 @@ const PersonalInfoStep: React.FC<StepProps> = ({
           htmlFor="name"
           className="block text-sm font-medium text-gray-700 dark:text-gray-300"
         >
-          Nombre*
+          <span className="inline-flex items-center gap-1">
+            <UserCircleIcon className="h-4 w-4 text-indigo-500" />
+            Nombre*
+          </span>
         </label>
         <input
           type="text"
@@ -109,9 +143,8 @@ const PersonalInfoStep: React.FC<StepProps> = ({
           value={currentData.name || ""}
           onChange={(e) => updateField("name", e.target.value)}
           onBlur={() => setTouched("name", true)}
-          className={`mt-1 block w-full px-3 py-2 border ${
-            errors.name && touched.name ? "border-red-300" : "border-gray-300"
-          } rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-800 dark:border-gray-700 dark:text-white`}
+          placeholder="Ej. Alejandro"
+          className={getFieldClass(!!(errors.name && touched.name))}
         />
         {errors.name && touched.name && (
           <p className="mt-1 text-sm text-red-600 dark:text-red-400">
@@ -125,7 +158,10 @@ const PersonalInfoStep: React.FC<StepProps> = ({
           htmlFor="lastName"
           className="block text-sm font-medium text-gray-700 dark:text-gray-300"
         >
-          Apellido*
+          <span className="inline-flex items-center gap-1">
+            <UserCircleIcon className="h-4 w-4 text-indigo-500" />
+            Apellido*
+          </span>
         </label>
         <input
           type="text"
@@ -134,11 +170,8 @@ const PersonalInfoStep: React.FC<StepProps> = ({
           value={currentData.lastName || ""}
           onChange={(e) => updateField("lastName", e.target.value)}
           onBlur={() => setTouched("lastName", true)}
-          className={`mt-1 block w-full px-3 py-2 border ${
-            errors.lastName && touched.lastName
-              ? "border-red-300"
-              : "border-gray-300"
-          } rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-800 dark:border-gray-700 dark:text-white`}
+          placeholder="Ej. Martínez"
+          className={getFieldClass(!!(errors.lastName && touched.lastName))}
         />
         {errors.lastName && touched.lastName && (
           <p className="mt-1 text-sm text-red-600 dark:text-red-400">
@@ -154,7 +187,10 @@ const PersonalInfoStep: React.FC<StepProps> = ({
           htmlFor="email"
           className="block text-sm font-medium text-gray-700 dark:text-gray-300"
         >
-          Correo Electrónico*
+          <span className="inline-flex items-center gap-1">
+            <EnvelopeIcon className="h-4 w-4 text-indigo-500" />
+            Correo Electrónico*
+          </span>
         </label>
         <input
           type="email"
@@ -163,10 +199,14 @@ const PersonalInfoStep: React.FC<StepProps> = ({
           value={currentData.email || ""}
           onChange={(e) => updateField("email", e.target.value)}
           onBlur={() => setTouched("email", true)}
-          className={`mt-1 block w-full px-3 py-2 border ${
-            errors.email && touched.email ? "border-red-300" : "border-gray-300"
-          } rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-800 dark:border-gray-700 dark:text-white`}
+          placeholder="correo@empresa.com"
+          className={getFieldClass(!!(errors.email && touched.email))}
         />
+        {!errors.email && (
+          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+            Usaremos este correo para seguimiento comercial.
+          </p>
+        )}
         {errors.email && touched.email && (
           <p className="mt-1 text-sm text-red-600 dark:text-red-400">
             {errors.email}
@@ -179,7 +219,10 @@ const PersonalInfoStep: React.FC<StepProps> = ({
           htmlFor="phoneNumber"
           className="block text-sm font-medium text-gray-700 dark:text-gray-300"
         >
-          Teléfono*
+          <span className="inline-flex items-center gap-1">
+            <PhoneIcon className="h-4 w-4 text-indigo-500" />
+            Teléfono*
+          </span>
         </label>
         <input
           type="tel"
@@ -188,11 +231,8 @@ const PersonalInfoStep: React.FC<StepProps> = ({
           value={currentData.phoneNumber || ""}
           onChange={(e) => updateField("phoneNumber", e.target.value)}
           onBlur={() => setTouched("phoneNumber", true)}
-          className={`mt-1 block w-full px-3 py-2 border ${
-            errors.phoneNumber && touched.phoneNumber
-              ? "border-red-300"
-              : "border-gray-300"
-          } rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-800 dark:border-gray-700 dark:text-white`}
+          placeholder="+52 55 1234 5678"
+          className={getFieldClass(!!(errors.phoneNumber && touched.phoneNumber))}
         />
         {errors.phoneNumber && touched.phoneNumber && (
           <p className="mt-1 text-sm text-red-600 dark:text-red-400">
@@ -212,7 +252,7 @@ const CompanyInfoStep: React.FC<StepProps> = ({
   touched,
   setTouched,
 }) => (
-  <div className="space-y-4">
+  <div className="space-y-4 rounded-2xl border border-gray-200 dark:border-gray-700 bg-gradient-to-b from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 p-5 md:p-6">
     <h3 className="text-lg font-medium leading-6 text-gray-900 dark:text-white">
       Información de la Empresa
     </h3>
@@ -226,7 +266,10 @@ const CompanyInfoStep: React.FC<StepProps> = ({
           htmlFor="companyName"
           className="block text-sm font-medium text-gray-700 dark:text-gray-300"
         >
-          Nombre de la Compañía*
+          <span className="inline-flex items-center gap-1">
+            <BuildingOfficeIcon className="h-4 w-4 text-indigo-500" />
+            Nombre de la Compañía*
+          </span>
         </label>
         <input
           type="text"
@@ -235,11 +278,8 @@ const CompanyInfoStep: React.FC<StepProps> = ({
           value={currentData.companyName || ""}
           onChange={(e) => updateField("companyName", e.target.value)}
           onBlur={() => setTouched("companyName", true)}
-          className={`mt-1 block w-full px-3 py-2 border ${
-            errors.companyName && touched.companyName
-              ? "border-red-300"
-              : "border-gray-300"
-          } rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-800 dark:border-gray-700 dark:text-white`}
+          placeholder="Ej. Administración Central SA de CV"
+          className={getFieldClass(!!(errors.companyName && touched.companyName))}
         />
         {errors.companyName && touched.companyName && (
           <p className="mt-1 text-sm text-red-600 dark:text-red-400">
@@ -253,7 +293,10 @@ const CompanyInfoStep: React.FC<StepProps> = ({
           htmlFor="businessName"
           className="block text-sm font-medium text-gray-700 dark:text-gray-300"
         >
-          Nombre Comercial*
+          <span className="inline-flex items-center gap-1">
+            <BuildingOfficeIcon className="h-4 w-4 text-indigo-500" />
+            Nombre Comercial*
+          </span>
         </label>
         <input
           type="text"
@@ -262,11 +305,8 @@ const CompanyInfoStep: React.FC<StepProps> = ({
           value={currentData.businessName || ""}
           onChange={(e) => updateField("businessName", e.target.value)}
           onBlur={() => setTouched("businessName", true)}
-          className={`mt-1 block w-full px-3 py-2 border ${
-            errors.businessName && touched.businessName
-              ? "border-red-300"
-              : "border-gray-300"
-          } rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-800 dark:border-gray-700 dark:text-white`}
+          placeholder="Ej. EstateAdmin México"
+          className={getFieldClass(!!(errors.businessName && touched.businessName))}
         />
         {errors.businessName && touched.businessName && (
           <p className="mt-1 text-sm text-red-600 dark:text-red-400">
@@ -282,7 +322,10 @@ const CompanyInfoStep: React.FC<StepProps> = ({
           htmlFor="country"
           className="block text-sm font-medium text-gray-700 dark:text-gray-300"
         >
-          País*
+          <span className="inline-flex items-center gap-1">
+            <GlobeAltIcon className="h-4 w-4 text-indigo-500" />
+            País*
+          </span>
         </label>
         <input
           type="text"
@@ -291,11 +334,8 @@ const CompanyInfoStep: React.FC<StepProps> = ({
           value={currentData.country || ""}
           onChange={(e) => updateField("country", e.target.value)}
           onBlur={() => setTouched("country", true)}
-          className={`mt-1 block w-full px-3 py-2 border ${
-            errors.country && touched.country
-              ? "border-red-300"
-              : "border-gray-300"
-          } rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-800 dark:border-gray-700 dark:text-white`}
+          placeholder="Ej. México"
+          className={getFieldClass(!!(errors.country && touched.country))}
         />
         {errors.country && touched.country && (
           <p className="mt-1 text-sm text-red-600 dark:text-red-400">
@@ -309,7 +349,10 @@ const CompanyInfoStep: React.FC<StepProps> = ({
           htmlFor="businessActivity"
           className="block text-sm font-medium text-gray-700 dark:text-gray-300"
         >
-          Actividad Económica*
+          <span className="inline-flex items-center gap-1">
+            <BriefcaseIcon className="h-4 w-4 text-indigo-500" />
+            Actividad Económica*
+          </span>
         </label>
         <input
           type="text"
@@ -318,11 +361,10 @@ const CompanyInfoStep: React.FC<StepProps> = ({
           value={currentData.businessActivity || ""}
           onChange={(e) => updateField("businessActivity", e.target.value)}
           onBlur={() => setTouched("businessActivity", true)}
-          className={`mt-1 block w-full px-3 py-2 border ${
-            errors.businessActivity && touched.businessActivity
-              ? "border-red-300"
-              : "border-gray-300"
-          } rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-800 dark:border-gray-700 dark:text-white`}
+          placeholder="Ej. Administración de condominios"
+          className={getFieldClass(
+            !!(errors.businessActivity && touched.businessActivity)
+          )}
         />
         {errors.businessActivity && touched.businessActivity && (
           <p className="mt-1 text-sm text-red-600 dark:text-red-400">
@@ -342,7 +384,7 @@ const FiscalInfoStep: React.FC<StepProps> = ({
   touched,
   setTouched,
 }) => (
-  <div className="space-y-4">
+  <div className="space-y-4 rounded-2xl border border-gray-200 dark:border-gray-700 bg-gradient-to-b from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 p-5 md:p-6">
     <h3 className="text-lg font-medium leading-6 text-gray-900 dark:text-white">
       Datos Fiscales
     </h3>
@@ -356,7 +398,10 @@ const FiscalInfoStep: React.FC<StepProps> = ({
           htmlFor="fullFiscalAddress"
           className="block text-sm font-medium text-gray-700 dark:text-gray-300"
         >
-          Domicilio Fiscal Completo*
+          <span className="inline-flex items-center gap-1">
+            <MapPinIcon className="h-4 w-4 text-indigo-500" />
+            Domicilio Fiscal Completo*
+          </span>
         </label>
         <textarea
           id="fullFiscalAddress"
@@ -365,11 +410,10 @@ const FiscalInfoStep: React.FC<StepProps> = ({
           value={currentData.fullFiscalAddress || ""}
           onChange={(e) => updateField("fullFiscalAddress", e.target.value)}
           onBlur={() => setTouched("fullFiscalAddress", true)}
-          className={`mt-1 block w-full px-3 py-2 border ${
-            errors.fullFiscalAddress && touched.fullFiscalAddress
-              ? "border-red-300"
-              : "border-gray-300"
-          } rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-800 dark:border-gray-700 dark:text-white`}
+          placeholder="Calle, número, colonia, municipio, estado, CP"
+          className={getFieldClass(
+            !!(errors.fullFiscalAddress && touched.fullFiscalAddress)
+          )}
         />
         {errors.fullFiscalAddress && touched.fullFiscalAddress && (
           <p className="mt-1 text-sm text-red-600 dark:text-red-400">
@@ -385,7 +429,10 @@ const FiscalInfoStep: React.FC<StepProps> = ({
           htmlFor="RFC"
           className="block text-sm font-medium text-gray-700 dark:text-gray-300"
         >
-          RFC*
+          <span className="inline-flex items-center gap-1">
+            <HashtagIcon className="h-4 w-4 text-indigo-500" />
+            RFC*
+          </span>
         </label>
         <input
           type="text"
@@ -394,10 +441,14 @@ const FiscalInfoStep: React.FC<StepProps> = ({
           value={currentData.RFC || ""}
           onChange={(e) => updateField("RFC", e.target.value)}
           onBlur={() => setTouched("RFC", true)}
-          className={`mt-1 block w-full px-3 py-2 border ${
-            errors.RFC && touched.RFC ? "border-red-300" : "border-gray-300"
-          } rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-800 dark:border-gray-700 dark:text-white`}
+          placeholder="Ej. XAXX010101000"
+          className={getFieldClass(!!(errors.RFC && touched.RFC))}
         />
+        {!errors.RFC && (
+          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+            Captúralo sin espacios y en mayúsculas.
+          </p>
+        )}
         {errors.RFC && touched.RFC && (
           <p className="mt-1 text-sm text-red-600 dark:text-red-400">
             {errors.RFC}
@@ -410,7 +461,10 @@ const FiscalInfoStep: React.FC<StepProps> = ({
           htmlFor="taxRegime"
           className="block text-sm font-medium text-gray-700 dark:text-gray-300"
         >
-          Régimen Fiscal*
+          <span className="inline-flex items-center gap-1">
+            <ShieldCheckIcon className="h-4 w-4 text-indigo-500" />
+            Régimen Fiscal*
+          </span>
         </label>
         <input
           type="text"
@@ -419,11 +473,8 @@ const FiscalInfoStep: React.FC<StepProps> = ({
           value={currentData.taxRegime || ""}
           onChange={(e) => updateField("taxRegime", e.target.value)}
           onBlur={() => setTouched("taxRegime", true)}
-          className={`mt-1 block w-full px-3 py-2 border ${
-            errors.taxRegime && touched.taxRegime
-              ? "border-red-300"
-              : "border-gray-300"
-          } rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-800 dark:border-gray-700 dark:text-white`}
+          placeholder="Ej. General de Ley Personas Morales"
+          className={getFieldClass(!!(errors.taxRegime && touched.taxRegime))}
         />
         {errors.taxRegime && touched.taxRegime && (
           <p className="mt-1 text-sm text-red-600 dark:text-red-400">
@@ -446,8 +497,12 @@ const FiscalInfoStep: React.FC<StepProps> = ({
         name="cfdiUse"
         value={currentData.cfdiUse || ""}
         onChange={(e) => updateField("cfdiUse", e.target.value)}
-        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+        placeholder="Ej. G03"
+        className={getFieldClass(false)}
       />
+      <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+        Si no lo conoces, puedes dejar el valor por defecto.
+      </p>
     </div>
   </div>
 );
@@ -460,7 +515,7 @@ const ResponsiblePersonStep: React.FC<StepProps> = ({
   touched,
   setTouched,
 }) => (
-  <div className="space-y-4">
+  <div className="space-y-4 rounded-2xl border border-gray-200 dark:border-gray-700 bg-gradient-to-b from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 p-5 md:p-6">
     <h3 className="text-lg font-medium leading-6 text-gray-900 dark:text-white">
       Información de Responsable
     </h3>
@@ -474,7 +529,10 @@ const ResponsiblePersonStep: React.FC<StepProps> = ({
           htmlFor="responsiblePersonName"
           className="block text-sm font-medium text-gray-700 dark:text-gray-300"
         >
-          Nombre de la Persona Responsable*
+          <span className="inline-flex items-center gap-1">
+            <UserCircleIcon className="h-4 w-4 text-indigo-500" />
+            Nombre de la Persona Responsable*
+          </span>
         </label>
         <input
           type="text"
@@ -483,11 +541,10 @@ const ResponsiblePersonStep: React.FC<StepProps> = ({
           value={currentData.responsiblePersonName || ""}
           onChange={(e) => updateField("responsiblePersonName", e.target.value)}
           onBlur={() => setTouched("responsiblePersonName", true)}
-          className={`mt-1 block w-full px-3 py-2 border ${
-            errors.responsiblePersonName && touched.responsiblePersonName
-              ? "border-red-300"
-              : "border-gray-300"
-          } rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-800 dark:border-gray-700 dark:text-white`}
+          placeholder="Ej. Laura Gómez"
+          className={getFieldClass(
+            !!(errors.responsiblePersonName && touched.responsiblePersonName)
+          )}
         />
         {errors.responsiblePersonName && touched.responsiblePersonName && (
           <p className="mt-1 text-sm text-red-600 dark:text-red-400">
@@ -501,7 +558,10 @@ const ResponsiblePersonStep: React.FC<StepProps> = ({
           htmlFor="responsiblePersonPosition"
           className="block text-sm font-medium text-gray-700 dark:text-gray-300"
         >
-          Cargo de la Persona Responsable*
+          <span className="inline-flex items-center gap-1">
+            <BriefcaseIcon className="h-4 w-4 text-indigo-500" />
+            Cargo de la Persona Responsable*
+          </span>
         </label>
         <input
           type="text"
@@ -512,12 +572,13 @@ const ResponsiblePersonStep: React.FC<StepProps> = ({
             updateField("responsiblePersonPosition", e.target.value)
           }
           onBlur={() => setTouched("responsiblePersonPosition", true)}
-          className={`mt-1 block w-full px-3 py-2 border ${
-            errors.responsiblePersonPosition &&
-            touched.responsiblePersonPosition
-              ? "border-red-300"
-              : "border-gray-300"
-          } rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-800 dark:border-gray-700 dark:text-white`}
+          placeholder="Ej. Administradora General"
+          className={getFieldClass(
+            !!(
+              errors.responsiblePersonPosition &&
+              touched.responsiblePersonPosition
+            )
+          )}
         />
         {errors.responsiblePersonPosition &&
           touched.responsiblePersonPosition && (
@@ -538,7 +599,7 @@ const CondominiumInfoStep: React.FC<StepProps> = ({
   touched,
   setTouched,
 }) => (
-  <div className="space-y-4">
+  <div className="space-y-4 rounded-2xl border border-gray-200 dark:border-gray-700 bg-gradient-to-b from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 p-5 md:p-6">
     <h3 className="text-lg font-medium leading-6 text-gray-900 dark:text-white">
       Información del Condominio
     </h3>
@@ -559,7 +620,10 @@ const CondominiumInfoStep: React.FC<StepProps> = ({
           htmlFor="condominiumInfo.name"
           className="block text-sm font-medium text-gray-700 dark:text-gray-300"
         >
-          Nombre del Condominio*
+          <span className="inline-flex items-center gap-1">
+            <HomeModernIcon className="h-4 w-4 text-indigo-500" />
+            Nombre del Condominio*
+          </span>
         </label>
         <input
           type="text"
@@ -568,11 +632,10 @@ const CondominiumInfoStep: React.FC<StepProps> = ({
           value={currentData.condominiumInfo?.name || ""}
           onChange={(e) => updateField("condominiumInfo.name", e.target.value)}
           onBlur={() => setTouched("condominiumInfo.name", true)}
-          className={`mt-1 block w-full px-3 py-2 border ${
-            errors["condominiumInfo.name"] && touched["condominiumInfo.name"]
-              ? "border-red-300"
-              : "border-gray-300"
-          } rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-800 dark:border-gray-700 dark:text-white`}
+          placeholder="Ej. Residencial Los Encinos"
+          className={getFieldClass(
+            !!(errors["condominiumInfo.name"] && touched["condominiumInfo.name"])
+          )}
         />
         {errors["condominiumInfo.name"] && touched["condominiumInfo.name"] && (
           <p className="mt-1 text-sm text-red-600 dark:text-red-400">
@@ -586,7 +649,10 @@ const CondominiumInfoStep: React.FC<StepProps> = ({
           htmlFor="condominiumInfo.address"
           className="block text-sm font-medium text-gray-700 dark:text-gray-300"
         >
-          Dirección del Condominio*
+          <span className="inline-flex items-center gap-1">
+            <MapPinIcon className="h-4 w-4 text-indigo-500" />
+            Dirección del Condominio*
+          </span>
         </label>
         <textarea
           id="condominiumInfo.address"
@@ -597,12 +663,13 @@ const CondominiumInfoStep: React.FC<StepProps> = ({
             updateField("condominiumInfo.address", e.target.value)
           }
           onBlur={() => setTouched("condominiumInfo.address", true)}
-          className={`mt-1 block w-full px-3 py-2 border ${
-            errors["condominiumInfo.address"] &&
-            touched["condominiumInfo.address"]
-              ? "border-red-300"
-              : "border-gray-300"
-          } rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-800 dark:border-gray-700 dark:text-white`}
+          placeholder="Ej. Av. Principal 123, Col. Centro, Monterrey, NL"
+          className={getFieldClass(
+            !!(
+              errors["condominiumInfo.address"] &&
+              touched["condominiumInfo.address"]
+            )
+          )}
         />
         {errors["condominiumInfo.address"] &&
           touched["condominiumInfo.address"] && (
@@ -650,7 +717,7 @@ const AdditionalConfigStep: React.FC<StepProps> = ({
   }, [currentData.billingFrequency, updateField]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 rounded-2xl border border-gray-200 dark:border-gray-700 bg-gradient-to-b from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 p-5 md:p-6">
       <h3 className="text-lg font-medium leading-6 text-gray-900 dark:text-white">
         Selección de Plan{" "}
       </h3>
@@ -673,12 +740,12 @@ const AdditionalConfigStep: React.FC<StepProps> = ({
             key={plan.value}
             className={`relative overflow-hidden border rounded-xl transition-all ${
               currentData.plan === plan.value
-                ? "border-indigo-600 ring-2 ring-indigo-600 transform scale-[1.02]"
+                ? "border-indigo-600 ring-2 ring-indigo-500 shadow-lg shadow-indigo-100/70 dark:shadow-none"
                 : "border-gray-200 dark:border-gray-700"
             } ${
               plan.highlighted && currentData.plan !== plan.value
                 ? "bg-gradient-to-b from-indigo-50 to-white dark:from-indigo-900/40 dark:to-gray-800"
-                : "bg-white dark:bg-gray-800"
+                : "bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700/70"
             }`}
           >
             {plan.highlighted && (
@@ -826,7 +893,11 @@ const NewCustomerInformationForm = () => {
   // Comprobar la expiración del formulario al cargar
   useEffect(() => {
     const checkExpiration = async () => {
-      if (!formId) return;
+      if (!formId) {
+        setIsFormExpired(true);
+        setIsCheckingExpiration(false);
+        return;
+      }
 
       setIsCheckingExpiration(true);
       try {
@@ -909,6 +980,7 @@ const NewCustomerInformationForm = () => {
         }
         if (!formData.email?.trim()) {
           newErrors.email = "El correo electrónico es obligatorio";
+          isValid = false;
         } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
           newErrors.email =
             "El correo electrónico debe tener un formato válido";
@@ -1226,76 +1298,109 @@ const NewCustomerInformationForm = () => {
   }
 
   // Componente principal del formulario (cuando es válido)
+  const progressPercentage = Math.round(
+    ((currentStep + 1) / FORM_STEPS.length) * 100
+  );
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-indigo-50 to-white dark:from-gray-900 dark:to-gray-800 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_#e0e7ff_0%,_#ffffff_40%,_#f8fafc_100%)] dark:bg-[radial-gradient(circle_at_top,_#1f2937_0%,_#111827_60%,_#0b1220_100%)] py-10 px-4 sm:px-6 lg:px-8">
       <div
         className={`mx-auto ${currentStep === 5 ? "max-w-6xl" : "max-w-3xl"}`}
       >
-        <div className="text-center mb-12">
-          <h1 className="bg-gradient-to-r from-indigo-700 via-indigo-500 to-pink-500 bg-clip-text text-transparent text-5xl font-extrabold mb-3">
+        <div className="text-center mb-8">
+          <h1 className="bg-gradient-to-r from-indigo-700 via-indigo-500 to-cyan-500 bg-clip-text text-transparent text-5xl font-extrabold mb-3">
             EstateAdmin
           </h1>
           <h2 className="text-xl font-extrabold text-gray-900 dark:text-white sm:text-4xl">
             Información de Nuevo Cliente
           </h2>
           <p className="mt-3 text-lg text-gray-500 dark:text-gray-400">
-            Complete el formulario con la información solicitada
+            Complete el formulario para iniciar su proceso de alta comercial
           </p>
         </div>
 
-        {/* Indicador de progreso */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-2">
-            {FORM_STEPS.map((_step, index) => (
-              <div
-                key={index}
-                className={`flex-1 ${
-                  index !== FORM_STEPS.length - 1 ? "border-b-2 " : ""
-                } ${
-                  index < currentStep
-                    ? "border-indigo-500 dark:border-indigo-400"
-                    : index === currentStep
-                    ? "border-indigo-300 dark:border-indigo-600"
-                    : "border-gray-200 dark:border-gray-700"
-                }`}
-              >
+        <div className="mb-6 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white/90 dark:bg-gray-800/80 backdrop-blur-sm shadow-sm p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <p className="text-xs uppercase tracking-wide font-semibold text-indigo-600 dark:text-indigo-300">
+                Progreso del Formulario
+              </p>
+              <p className="text-sm text-gray-600 dark:text-gray-300">
+                Paso {currentStep + 1} de {FORM_STEPS.length}:{" "}
+                {FORM_STEPS[currentStep]}
+              </p>
+            </div>
+            <div className="inline-flex items-center rounded-full bg-indigo-100 dark:bg-indigo-900/40 px-3 py-1 text-xs font-semibold text-indigo-700 dark:text-indigo-300">
+              {progressPercentage}%
+            </div>
+          </div>
+          <div className="h-2 w-full bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+            <motion.div
+              className="h-full bg-gradient-to-r from-indigo-500 to-cyan-500"
+              initial={{ width: 0 }}
+              animate={{ width: `${progressPercentage}%` }}
+              transition={{ duration: 0.35 }}
+            />
+          </div>
+
+          {/* Indicador de pasos */}
+          <div className="mt-4 grid grid-cols-3 md:grid-cols-6 gap-2">
+            {FORM_STEPS.map((step, index) => {
+              const Icon = STEP_ICONS[index];
+              const done = index < currentStep;
+              const active = index === currentStep;
+              return (
                 <button
-                  onClick={() => index < currentStep && setCurrentStep(index)}
-                  className={`-mb-[2px] text-xs font-medium uppercase tracking-wide ${
-                    index < currentStep
-                      ? "text-indigo-600 dark:text-indigo-400 cursor-pointer"
-                      : index === currentStep
-                      ? "text-indigo-500 dark:text-indigo-300"
-                      : "text-gray-500 dark:text-gray-500 cursor-not-allowed"
+                  key={step}
+                  onClick={() => done && setCurrentStep(index)}
+                  disabled={!done}
+                  className={`flex items-center gap-2 rounded-lg border px-2 py-2 text-left transition-colors ${
+                    active
+                      ? "border-indigo-300 bg-indigo-50 dark:border-indigo-700 dark:bg-indigo-900/30"
+                      : done
+                      ? "border-emerald-200 bg-emerald-50 dark:border-emerald-900/40 dark:bg-emerald-900/20 cursor-pointer"
+                      : "border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800 cursor-not-allowed"
                   }`}
-                  disabled={index > currentStep}
                 >
-                  {index + 1}
+                  <Icon
+                    className={`h-4 w-4 ${
+                      active
+                        ? "text-indigo-600 dark:text-indigo-300"
+                        : done
+                        ? "text-emerald-600 dark:text-emerald-300"
+                        : "text-gray-400"
+                    }`}
+                  />
+                  <span
+                    className={`text-[11px] font-medium leading-tight ${
+                      active
+                        ? "text-indigo-700 dark:text-indigo-300"
+                        : done
+                        ? "text-emerald-700 dark:text-emerald-300"
+                        : "text-gray-500 dark:text-gray-400"
+                    }`}
+                  >
+                    {step}
+                  </span>
                 </button>
-              </div>
-            ))}
-          </div>
-          <div className="hidden sm:flex justify-between text-xs text-gray-500 dark:text-gray-400">
-            {FORM_STEPS.map((step, index) => (
-              <div
-                key={index}
-                className={`w-1/6 text-center ${
-                  index === currentStep
-                    ? "text-indigo-600 dark:text-indigo-400 font-medium"
-                    : ""
-                }`}
-              >
-                {step}
-              </div>
-            ))}
-          </div>
-          <div className="sm:hidden text-sm font-medium text-indigo-600 dark:text-indigo-400 text-center">
-            {FORM_STEPS[currentStep]}
+              );
+            })}
           </div>
         </div>
 
         {/* Contenedor del formulario */}
-        <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg">
+        <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white/95 dark:bg-gray-800/95 shadow-xl overflow-hidden">
+          <div className="px-4 sm:px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-indigo-50/80 to-cyan-50/60 dark:from-gray-800 dark:to-gray-800">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-200">
+                Información segura y confidencial
+              </p>
+              <div className="inline-flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+                <ClockIcon className="h-4 w-4" />
+                <span>Tiempo estimado: 6-8 minutos</span>
+              </div>
+            </div>
+          </div>
           <div className="px-4 py-5 sm:p-6">
             <AnimatePresence mode="wait">
               <motion.div
@@ -1364,12 +1469,12 @@ const NewCustomerInformationForm = () => {
             </AnimatePresence>
 
             {/* Botones de navegación */}
-            <div className="mt-8 flex justify-between">
+            <div className="mt-8 sticky bottom-0 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm border-t border-gray-200 dark:border-gray-700 pt-4 flex justify-between">
               <button
                 type="button"
                 onClick={handlePrevious}
                 disabled={currentStep === 0}
-                className={`inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 dark:border-gray-600 ${
+                className={`inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-lg text-gray-700 dark:text-gray-300 dark:border-gray-600 ${
                   currentStep === 0
                     ? "bg-gray-100 dark:bg-gray-700 cursor-not-allowed opacity-50"
                     : "bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"
@@ -1383,7 +1488,7 @@ const NewCustomerInformationForm = () => {
                 <button
                   type="button"
                   onClick={handleNext}
-                  className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                  className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                 >
                   Siguiente
                   <ArrowRightIcon className="ml-2 h-4 w-4" />
@@ -1393,7 +1498,7 @@ const NewCustomerInformationForm = () => {
                   type="button"
                   onClick={handleSubmit}
                   disabled={submitting}
-                  className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-70 disabled:cursor-not-allowed"
+                  className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-70 disabled:cursor-not-allowed"
                 >
                   {submitting ? (
                     <>

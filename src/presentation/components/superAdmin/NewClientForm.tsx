@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { XMarkIcon } from "@heroicons/react/24/solid";
+import toast from "react-hot-toast";
 export enum CondominiumStatus {
   Pending = "pending",
   Active = "active",
@@ -11,9 +12,9 @@ import useSuperAdminStore from "../../../store/superAdmin/SuperAdminStore";
 interface NewClientFormProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: any) => Promise<{
+  onSubmit: ( data: any ) => Promise<{
     success: boolean;
-    credentials?: { email: string; password: string };
+    credentials?: { email: string; password: string; };
   }>;
 }
 
@@ -31,14 +32,14 @@ const PLAN_LIMITS = {
   Premium: { min: 251, max: 500 },
 };
 
-const NewClientForm: React.FC<NewClientFormProps> = ({
+const NewClientForm: React.FC<NewClientFormProps> = ( {
   isOpen,
   onClose,
   onSubmit,
-}) => {
+} ) => {
   const { creatingClient } = useSuperAdminStore();
 
-  const [formData, setFormData] = useState({
+  const [ formData, setFormData ] = useState( {
     // Campos obligatorios
     name: "",
     lastName: "",
@@ -73,7 +74,7 @@ const NewClientForm: React.FC<NewClientFormProps> = ({
     billingFrequency: "monthly" as BillingFrequency,
     termsAccepted: true,
     address: "", // Mantenido por compatibilidad
-  });
+  } );
 
   const proFunctionOptions = [
     "chatbot",
@@ -98,10 +99,10 @@ const NewClientForm: React.FC<NewClientFormProps> = ({
 
   // Labels para los status de condominio
   const statusLabels: Record<CondominiumStatus, string> = {
-    [CondominiumStatus.Pending]: "Pendiente",
-    [CondominiumStatus.Active]: "Activo",
-    [CondominiumStatus.Inactive]: "Inactivo",
-    [CondominiumStatus.Blocked]: "Bloqueado",
+    [ CondominiumStatus.Pending ]: "Pendiente",
+    [ CondominiumStatus.Active ]: "Activo",
+    [ CondominiumStatus.Inactive ]: "Inactivo",
+    [ CondominiumStatus.Blocked ]: "Bloqueado",
   };
 
   // Opciones de moneda e idioma por país
@@ -162,77 +163,88 @@ const NewClientForm: React.FC<NewClientFormProps> = ({
     },
   ];
 
-  const [selectAll, setSelectAll] = useState(false);
-  const [showCredentials, setShowCredentials] = useState(false);
-  const [credentials, setCredentials] = useState({
+  const [ selectAll, setSelectAll ] = useState( false );
+  const [ showCredentials, setShowCredentials ] = useState( false );
+  const [ credentials, setCredentials ] = useState( {
     email: "",
     password: "",
-  });
+  } );
+  const [ formError, setFormError ] = useState( "" );
 
-  useEffect(() => {
-    if (selectAll) {
-      setFormData((prev) => ({
+  useEffect( () => {
+    if ( selectAll ) {
+      setFormData( ( prev ) => ( {
         ...prev,
-        proFunctions: [...proFunctionOptions],
-      }));
-    } else if (formData.proFunctions.length === proFunctionOptions.length) {
-      setFormData((prev) => ({
+        proFunctions: [ ...proFunctionOptions ],
+      } ) );
+    } else if ( formData.proFunctions.length === proFunctionOptions.length ) {
+      setFormData( ( prev ) => ( {
         ...prev,
         proFunctions: [],
-      }));
+      } ) );
     }
-  }, [selectAll]);
+  }, [ selectAll ] );
 
-  useEffect(() => {
-    if (formData.proFunctions.length === proFunctionOptions.length) {
-      setSelectAll(true);
+  useEffect( () => {
+    if ( formData.proFunctions.length === proFunctionOptions.length ) {
+      setSelectAll( true );
     } else if (
       selectAll &&
       formData.proFunctions.length < proFunctionOptions.length
     ) {
-      setSelectAll(false);
+      setSelectAll( false );
     }
-  }, [formData.proFunctions]);
+  }, [ formData.proFunctions ] );
 
   // Actualizar condominiumLimit basado en el plan seleccionado
-  useEffect(() => {
+  useEffect( () => {
     const plan = formData.plan as keyof typeof PLAN_LIMITS;
-    if (PLAN_LIMITS[plan]) {
+    if ( PLAN_LIMITS[ plan ] ) {
       // Establecer un valor dentro del rango válido para el plan
-      const minValue = PLAN_LIMITS[plan].min;
-      setFormData((prev) => ({
+      const minValue = PLAN_LIMITS[ plan ].min;
+      setFormData( ( prev ) => ( {
         ...prev,
         condominiumLimit: minValue,
-      }));
+      } ) );
     }
-  }, [formData.plan]);
+  }, [ formData.plan ] );
 
   // Sincronizar moneda e idioma cuando se cambie el país
-  useEffect(() => {
+  useEffect( () => {
     const selectedCountryOption = countryOptions.find(
-      (option) => option.country === formData.country
+      ( option ) => option.country === formData.country
     );
-    if (selectedCountryOption) {
-      setFormData((prev) => ({
+    if ( selectedCountryOption ) {
+      setFormData( ( prev ) => ( {
         ...prev,
         currency: selectedCountryOption.currency,
         language: selectedCountryOption.language,
-      }));
+      } ) );
     }
-  }, [formData.country]);
+  }, [ formData.country ] );
 
   const generatePassword = () => {
     const chars =
       "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
     let password = "";
-    for (let i = 0; i < 8; i++) {
-      password += chars.charAt(Math.floor(Math.random() * chars.length));
+    for ( let i = 0; i < 8; i++ ) {
+      password += chars.charAt( Math.floor( Math.random() * chars.length ) );
     }
     return password;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const copyToClipboard = async ( text: string, label: string ) => {
+    try {
+      await navigator.clipboard.writeText( text );
+      toast.success( `${ label } copiado` );
+    } catch ( _error ) {
+      toast.error( `No se pudo copiar ${ label.toLowerCase() }` );
+    }
+  };
+
+  const handleSubmit = async ( e: React.FormEvent ) => {
     e.preventDefault();
+    setFormError( "" );
 
     // Validar que todos los campos obligatorios estén llenos
     const requiredFields = [
@@ -254,29 +266,42 @@ const NewClientForm: React.FC<NewClientFormProps> = ({
     ];
 
     const missingFields = requiredFields.filter(
-      (field) => !formData[field as keyof typeof formData]
+      ( field ) => !formData[ field as keyof typeof formData ]
     );
 
-    if (missingFields.length > 0) {
+    if ( missingFields.length > 0 ) {
+      setFormError(
+        "Completa todos los campos obligatorios antes de crear el cliente."
+      );
       return;
     }
 
     // Validar condominium limit según el plan
-    const planLimits = PLAN_LIMITS[formData.plan as keyof typeof PLAN_LIMITS];
+    const planLimits = PLAN_LIMITS[ formData.plan as keyof typeof PLAN_LIMITS ];
     if (
       formData.condominiumLimit < planLimits.min ||
       formData.condominiumLimit > planLimits.max
     ) {
+      setFormError(
+        `El límite de condominios debe estar entre ${ planLimits.min } y ${ planLimits.max } para el plan ${ formData.plan }.`
+      );
       return;
     }
 
     // Validar información del condominio
-    if (!formData.condominiumInfo.name || !formData.condominiumInfo.address) {
+    if ( !formData.condominiumInfo.name || !formData.condominiumInfo.address ) {
+      setFormError( "Completa la información del primer condominio." );
       return;
     }
 
     // Validar currency y language del cliente
-    if (!formData.currency || !formData.language) {
+    if ( !formData.currency || !formData.language ) {
+      setFormError( "Selecciona país, idioma y moneda válidos." );
+      return;
+    }
+
+    if ( !formData.termsAccepted ) {
+      setFormError( "Debes aceptar los términos y condiciones para continuar." );
       return;
     }
 
@@ -287,23 +312,25 @@ const NewClientForm: React.FC<NewClientFormProps> = ({
     };
 
     try {
-      const result = await onSubmit(submitData);
+      const result = await onSubmit( submitData );
 
-      if (result.success) {
+      if ( result.success ) {
         // Si la API devuelve las credenciales, usarlas
-        if (result.credentials) {
-          setCredentials(result.credentials);
+        if ( result.credentials ) {
+          setCredentials( result.credentials );
         } else {
           // Si no, usar las generadas localmente
-          setCredentials({
+          setCredentials( {
             email: formData.email,
             password,
-          });
+          } );
         }
-        setShowCredentials(true);
+        setShowCredentials( true );
+        setFormError( "" );
       }
-    } catch (error) {
-      console.error("Error al crear cliente:", error);
+    } catch ( error ) {
+      console.error( "Error al crear cliente:", error );
+      setFormError( "No se pudo crear el cliente. Intenta nuevamente." );
     }
   };
 
@@ -312,94 +339,118 @@ const NewClientForm: React.FC<NewClientFormProps> = ({
       HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
     >
   ) => {
+    if ( formError ) setFormError( "" );
     const { name, value } = e.target;
-    if (name.startsWith("condominiumInfo.")) {
-      const field = name.split(".")[1];
-      setFormData((prev) => ({
+    if ( name.startsWith( "condominiumInfo." ) ) {
+      const field = name.split( "." )[ 1 ];
+      setFormData( ( prev ) => ( {
         ...prev,
         condominiumInfo: {
           ...prev.condominiumInfo,
-          [field]: value,
+          [ field ]: value,
         },
-      }));
-    } else if (name === "condominiumLimit") {
+      } ) );
+    } else if ( name === "condominiumLimit" ) {
       // Convertir a número
-      const numValue = parseInt(value);
-      if (!isNaN(numValue)) {
-        setFormData((prev) => ({
+      const numValue = parseInt( value );
+      if ( !isNaN( numValue ) ) {
+        setFormData( ( prev ) => ( {
           ...prev,
-          [name]: numValue,
-        }));
+          [ name ]: numValue,
+        } ) );
       }
     } else {
-      setFormData((prev) => ({
+      setFormData( ( prev ) => ( {
         ...prev,
-        [name]: value,
-      }));
+        [ name ]: value,
+      } ) );
     }
   };
 
-  const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCheckboxChange = ( e: React.ChangeEvent<HTMLInputElement> ) => {
+    if ( formError ) setFormError( "" );
     const { name, checked } = e.target;
 
-    if (name === "selectAll") {
-      setSelectAll(checked);
+    if ( name === "selectAll" ) {
+      setSelectAll( checked );
       return;
     }
 
-    if (name === "termsAccepted") {
-      setFormData((prev) => ({
+    if ( name === "termsAccepted" ) {
+      setFormData( ( prev ) => ( {
         ...prev,
         termsAccepted: checked,
-      }));
+      } ) );
       return;
     }
 
-    if (name === "hasMaintenanceApp") {
-      setFormData((prev) => ({
+    if ( name === "hasMaintenanceApp" ) {
+      setFormData( ( prev ) => ( {
         ...prev,
         hasMaintenanceApp: checked,
-      }));
+      } ) );
       return;
     }
 
-    setFormData((prev) => {
-      if (checked) {
+    setFormData( ( prev ) => {
+      if ( checked ) {
         return {
           ...prev,
-          proFunctions: [...prev.proFunctions, name],
+          proFunctions: [ ...prev.proFunctions, name ],
         };
       } else {
         return {
           ...prev,
-          proFunctions: prev.proFunctions.filter((fn) => fn !== name),
+          proFunctions: prev.proFunctions.filter( ( fn ) => fn !== name ),
         };
       }
-    });
+    } );
   };
 
-  if (!isOpen) return null;
+  if ( !isOpen ) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 m-0">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-5xl mx-4 max-h-[90vh] overflow-y-auto">
-        <div className="flex justify-between items-center border-b border-gray-200 dark:border-gray-700 px-6 py-4">
-          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
-            Nuevo Cliente
-          </h3>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-500"
-          >
-            <XMarkIcon className="h-6 w-6" />
-          </button>
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-[2px] flex items-center justify-center z-50 m-0">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-6xl mx-4 max-h-[92vh] overflow-y-auto border border-gray-200 dark:border-gray-700">
+        <div className="sticky top-0 z-10 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700 px-6 py-4">
+          <div className="flex justify-between items-start gap-4">
+            <div>
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+                Nuevo Cliente
+              </h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                Registra datos administrativos, fiscales y operativos del cliente.
+              </p>
+              <div className="flex flex-wrap gap-2 mt-2">
+                <span className="inline-flex rounded-full bg-indigo-100 dark:bg-indigo-900/40 px-2.5 py-1 text-xs font-medium text-indigo-700 dark:text-indigo-300">
+                  Onboarding comercial
+                </span>
+                <span className="inline-flex rounded-full bg-slate-100 dark:bg-slate-900/40 px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-slate-300">
+                  Campos con * obligatorios
+                </span>
+              </div>
+            </div>
+            <button
+              onClick={ onClose }
+              className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 rounded-lg p-1"
+              aria-label="Cerrar modal"
+            >
+              <XMarkIcon className="h-6 w-6" />
+            </button>
+          </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="px-6 py-4">
-          {/* Sección de datos del administrador */}
-          <div className="mb-6">
-            <h4 className="text-md font-medium mb-3 text-gray-800 dark:text-gray-200 border-b pb-1">
-              Datos del Administrador
+        <form onSubmit={ handleSubmit } className="px-6 py-5 space-y-5">
+          { formError && (
+            <div className="rounded-xl border border-red-200 dark:border-red-900/40 bg-red-50 dark:bg-red-950/20 p-3">
+              <p className="text-sm text-red-700 dark:text-red-300">{ formError }</p>
+            </div>
+          ) }
+
+          {/* Sección de datos del administrador */ }
+          <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900/30 p-4">
+            <h4 className="text-md font-semibold mb-3 text-gray-800 dark:text-gray-200 border-b border-gray-200 dark:border-gray-700 pb-2">
+              Datos del Administradoor
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
@@ -409,8 +460,8 @@ const NewClientForm: React.FC<NewClientFormProps> = ({
                 <input
                   type="text"
                   name="name"
-                  value={formData.name}
-                  onChange={handleInputChange}
+                  value={ formData.name }
+                  onChange={ handleInputChange }
                   required
                   className="w-full px-2 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
                 />
@@ -423,8 +474,8 @@ const NewClientForm: React.FC<NewClientFormProps> = ({
                 <input
                   type="text"
                   name="lastName"
-                  value={formData.lastName}
-                  onChange={handleInputChange}
+                  value={ formData.lastName }
+                  onChange={ handleInputChange }
                   required
                   className="w-full px-2 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
                 />
@@ -437,8 +488,8 @@ const NewClientForm: React.FC<NewClientFormProps> = ({
                 <input
                   type="email"
                   name="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
+                  value={ formData.email }
+                  onChange={ handleInputChange }
                   required
                   className="w-full px-2 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
                 />
@@ -451,8 +502,8 @@ const NewClientForm: React.FC<NewClientFormProps> = ({
                 <input
                   type="tel"
                   name="phoneNumber"
-                  value={formData.phoneNumber}
-                  onChange={handleInputChange}
+                  value={ formData.phoneNumber }
+                  onChange={ handleInputChange }
                   required
                   className="w-full px-2 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
                 />
@@ -465,17 +516,17 @@ const NewClientForm: React.FC<NewClientFormProps> = ({
                 <input
                   type="url"
                   name="photoURL"
-                  value={formData.photoURL}
-                  onChange={handleInputChange}
+                  value={ formData.photoURL }
+                  onChange={ handleInputChange }
                   className="w-full px-2 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
                 />
               </div>
             </div>
           </div>
 
-          {/* Sección de datos de la empresa */}
-          <div className="mb-6">
-            <h4 className="text-md font-medium mb-3 text-gray-800 dark:text-gray-200 border-b pb-1">
+          {/* Sección de datos de la empresa */ }
+          <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900/30 p-4">
+            <h4 className="text-md font-semibold mb-3 text-gray-800 dark:text-gray-200 border-b border-gray-200 dark:border-gray-700 pb-2">
               Datos de la Empresa
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -486,8 +537,8 @@ const NewClientForm: React.FC<NewClientFormProps> = ({
                 <input
                   type="text"
                   name="companyName"
-                  value={formData.companyName}
-                  onChange={handleInputChange}
+                  value={ formData.companyName }
+                  onChange={ handleInputChange }
                   required
                   className="w-full px-2 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
                 />
@@ -500,8 +551,8 @@ const NewClientForm: React.FC<NewClientFormProps> = ({
                 <input
                   type="text"
                   name="businessName"
-                  value={formData.businessName}
-                  onChange={handleInputChange}
+                  value={ formData.businessName }
+                  onChange={ handleInputChange }
                   required
                   className="w-full px-2 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
                 />
@@ -514,8 +565,8 @@ const NewClientForm: React.FC<NewClientFormProps> = ({
                 <input
                   type="text"
                   name="RFC"
-                  value={formData.RFC}
-                  onChange={handleInputChange}
+                  value={ formData.RFC }
+                  onChange={ handleInputChange }
                   required
                   className="w-full px-2 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
                 />
@@ -527,9 +578,9 @@ const NewClientForm: React.FC<NewClientFormProps> = ({
                 </label>
                 <textarea
                   name="fullFiscalAddress"
-                  value={formData.fullFiscalAddress}
-                  onChange={handleInputChange}
-                  rows={2}
+                  value={ formData.fullFiscalAddress }
+                  onChange={ handleInputChange }
+                  rows={ 2 }
                   required
                   className="w-full px-2 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
                 />
@@ -541,17 +592,17 @@ const NewClientForm: React.FC<NewClientFormProps> = ({
                 </label>
                 <select
                   name="country"
-                  value={formData.country}
-                  onChange={handleInputChange}
+                  value={ formData.country }
+                  onChange={ handleInputChange }
                   required
                   className="w-full px-2 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
                 >
                   <option value="">Seleccione un país</option>
-                  {countryOptions.map((option) => (
-                    <option key={option.country} value={option.country}>
-                      {option.country}
+                  { countryOptions.map( ( option ) => (
+                    <option key={ option.country } value={ option.country }>
+                      { option.country }
                     </option>
-                  ))}
+                  ) ) }
                 </select>
               </div>
 
@@ -562,8 +613,8 @@ const NewClientForm: React.FC<NewClientFormProps> = ({
                 <input
                   type="text"
                   name="taxRegime"
-                  value={formData.taxRegime}
-                  onChange={handleInputChange}
+                  value={ formData.taxRegime }
+                  onChange={ handleInputChange }
                   required
                   className="w-full px-2 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
                 />
@@ -576,8 +627,8 @@ const NewClientForm: React.FC<NewClientFormProps> = ({
                 <input
                   type="text"
                   name="businessActivity"
-                  value={formData.businessActivity}
-                  onChange={handleInputChange}
+                  value={ formData.businessActivity }
+                  onChange={ handleInputChange }
                   required
                   className="w-full px-2 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
                 />
@@ -590,8 +641,8 @@ const NewClientForm: React.FC<NewClientFormProps> = ({
                 <input
                   type="text"
                   name="cfdiUse"
-                  value={formData.cfdiUse}
-                  onChange={handleInputChange}
+                  value={ formData.cfdiUse }
+                  onChange={ handleInputChange }
                   className="w-full px-2 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
                 />
               </div>
@@ -603,8 +654,8 @@ const NewClientForm: React.FC<NewClientFormProps> = ({
                 <input
                   type="text"
                   name="responsiblePersonName"
-                  value={formData.responsiblePersonName}
-                  onChange={handleInputChange}
+                  value={ formData.responsiblePersonName }
+                  onChange={ handleInputChange }
                   required
                   className="w-full px-2 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
                 />
@@ -617,8 +668,8 @@ const NewClientForm: React.FC<NewClientFormProps> = ({
                 <input
                   type="text"
                   name="responsiblePersonPosition"
-                  value={formData.responsiblePersonPosition}
-                  onChange={handleInputChange}
+                  value={ formData.responsiblePersonPosition }
+                  onChange={ handleInputChange }
                   required
                   className="w-full px-2 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
                 />
@@ -630,16 +681,19 @@ const NewClientForm: React.FC<NewClientFormProps> = ({
                 </label>
                 <select
                   name="language"
-                  value={formData.language}
-                  onChange={handleInputChange}
+                  value={ formData.language }
+                  onChange={ handleInputChange }
                   required
                   className="w-full px-2 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
                 >
-                  {countryOptions.map((option) => (
-                    <option key={option.language} value={option.language}>
-                      {option.country} ({option.language})
+                  { countryOptions.map( ( option ) => (
+                    <option
+                      key={ `${ option.country }-${ option.language }` }
+                      value={ option.language }
+                    >
+                      { option.country } ({ option.language })
                     </option>
-                  ))}
+                  ) ) }
                 </select>
               </div>
 
@@ -649,23 +703,26 @@ const NewClientForm: React.FC<NewClientFormProps> = ({
                 </label>
                 <select
                   name="currency"
-                  value={formData.currency}
-                  onChange={handleInputChange}
+                  value={ formData.currency }
+                  onChange={ handleInputChange }
                   required
                   className="w-full px-2 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
                 >
-                  {countryOptions.map((option) => (
-                    <option key={option.currency} value={option.currency}>
-                      {option.currency} - {option.currencyName}
+                  { countryOptions.map( ( option ) => (
+                    <option
+                      key={ `${ option.country }-${ option.currency }` }
+                      value={ option.currency }
+                    >
+                      { option.currency } - { option.currencyName }
                     </option>
-                  ))}
+                  ) ) }
                 </select>
               </div>
             </div>
           </div>
 
-          <div className="mb-6">
-            <h4 className="text-md font-medium mb-3 text-gray-800 dark:text-gray-200 border-b pb-1">
+          <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900/30 p-4">
+            <h4 className="text-md font-semibold mb-3 text-gray-800 dark:text-gray-200 border-b border-gray-200 dark:border-gray-700 pb-2">
               Facturación
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -675,8 +732,8 @@ const NewClientForm: React.FC<NewClientFormProps> = ({
                 </label>
                 <select
                   name="billingFrequency"
-                  value={formData.billingFrequency}
-                  onChange={handleInputChange}
+                  value={ formData.billingFrequency }
+                  onChange={ handleInputChange }
                   className="w-full px-2 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
                 >
                   <option value="monthly">Mensual</option>
@@ -692,8 +749,8 @@ const NewClientForm: React.FC<NewClientFormProps> = ({
                     type="checkbox"
                     id="termsAccepted"
                     name="termsAccepted"
-                    checked={formData.termsAccepted}
-                    onChange={handleCheckboxChange}
+                    checked={ formData.termsAccepted }
+                    onChange={ handleCheckboxChange }
                     className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
                   />
                   <label
@@ -707,9 +764,9 @@ const NewClientForm: React.FC<NewClientFormProps> = ({
             </div>
           </div>
 
-          {/* Pro Functions */}
-          <div className="mb-6">
-            <h4 className="text-md font-medium mb-3 text-gray-800 dark:text-gray-200 border-b pb-1">
+          {/* Pro Functions */ }
+          <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900/30 p-4">
+            <h4 className="text-md font-semibold mb-3 text-gray-800 dark:text-gray-200 border-b border-gray-200 dark:border-gray-700 pb-2">
               Funciones Pro (IA)
             </h4>
             <div className="pl-2">
@@ -718,8 +775,8 @@ const NewClientForm: React.FC<NewClientFormProps> = ({
                   type="checkbox"
                   id="selectAll"
                   name="selectAll"
-                  checked={selectAll}
-                  onChange={handleCheckboxChange}
+                  checked={ selectAll }
+                  onChange={ handleCheckboxChange }
                   className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
                 />
                 <label
@@ -730,31 +787,31 @@ const NewClientForm: React.FC<NewClientFormProps> = ({
                 </label>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                {proFunctionOptions.map((option) => (
-                  <div key={option} className="flex items-center">
+                { proFunctionOptions.map( ( option ) => (
+                  <div key={ option } className="flex items-center">
                     <input
                       type="checkbox"
-                      id={option}
-                      name={option}
-                      checked={formData.proFunctions.includes(option)}
-                      onChange={handleCheckboxChange}
+                      id={ option }
+                      name={ option }
+                      checked={ formData.proFunctions.includes( option ) }
+                      onChange={ handleCheckboxChange }
                       className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
                     />
                     <label
-                      htmlFor={option}
+                      htmlFor={ option }
                       className="ml-2 block text-sm text-gray-900 dark:text-gray-100"
                     >
-                      {proFunctionLabels[option]}
+                      { proFunctionLabels[ option ] }
                     </label>
                   </div>
-                ))}
+                ) ) }
               </div>
             </div>
           </div>
 
-          {/* App de Mantenimiento */}
-          <div className="mb-6">
-            <h4 className="text-md font-medium mb-3 text-gray-800 dark:text-gray-200 border-b pb-1">
+          {/* App de Mantenimiento */ }
+          <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900/30 p-4">
+            <h4 className="text-md font-semibold mb-3 text-gray-800 dark:text-gray-200 border-b border-gray-200 dark:border-gray-700 pb-2">
               App de Mantenimiento
             </h4>
             <div className="pl-2">
@@ -763,8 +820,8 @@ const NewClientForm: React.FC<NewClientFormProps> = ({
                   type="checkbox"
                   id="hasMaintenanceApp"
                   name="hasMaintenanceApp"
-                  checked={formData.hasMaintenanceApp}
-                  onChange={handleCheckboxChange}
+                  checked={ formData.hasMaintenanceApp }
+                  onChange={ handleCheckboxChange }
                   className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
                 />
                 <label
@@ -777,9 +834,9 @@ const NewClientForm: React.FC<NewClientFormProps> = ({
             </div>
           </div>
 
-          {/* Sección de información del primer condominio */}
-          <div className="mb-6">
-            <h4 className="text-md font-medium mb-3 text-gray-800 dark:text-gray-200 border-b pb-1">
+          {/* Sección de información del primer condominio */ }
+          <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900/30 p-4">
+            <h4 className="text-md font-semibold mb-3 text-gray-800 dark:text-gray-200 border-b border-gray-200 dark:border-gray-700 pb-2">
               Información del Primer Condominio
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -790,8 +847,8 @@ const NewClientForm: React.FC<NewClientFormProps> = ({
                 <input
                   type="text"
                   name="condominiumInfo.name"
-                  value={formData.condominiumInfo.name}
-                  onChange={handleInputChange}
+                  value={ formData.condominiumInfo.name }
+                  onChange={ handleInputChange }
                   required
                   className="w-full px-2 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
                 />
@@ -804,8 +861,8 @@ const NewClientForm: React.FC<NewClientFormProps> = ({
                 <input
                   type="text"
                   name="condominiumInfo.address"
-                  value={formData.condominiumInfo.address}
-                  onChange={handleInputChange}
+                  value={ formData.condominiumInfo.address }
+                  onChange={ handleInputChange }
                   required
                   className="w-full px-2 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
                 />
@@ -817,15 +874,15 @@ const NewClientForm: React.FC<NewClientFormProps> = ({
                 </label>
                 <select
                   name="condominiumInfo.status"
-                  value={formData.condominiumInfo.status}
-                  onChange={handleInputChange}
+                  value={ formData.condominiumInfo.status }
+                  onChange={ handleInputChange }
                   className="w-full px-2 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
                 >
-                  {Object.entries(CondominiumStatus).map(([_key, value]) => (
-                    <option key={value} value={value}>
-                      {statusLabels[value as CondominiumStatus]}
+                  { Object.entries( CondominiumStatus ).map( ( [ _key, value ] ) => (
+                    <option key={ value } value={ value }>
+                      { statusLabels[ value as CondominiumStatus ] }
                     </option>
-                  ))}
+                  ) ) }
                 </select>
               </div>
 
@@ -835,8 +892,8 @@ const NewClientForm: React.FC<NewClientFormProps> = ({
                 </label>
                 <select
                   name="plan"
-                  value={formData.plan}
-                  onChange={handleInputChange}
+                  value={ formData.plan }
+                  onChange={ handleInputChange }
                   required
                   className="w-full px-2 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
                 >
@@ -858,41 +915,41 @@ const NewClientForm: React.FC<NewClientFormProps> = ({
                 <input
                   type="number"
                   name="condominiumLimit"
-                  value={formData.condominiumLimit}
-                  onChange={handleInputChange}
+                  value={ formData.condominiumLimit }
+                  onChange={ handleInputChange }
                   min={
-                    PLAN_LIMITS[formData.plan as keyof typeof PLAN_LIMITS].min
+                    PLAN_LIMITS[ formData.plan as keyof typeof PLAN_LIMITS ].min
                   }
                   max={
-                    PLAN_LIMITS[formData.plan as keyof typeof PLAN_LIMITS].max
+                    PLAN_LIMITS[ formData.plan as keyof typeof PLAN_LIMITS ].max
                   }
                   required
                   className="w-full px-2 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  Para el plan {formData.plan}: mínimo{" "}
-                  {PLAN_LIMITS[formData.plan as keyof typeof PLAN_LIMITS].min},
-                  máximo{" "}
-                  {PLAN_LIMITS[formData.plan as keyof typeof PLAN_LIMITS].max}
+                  Para el plan { formData.plan }: mínimo{ " " }
+                  { PLAN_LIMITS[ formData.plan as keyof typeof PLAN_LIMITS ].min },
+                  máximo{ " " }
+                  { PLAN_LIMITS[ formData.plan as keyof typeof PLAN_LIMITS ].max }
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="mt-6 flex justify-end space-x-3">
+          <div className="sticky bottom-0 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm border-t border-gray-200 dark:border-gray-700 pt-4 mt-2 flex justify-end space-x-3">
             <button
               type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+              onClick={ onClose }
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
             >
               Cancelar
             </button>
             <button
               type="submit"
-              disabled={creatingClient}
-              className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 disabled:opacity-75 flex items-center"
+              disabled={ creatingClient }
+              className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-75 flex items-center"
             >
-              {creatingClient ? (
+              { creatingClient ? (
                 <>
                   <svg
                     className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
@@ -918,19 +975,22 @@ const NewClientForm: React.FC<NewClientFormProps> = ({
                 </>
               ) : (
                 "Crear Cliente"
-              )}
+              ) }
             </button>
           </div>
         </form>
       </div>
 
-      {/* Modal de Credenciales */}
-      {showCredentials && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 m-0">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">
+      {/* Modal de Credenciales */ }
+      { showCredentials && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-[2px] flex items-center justify-center z-[60] m-0">
+          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">
               Credenciales del Cliente
             </h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+              Entrega estas credenciales de acceso al administrador principal.
+            </p>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -940,14 +1000,13 @@ const NewClientForm: React.FC<NewClientFormProps> = ({
                   <input
                     type="text"
                     readOnly
-                    value={credentials.email}
-                    className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    value={ credentials.email }
+                    className="flex-1 px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
                   />
                   <button
-                    onClick={() =>
-                      navigator.clipboard.writeText(credentials.email)
-                    }
-                    className="ml-2 px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
+                    type="button"
+                    onClick={ () => copyToClipboard( credentials.email, "Email" ) }
+                    className="ml-2 px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
                   >
                     Copiar
                   </button>
@@ -961,14 +1020,15 @@ const NewClientForm: React.FC<NewClientFormProps> = ({
                   <input
                     type="text"
                     readOnly
-                    value={credentials.password}
-                    className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    value={ credentials.password }
+                    className="flex-1 px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
                   />
                   <button
-                    onClick={() =>
-                      navigator.clipboard.writeText(credentials.password)
+                    type="button"
+                    onClick={ () =>
+                      copyToClipboard( credentials.password, "Contraseña" )
                     }
-                    className="ml-2 px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
+                    className="ml-2 px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
                   >
                     Copiar
                   </button>
@@ -977,18 +1037,18 @@ const NewClientForm: React.FC<NewClientFormProps> = ({
             </div>
             <div className="mt-6 flex justify-end">
               <button
-                onClick={() => {
-                  setShowCredentials(false);
+                onClick={ () => {
+                  setShowCredentials( false );
                   onClose();
-                }}
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
+                } }
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
               >
                 Cerrar
               </button>
             </div>
           </div>
         </div>
-      )}
+      ) }
     </div>
   );
 };
