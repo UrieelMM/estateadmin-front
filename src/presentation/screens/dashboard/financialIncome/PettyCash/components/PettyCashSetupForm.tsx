@@ -80,6 +80,15 @@ const PettyCashSetupForm: React.FC<{ onSuccess?: () => void }> = ({
     }
   }, [cashAccounts, accountId]);
 
+  useEffect(() => {
+    if (!accountId) return;
+    const selectedAccount = financialAccounts.find((acc) => acc.id === accountId);
+    if (!selectedAccount) return;
+    const initialBalance = Number(selectedAccount.initialBalance || 0);
+    if (!Number.isFinite(initialBalance)) return;
+    setInitialAmount(initialBalance.toFixed(2));
+  }, [accountId, financialAccounts]);
+
   // Manejar envío del formulario
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -97,11 +106,20 @@ const PettyCashSetupForm: React.FC<{ onSuccess?: () => void }> = ({
         throw new Error("Por favor completa todos los campos requeridos");
       }
 
-      const initialValue = parseFloat(initialAmount);
+      const selectedAccount = financialAccounts.find(
+        (acc) => acc.id === accountId
+      );
+      if (!selectedAccount) {
+        throw new Error("La cuenta seleccionada no es válida");
+      }
+
+      const initialValue = Number(selectedAccount.initialBalance || 0);
       const thresholdValue = parseFloat(thresholdAmount);
 
       if (isNaN(initialValue) || initialValue <= 0) {
-        throw new Error("El monto inicial debe ser un número mayor que cero");
+        throw new Error(
+          "La cuenta seleccionada debe tener un saldo inicial mayor que cero"
+        );
       }
 
       if (isNaN(thresholdValue) || thresholdValue <= 0) {
@@ -110,14 +128,6 @@ const PettyCashSetupForm: React.FC<{ onSuccess?: () => void }> = ({
 
       if (thresholdValue >= initialValue) {
         throw new Error("El monto mínimo debe ser menor que el monto inicial");
-      }
-
-      // Obtener el nombre de la cuenta seleccionada
-      const selectedAccount = financialAccounts.find(
-        (acc) => acc.id === accountId
-      );
-      if (!selectedAccount) {
-        throw new Error("La cuenta seleccionada no es válida");
       }
 
       // Configurar la caja chica
@@ -306,14 +316,14 @@ const PettyCashSetupForm: React.FC<{ onSuccess?: () => void }> = ({
                 step="0.01"
                 min="0.01"
                 value={initialAmount}
-                onChange={(e) => setInitialAmount(e.target.value)}
+                readOnly
                 required
-                className="block w-full pl-8 pr-4 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                className="block w-full pl-8 pr-4 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white cursor-not-allowed"
                 placeholder="1000.00"
               />
             </div>
             <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-              Monto con el que inicia la caja chica (dinero físico disponible)
+              Se toma automáticamente del saldo inicial de la cuenta de efectivo seleccionada.
             </p>
           </div>
 

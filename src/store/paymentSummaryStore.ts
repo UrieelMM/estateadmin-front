@@ -9,7 +9,6 @@ import {
   getDoc,
   query,
   where,
-  documentId,
   onSnapshot,
   orderBy,
   limit,
@@ -36,6 +35,13 @@ function centsToPesos(val: any): number {
   const intVal = parseInt(val, 10);
   if (isNaN(intVal)) return 0;
   return intVal / 100;
+}
+
+// En cuentas financieras, initialBalance se captura/guarda en pesos.
+// Usamos parseo seguro para evitar NaN y mantener consistencia en dashboards/reportes.
+function parsePesosValue(val: any): number {
+  const parsed = Number(val);
+  return Number.isFinite(parsed) ? parsed : 0;
 }
 
 // Función auxiliar para formatear una fecha a "dd/mm/aaaa"
@@ -88,6 +94,7 @@ export type FinancialAccountInfo = {
 export type PaymentSummaryState = {
   payments: PaymentRecord[];
   totalIncome: number;
+  totalInitialBalance: number;
   totalPending: number;
   detailed: Record<string, PaymentRecord[]>;
   conceptRecords: Record<string, PaymentRecord[]>;
@@ -151,6 +158,7 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>()(
   (set, get) => ({
     payments: [],
     totalIncome: 0,
+    totalInitialBalance: 0,
     totalPending: 0,
     detailed: {},
     conceptRecords: {},
@@ -567,78 +575,52 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>()(
           byFinancialAccount[pr.financialAccountId].push(pr);
         });
 
-        const uniqueAccountIds = Array.from(
-          new Set(paymentRecords.map((pr) => pr.financialAccountId))
-        ).filter((id) => id && id !== "N/A");
-
         let financialAccountsMap: Record<string, FinancialAccountInfo> = {};
-        if (uniqueAccountIds.length > 0) {
-          const accountsRef = collection(
-            db,
-            `clients/${clientId}/condominiums/${condominiumId}/financialAccounts`
-          );
+        const accountsRef = collection(
+          db,
+          `clients/${clientId}/condominiums/${condominiumId}/financialAccounts`
+        );
+        const accountsSnap = await getDocs(accountsRef);
 
-          const getCreationMonth = (createdAt: any): string => {
-            let date: Date;
-            if (createdAt && createdAt.toDate) {
-              date = createdAt.toDate();
-            } else if (createdAt) {
-              date = new Date(createdAt);
-            } else {
-              return "01";
-            }
-            return (date.getMonth() + 1).toString().padStart(2, "0");
-          };
-
-          if (uniqueAccountIds.length <= 10) {
-            const q = query(
-              accountsRef,
-              where(documentId(), "in", uniqueAccountIds)
-            );
-            const accountsSnap = await getDocs(q);
-            accountsSnap.forEach((accDoc) => {
-              if (accDoc.exists()) {
-                const data = accDoc.data();
-                financialAccountsMap[accDoc.id] = {
-                  id: accDoc.id,
-                  name: data.name || "Sin nombre",
-                  initialBalance:
-                    data.initialBalance != null
-                      ? Number(data.initialBalance) / 100
-                      : 0,
-                  creationMonth: getCreationMonth(data.createdAt),
-                };
-              }
-            });
+        const getCreationMonth = (createdAt: any): string => {
+          let date: Date;
+          if (createdAt && createdAt.toDate) {
+            date = createdAt.toDate();
+          } else if (createdAt) {
+            date = new Date(createdAt);
           } else {
-            for (const accId of uniqueAccountIds) {
-              const accRef = doc(accountsRef, accId);
-              const accSnap = await getDoc(accRef);
-              if (accSnap.exists()) {
-                const data = accSnap.data();
-                financialAccountsMap[accId] = {
-                  id: accId,
-                  name: data.name || "Sin nombre",
-                  initialBalance:
-                    data.initialBalance != null
-                      ? Number(data.initialBalance) / 100
-                      : 0,
-                  creationMonth: getCreationMonth(data.createdAt),
-                };
-              }
-            }
+            return "01";
           }
-        }
+          return (date.getMonth() + 1).toString().padStart(2, "0");
+        };
+
+        accountsSnap.forEach((accDoc) => {
+          if (!accDoc.exists()) return;
+
+          const data = accDoc.data();
+          // Se excluyen cuentas desactivadas para no distorsionar el saldo inicial operativo.
+          if (data.active === false) return;
+
+          financialAccountsMap[accDoc.id] = {
+            id: accDoc.id,
+            name: data.name || "Sin nombre",
+            initialBalance:
+              data.initialBalance != null
+                ? parsePesosValue(data.initialBalance)
+                : 0,
+            creationMonth: getCreationMonth(data.createdAt),
+          };
+        });
 
         let totalInitialBalance = 0;
         for (const accId in financialAccountsMap) {
           totalInitialBalance += financialAccountsMap[accId].initialBalance;
         }
-        totalIncome += totalInitialBalance;
 
         set({
           payments: paymentRecords,
-          totalIncome,
+          totalIncome: parseFloat(totalIncome.toFixed(2)),
+          totalInitialBalance: parseFloat(totalInitialBalance.toFixed(2)),
           totalPending,
           detailed,
           conceptRecords,

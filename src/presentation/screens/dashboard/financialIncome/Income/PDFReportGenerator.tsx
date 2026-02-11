@@ -123,13 +123,14 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({
   // Obtener datos del store
   const {
     monthlyStats,
+    totalIncome,
+    totalInitialBalance,
     detailed,
     adminCompany,
     adminPhone,
     adminEmail,
     logoBase64,
     signatureUrl,
-    financialAccountsMap,
     conceptRecords,
   } = usePaymentSummaryStore();
 
@@ -210,26 +211,35 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({
     doc.text(year, 14 + doc.getTextWidth("Año:") + 2, 40);
 
     if (!concept) {
-      // Solo para el reporte completo se recalcula el total de ingresos incluyendo:
-      // - La suma de "paid" y "saldo" de cada mes (saldo: creditBalance - creditUsed)
-      // - El initialBalance de todas las financialAccounts
-      let computedTotalIncome = 0;
-      monthlyStats.forEach((stat) => {
-        computedTotalIncome += stat.paid + stat.creditUsed + stat.saldo;
-      });
-      let totalInitialBalance = 0;
-      for (const key in financialAccountsMap) {
-        totalInitialBalance += financialAccountsMap[key].initialBalance;
-      }
-      computedTotalIncome += totalInitialBalance;
+      const ingresosPeriodo = totalIncome;
+      const saldoInicial = totalInitialBalance;
+      const disponibleBruto = ingresosPeriodo + saldoInicial;
 
       doc.setFont("helvetica", "bold");
-      doc.text("Total Ingresos:", 14, 50);
+      doc.text("Ingresos del período:", 14, 50);
       doc.setFont("helvetica", "normal");
       doc.text(
-        formatCurrency(computedTotalIncome),
-        14 + doc.getTextWidth("Total Ingresos:") + 4,
+        formatCurrency(ingresosPeriodo),
+        14 + doc.getTextWidth("Ingresos del período:") + 4,
         50
+      );
+
+      doc.setFont("helvetica", "bold");
+      doc.text("Saldo inicial:", 14, 60);
+      doc.setFont("helvetica", "normal");
+      doc.text(
+        formatCurrency(saldoInicial),
+        14 + doc.getTextWidth("Saldo inicial:") + 4,
+        60
+      );
+
+      doc.setFont("helvetica", "bold");
+      doc.text("Disponible total (bruto):", 14, 70);
+      doc.setFont("helvetica", "normal");
+      doc.text(
+        formatCurrency(disponibleBruto),
+        14 + doc.getTextWidth("Disponible total (bruto):") + 4,
+        70
       );
 
       // Calcular el saldo total
@@ -260,30 +270,30 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({
       });
 
       doc.setFont("helvetica", "bold");
-      doc.text("Saldo:", 14, 60);
+      doc.text("Saldo:", 14, 80);
       doc.setFont("helvetica", "normal");
       doc.text(
         formatCurrency(totalBalance),
         14 + doc.getTextWidth("Saldo:") + 4,
-        60
+        80
       );
 
       doc.setFont("helvetica", "bold");
-      doc.text("Mes con mayor ingresos:", 14, 70);
+      doc.text("Mes con mayor ingresos:", 14, 90);
       doc.setFont("helvetica", "normal");
       doc.text(
         computedMaxMonth,
         14 + doc.getTextWidth("Mes con mayor ingresos:") + 5,
-        70
+        90
       );
 
       doc.setFont("helvetica", "bold");
-      doc.text("Mes con menor ingresos:", 14, 80);
+      doc.text("Mes con menor ingresos:", 14, 100);
       doc.setFont("helvetica", "normal");
       doc.text(
         computedMinMonth,
         14 + doc.getTextWidth("Mes con menor ingresos:") + 5,
-        80
+        100
       );
     }
 
@@ -606,12 +616,6 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({
         totalUnidentifiedGlobal += stat.unidentifiedPayments;
       });
 
-      let totalInitialBalance = 0;
-      for (const key in financialAccountsMap) {
-        totalInitialBalance += financialAccountsMap[key].initialBalance;
-      }
-      totalPaidGlobal += totalInitialBalance;
-
       // Calcular porcentajes globales
       const allRecords = Object.values(detailed).flat();
       const totalCharges = allRecords.reduce(
@@ -637,7 +641,7 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({
 
       doc.setFont("helvetica", "bold");
       doc.setFontSize(12);
-      doc.text("Ingresos totales", 14, 90);
+      doc.text("Ingresos del período", 14, 90);
 
       autoTable(doc, {
         startY: 95,

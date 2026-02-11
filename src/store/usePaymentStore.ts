@@ -73,6 +73,8 @@ type FinancialAccount = {
   id: string;
   name: string;
   type?: string;
+  initialBalance?: number;
+  active?: boolean;
 };
 
 type MaintenancePaymentState = {
@@ -145,6 +147,11 @@ export const usePaymentStore = create<MaintenancePaymentState>()(
           id: doc.id,
           name: doc.data().name || "Sin nombre",
           type: doc.data().type || null,
+          initialBalance:
+            doc.data().initialBalance != null
+              ? Number(doc.data().initialBalance)
+              : 0,
+          active: typeof doc.data().active === "boolean" ? doc.data().active : true,
         }));
 
         set({ financialAccounts: accounts, loading: false, error: null });

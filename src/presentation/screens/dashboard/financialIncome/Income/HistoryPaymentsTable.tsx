@@ -54,15 +54,20 @@ const HistoryPaymentsTable: React.FC = () => {
   const [searchResults, setSearchResults] = useState<PaymentRecord[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [folioQuery, setFolioQuery] = useState("");
+  const [selectedPayment, setSelectedPayment] = useState<PaymentRecord | null>(
+    null
+  );
 
   const {
     completedPayments,
+    financialAccountsMap,
     fetchPaymentHistory,
     resetPaymentsState,
     searchPaymentByFolio,
     loadingPayments: _storeLoadingPayments,
   } = usePaymentSummaryStore((state) => ({
     completedPayments: state.completedPayments,
+    financialAccountsMap: state.financialAccountsMap,
     lastPaymentDoc: state.lastPaymentDoc,
     fetchPaymentHistory: state.fetchPaymentHistory,
     resetPaymentsState: state.resetPaymentsState,
@@ -393,6 +398,7 @@ const HistoryPaymentsTable: React.FC = () => {
                       <tr
                         key={payment.id}
                         className="hover:bg-gray-50 transition-colors dark:hover:bg-gray-700 cursor-pointer"
+                        onClick={() => setSelectedPayment(payment)}
                       >
                         <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm text-gray-900 dark:text-gray-200 sm:pl-6">
                           {payment.paymentDate || "No identificado"}
@@ -434,6 +440,7 @@ const HistoryPaymentsTable: React.FC = () => {
                               href={payment.attachmentPayment}
                               target="_blank"
                               rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
                               className="flex w-16 items-center bg-indigo-600 dark:bg-indigo-500 text-white px-3 py-1 rounded-md hover:bg-indigo-700 dark:hover:bg-indigo-600"
                             >
                               <EyeIcon className="h-5 w-5 mr-1 bg-indigo-500 hover:bg-indigo-600 rounded-full" />
@@ -523,6 +530,121 @@ const HistoryPaymentsTable: React.FC = () => {
         </div>
       </div>
 
+      {/* Modal de detalle de pago */ }
+      {selectedPayment && (
+        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity z-50">
+          <div className="fixed inset-0 z-50 overflow-y-auto">
+            <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+              <div className="relative transform overflow-hidden rounded-lg bg-white dark:bg-gray-800 px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-2xl sm:p-6">
+                <div className="absolute right-0 top-0 pr-4 pt-4">
+                  <button
+                    type="button"
+                    className="rounded-md bg-white dark:bg-gray-800 text-gray-400 hover:text-gray-500 focus:outline-none"
+                    onClick={() => setSelectedPayment(null)}
+                  >
+                    <XMarkIcon className="h-6 w-6" />
+                  </button>
+                </div>
+
+                <h3 className="text-base font-semibold leading-6 text-gray-900 dark:text-white mb-4">
+                  Detalle de pago
+                </h3>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                  <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-3">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Fecha de pago</p>
+                    <p className="font-medium text-gray-900 dark:text-gray-100">
+                      {selectedPayment.paymentDate || "No identificada"}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-3">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Cuenta destino</p>
+                    <p className="font-medium text-gray-900 dark:text-gray-100">
+                      {financialAccountsMap[selectedPayment.financialAccountId]?.name ||
+                        selectedPayment.financialAccountId ||
+                        "No identificada"}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-3">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Monto pagado</p>
+                    <p className="font-medium text-gray-900 dark:text-gray-100">
+                      {formatCurrency(selectedPayment.amountPaid)}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-3">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Crédito generado</p>
+                    <p className="font-medium text-gray-900 dark:text-gray-100">
+                      {formatCurrency(selectedPayment.creditBalance || 0)}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-3">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Crédito usado</p>
+                    <p className="font-medium text-gray-900 dark:text-gray-100">
+                      {formatCurrency(selectedPayment.creditUsed || 0)}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-3">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Monto pendiente</p>
+                    <p className="font-medium text-gray-900 dark:text-gray-100">
+                      {formatCurrency(selectedPayment.amountPending || 0)}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-3">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Cargos de referencia</p>
+                    <p className="font-medium text-gray-900 dark:text-gray-100">
+                      {formatCurrency(selectedPayment.referenceAmount || 0)}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-3">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Estado</p>
+                    <p className="font-medium text-gray-900 dark:text-gray-100">
+                      {selectedPayment.paid ? "Pagado" : "Pendiente"}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-3">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Condomino</p>
+                    <p className="font-medium text-gray-900 dark:text-gray-100">
+                      {selectedPayment.numberCondominium || "No identificado"}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-3">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Concepto</p>
+                    <p className="font-medium text-gray-900 dark:text-gray-100">
+                      {selectedPayment.concept || "No identificado"}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-3">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Mes</p>
+                    <p className="font-medium text-gray-900 dark:text-gray-100">
+                      {selectedPayment.month || "N/A"}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-3">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Tipo de pago</p>
+                    <p className="font-medium text-gray-900 dark:text-gray-100">
+                      {selectedPayment.paymentType || "No especificado"}
+                    </p>
+                  </div>
+                </div>
+
+                {selectedPayment.attachmentPayment && (
+                  <div className="mt-4">
+                    <a
+                      href={selectedPayment.attachmentPayment}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
+                    >
+                      Ver comprobante
+                    </a>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Modal de búsqueda por folio */}
       {showSearchModal && (
         <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity z-50">
@@ -605,7 +727,8 @@ const HistoryPaymentsTable: React.FC = () => {
                                 {searchResults.map((payment) => (
                                   <tr
                                     key={payment.id}
-                                    className="hover:bg-gray-50 dark:hover:bg-gray-700"
+                                    className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
+                                    onClick={() => setSelectedPayment(payment)}
                                   >
                                     <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm text-gray-900 dark:text-gray-200">
                                       {payment.paymentDate || "No identificado"}
@@ -655,6 +778,7 @@ const HistoryPaymentsTable: React.FC = () => {
                                           href={payment.attachmentPayment}
                                           target="_blank"
                                           rel="noopener noreferrer"
+                                          onClick={(e) => e.stopPropagation()}
                                           className="flex w-16 items-center bg-indigo-600 dark:bg-indigo-500 text-white px-3 py-1 rounded-md hover:bg-indigo-700 dark:hover:bg-indigo-600"
                                         >
                                           <EyeIcon className="h-5 w-5 mr-1" />

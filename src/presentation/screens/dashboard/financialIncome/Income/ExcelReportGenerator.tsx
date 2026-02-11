@@ -39,7 +39,7 @@ const ExcelReportGenerator: React.FC<ExcelReportGeneratorProps> = ({
   renderButton,
 }) => {
   // Obtener datos del store
-  const { monthlyStats, detailed, conceptRecords } = usePaymentSummaryStore(
+  const { monthlyStats, detailed, conceptRecords, totalIncome, totalInitialBalance } = usePaymentSummaryStore(
     (state) => ({
       totalPending: state.totalPending,
       monthlyStats: state.monthlyStats,
@@ -48,6 +48,8 @@ const ExcelReportGenerator: React.FC<ExcelReportGeneratorProps> = ({
       adminPhone: state.adminPhone,
       adminEmail: state.adminEmail,
       conceptRecords: state.conceptRecords,
+      totalIncome: state.totalIncome,
+      totalInitialBalance: state.totalInitialBalance,
     })
   );
 
@@ -302,17 +304,9 @@ const ExcelReportGenerator: React.FC<ExcelReportGeneratorProps> = ({
     ];
 
     if (!concept) {
-      let computedTotalIncome = 0;
-      monthlyStats.forEach((stat) => {
-        computedTotalIncome += stat.paid + stat.creditUsed + stat.saldo;
-      });
-      const financialAccountsMap =
-        usePaymentSummaryStore.getState().financialAccountsMap;
-      let totalInitialBalance = 0;
-      for (const key in financialAccountsMap) {
-        totalInitialBalance += financialAccountsMap[key].initialBalance;
-      }
-      computedTotalIncome += totalInitialBalance;
+      const ingresosPeriodo = totalIncome;
+      const saldoInicial = totalInitialBalance;
+      const disponibleBruto = ingresosPeriodo + saldoInicial;
 
       // Calcular el saldo total
       let totalBalance = 0;
@@ -342,15 +336,17 @@ const ExcelReportGenerator: React.FC<ExcelReportGeneratorProps> = ({
       });
 
       generalInfo.push(
-        ["Total Ingresos", formatCurrency(computedTotalIncome)],
+        ["Ingresos del período", formatCurrency(ingresosPeriodo)],
+        ["Saldo inicial", formatCurrency(saldoInicial)],
+        ["Disponible total (bruto)", formatCurrency(disponibleBruto)],
         ["Saldo", formatCurrency(totalBalance)],
         [
           "Mes con mayor ingresos",
-          computedTotalIncome ? monthNames[monthlyStats[0].month] : "",
+          ingresosPeriodo ? monthNames[monthlyStats[0].month] : "",
         ],
         [
           "Mes con menor ingresos",
-          computedTotalIncome ? monthNames[monthlyStats[0].month] : "",
+          ingresosPeriodo ? monthNames[monthlyStats[0].month] : "",
         ]
       );
     }
@@ -746,14 +742,6 @@ const ExcelReportGenerator: React.FC<ExcelReportGeneratorProps> = ({
         totalBalanceGlobal += balance;
         totalUnidentifiedGlobal += stat.unidentifiedPayments;
       });
-
-      const financialAccountsMap =
-        usePaymentSummaryStore.getState().financialAccountsMap;
-      let totalInitialBalance = 0;
-      for (const key in financialAccountsMap) {
-        totalInitialBalance += financialAccountsMap[key].initialBalance;
-      }
-      totalPaidGlobal += totalInitialBalance;
 
       const avgCompliance =
         monthlyStats.length > 0

@@ -377,8 +377,24 @@ export const usePettyCashStore = create<PettyCashState>()((set, get) => ({
         `clients/${clientId}/condominiums/${condominiumId}/pettyCashConfig`
       );
 
+      let resolvedInitialAmount = Number(data.initialAmount || 0);
+      if (data.accountId) {
+        const accountRef = createDoc(
+          db,
+          `clients/${clientId}/condominiums/${condominiumId}/financialAccounts/${data.accountId}`
+        );
+        const accountSnap = await getDoc(accountRef);
+        if (accountSnap.exists()) {
+          const accountData = accountSnap.data();
+          const accountInitialBalance = Number(accountData.initialBalance);
+          if (Number.isFinite(accountInitialBalance)) {
+            resolvedInitialAmount = accountInitialBalance;
+          }
+        }
+      }
+
       const configData: PettyCashConfig = {
-        initialAmount: pesosToCents(data.initialAmount || 0),
+        initialAmount: pesosToCents(resolvedInitialAmount),
         thresholdAmount: pesosToCents(data.thresholdAmount || 0),
         accountId: data.accountId || "",
         accountName: data.accountName || "",
