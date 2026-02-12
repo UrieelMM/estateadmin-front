@@ -174,6 +174,25 @@ service cloud.firestore {
             allow delete: if (isAdmin() && belongsToClient(clientId)) || isSuperAdmin();
           }
         }
+
+        // ─── Uso de IA (cuotas, agregados y eventos) ───
+        match /aiUsageQuota/{featureId} {
+          allow read: if belongsToClientOrSuperAdmin(clientId);
+          allow create, update: if (isAdminOrAssistant() && belongsToClient(clientId)) || isSuperAdmin();
+          allow delete: if isSuperAdmin();
+        }
+
+        match /aiUsageDaily/{dateKey} {
+          allow read: if belongsToClientOrSuperAdmin(clientId);
+          allow create, update: if (isAdminOrAssistant() && belongsToClient(clientId)) || isSuperAdmin();
+          allow delete: if isSuperAdmin();
+        }
+
+        match /aiUsageEvents/{eventId} {
+          allow read: if belongsToClientOrSuperAdmin(clientId);
+          allow create: if (isAdminOrAssistant() && belongsToClient(clientId)) || isSuperAdmin();
+          allow update, delete: if isSuperAdmin();
+        }
       }
     }
     
@@ -191,6 +210,18 @@ service cloud.firestore {
 
     // ─── CollectionGroup: facturas generadas ───
     match /{path=**}/invoicesGenerated/{invoiceId} {
+      allow read: if isSuperAdmin()
+                  || (isAuthenticated() && resource.data.clientId == request.auth.token.clientId);
+    }
+
+    // ─── CollectionGroup: consumo IA diario ───
+    match /{path=**}/aiUsageDaily/{docId} {
+      allow read: if isSuperAdmin()
+                  || (isAuthenticated() && resource.data.clientId == request.auth.token.clientId);
+    }
+
+    // ─── CollectionGroup: eventos de consumo IA ───
+    match /{path=**}/aiUsageEvents/{docId} {
       allow read: if isSuperAdmin()
                   || (isAuthenticated() && resource.data.clientId == request.auth.token.clientId);
     }

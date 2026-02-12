@@ -11,6 +11,7 @@ import InvoicesTable from "../../components/superAdmin/invoices/InvoicesTable";
 import useBillingStore, {
   InvoiceRecord,
 } from "../../../store/superAdmin/BillingStore";
+import useAIUsageAdminStore from "../../../store/superAdmin/AIUsageAdminStore";
 interface BillingStats {
   totalPaid: number;
   totalPending: number;
@@ -36,6 +37,17 @@ const BillingManagement: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
   const { invoices, fetchInvoices } = useBillingStore();
+  const {
+    loading: aiUsageLoading,
+    error: aiUsageError,
+    totalRequests: aiTotalRequests,
+    totalTokens: aiTotalTokens,
+    totalInputTokens: aiInputTokens,
+    totalOutputTokens: aiOutputTokens,
+    byCondominium: aiByCondominium,
+    byFeature: aiByFeature,
+    fetchOverview: fetchAIOverview,
+  } = useAIUsageAdminStore();
 
   useEffect(() => {
     const calculateStats = async () => {
@@ -124,6 +136,10 @@ const BillingManagement: React.FC = () => {
 
     calculateStats();
   }, [fetchInvoices, invoices]);
+
+  useEffect(() => {
+    fetchAIOverview(7);
+  }, [fetchAIOverview]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("es-MX", {
@@ -267,6 +283,110 @@ const BillingManagement: React.FC = () => {
                   </dd>
                 </dl>
               </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+            Consumo IA (últimos 7 días)
+          </h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            Seguimiento global y por condominio para control de costos.
+          </p>
+        </div>
+
+        {aiUsageError && (
+          <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+            {aiUsageError}
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg p-4">
+            <p className="text-xs text-gray-500 dark:text-gray-400">Requests IA</p>
+            <p className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+              {aiUsageLoading ? "..." : aiTotalRequests.toLocaleString("es-MX")}
+            </p>
+          </div>
+          <div className="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg p-4">
+            <p className="text-xs text-gray-500 dark:text-gray-400">Tokens totales</p>
+            <p className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+              {aiUsageLoading ? "..." : aiTotalTokens.toLocaleString("es-MX")}
+            </p>
+          </div>
+          <div className="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg p-4">
+            <p className="text-xs text-gray-500 dark:text-gray-400">Input tokens</p>
+            <p className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+              {aiUsageLoading ? "..." : aiInputTokens.toLocaleString("es-MX")}
+            </p>
+          </div>
+          <div className="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg p-4">
+            <p className="text-xs text-gray-500 dark:text-gray-400">Output tokens</p>
+            <p className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+              {aiUsageLoading ? "..." : aiOutputTokens.toLocaleString("es-MX")}
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-4">
+            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">
+              Top condominios por tokens
+            </p>
+            <div className="max-h-80 overflow-auto">
+              <table className="min-w-full text-xs">
+                <thead>
+                  <tr className="text-left text-gray-500 dark:text-gray-400">
+                    <th className="py-2 pr-2">Cliente</th>
+                    <th className="py-2 pr-2">Condominio</th>
+                    <th className="py-2 pr-2">Requests</th>
+                    <th className="py-2 pr-2">Tokens</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {aiByCondominium.slice(0, 10).map((row) => (
+                    <tr key={row.key} className="border-t border-gray-100 dark:border-gray-700">
+                      <td className="py-2 pr-2">{row.clientId}</td>
+                      <td className="py-2 pr-2">{row.condominiumId}</td>
+                      <td className="py-2 pr-2">{row.totalRequests.toLocaleString("es-MX")}</td>
+                      <td className="py-2 pr-2">{row.totalTokens.toLocaleString("es-MX")}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-4">
+            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">
+              Consumo por feature
+            </p>
+            <div className="max-h-80 overflow-auto">
+              <table className="min-w-full text-xs">
+                <thead>
+                  <tr className="text-left text-gray-500 dark:text-gray-400">
+                    <th className="py-2 pr-2">Feature</th>
+                    <th className="py-2 pr-2">Requests</th>
+                    <th className="py-2 pr-2">Input</th>
+                    <th className="py-2 pr-2">Output</th>
+                    <th className="py-2 pr-2">Tokens</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {aiByFeature.map((row) => (
+                    <tr key={row.feature} className="border-t border-gray-100 dark:border-gray-700">
+                      <td className="py-2 pr-2">{row.feature}</td>
+                      <td className="py-2 pr-2">{row.totalRequests.toLocaleString("es-MX")}</td>
+                      <td className="py-2 pr-2">{row.inputTokens.toLocaleString("es-MX")}</td>
+                      <td className="py-2 pr-2">{row.outputTokens.toLocaleString("es-MX")}</td>
+                      <td className="py-2 pr-2">{row.totalTokens.toLocaleString("es-MX")}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>

@@ -114,6 +114,9 @@ const PaymentSummary: React.FC = () => {
     report: aiReport,
     isGenerating: isGeneratingAIReport,
     error: aiReportError,
+    quotaRemaining,
+    quotaLimit,
+    quotaResetAt,
     openModal: openAIReportModal,
     closeModal: closeAIReportModal,
     setTemplate: setAIReportTemplate,
@@ -128,6 +131,9 @@ const PaymentSummary: React.FC = () => {
       report: state.report,
       isGenerating: state.isGenerating,
       error: state.error,
+      quotaRemaining: state.quotaRemaining,
+      quotaLimit: state.quotaLimit,
+      quotaResetAt: state.quotaResetAt,
       openModal: state.openModal,
       closeModal: state.closeModal,
       setTemplate: state.setTemplate,
@@ -774,6 +780,12 @@ const PaymentSummary: React.FC = () => {
                   <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
                     { activeTemplate?.objective }
                   </p>
+                  <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
+                    Límite temporal: { Math.max( 0, quotaLimit - quotaRemaining ) }/{ quotaLimit } usados · { quotaRemaining }/{ quotaLimit } disponibles.
+                    { quotaResetAt
+                      ? ` Reinicio: ${ new Date( quotaResetAt ).toLocaleString( "es-MX" ) }.`
+                      : "" }
+                  </p>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -896,7 +908,7 @@ const PaymentSummary: React.FC = () => {
                     className="inline-flex items-center gap-2 rounded-lg border border-cyan-300 dark:border-cyan-700 px-3 py-2 text-xs font-semibold text-cyan-700 dark:text-cyan-300 hover:bg-cyan-50 dark:hover:bg-cyan-900/20 disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     <ArrowDownTrayIcon className="h-4 w-4" />
-                    Descargar PDF IA
+                    Descargar PDF
                   </button>
                 </div>
 

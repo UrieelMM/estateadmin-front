@@ -13,6 +13,7 @@ export interface IncomeAIReportTemplate {
   decisionFocus: string;
   keyQuestions: string[];
   requiredOutputs: string[];
+  provenStrategies: string[];
 }
 
 export interface IncomeCanonicalMetrics {
@@ -49,6 +50,12 @@ export const INCOME_AI_REPORT_TEMPLATES: IncomeAIReportTemplate[] = [
       "Diagnóstico de salud financiera por riesgo",
       "Plan de acción priorizado con impacto esperado",
     ],
+    provenStrategies: [
+      "Segmentación de cartera por riesgo y capacidad de pago",
+      "Recordatorios multicanal con cadencia definida",
+      "Bonos por pronto pago y recargos por mora consistentes",
+      "Acuerdos de regularización con seguimiento semanal",
+    ],
   },
   {
     id: "collections",
@@ -68,6 +75,12 @@ export const INCOME_AI_REPORT_TEMPLATES: IncomeAIReportTemplate[] = [
       "Mapa de cartera con priorización de recuperación",
       "Estrategia escalonada de cobranza (contacto, convenio, escalamiento)",
       "Metas quincenales con indicadores de seguimiento",
+    ],
+    provenStrategies: [
+      "Scoring de cobranza por antigüedad, monto y recurrencia",
+      "Campañas de recuperación por cohortes de deuda",
+      "Promesas de pago con verificación y reintento automatizado",
+      "Escalamiento temprano de cuentas de alto riesgo",
     ],
   },
   {
@@ -89,6 +102,12 @@ export const INCOME_AI_REPORT_TEMPLATES: IncomeAIReportTemplate[] = [
       "Alertas tempranas y gatillos de intervención",
       "Controles y dueños operativos por riesgo",
     ],
+    provenStrategies: [
+      "Límites de exposición por rubro y alerta preventiva",
+      "Revisión semanal de desviaciones contra presupuesto",
+      "Semáforos de liquidez con umbrales de acción",
+      "Planes de contingencia para cartera crítica",
+    ],
   },
   {
     id: "committee",
@@ -108,6 +127,12 @@ export const INCOME_AI_REPORT_TEMPLATES: IncomeAIReportTemplate[] = [
       "Resumen para lectura en comité",
       "Opciones con pros/contras e impacto estimado",
       "Acuerdos sugeridos con responsables y fecha objetivo",
+    ],
+    provenStrategies: [
+      "Tablero de decisiones con responsables y fecha compromiso",
+      "Priorización por impacto financiero y esfuerzo operativo",
+      "Seguimiento quincenal de acuerdos con KPIs de cierre",
+      "Comparativo contra prácticas exitosas del sector condominial",
     ],
   },
 ];
@@ -140,6 +165,7 @@ export const buildIncomeAIReportPrompt = (params: {
     `Enfoque de decisión: ${template.decisionFocus}.`,
     `Preguntas clave a resolver: ${template.keyQuestions.join(" | ")}.`,
     `Entregables obligatorios: ${template.requiredOutputs.join(" | ")}.`,
+    `Estrategias probadas a considerar: ${template.provenStrategies.join(" | ")}.`,
     "",
     "REGLAS ESTRICTAS:",
     "1) Usa VALORES_CANONICOS como fuente oficial para montos principales.",
@@ -153,13 +179,17 @@ export const buildIncomeAIReportPrompt = (params: {
     "9) Solo incluye condominos específicos por excepción material (alto adeudo o riesgo significativo), máximo 5 casos.",
     "10) Si incluyes tabla, debe estar en Markdown válido con encabezado y separador por filas (multilínea).",
     "11) No incluyas IDs internos de base de datos (pagos, usuarios, cargos, cuentas o documentos).",
+    "12) Las recomendaciones deben basarse en tácticas probadas en administración condominial y finanzas operativas.",
+    "13) Incluye al menos 3 estrategias con referencia de por qué suelen funcionar (mecanismo de impacto).",
+    "14) Cuando uses benchmarking, exprésalo como patrones/percentiles del sector de forma anonimizada; no inventes cifras exactas no presentes en datos.",
+    "15) Para cada recomendación, agrega KPI de seguimiento, meta sugerida y horizonte de ejecución.",
     "",
     "FORMATO DE SALIDA OBLIGATORIO:",
     "1) Resumen ejecutivo (5-8 líneas).",
     "2) Indicadores clave.",
     "3) Hallazgos relevantes (mínimo 5).",
     "4) Riesgos/alertas con prioridad (alta/media/baja).",
-    "5) Recomendaciones accionables por horizonte (0-30, 31-90, 90+ días).",
+    "5) Recomendaciones accionables por horizonte (0-30, 31-90, 90+ días) con: acción, impacto esperado, KPI y responsable sugerido.",
     "6) Conclusión corta para comité.",
     "",
     customInstruction
