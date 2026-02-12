@@ -5,8 +5,6 @@ import { Disclosure } from "@headlessui/react";
 import {
   XMarkIcon,
   ArrowRightEndOnRectangleIcon,
-  Cog6ToothIcon,
-  UsersIcon,
   BuildingOffice2Icon,
   CreditCardIcon,
   ChartBarIcon,
@@ -14,6 +12,7 @@ import {
   DocumentTextIcon,
   DocumentPlusIcon,
   EnvelopeIcon,
+  LifebuoyIcon,
 } from "@heroicons/react/24/solid";
 import {
   Bars3Icon,
@@ -223,14 +222,8 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ children }) => {
                   case "clients":
                     Icon = BuildingOffice2Icon;
                     break;
-                  case "users":
-                    Icon = UsersIcon;
-                    break;
                   case "billing":
                     Icon = CreditCardIcon;
-                    break;
-                  case "settings":
-                    Icon = Cog6ToothIcon;
                     break;
                   case "news-and-guides":
                     Icon = DocumentTextIcon;
@@ -240,6 +233,9 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ children }) => {
                     break;
                   case "emails":
                     Icon = EnvelopeIcon;
+                    break;
+                  case "support-tickets":
+                    Icon = LifebuoyIcon;
                     break;
                   default:
                     Icon = ChartBarIcon;

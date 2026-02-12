@@ -34,6 +34,31 @@ service cloud.firestore {
     function belongsToClientOrSuperAdmin(clientId) {
       return belongsToClient(clientId) || isSuperAdmin();
     }
+    function isValidSupportTicketCreate() {
+      return request.resource.data.keys().hasAll([
+        'ticketNumber','email','title','description','issueType','priority','module',
+        'currentPath','userAgent','attachmentUrls','status','createdBy',
+        'createdAt','updatedAt','condominiumId','clientId'
+      ])
+      && request.resource.data.ticketNumber is string
+      && request.resource.data.ticketNumber.matches('^EA-SUPPORT-[A-Z0-9]{16}$')
+      && request.resource.data.clientId is string
+      && request.resource.data.clientId == request.auth.token.clientId
+      && request.resource.data.condominiumId is string
+      && request.resource.data.email is string
+      && request.resource.data.title is string
+      && request.resource.data.description is string
+      && request.resource.data.issueType is string
+      && request.resource.data.priority is string
+      && request.resource.data.module is string
+      && request.resource.data.currentPath is string
+      && request.resource.data.userAgent is string
+      && request.resource.data.attachmentUrls is list
+      && request.resource.data.status == 'pending'
+      && request.resource.data.createdBy == request.auth.uid
+      && request.resource.data.createdAt is timestamp
+      && request.resource.data.updatedAt is timestamp;
+    }
     
     // ─── Colección de Links de Noticias y Guías (ahora lectura pública) ───
     match /linksNewsAndGuides/{docId} {
@@ -43,8 +68,9 @@ service cloud.firestore {
     
     // ─── Colección de tickets de soporte ───
     match /supportTickets/{ticketId} {
-      allow create: if isAdminOrAssistant();
-      allow read, update, delete: if false;
+      allow create: if isAdminOrAssistant() && isValidSupportTicketCreate();
+      allow read: if isSuperAdmin();
+      allow update, delete: if false;
     }
     
     // ─── Nivel Cliente ───

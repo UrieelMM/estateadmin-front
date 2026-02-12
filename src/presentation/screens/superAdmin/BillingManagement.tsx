@@ -12,6 +12,7 @@ import useBillingStore, {
   InvoiceRecord,
 } from "../../../store/superAdmin/BillingStore";
 import useAIUsageAdminStore from "../../../store/superAdmin/AIUsageAdminStore";
+import useSuperAdminDirectoryStore from "../../../store/superAdmin/SuperAdminDirectoryStore";
 interface BillingStats {
   totalPaid: number;
   totalPending: number;
@@ -48,6 +49,8 @@ const BillingManagement: React.FC = () => {
     byFeature: aiByFeature,
     fetchOverview: fetchAIOverview,
   } = useAIUsageAdminStore();
+  const { clientNames, condominiumNames, fetchDirectory } =
+    useSuperAdminDirectoryStore();
 
   useEffect(() => {
     const calculateStats = async () => {
@@ -139,7 +142,8 @@ const BillingManagement: React.FC = () => {
 
   useEffect(() => {
     fetchAIOverview(7);
-  }, [fetchAIOverview]);
+    fetchDirectory();
+  }, [fetchAIOverview, fetchDirectory]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("es-MX", {
@@ -349,8 +353,13 @@ const BillingManagement: React.FC = () => {
                 <tbody>
                   {aiByCondominium.slice(0, 10).map((row) => (
                     <tr key={row.key} className="border-t border-gray-100 dark:border-gray-700">
-                      <td className="py-2 pr-2">{row.clientId}</td>
-                      <td className="py-2 pr-2">{row.condominiumId}</td>
+                      <td className="py-2 pr-2">
+                        {clientNames[row.clientId] || row.clientId}
+                      </td>
+                      <td className="py-2 pr-2">
+                        {condominiumNames[`${row.clientId}__${row.condominiumId}`] ||
+                          row.condominiumId}
+                      </td>
                       <td className="py-2 pr-2">{row.totalRequests.toLocaleString("es-MX")}</td>
                       <td className="py-2 pr-2">{row.totalTokens.toLocaleString("es-MX")}</td>
                     </tr>

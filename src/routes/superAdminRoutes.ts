@@ -2,11 +2,10 @@ import React from "react";
 import BillingManagement from "../presentation/screens/superAdmin/BillingManagement";
 import ClientsManagement from "../presentation/screens/superAdmin/ClientsManagement";
 import SuperAdminDashboard from "../presentation/screens/superAdmin/SuperAdminDashboard";
-import SystemSettings from "../presentation/screens/superAdmin/SystemSettings";
-import UserManagement from "../presentation/screens/superAdmin/UserManagement";
 import NewsAndGuides from "../presentation/screens/superAdmin/NewsAndGuides";
 import { NewCustomerFormManager } from "../presentation/screens/superAdmin/newCustomerInformationForm";
 import EmailManagement from "../presentation/screens/superAdmin/emails/EmailManagement";
+import SupportTicketsManagement from "../presentation/screens/superAdmin/SupportTicketsManagement";
 
 interface Route {
   to: string;
@@ -29,12 +28,6 @@ export const superAdminRoutes: Route[] = [
     name: "Gestión de Clientes",
   },
   {
-    to: "users",
-    path: "super-admin/users",
-    Component: UserManagement,
-    name: "Gestión de Usuarios",
-  },
-  {
     to: "billing",
     path: "super-admin/billing",
     Component: BillingManagement,
@@ -47,12 +40,6 @@ export const superAdminRoutes: Route[] = [
     name: "Formularios Nuevos Clientes",
   },
   {
-    to: "settings",
-    path: "super-admin/settings",
-    Component: SystemSettings,
-    name: "Configuración del Sistema",
-  },
-  {
     to: "news-and-guides",
     path: "super-admin/news-and-guides",
     Component: NewsAndGuides,
@@ -63,5 +50,11 @@ export const superAdminRoutes: Route[] = [
     path: "super-admin/emails",
     Component: EmailManagement,
     name: "Correos",
+  },
+  {
+    to: "support-tickets",
+    path: "super-admin/support-tickets",
+    Component: SupportTicketsManagement,
+    name: "Tickets Soporte",
   },
 ];
