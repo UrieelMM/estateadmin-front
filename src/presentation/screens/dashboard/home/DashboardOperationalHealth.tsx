@@ -199,6 +199,11 @@ const DashboardOperationalHealth = () => {
   );
 
   useEffect(() => {
+    const condominiumId = localStorage.getItem("condominiumId");
+    if (!condominiumId) {
+      return;
+    }
+
     if (shouldFetchData(selectedYear)) {
       fetchSummary(selectedYear);
     }

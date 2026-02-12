@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import CardsHomeSummary from "./CardsHomeSummary";
 import DirectAccess from "../../../components/shared/DirectAccess";
 import { Card } from "@heroui/react";
@@ -9,13 +9,31 @@ import { Link } from "react-router-dom";
 import ImageSlider from "../../../components/shared/sliders/ImageSlider";
 import { motion } from "framer-motion";
 import DashboardOperationalHealth from "./DashboardOperationalHealth";
+import SkeletonLoading from "../../../components/shared/loaders/SkeletonLoading";
 
 
 const NextEvents = () => {
   const { events, fetchEvents } = useCalendarEventsStore();
 
   useEffect(() => {
-    fetchEvents();
+    const checkCondominiumId = () => {
+      const condominiumId = localStorage.getItem( "condominiumId" );
+      return !!condominiumId;
+    };
+
+    if ( checkCondominiumId() ) {
+      fetchEvents();
+      return;
+    }
+
+    const intervalId = setInterval( () => {
+      if ( checkCondominiumId() ) {
+        clearInterval( intervalId );
+        fetchEvents();
+      }
+    }, 1000 );
+
+    return () => clearInterval( intervalId );
   }, [fetchEvents]);
 
   // Obtener eventos de la semana actual
@@ -73,6 +91,37 @@ const NextEvents = () => {
 };
 
 const DashboardHome = () => {
+  const [ hasCondominiumId, setHasCondominiumId ] = useState<boolean>( false );
+
+  useEffect( () => {
+    const checkCondominiumId = () => {
+      const condominiumId = localStorage.getItem( "condominiumId" );
+      const hasId = !!condominiumId;
+      setHasCondominiumId( hasId );
+      return hasId;
+    };
+
+    if ( checkCondominiumId() ) {
+      return;
+    }
+
+    const intervalId = setInterval( () => {
+      if ( checkCondominiumId() ) {
+        clearInterval( intervalId );
+      }
+    }, 1000 );
+
+    return () => clearInterval( intervalId );
+  }, [] );
+
+  if ( !hasCondominiumId ) {
+    return (
+      <div className="p-4 md:p-8">
+        <SkeletonLoading />
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-5 px-4 py-4 md:px-8">
       <motion.section

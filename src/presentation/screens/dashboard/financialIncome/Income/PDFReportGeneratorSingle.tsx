@@ -4,7 +4,6 @@ import React from "react";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import { DocumentChartBarIcon } from "@heroicons/react/20/solid";
-import { usePaymentSummaryStore } from "../../../../../store/paymentSummaryStore";
 import { useSignaturesStore } from "../../../../../store/useSignaturesStore";
 
 // Ajusta esta interfaz a como tengas tu PaymentRecord realmente.
@@ -114,11 +113,6 @@ const PDFReportGeneratorSingle: React.FC<PDFReportGeneratorSingleProps> = ({
   adminEmail,
   logoBase64,
 }) => {
-  // Obtener la función prepareSingleReportData desde el store de pagos
-  const { prepareSingleReportData } = usePaymentSummaryStore((state) => ({
-    prepareSingleReportData: state.prepareSingleReportData,
-  }));
-
   // Obtener la firma desde el store de firmas
   const {
     signatureBase64,
@@ -144,13 +138,11 @@ const PDFReportGeneratorSingle: React.FC<PDFReportGeneratorSingleProps> = ({
     loadSignatures();
   }, [fetchSignatures]);
 
-  // Procesar los datos correctamente para evitar duplicaciones y mostrar solo los cargos correspondientes
-  const processedData = React.useMemo(() => {
-    if (condominium && condominium.number) {
-      return prepareSingleReportData(condominium.number);
-    }
-    return { detailed, detailedByConcept };
-  }, [condominium, prepareSingleReportData, detailed, detailedByConcept]);
+  // Usar directamente los datos del historial individual (props)
+  const processedData = React.useMemo(
+    () => ({ detailed, detailedByConcept }),
+    [detailed, detailedByConcept]
+  );
 
   const generatePDF = async () => {
     const doc = new jsPDF();
@@ -177,7 +169,7 @@ const PDFReportGeneratorSingle: React.FC<PDFReportGeneratorSingleProps> = ({
     doc.setFont("helvetica", "bold");
     doc.text("Año:", 14, yPos);
     doc.setFont("helvetica", "normal");
-    doc.text(year, 14 + doc.getTextWidth("Año:") + 2, yPos);
+    doc.text(year || "Todos los años", 14 + doc.getTextWidth("Año:") + 2, yPos);
     yPos += 7;
 
     doc.setFont("helvetica", "bold");
@@ -217,17 +209,25 @@ const PDFReportGeneratorSingle: React.FC<PDFReportGeneratorSingleProps> = ({
 
     for (let i = 1; i <= 12; i++) {
       const monthNum = i.toString().padStart(2, "0");
-      const key = `${year}-${monthNum}`;
-      // Usamos los datos procesados por la función prepareSingleReportData
-      const records = processedData.detailed[key] || [];
+      const records = year
+        ? processedData.detailed[`${year}-${monthNum}`] || []
+        : Object.entries(processedData.detailed)
+            .filter(([k]) => k.endsWith(`-${monthNum}`))
+            .flatMap(([, recs]) => recs);
       // Calculamos el total pagado
       const totalPaid = records.reduce((acc, rec) => acc + rec.amountPaid, 0);
-      // Para los cargos, simplemente sumamos el referenceAmount de cada registro
-      // Ya que prepareSingleReportData se asegura de que no haya duplicados
-      const totalCharges = records.reduce(
-        (acc, rec) => acc + rec.referenceAmount,
-        0
-      );
+      // Cargos: misma lógica de la UI del historial.
+      // Cada clave YYYY-MM representa el cargo total del mes y se toma una sola vez por clave.
+      const monthGroups = year
+        ? [[`${year}-${monthNum}`, processedData.detailed[`${year}-${monthNum}`] || []] as const]
+        : (Object.entries(processedData.detailed).filter(([k]) =>
+            k.endsWith(`-${monthNum}`)
+          ) as [string, PaymentRecord[]][]);
+
+      const totalCharges = monthGroups.reduce((acc, [, recs]) => {
+        if (!recs || recs.length === 0) return acc;
+        return acc + (recs[0].referenceAmount || 0);
+      }, 0);
       const totalCreditUsed = records.reduce(
         (acc, rec) => acc + (rec.creditUsed || 0),
         0
@@ -248,6 +248,10 @@ const PDFReportGeneratorSingle: React.FC<PDFReportGeneratorSingleProps> = ({
       totalPaidGeneral += totalPaidWithCredit;
       totalChargesGeneral += totalCharges;
       totalBalanceGeneral += balance;
+
+      if (!records.length && !year) {
+        continue;
+      }
 
       generalData.push([
         monthNames[monthNum],
@@ -307,10 +311,10 @@ const PDFReportGeneratorSingle: React.FC<PDFReportGeneratorSingleProps> = ({
 
     // --- REPORTE POR CONCEPTO (CON COLUMNA "FECHA(S) DE PAGO") ---
     doc.setFontSize(14);
-    doc.text("Ingresos - Concepto", 14, yPos);
+    doc.text("Ingresos por concepto", 14, yPos);
     yPos += 6;
 
-    for (const concept in detailedByConcept) {
+    for (const concept in processedData.detailedByConcept) {
       doc.setFontSize(12);
       doc.text(`Concepto: ${concept}`, 14, yPos);
       yPos += 6;
@@ -322,18 +326,33 @@ const PDFReportGeneratorSingle: React.FC<PDFReportGeneratorSingleProps> = ({
 
       for (let i = 1; i <= 12; i++) {
         const monthNum = i.toString().padStart(2, "0");
-        const key = `${year}-${monthNum}`;
-        // Obtenemos solo los registros para este concepto y mes específico
-        // usando los datos procesados por prepareSingleReportData
-        const records = processedData.detailedByConcept[concept]?.[key] || [];
+        const records =
+          year && year.length === 4
+            ? processedData.detailedByConcept[concept]?.[
+                `${year}-${monthNum}`
+              ] || []
+            : Object.entries(processedData.detailedByConcept[concept] || {})
+                .filter(([k]) => k.endsWith(`-${monthNum}`))
+                .flatMap(([, recs]) => recs);
         // Calculamos el total pagado para este concepto
         const totalPaid = records.reduce((acc, rec) => acc + rec.amountPaid, 0);
-        // Para los cargos, simplemente sumamos el referenceAmount de cada registro
-        // Ya que prepareSingleReportData se asegura de que solo incluya los cargos del concepto correcto
-        const totalCharges = records.reduce(
-          (acc, rec) => acc + rec.referenceAmount,
-          0
-        );
+        // Evita sobreconteo cuando hay varios registros por el mismo mes.
+        // referenceAmount ya representa el cargo del mes para esa clave YYYY-MM.
+        const conceptMonthGroups = year
+          ? [[
+              `${year}-${monthNum}`,
+              processedData.detailedByConcept[concept]?.[
+                `${year}-${monthNum}`
+              ] || [],
+            ] as const]
+          : (Object.entries(processedData.detailedByConcept[concept] || {}).filter(
+              ([k]) => k.endsWith(`-${monthNum}`)
+            ) as [string, PaymentRecord[]][]);
+
+        const totalCharges = conceptMonthGroups.reduce((acc, [, recs]) => {
+          if (!recs || recs.length === 0) return acc;
+          return acc + (recs[0].referenceAmount || 0);
+        }, 0);
         const totalCreditUsed = records.reduce(
           (acc, rec) => acc + (rec.creditUsed || 0),
           0
@@ -358,6 +377,10 @@ const PDFReportGeneratorSingle: React.FC<PDFReportGeneratorSingleProps> = ({
         // Obtener fecha(s) de pago
         const allDates = getAllPaymentDates(records);
 
+        if (!records.length && !year) {
+          continue;
+        }
+
         conceptData.push([
           monthNames[monthNum],
           formatCurrency(totalPaidWithCredit),
@@ -365,6 +388,10 @@ const PDFReportGeneratorSingle: React.FC<PDFReportGeneratorSingleProps> = ({
           formatCurrency(balance),
           allDates,
         ]);
+      }
+
+      if (conceptData.length === 0) {
+        continue;
       }
 
       conceptData.push([
@@ -479,6 +506,23 @@ const PDFReportGeneratorSingle: React.FC<PDFReportGeneratorSingleProps> = ({
     doc.text("Un servicio de Omnipixel.", 14, yPos);
     yPos += 5;
     doc.text("Contacto: administracion@estate-admin.com", 14, yPos);
+
+    const generatedAt = new Date().toLocaleString("es-MX");
+    const totalPages = doc.getNumberOfPages();
+    for (let i = 1; i <= totalPages; i++) {
+      doc.setPage(i);
+      doc.setFontSize(9);
+      doc.setTextColor(120);
+      doc.text(
+        `EstateAdmin - ${generatedAt}`,
+        pageWidth / 2,
+        pageHeight - 8,
+        { align: "center" }
+      );
+      doc.text(`Página ${i} de ${totalPages}`, pageWidth - 14, pageHeight - 8, {
+        align: "right",
+      });
+    }
 
     doc.save(`reporte_individual_${condominium.number}.pdf`);
   };

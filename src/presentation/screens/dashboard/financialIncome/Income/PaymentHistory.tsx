@@ -85,7 +85,7 @@ const PaymentHistory = () => {
 
   // Reconsultar historial si cambia el condómino o el año
   useEffect( () => {
-    if ( selectedCondominiumNumber && selectedYear ) {
+    if ( selectedCondominiumNumber ) {
       fetchPayments( selectedCondominiumNumber, selectedYear );
     }
   }, [ selectedCondominiumNumber, selectedYear, fetchPayments ] );
@@ -157,14 +157,14 @@ const PaymentHistory = () => {
       } );
 
       // Asignar valores
-      result[ monthPart ].paid = totalPaid;
-      result[ monthPart ].creditUsed = totalCreditUsed;
-      result[ monthPart ].creditBalance = totalCreditBalance;
+      result[ monthPart ].paid += totalPaid;
+      result[ monthPart ].creditUsed += totalCreditUsed;
+      result[ monthPart ].creditBalance += totalCreditBalance;
 
       // Para los cargos, usar el primer payment que tiene el referenceAmount correcto para el mes
       if ( monthPayments.length > 0 ) {
         // Todos los pagos del mismo mes tienen el mismo referenceAmount que es el total de cargos del mes
-        result[ monthPart ].pending = monthPayments[ 0 ].referenceAmount;
+        result[ monthPart ].pending += monthPayments[ 0 ].referenceAmount;
       }
 
       // Calcular saldo
@@ -250,6 +250,7 @@ const PaymentHistory = () => {
             onChange={ handleYearChange }
             className="w-full pl-2 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
           >
+            <option value="">Todos los años</option>
             { [ "2022", "2023", "2024", "2025", "2026" ].map( ( year ) => (
               <option key={ year } value={ year }>
                 { year }

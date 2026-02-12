@@ -170,27 +170,23 @@ export const usePaymentHistoryStore = create<PaymentHistoryState>()((set) => ({
       );
       const chargesSnapshot = await getDocs(chargesRef);
 
-      // Calcular el monto total de cargos usando referenceAmount
-      let pendingAmount = 0;
-      chargesSnapshot.docs.forEach((chargeDoc) => {
-        const chargeData = chargeDoc.data();
-        pendingAmount += centsToPesos(chargeData.referenceAmount || 0);
-      });
-
-      const yearToCheck = year || new Date().getFullYear().toString();
+      const yearToCheck =
+        year !== undefined ? year : new Date().getFullYear().toString();
       const paymentRecords: PaymentRecord[] = [];
 
       // 4. Primero procesamos los cargos
       const chargesByMonth: Record<string, number> = {}; // Para almacenar la suma de referenceAmount por mes
+      let pendingAmount = 0;
 
       for (const chargeDoc of chargesSnapshot.docs) {
         const chargeData = chargeDoc.data();
         if (!chargeData.startAt || typeof chargeData.startAt !== "string")
           continue;
-        if (!chargeData.startAt.startsWith(yearToCheck)) continue;
+        if (yearToCheck && !chargeData.startAt.startsWith(yearToCheck)) continue;
 
         // "YYYY-MM"
         const monthValue = chargeData.startAt.substring(0, 7);
+        pendingAmount += centsToPesos(chargeData.referenceAmount || 0);
 
         // Sumamos el referenceAmount al mes correspondiente
         if (!chargesByMonth[monthValue]) {
@@ -204,7 +200,7 @@ export const usePaymentHistoryStore = create<PaymentHistoryState>()((set) => ({
         const chargeData = chargeDoc.data();
         if (!chargeData.startAt || typeof chargeData.startAt !== "string")
           continue;
-        if (!chargeData.startAt.startsWith(yearToCheck)) continue;
+        if (yearToCheck && !chargeData.startAt.startsWith(yearToCheck)) continue;
 
         const monthValue = chargeData.startAt.substring(0, 7);
         const paymentsRef = collection(
@@ -274,11 +270,13 @@ export const usePaymentHistoryStore = create<PaymentHistoryState>()((set) => ({
         detailed[key].push(pr);
       });
       // Forzar 12 meses
-      for (let i = 1; i <= 12; i++) {
-        const m = i.toString().padStart(2, "0");
-        const key = `${yearToCheck}-${m}`;
-        if (!detailed[key]) {
-          detailed[key] = [];
+      if (yearToCheck) {
+        for (let i = 1; i <= 12; i++) {
+          const m = i.toString().padStart(2, "0");
+          const key = `${yearToCheck}-${m}`;
+          if (!detailed[key]) {
+            detailed[key] = [];
+          }
         }
       }
 
@@ -292,10 +290,12 @@ export const usePaymentHistoryStore = create<PaymentHistoryState>()((set) => ({
 
       conceptsSet.forEach((concept) => {
         detailedByConcept[concept] = {};
-        for (let i = 1; i <= 12; i++) {
-          const m = i.toString().padStart(2, "0");
-          const key = `${yearToCheck}-${m}`;
-          detailedByConcept[concept][key] = [];
+        if (yearToCheck) {
+          for (let i = 1; i <= 12; i++) {
+            const m = i.toString().padStart(2, "0");
+            const key = `${yearToCheck}-${m}`;
+            detailedByConcept[concept][key] = [];
+          }
         }
       });
 

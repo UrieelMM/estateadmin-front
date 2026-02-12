@@ -7,6 +7,7 @@ import {
   MonthlyStat,
   usePaymentSummaryStore,
 } from "../../../../../store/paymentSummaryStore";
+import { useExpenseSummaryStore } from "../../../../../store/expenseSummaryStore";
 import useUserStore from "../../../../../store/UserDataStore";
 
 interface Condominium {
@@ -122,8 +123,8 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({
 }) => {
   // Obtener datos del store
   const {
+    payments,
     monthlyStats,
-    totalIncome,
     totalInitialBalance,
     detailed,
     adminCompany,
@@ -156,6 +157,7 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({
 
   const generatePDF = async () => {
     const doc = new jsPDF();
+    let generalTableStartY = 95;
 
     // --- Cálculo de mes con mayor y menor ingresos ---
     const sortedMonthlyStats = [...monthlyStats].sort(
@@ -190,6 +192,27 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({
       }
     }
 
+    const totalSpentExpenses = useExpenseSummaryStore.getState().totalSpent || 0;
+    const totalPaid = payments.reduce(
+      (acc, payment) => acc + payment.amountPaid,
+      0
+    );
+    const totalCreditUsed = payments.reduce(
+      (acc, payment) => acc + (payment.creditUsed || 0),
+      0
+    );
+    const totalCreditBalance = payments.reduce(
+      (acc, payment) => acc + payment.creditBalance,
+      0
+    );
+    const ingresosPeriodo =
+      totalPaid +
+      (totalCreditBalance > 0 ? totalCreditBalance : 0) -
+      totalCreditUsed;
+    const saldoInicialHistorico = totalInitialBalance;
+    const flujoNetoPeriodo = ingresosPeriodo - totalSpentExpenses;
+    const saldoActualConsolidado = saldoInicialHistorico + flujoNetoPeriodo;
+
     // --- Encabezado: Logo y Datos Generales ---
     doc.addImage(logoBase64, "PNG", 160, 10, 30, 30);
     doc.setFontSize(14);
@@ -208,93 +231,76 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({
     doc.setFont("helvetica", "bold");
     doc.text("Año:", 14, 40);
     doc.setFont("helvetica", "normal");
-    doc.text(year, 14 + doc.getTextWidth("Año:") + 2, 40);
+    doc.text(year || "Todos los años", 14 + doc.getTextWidth("Año:") + 2, 40);
 
     if (!concept) {
-      const ingresosPeriodo = totalIncome;
-      const saldoInicial = totalInitialBalance;
-      const disponibleBruto = ingresosPeriodo + saldoInicial;
+      const kpiRows = [
+        [
+          "Saldo inicial histórico",
+          formatCurrency(saldoInicialHistorico),
+          "Base de arranque de cuentas activas.",
+        ],
+        [
+          "Ingresos del período",
+          formatCurrency(ingresosPeriodo),
+          "Monto neto abonado del periodo seleccionado.",
+        ],
+        [
+          "Egresos del período",
+          formatCurrency(totalSpentExpenses),
+          "Salidas registradas en el mismo periodo.",
+        ],
+        [
+          "Flujo neto del período",
+          formatCurrency(flujoNetoPeriodo),
+          "Ingresos del período menos egresos del período.",
+        ],
+        [
+          "Saldo actual consolidado",
+          formatCurrency(saldoActualConsolidado),
+          "Saldo inicial histórico + flujo neto del período.",
+        ],
+      ];
 
-      doc.setFont("helvetica", "bold");
-      doc.text("Ingresos del período:", 14, 50);
-      doc.setFont("helvetica", "normal");
-      doc.text(
-        formatCurrency(ingresosPeriodo),
-        14 + doc.getTextWidth("Ingresos del período:") + 4,
-        50
-      );
-
-      doc.setFont("helvetica", "bold");
-      doc.text("Saldo inicial:", 14, 60);
-      doc.setFont("helvetica", "normal");
-      doc.text(
-        formatCurrency(saldoInicial),
-        14 + doc.getTextWidth("Saldo inicial:") + 4,
-        60
-      );
-
-      doc.setFont("helvetica", "bold");
-      doc.text("Disponible total (bruto):", 14, 70);
-      doc.setFont("helvetica", "normal");
-      doc.text(
-        formatCurrency(disponibleBruto),
-        14 + doc.getTextWidth("Disponible total (bruto):") + 4,
-        70
-      );
-
-      // Calcular el saldo total
-      let totalBalance = 0;
-      monthlyStats.forEach((stat) => {
-        const totalCharges = stat.charges;
-        const monthRecords = Object.values(detailed)
-          .flat()
-          .filter((rec) => rec.month === stat.month);
-        const totalPaid = monthRecords.reduce(
-          (sum, rec) => sum + rec.amountPaid,
-          0
-        );
-        const totalCreditUsed = monthRecords.reduce(
-          (sum, rec) => sum + (rec.creditUsed || 0),
-          0
-        );
-        const totalCreditBalance = monthRecords.reduce(
-          (sum, rec) => sum + rec.creditBalance,
-          0
-        );
-        const totalCredit = totalCreditBalance - totalCreditUsed;
-        const totalPaidWithCredit =
-          totalPaid + (totalCredit > 0 ? totalCredit : 0) - totalCreditUsed;
-
-        // Acumular el saldo de cada mes
-        totalBalance += totalCharges - totalPaidWithCredit;
+      autoTable(doc, {
+        startY: 48,
+        head: [["KPI", "Valor", "Descripción"]],
+        body: kpiRows,
+        theme: "grid",
+        headStyles: {
+          fillColor: [75, 68, 224],
+          textColor: 255,
+          fontStyle: "bold",
+        },
+        styles: { fontSize: 9 },
+        columnStyles: {
+          0: { cellWidth: 48, fontStyle: "bold" },
+          1: { cellWidth: 36 },
+          2: { cellWidth: 96 },
+        },
       });
 
+      const kpiFinalY = (doc as any).lastAutoTable?.finalY || 86;
       doc.setFont("helvetica", "bold");
-      doc.text("Saldo:", 14, 80);
+      doc.setFontSize(11);
+      doc.text("Mes con mayor ingresos:", 14, kpiFinalY + 8);
       doc.setFont("helvetica", "normal");
       doc.text(
-        formatCurrency(totalBalance),
-        14 + doc.getTextWidth("Saldo:") + 4,
-        80
+        computedMaxMonth || "N/A",
+        14 + doc.getTextWidth("Mes con mayor ingresos:") + 4,
+        kpiFinalY + 8
+      );
+      doc.setFont("helvetica", "bold");
+      doc.text("Mes con menor ingresos:", 14, kpiFinalY + 14);
+      doc.setFont("helvetica", "normal");
+      doc.text(
+        computedMinMonth || "N/A",
+        14 + doc.getTextWidth("Mes con menor ingresos:") + 4,
+        kpiFinalY + 14
       );
 
-      doc.setFont("helvetica", "bold");
-      doc.text("Mes con mayor ingresos:", 14, 90);
-      doc.setFont("helvetica", "normal");
-      doc.text(
-        computedMaxMonth,
-        14 + doc.getTextWidth("Mes con mayor ingresos:") + 5,
-        90
-      );
-
-      doc.setFont("helvetica", "bold");
-      doc.text("Mes con menor ingresos:", 14, 100);
-      doc.setFont("helvetica", "normal");
-      doc.text(
-        computedMinMonth,
-        14 + doc.getTextWidth("Mes con menor ingresos:") + 5,
-        100
-      );
+      // Espacio adicional para evitar cualquier solapamiento visual con el título de la tabla.
+      generalTableStartY = kpiFinalY + 28;
     }
 
     // --- Reporte Individual por Concepto ---
@@ -641,10 +647,10 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({
 
       doc.setFont("helvetica", "bold");
       doc.setFontSize(12);
-      doc.text("Ingresos del período", 14, 90);
+      doc.text("Ingresos del período", 14, generalTableStartY - 8);
 
       autoTable(doc, {
-        startY: 95,
+        startY: generalTableStartY,
         head: [
           [
             "Mes",
@@ -876,6 +882,21 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({
     doc.setFontSize(11);
     doc.text("Un servicio de Omnipixel.", margin, footerY - 10);
     doc.text("Correo: administracion@estate-admin.com", margin, footerY - 5);
+
+    const generatedAt = new Date().toLocaleString("es-MX");
+    const totalPages = doc.getNumberOfPages();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    for (let i = 1; i <= totalPages; i++) {
+      doc.setPage(i);
+      doc.setFontSize(9);
+      doc.setTextColor(120);
+      doc.text(`EstateAdmin - ${generatedAt}`, pageWidth / 2, pageHeight - 8, {
+        align: "center",
+      });
+      doc.text(`Página ${i} de ${totalPages}`, pageWidth - 14, pageHeight - 8, {
+        align: "right",
+      });
+    }
 
     if (concept) {
       doc.save(`reporte_ingresos_${year}_${concept}.pdf`);
