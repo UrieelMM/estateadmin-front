@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Dialog } from "@headlessui/react";
 import {
   Bars3Icon,
@@ -30,16 +30,7 @@ const navigation = [
 
 const Hero = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [_mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const { isDarkMode, toggleDarkMode } = useLocalDarkMode();
-
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      setMousePosition({ x: e.clientX, y: e.clientY });
-    };
-    window.addEventListener("mousemove", handleMouseMove);
-    return () => window.removeEventListener("mousemove", handleMouseMove);
-  }, []);
 
   const handleScroll = (
     e: React.MouseEvent<HTMLAnchorElement>,
