@@ -15,6 +15,8 @@ import {
 import dayjs from "dayjs";
 import { FunnelIcon } from "@heroicons/react/24/solid";
 import LoadingApp from "../../../../../../presentation/components/shared/loaders/LoadingApp";
+import { getAuth, getIdTokenResult } from "firebase/auth";
+import { collection, getDocs, getFirestore, query, where } from "firebase/firestore";
 
 // Función para truncar la descripción a 120 caracteres
 const truncate = (text: string, maxLength = 120): string =>
@@ -32,12 +34,41 @@ const formatDate = (dateStr: string): string => {
   return dayjs(dateStr).format("DD/MM/YYYY");
 };
 
+const formatPaymentType = (value: string): string => {
+  const normalized = (value || "").toLowerCase().trim();
+  const labels: Record<string, string> = {
+    transfer: "Transferencia",
+    transferencia: "Transferencia",
+    cash: "Efectivo",
+    efectivo: "Efectivo",
+    check: "Cheque",
+    cheque: "Cheque",
+    credit_card: "Tarjeta de Crédito",
+    tarjeta: "Tarjeta",
+    tarjeta_credito: "Tarjeta de Crédito",
+    debit_card: "Tarjeta de Débito",
+    tarjeta_debito: "Tarjeta de Débito",
+    deposito: "Depósito",
+    depósito: "Depósito",
+  };
+  return labels[normalized] || value || "N/A";
+};
+
 const ITEMS_PER_PAGE = 50;
 
 interface FilterState {
   month: string;
   year: string;
   folio: string;
+}
+
+interface InternalTransferRecord {
+  id: string;
+  date: string;
+  amount: number;
+  description: string;
+  sourceAccountName: string;
+  destinationAccountName: string;
 }
 
 const MONTHS = [
@@ -71,6 +102,16 @@ const ExpenseDetailedConceptsTableAdvanced: React.FC = () => {
   const [searchResults, setSearchResults] = useState<ExpenseRecord[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [folioQuery, setFolioQuery] = useState("");
+  const [internalTransfers, setInternalTransfers] = useState<
+    InternalTransferRecord[]
+  >([]);
+  const [loadingTransfers, setLoadingTransfers] = useState(false);
+  const [selectedExpense, setSelectedExpense] = useState<ExpenseRecord | null>(
+    null
+  );
+  const [financialAccountNames, setFinancialAccountNames] = useState<
+    Record<string, string>
+  >({});
 
   const {
     completedExpenses,
@@ -112,6 +153,91 @@ const ExpenseDetailedConceptsTableAdvanced: React.FC = () => {
       resetExpensesState();
     };
   }, [fetchExpenseHistory, resetExpensesState, filters]);
+
+  useEffect(() => {
+    const fetchInternalTransfers = async () => {
+      setLoadingTransfers(true);
+      try {
+        const auth = getAuth();
+        const user = auth.currentUser;
+        if (!user) throw new Error("Usuario no autenticado");
+
+        const tokenResult = await getIdTokenResult(user);
+        const clientId = tokenResult.claims["clientId"] as string;
+        const condominiumId = localStorage.getItem("condominiumId");
+        if (!condominiumId) throw new Error("Condominio no seleccionado");
+
+        const db = getFirestore();
+
+        const accountsRef = collection(
+          db,
+          `clients/${clientId}/condominiums/${condominiumId}/financialAccounts`
+        );
+        const accountsSnap = await getDocs(accountsRef);
+        const accountMap: Record<string, string> = {};
+        accountsSnap.forEach((docSnap) => {
+          accountMap[docSnap.id] = docSnap.data().name || "Cuenta sin nombre";
+        });
+        setFinancialAccountNames(accountMap);
+
+        const activeCashConfigRef = collection(
+          db,
+          `clients/${clientId}/condominiums/${condominiumId}/pettyCashConfig`
+        );
+        const activeCashConfigQuery = query(
+          activeCashConfigRef,
+          where("active", "==", true)
+        );
+        const activeCashConfigSnap = await getDocs(activeCashConfigQuery);
+        const destinationAccountName = activeCashConfigSnap.empty
+          ? "Caja Chica"
+          : activeCashConfigSnap.docs[0].data().accountName || "Caja Chica";
+
+        const txRef = collection(
+          db,
+          `clients/${clientId}/condominiums/${condominiumId}/pettyCashTransactions`
+        );
+        const txQuery = query(txRef, where("type", "==", "replenishment"));
+        const txSnap = await getDocs(txQuery);
+
+        const rows: InternalTransferRecord[] = txSnap.docs
+          .map((docSnap) => {
+            const data = docSnap.data();
+            if (!data.sourceAccountId) return null;
+            const date = data.expenseDate || data.createdAt || "";
+            const year = date ? date.substring(0, 4) : "";
+            const month = date ? date.substring(5, 7) : "";
+
+            if (filters.year && year !== filters.year) return null;
+            if (filters.month && month !== filters.month) return null;
+
+            const amount = Number(data.amount || 0) / 100;
+            return {
+              id: docSnap.id,
+              date,
+              amount,
+              description: data.description || "Reposición de caja chica",
+              sourceAccountName:
+                accountMap[data.sourceAccountId] || "Cuenta origen",
+              destinationAccountName,
+            };
+          })
+          .filter((item): item is InternalTransferRecord => item !== null)
+          .sort(
+            (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+          );
+
+        setInternalTransfers(rows);
+      } catch (error) {
+        console.error("Error al cargar transferencias internas:", error);
+        setInternalTransfers([]);
+      } finally {
+        setLoadingTransfers(false);
+      }
+    };
+
+    fetchInternalTransfers();
+  }, [filters.month, filters.year]);
 
   const handleFilterChange = async (key: keyof FilterState, value: string) => {
     if (loadingExpenses) return;
@@ -300,6 +426,72 @@ const ExpenseDetailedConceptsTableAdvanced: React.FC = () => {
       )}
 
       {/* Tabla principal */}
+      <div className="mt-8 rounded-lg border border-indigo-100 bg-indigo-50/60 p-4 dark:border-indigo-800 dark:bg-indigo-900/20">
+        <div className="mb-3">
+          <h2 className="text-sm font-semibold text-indigo-800 dark:text-indigo-200">
+            Transferencias Internas (Caja Chica)
+          </h2>
+          <p className="text-xs text-indigo-700 dark:text-indigo-300">
+            Estas transacciones son movimientos entre cuentas del condominio y
+            no afectan los egresos globales.
+          </p>
+        </div>
+        {loadingTransfers ? (
+          <div className="py-2">
+            <LoadingApp />
+          </div>
+        ) : internalTransfers.length === 0 ? (
+          <p className="text-sm text-gray-600 dark:text-gray-300">
+            No hay transferencias internas para los filtros seleccionados.
+          </p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-indigo-200 dark:divide-indigo-800">
+              <thead>
+                <tr>
+                  <th className="py-2 pr-3 text-left text-xs font-semibold text-indigo-900 dark:text-indigo-200">
+                    Fecha
+                  </th>
+                  <th className="px-3 py-2 text-left text-xs font-semibold text-indigo-900 dark:text-indigo-200">
+                    Origen
+                  </th>
+                  <th className="px-3 py-2 text-left text-xs font-semibold text-indigo-900 dark:text-indigo-200">
+                    Destino
+                  </th>
+                  <th className="px-3 py-2 text-right text-xs font-semibold text-indigo-900 dark:text-indigo-200">
+                    Monto
+                  </th>
+                  <th className="px-3 py-2 text-left text-xs font-semibold text-indigo-900 dark:text-indigo-200">
+                    Detalle
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-indigo-100 dark:divide-indigo-900">
+                {internalTransfers.map((tx) => (
+                  <tr key={tx.id}>
+                    <td className="py-2 pr-3 text-xs text-gray-800 dark:text-gray-200">
+                      {formatDate(tx.date)}
+                    </td>
+                    <td className="px-3 py-2 text-xs text-gray-800 dark:text-gray-200">
+                      {tx.sourceAccountName}
+                    </td>
+                    <td className="px-3 py-2 text-xs text-gray-800 dark:text-gray-200">
+                      {tx.destinationAccountName}
+                    </td>
+                    <td className="px-3 py-2 text-xs text-right text-gray-800 dark:text-gray-200">
+                      {formatCurrency(tx.amount)}
+                    </td>
+                    <td className="px-3 py-2 text-xs text-gray-700 dark:text-gray-300">
+                      {tx.description}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
       {completedExpenses.length > 0 && (
         <div className="mt-8 flow-root">
           <div className="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
@@ -333,6 +525,7 @@ const ExpenseDetailedConceptsTableAdvanced: React.FC = () => {
                       <tr
                         key={exp.id}
                         className="hover:bg-gray-50 transition-colors dark:hover:bg-gray-700 cursor-pointer"
+                        onClick={() => setSelectedExpense(exp)}
                       >
                         <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm text-gray-900 dark:text-gray-200 sm:pl-6">
                           {exp.folio}
@@ -514,7 +707,8 @@ const ExpenseDetailedConceptsTableAdvanced: React.FC = () => {
                                 {searchResults.map((exp) => (
                                   <tr
                                     key={exp.id}
-                                    className="hover:bg-gray-50 dark:hover:bg-gray-700"
+                                    className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
+                                    onClick={() => setSelectedExpense(exp)}
                                   >
                                     <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm text-gray-900 dark:text-gray-200">
                                       {exp.folio}
@@ -557,6 +751,128 @@ const ExpenseDetailedConceptsTableAdvanced: React.FC = () => {
                       </div>
                     </div>
                   )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {selectedExpense && (
+        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity z-50">
+          <div className="fixed inset-0 z-50 overflow-y-auto">
+            <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+              <div className="relative transform overflow-hidden rounded-lg bg-white dark:bg-gray-800 px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-2xl sm:p-6">
+                <div className="absolute right-0 top-0 pr-4 pt-4">
+                  <button
+                    type="button"
+                    className="rounded-md bg-white dark:bg-gray-800 text-gray-400 hover:text-gray-500 focus:outline-none"
+                    onClick={() => setSelectedExpense(null)}
+                  >
+                    <XMarkIcon className="h-6 w-6" />
+                  </button>
+                </div>
+
+                <h3 className="text-base font-semibold leading-6 text-gray-900 dark:text-white mb-4">
+                  Detalle del egreso
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <p className="text-gray-500 dark:text-gray-400">Folio</p>
+                    <p className="font-medium text-gray-900 dark:text-white">
+                      {selectedExpense.folio || "N/A"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 dark:text-gray-400">Monto</p>
+                    <p className="font-medium text-gray-900 dark:text-white">
+                      {formatCurrency(selectedExpense.amount)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 dark:text-gray-400">Concepto</p>
+                    <p className="font-medium text-gray-900 dark:text-white">
+                      {selectedExpense.concept || "N/A"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 dark:text-gray-400">
+                      Tipo de pago
+                    </p>
+                    <p className="font-medium text-gray-900 dark:text-white">
+                      {formatPaymentType(selectedExpense.paymentType || "")}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 dark:text-gray-400">
+                      Cuenta financiera
+                    </p>
+                    <p className="font-medium text-gray-900 dark:text-white">
+                      {selectedExpense.financialAccountId
+                        ? financialAccountNames[
+                            selectedExpense.financialAccountId
+                          ] ||
+                          selectedExpense.financialAccountId
+                        : "N/A"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 dark:text-gray-400">
+                      Fecha de egreso
+                    </p>
+                    <p className="font-medium text-gray-900 dark:text-white">
+                      {selectedExpense.expenseDate
+                        ? formatDate(selectedExpense.expenseDate)
+                        : "N/A"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 dark:text-gray-400">
+                      Fecha de registro
+                    </p>
+                    <p className="font-medium text-gray-900 dark:text-white">
+                      {selectedExpense.registerDate
+                        ? formatDate(selectedExpense.registerDate)
+                        : "N/A"}
+                    </p>
+                  </div>
+                  <div className="md:col-span-2">
+                    <p className="text-gray-500 dark:text-gray-400">
+                      Descripción
+                    </p>
+                    <p className="font-medium text-gray-900 dark:text-white">
+                      {selectedExpense.description || "Sin descripción"}
+                    </p>
+                  </div>
+                  <div className="md:col-span-2">
+                    <p className="text-gray-500 dark:text-gray-400">
+                      Comprobante
+                    </p>
+                    {selectedExpense.invoiceUrl ? (
+                      <a
+                        href={selectedExpense.invoiceUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center rounded-md bg-indigo-600 text-white px-3 py-1.5 hover:bg-indigo-700"
+                      >
+                        <EyeIcon className="h-4 w-4 mr-1" />
+                        Ver comprobante
+                      </a>
+                    ) : (
+                      <p className="font-medium text-gray-900 dark:text-white">
+                        No disponible
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <div className="mt-6 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedExpense(null)}
+                    className="rounded-md bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+                  >
+                    Cerrar
+                  </button>
                 </div>
               </div>
             </div>

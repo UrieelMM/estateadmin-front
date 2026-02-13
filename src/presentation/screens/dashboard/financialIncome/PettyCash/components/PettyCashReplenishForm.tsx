@@ -55,6 +55,7 @@ const PettyCashReplenishForm: React.FC = () => {
   const [sourceAccountId, setSourceAccountId] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -109,6 +110,23 @@ const PettyCashReplenishForm: React.FC = () => {
         moment(date).format("YYYY-MM-DDTHH:mm:ss"),
         sourceAccountId || undefined
       );
+
+      const sourceAccountName = accounts.find(
+        (account) => account.id === sourceAccountId
+      )?.name;
+      const formattedAmount = amountValue.toLocaleString("es-MX", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
+      if (sourceAccountName) {
+        setSuccessMessage(
+          `Reposición registrada: se sumó $${formattedAmount} a Caja Chica y se descontó $${formattedAmount} de ${sourceAccountName}.`
+        );
+      } else {
+        setSuccessMessage(
+          `Reposición registrada: se sumó $${formattedAmount} a Caja Chica.`
+        );
+      }
 
       // Limpiar formulario
       setAmount("");
@@ -178,7 +196,7 @@ const PettyCashReplenishForm: React.FC = () => {
         {success && (
           <div className="p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg text-green-700 dark:text-green-300 flex items-center">
             <CheckCircleIcon className="h-5 w-5 mr-2" />
-            <p>Reposición registrada correctamente</p>
+            <p>{successMessage || "Reposición registrada correctamente"}</p>
           </div>
         )}
 

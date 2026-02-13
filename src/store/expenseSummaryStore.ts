@@ -46,6 +46,7 @@ export interface ExpenseRecord {
   amount: number; // Monto del egreso en pesos (float)
   concept: string; // Concepto del egreso
   paymentType: string; // Tipo de pago
+  financialAccountId?: string;
   expenseDate: string; // "YYYY-MM-DD HH:mm"
   registerDate: string; // "YYYY-MM-DD HH:mm"
   invoiceUrl?: string; // Comprobante, opcional
@@ -127,6 +128,7 @@ export const useExpenseSummaryStore = create<ExpenseSummaryState>()(
             amount: centsToPesos(data.amount),
             concept: data.concept || "Desconocido",
             paymentType: data.paymentType || "Desconocido",
+            financialAccountId: data.financialAccountId || undefined,
             expenseDate: data.expenseDate || "",
             registerDate: data.registerDate || "",
             invoiceUrl: data.invoiceUrl || undefined,
@@ -439,6 +441,7 @@ export const useExpenseSummaryStore = create<ExpenseSummaryState>()(
               amount: centsToPesos(data.amount),
               concept: data.concept || "Desconocido",
               paymentType: data.paymentType || "Desconocido",
+              financialAccountId: data.financialAccountId || undefined,
               expenseDate: data.expenseDate || "",
               registerDate: data.registerDate || "",
               invoiceUrl: data.invoiceUrl || undefined,
@@ -517,6 +520,7 @@ export const useExpenseSummaryStore = create<ExpenseSummaryState>()(
               amount: centsToPesos(data.amount),
               concept: data.concept || "Desconocido",
               paymentType: data.paymentType || "Desconocido",
+              financialAccountId: data.financialAccountId || undefined,
               expenseDate: data.expenseDate || "",
               registerDate: data.registerDate || "",
               invoiceUrl: data.invoiceUrl || undefined,
@@ -563,6 +567,7 @@ export const useExpenseSummaryStore = create<ExpenseSummaryState>()(
                 amount: centsToPesos(data.amount),
                 concept: data.concept || "Desconocido",
                 paymentType: data.paymentType || "Desconocido",
+                financialAccountId: data.financialAccountId || undefined,
                 expenseDate: data.expenseDate || "",
                 registerDate: data.registerDate || "",
                 invoiceUrl: data.invoiceUrl || undefined,
