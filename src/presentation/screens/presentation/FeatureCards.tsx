@@ -1,6 +1,14 @@
 import { motion } from "framer-motion";
+import { useLocalDarkMode } from "../../../hooks/useLocalDarkMode";
+
+const FEATURE_PREVIEW_LIGHT_URL =
+  "https://res.cloudinary.com/dz5tntwl1/image/upload/v1771019512/ligh_mgf0tg.webp";
+const FEATURE_PREVIEW_DARK_URL =
+  "https://res.cloudinary.com/dz5tntwl1/image/upload/v1771019555/darkmod_xsw29y.webp";
 
 const FeatureCards = () => {
+  const { isDarkMode } = useLocalDarkMode();
+
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -217,7 +225,7 @@ const FeatureCards = () => {
               <div className="absolute -inset-1 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl blur opacity-25 group-hover:opacity-40 transition duration-300"></div>
               <img
                 className="relative w-full rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700"
-                src="https://res.cloudinary.com/dz5tntwl1/image/upload/v1744234537/OmniPixel/Captura_de_pantalla_2025-04-09_a_la_s_3.34.11_p.m._ozb7dh.png"
+                src={isDarkMode ? FEATURE_PREVIEW_DARK_URL : FEATURE_PREVIEW_LIGHT_URL}
                 alt="Panel de administración del sistema de gestión de condominios"
                 loading="lazy"
                 decoding="async"
