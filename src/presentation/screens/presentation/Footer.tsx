@@ -11,6 +11,9 @@ const Footer = () => {
           className="w-auto h-16 mx-auto"
           src={ logo }
           alt="EstateAdmin Logo"
+          loading="lazy"
+          decoding="async"
+          fetchPriority="low"
         />
 
         <ul className="flex flex-col items-center justify-center space-y-4 mt-8 sm:flex-row sm:space-y-0 sm:space-x-8 md:space-x-12 lg:space-x-16 sm:mt-14">

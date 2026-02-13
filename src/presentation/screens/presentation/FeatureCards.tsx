@@ -219,6 +219,9 @@ const FeatureCards = () => {
                 className="relative w-full rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700"
                 src="https://res.cloudinary.com/dz5tntwl1/image/upload/v1744234537/OmniPixel/Captura_de_pantalla_2025-04-09_a_la_s_3.34.11_p.m._ozb7dh.png"
                 alt="Panel de administración del sistema de gestión de condominios"
+                loading="lazy"
+                decoding="async"
+                fetchPriority="low"
               />
             </div>
           </motion.div>

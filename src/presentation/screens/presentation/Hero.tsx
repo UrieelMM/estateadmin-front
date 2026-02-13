@@ -155,7 +155,14 @@ const Hero = () => {
         >
           <div className="flex lg:flex-1">
             <a href="#" className="-m-1.5 p-1.5">
-              <img className="h-8 w-auto" src={logo} alt="EstateAdmin Logo" />
+              <img
+                className="h-8 w-auto"
+                src={logo}
+                alt="EstateAdmin Logo"
+                loading="eager"
+                decoding="async"
+                fetchPriority="high"
+              />
             </a>
           </div>
           <div className="flex lg:hidden">
@@ -223,7 +230,13 @@ const Hero = () => {
           <Dialog.Panel className="fixed inset-y-0 right-0 z-50 w-full overflow-y-auto bg-white dark:bg-gray-900 px-6 py-6 sm:max-w-sm sm:ring-1 sm:ring-gray-900/10 dark:sm:ring-gray-700/50">
             <div className="flex items-center justify-between">
               <a href="#" className="-m-1.5 p-1.5">
-                <img className="h-8 w-auto" src={logo} alt="EstateAdmin Logo" />
+                <img
+                  className="h-8 w-auto"
+                  src={logo}
+                  alt="EstateAdmin Logo"
+                  loading="eager"
+                  decoding="async"
+                />
               </a>
               <button
                 type="button"
@@ -287,46 +300,6 @@ const Hero = () => {
 
       <div className="relative px-6 pt-14 lg:px-8">
         <div className="mx-auto max-w-[1920px] py-24 sm:py-32 lg:pt-56 lg:pb-4">
-          {/* Floating Stats Badges */}
-          <div className="hidden lg:block">
-            <div
-              className="absolute left-10 top-40 animate-bounce"
-              style={{ animationDuration: "3s" }}
-            >
-              <div className="backdrop-blur-lg bg-white/30 dark:bg-gray-800/30 border border-white/20 dark:border-gray-700/20 rounded-2xl p-4 shadow-2xl">
-                <div className="flex items-center gap-2">
-                  <CheckBadgeIcon className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
-                  <div>
-                    <p className="text-xl font-bold text-gray-900 dark:text-gray-100">
-                      Ahorra
-                    </p>
-                    <p className="text-xs text-gray-600 dark:text-gray-400">
-                      Tiempo
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div
-              className="absolute right-10 top-60 animate-bounce"
-              style={{ animationDuration: "4s", animationDelay: "1s" }}
-            >
-              <div className="backdrop-blur-lg bg-white/30 dark:bg-gray-800/30 border border-white/20 dark:border-gray-700/20 rounded-2xl p-4 shadow-2xl">
-                <div className="flex items-center gap-2">
-                  <BoltIcon className="h-6 w-6 text-yellow-500 dark:text-yellow-400" />
-                  <div>
-                    <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                      24/7
-                    </p>
-                    <p className="text-xs text-gray-600 dark:text-gray-400">
-                      Soporte
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
           <div className="hidden sm:mb-8 sm:flex sm:justify-center">
             <div className="relative group">
               <div className="absolute -inset-0.5 bg-gradient-to-r from-pink-600 to-purple-600 rounded-full blur opacity-30 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 animate-pulse"></div>

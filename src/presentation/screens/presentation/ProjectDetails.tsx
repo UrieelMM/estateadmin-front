@@ -132,6 +132,9 @@ const ProjectDetails = () => {
                 className="relative w-full rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700"
                 src="https://res.cloudinary.com/dz5tntwl1/image/upload/v1744309604/OmniPixel/Captura_de_pantalla_2025-04-10_a_la_s_12.26.29_p.m._a4ib43.png"
                 alt="Panel de gestión de proyectos"
+                loading="lazy"
+                decoding="async"
+                fetchPriority="low"
               />
             </div>
           </motion.div>

@@ -97,6 +97,9 @@ const DataControl = () => {
                 }}
                 src="https://res.cloudinary.com/dz5tntwl1/image/upload/v1744327578/OmniPixel/asset10_kf8320.svg"
                 alt="Control de datos"
+                loading="lazy"
+                decoding="async"
+                fetchPriority="low"
               />
               <div className="absolute -bottom-10 -left-16 rounded-lg">
                 <div className="bg-indigo-600 rounded-lg">

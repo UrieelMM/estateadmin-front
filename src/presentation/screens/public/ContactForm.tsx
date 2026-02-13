@@ -396,6 +396,9 @@ const ContactForm = () => {
                   "drop-shadow(0 0 20px rgba(68, 255, 154, 0.1)) drop-shadow(0 0 15px rgba(139, 90, 255, 0.4)) drop-shadow(0 0 15px rgba(139, 68, 255, 0.3)) drop-shadow(0 0 20px rgba(255, 102, 68, 0.1)) drop-shadow(0 0 20px rgba(235, 255, 112, 0.1))",
               }}
               alt="Imagen de contacto"
+              loading="eager"
+              decoding="async"
+              fetchPriority="high"
             />
           </div>
         </motion.div>

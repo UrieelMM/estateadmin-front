@@ -44,6 +44,9 @@ const AreaReservation = () => {
               className="w-full max-w-sm mx-auto"
               src="https://res.cloudinary.com/dz5tntwl1/image/upload/v1744243752/OmniPixel/4_kldikc.svg"
               alt="Reserva de áreas comunes"
+              loading="lazy"
+              decoding="async"
+              fetchPriority="low"
             />
           </motion.div>
 

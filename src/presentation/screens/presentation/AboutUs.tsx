@@ -97,7 +97,14 @@ const AboutUs = () => {
       <header className="bg-white dark:bg-gray-800 shadow-sm transition-colors duration-300">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
           <Link to="/" className="flex items-center">
-            <img className="h-10 w-auto" src={logo} alt="EstateAdmin Logo" />
+            <img
+              className="h-10 w-auto"
+              src={logo}
+              alt="EstateAdmin Logo"
+              loading="eager"
+              decoding="async"
+              fetchPriority="high"
+            />
             <span className="ml-3 text-xl font-bold text-indigo-600 dark:text-indigo-400">
               EstateAdmin
             </span>
@@ -181,6 +188,9 @@ const AboutUs = () => {
                   src="https://res.cloudinary.com/dz5tntwl1/image/upload/v1746316218/OmniPixel/ChatGPT_Image_3_may_2025_05_45_17_p.m._tmnygn.png"
                   alt="Equipo de EstateAdmin trabajando"
                   className="rounded-xl shadow-xl w-full h-auto object-cover"
+                  loading="lazy"
+                  decoding="async"
+                  fetchPriority="low"
                 />
               </motion.div>
               <motion.div
@@ -226,6 +236,9 @@ const AboutUs = () => {
                   src="https://res.cloudinary.com/dz5tntwl1/image/upload/v1746316218/OmniPixel/ChatGPT_Image_3_may_2025_05_47_10_p.m._ri3ank.png"
                   alt="Visión de EstateAdmin"
                   className="rounded-xl shadow-xl w-full h-auto object-cover"
+                  loading="lazy"
+                  decoding="async"
+                  fetchPriority="low"
                 />
               </motion.div>
               <motion.div variants={itemVariants} className="mt-10 lg:mt-0">
@@ -274,6 +287,9 @@ const AboutUs = () => {
                   src="https://res.cloudinary.com/dz5tntwl1/image/upload/v1746316731/OmniPixel/ChatGPT_Image_3_may_2025_05_57_45_p.m._1_feh4zc.png"
                   alt="Objetivos de EstateAdmin"
                   className="rounded-xl shadow-xl w-full h-auto object-cover"
+                  loading="lazy"
+                  decoding="async"
+                  fetchPriority="low"
                 />
               </motion.div>
               <motion.div

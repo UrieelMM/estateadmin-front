@@ -21,7 +21,14 @@ const PrivacyPolicy = () => {
       <header className="bg-white dark:bg-gray-800 shadow-sm transition-colors duration-300">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
           <Link to="/" className="flex items-center">
-            <img className="h-10 w-auto" src={logo} alt="EstateAdmin Logo" />
+            <img
+              className="h-10 w-auto"
+              src={logo}
+              alt="EstateAdmin Logo"
+              loading="eager"
+              decoding="async"
+              fetchPriority="high"
+            />
             <span className="ml-3 text-xl font-bold text-indigo-600 dark:text-indigo-400">
               EstateAdmin
             </span>
