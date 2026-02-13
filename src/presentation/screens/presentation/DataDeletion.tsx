@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { SunIcon, MoonIcon } from "@heroicons/react/24/solid";
 import { useLocalDarkMode } from "../../../hooks/useLocalDarkMode";
 import logo from "../../../assets/logo.png";
+import PublicBreadcrumb from "../../components/public/PublicBreadcrumb";
 
 const DataDeletion = () => {
   const { isDarkMode, toggleDarkMode } = useLocalDarkMode();
@@ -57,6 +58,12 @@ const DataDeletion = () => {
           </div>
         </div>
       </header>
+      <PublicBreadcrumb
+        items={[
+          { label: "Inicio", to: "/" },
+          { label: "Eliminación de Datos" },
+        ]}
+      />
 
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         <div className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden transition-colors duration-300">

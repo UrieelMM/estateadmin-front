@@ -12,38 +12,41 @@ import {
 } from "@heroicons/react/24/outline";
 import logo from "../../../assets/logo.png";
 import Footer from "./Footer";
+import { useLocalDarkMode } from "../../../hooks/useLocalDarkMode";
+import PublicBreadcrumb from "../../components/public/PublicBreadcrumb";
 
 const AIFeatures = () => {
+  const { isDarkMode } = useLocalDarkMode();
   const features = [
     {
       icon: DocumentChartBarIcon,
-      title: "Reportes avanzados con IA",
+      title: "Reportes ejecutivos con IA",
       description:
-        "Genera automáticamente análisis predictivos, tendencias de consumo y recomendaciones personalizadas basadas en los datos históricos de tu condominio.",
+        "Genera reportes financieros ejecutivos en segundos con métricas clave, hallazgos relevantes y recomendaciones accionables para la administración.",
     },
     {
       icon: ArrowPathIcon,
-      title: "Automatización inteligente",
+      title: "Uso controlado y trazable",
       description:
-        "Identifica y automatiza procesos repetitivos como recordatorios, seguimiento de pagos y programación de mantenimientos preventivos.",
+        "Cada generación IA registra tokens de entrada/salida por funcionalidad y por condominio, con límites diarios para mantener control de costos.",
     },
     {
       icon: WrenchScrewdriverIcon,
-      title: "Mantenimiento preventivo inteligente",
+      title: "Asistente IA para publicaciones",
       description:
-        "Predice necesidades de mantenimiento en instalaciones comunes antes de que se produzcan fallos. Programa intervenciones oportunas y optimiza recursos de mantenimiento.",
+        "Convierte una idea general en un borrador claro, profesional y amable usando plantillas listas para avisos, mantenimiento, eventos y recordatorios.",
     },
     {
       icon: ChatBubbleLeftRightIcon,
-      title: "Asistente virtual",
+      title: "Análisis inteligente de comprobantes",
       description:
-        "Responde preguntas frecuentes de residentes, genera informes bajo demanda y proporciona sugerencias contextuales para optimizar la gestión.",
+        "Procesa comprobantes y documentos para acelerar captura de datos operativos con mejor precisión y menos carga administrativa.",
     },
     {
       icon: RocketLaunchIcon,
-      title: "Previsión presupuestaria",
+      title: "App de mantenimiento en evolución",
       description:
-        "Proyecta gastos futuros, optimiza la distribución de recursos y anticipa necesidades financieras con modelos predictivos de IA.",
+        "Estamos construyendo una app de mantenimiento más potente con más automatización, trazabilidad de costos y flujos operativos asistidos por IA.",
     },
   ];
 
@@ -71,7 +74,13 @@ const AIFeatures = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-indigo-50 to-white">
+    <div
+      className={`min-h-screen transition-colors duration-300 ${
+        isDarkMode
+          ? "bg-gradient-to-b from-gray-950 to-gray-900 text-gray-100"
+          : "bg-gradient-to-b from-indigo-50 to-white"
+      }`}
+    >
       <Helmet>
         <title>
           Inteligencia Artificial - EstateAdmin | El futuro de la gestión de
@@ -95,23 +104,29 @@ const AIFeatures = () => {
         />
       </Helmet>
 
-      <header className="bg-white shadow-sm">
+      <header className="bg-white shadow-sm dark:bg-gray-900 dark:border-b dark:border-gray-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
           <Link to="/" className="flex items-center">
             <img className="h-10 w-auto" src={logo} alt="EstateAdmin Logo" />
-            <span className="ml-3 text-xl font-bold text-indigo-600">
+            <span className="ml-3 text-xl font-bold text-indigo-600 dark:text-indigo-400">
               EstateAdmin
             </span>
           </Link>
           <Link
             to="/"
-            className="text-sm font-medium text-indigo-600 hover:text-indigo-800"
+            className="text-sm font-medium text-indigo-600 hover:text-indigo-800 dark:text-indigo-300 dark:hover:text-indigo-200"
           >
             <ArrowLeftIcon className="h-5 w-5 inline mr-1" />
             Volver al inicio
           </Link>
         </div>
       </header>
+      <PublicBreadcrumb
+        items={[
+          { label: "Inicio", to: "/" },
+          { label: "Características de IA" },
+        ]}
+      />
 
       <main>
         {/* Hero Section */}
@@ -137,12 +152,12 @@ const AIFeatures = () => {
                 initial={{ y: 20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ delay: 0.3, duration: 0.5 }}
-                className="text-4xl font-extrabold tracking-tight text-gray-900 sm:text-5xl md:text-6xl"
+                className="text-4xl font-extrabold tracking-tight text-gray-900 dark:text-white sm:text-5xl md:text-6xl"
               >
                 <span className="block text-indigo-600">
                   Inteligencia Artificial
                 </span>
-                <span className="block mt-1">El futuro de EstateAdmin</span>
+                <span className="block mt-1">Implementaciones reales, valor real</span>
               </motion.h1>
             </motion.div>
           </div>
@@ -155,12 +170,12 @@ const AIFeatures = () => {
               <div className="px-6 py-12 sm:px-12 lg:py-16 lg:pr-0 xl:py-20 xl:px-20">
                 <div className="lg:self-center">
                   <h2 className="text-3xl font-extrabold text-white sm:text-4xl">
-                    <span className="block">Próximamente</span>
+                    <span className="block">Novedades IA ya disponibles</span>
                   </h2>
                   <p className="mt-4 text-lg leading-6 text-indigo-100">
-                    Nos encontramos en fase de desarrollo de nuestras
-                    funcionalidades de IA. Serás de los primeros en experimentar
-                    esta nueva forma de administrar condominios.
+                    Ya liberamos reportes IA, control de tokens por funcionalidad
+                    y asistente de redacción para publicaciones. Además,
+                    seguimos desarrollando una app de mantenimiento más potente.
                   </p>
                   <div className="mt-8">
                     <div className="inline-flex rounded-md shadow">
@@ -185,13 +200,12 @@ const AIFeatures = () => {
               <h2 className="text-base font-semibold tracking-wide text-indigo-600 uppercase">
                 Funcionalidades
               </h2>
-              <p className="mt-1 text-3xl font-extrabold text-gray-900 sm:text-4xl sm:tracking-tight">
-                Lo que la IA hará por ti
+              <p className="mt-1 text-3xl font-extrabold text-gray-900 dark:text-white sm:text-4xl sm:tracking-tight">
+                Lo que la IA ya está haciendo por ti
               </p>
-              <p className="max-w-xl mt-5 mx-auto text-xl text-gray-500">
-                Descubre todas las formas en que nuestra integración con
-                inteligencia artificial transformará la gestión de tu
-                condominio.
+              <p className="max-w-xl mt-5 mx-auto text-xl text-gray-500 dark:text-gray-300">
+                Funcionalidades lanzadas y mejoras en desarrollo continuo para
+                una administración más rápida, profesional y trazable.
               </p>
             </div>
 
@@ -206,16 +220,16 @@ const AIFeatures = () => {
                 <motion.div
                   key={index}
                   variants={itemVariants}
-                  className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300"
+                  className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300 dark:bg-gray-800 dark:border dark:border-gray-700"
                 >
                   <div className="p-8">
                     <div className="flex items-center justify-center h-12 w-12 rounded-md bg-indigo-500 text-white">
                       <feature.icon className="h-6 w-6" aria-hidden="true" />
                     </div>
-                    <h3 className="mt-6 text-lg font-medium text-gray-900">
+                    <h3 className="mt-6 text-lg font-medium text-gray-900 dark:text-white">
                       {feature.title}
                     </h3>
-                    <p className="mt-2 text-base text-gray-500">
+                    <p className="mt-2 text-base text-gray-500 dark:text-gray-300">
                       {feature.description}
                     </p>
                   </div>
@@ -226,26 +240,26 @@ const AIFeatures = () => {
         </section>
 
         {/* Tech Visualization */}
-        <section className="py-16 bg-gradient-to-b from-white to-indigo-50">
+        <section className="py-16 bg-gradient-to-b from-white to-indigo-50 dark:from-gray-900 dark:to-gray-950">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="lg:grid lg:grid-cols-1 lg:gap-8 items-center">
               <div>
-                <h2 className="text-3xl font-extrabold text-gray-900 sm:text-4xl text-center">
+                <h2 className="text-3xl font-extrabold text-gray-900 dark:text-white sm:text-4xl text-center">
                   Tecnología de vanguardia
                 </h2>
-                <p className="mt-4 text-lg text-gray-500 text-center">
-                  Estamos trabajando en integrar capacidades avanzadas de
-                  Inteligencia Artificial para revolucionar la forma en que
-                  gestionas tu condominio.
+                <p className="mt-4 text-lg text-gray-500 dark:text-gray-300 text-center">
+                  Nuestra hoja de ruta combina IA aplicada con operación real:
+                  mejores decisiones financieras, comunicaciones claras y una
+                  nueva experiencia de mantenimiento de alto impacto.
                 </p>
                 <div className="mt-6">
                   <ul className="space-y-3">
                     {[
-                      "Modelos predictivos para anticipar necesidades",
-                      "Interfaces conversacionales intuitivas",
-                      "Algoritmos de optimización financiera",
-                      "Procesamiento de documentos e imágenes",
-                      "Sistemas de recomendación personalizados",
+                      "Reportes financieros IA con insights accionables",
+                      "Control de cuotas y tokens por funcionalidad",
+                      "Asistente IA para redacción de publicaciones",
+                      "Procesamiento inteligente de comprobantes",
+                      "Nueva app de mantenimiento en desarrollo avanzado",
                     ].map((item, i) => (
                       <li key={i} className="flex">
                         <span className="flex-shrink-0 flex items-center justify-center h-6 w-6 rounded-full bg-indigo-100 text-indigo-800">
@@ -261,7 +275,7 @@ const AIFeatures = () => {
                             />
                           </svg>
                         </span>
-                        <span className="ml-3 text-base text-gray-500">
+                        <span className="ml-3 text-base text-gray-500 dark:text-gray-300">
                           {item}
                         </span>
                       </li>

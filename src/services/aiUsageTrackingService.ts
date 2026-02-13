@@ -16,6 +16,7 @@ export type AIUsageFeature = "income_report" | string;
 const WINDOW_MS = 24 * 60 * 60 * 1000;
 const FEATURE_LIMITS: Record<string, number> = {
   income_report: 5,
+  publication_draft: 5,
 };
 
 type ConsumeQuotaInput = {
@@ -246,4 +247,3 @@ export function buildQuotaExceededMessage(resetAtIso: string, limit: number): st
   const resetLabel = buildFriendlyResetLabel(resetAtIso);
   return `Alcanzaste el límite temporal de ${limit} reportes en 24 horas para este condominio. Podrás generar uno nuevo después de ${resetLabel}.`;
 }
-

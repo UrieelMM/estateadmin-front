@@ -9,7 +9,7 @@ const Footer = () => {
       <div className="px-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
         <img
           className="w-auto h-16 mx-auto"
-          src={logo}
+          src={ logo }
           alt="EstateAdmin Logo"
         />
 
@@ -138,10 +138,10 @@ const Footer = () => {
             </h3>
             <p className="mt-2 text-gray-600 dark:text-gray-400">
               <a
-                href="mailto:contacto@estateadmin.com"
+                href="mailto:info@estate-admin.com"
                 className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300"
               >
-                administracion@estate-admin.com
+                info@estate-admin.com
               </a>
             </p>
           </div>

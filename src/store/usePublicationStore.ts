@@ -74,6 +74,10 @@ export const usePublicationStore = create<PublicationsState>()((set, get) => ({
           },
         }
       );
+
+      // Refrescar listado principal para reflejar la nueva publicación
+      // sin esperar a un cambio de ruta.
+      await get().loadPublications(false);
     } catch (error) {
       throw new Error("Error al enviar la publicación");
     }

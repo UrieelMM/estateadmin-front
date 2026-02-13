@@ -1,24 +1,11 @@
-# Robots.txt file for EstateAdmin
-# https://estate-admin.com/
-
 User-agent: *
 Allow: /
 
-# Priorizar el rastreo de guías
-Allow: /guias/
-Allow: /guias/*
-
-# Disallow admin sections
+# Zonas privadas/no indexables
 Disallow: /dashboard/
 Disallow: /super-admin/
+Disallow: /login
+Disallow: /reset-password
 
-# Controlar la tasa de rastreo
-Crawl-delay: 2
-
-# Mejorar rendimiento SEO para Googlebot
-User-agent: Googlebot
-Allow: /
-Crawl-delay: 1
-
-# Sitemap
-Sitemap: https://estate-admin.com/sitemap.xml 
+# Sitemap principal
+Sitemap: https://estate-admin.com/sitemap.xml

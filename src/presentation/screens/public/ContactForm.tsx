@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { ArrowLeftIcon, SunIcon, MoonIcon } from "@heroicons/react/24/solid";
 import { Helmet } from "react-helmet-async";
 import { useLocalDarkMode } from "../../../hooks/useLocalDarkMode";
+import PublicBreadcrumb from "../../components/public/PublicBreadcrumb";
 
 const ContactForm = () => {
   const navigate = useNavigate();
@@ -179,6 +180,13 @@ const ContactForm = () => {
         <meta name="language" content="es" />
         <link rel="canonical" href="https://estate-admin.com/contacto" />
       </Helmet>
+
+      <PublicBreadcrumb
+        items={[
+          { label: "Inicio", to: "/" },
+          { label: "Contacto" },
+        ]}
+      />
 
       <div className="flex flex-col lg:flex-row h-screen">
         <motion.div

@@ -5,6 +5,7 @@ import { ArrowLeftIcon, SunIcon, MoonIcon } from "@heroicons/react/24/solid";
 import { useLocalDarkMode } from "../../../hooks/useLocalDarkMode";
 import logo from "../../../assets/logo.png";
 import Footer from "./Footer";
+import PublicBreadcrumb from "../../components/public/PublicBreadcrumb";
 
 const AboutUs = () => {
   const { isDarkMode, toggleDarkMode } = useLocalDarkMode();
@@ -134,6 +135,12 @@ const AboutUs = () => {
           </div>
         </div>
       </header>
+      <PublicBreadcrumb
+        items={[
+          { label: "Inicio", to: "/" },
+          { label: "Sobre Nosotros" },
+        ]}
+      />
 
       <main>
         {/* Hero Section */}
