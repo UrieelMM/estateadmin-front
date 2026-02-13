@@ -4,8 +4,16 @@ import {
   CurrencyDollarIcon,
   ClipboardDocumentCheckIcon,
 } from "@heroicons/react/24/solid";
+import { useLocalDarkMode } from "../../../hooks/useLocalDarkMode";
+
+const PROJECT_PREVIEW_LIGHT_URL =
+  "https://res.cloudinary.com/dz5tntwl1/image/upload/v1771019953/projectsLight_boh3d1.webp";
+const PROJECT_PREVIEW_DARK_URL =
+  "https://res.cloudinary.com/dz5tntwl1/image/upload/v1771019953/projectsDarkmode_dxravl.webp";
 
 const ProjectDetails = () => {
+  const { isDarkMode } = useLocalDarkMode();
+
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -130,7 +138,7 @@ const ProjectDetails = () => {
               <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-2xl blur opacity-25 group-hover:opacity-40 transition duration-300"></div>
               <img
                 className="relative w-full rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700"
-                src="https://res.cloudinary.com/dz5tntwl1/image/upload/v1744309604/OmniPixel/Captura_de_pantalla_2025-04-10_a_la_s_12.26.29_p.m._a4ib43.png"
+                src={isDarkMode ? PROJECT_PREVIEW_DARK_URL : PROJECT_PREVIEW_LIGHT_URL}
                 alt="Panel de gestión de proyectos"
                 loading="lazy"
                 decoding="async"
