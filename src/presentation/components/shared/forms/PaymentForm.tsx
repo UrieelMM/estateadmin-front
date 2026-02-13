@@ -175,6 +175,20 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
     });
   }, [availableUsers, recipientSearch]);
 
+  const selectableFinancialAccounts = useMemo(() => {
+    const normalize = (value: string) =>
+      value
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, "")
+        .trim();
+    return financialAccounts.filter((acc) => {
+      const accountName = normalize(acc.name || "");
+      return accountName !== "cajachica";
+    });
+  }, [financialAccounts]);
+
   const handleRecipientSelection = async (uid: string) => {
     const user = users.find((u) => u.uid === uid);
     if (user) {
@@ -768,7 +782,7 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                                   <option value="">
                                     Selecciona una cuenta
                                   </option>
-                                  {financialAccounts.map((acc) => (
+                                  {selectableFinancialAccounts.map((acc) => (
                                     <option key={acc.id} value={acc.id}>
                                       {acc.name}
                                     </option>

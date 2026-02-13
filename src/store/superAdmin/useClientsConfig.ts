@@ -1,5 +1,11 @@
 import { create } from "../createStore";
-import { getFirestore, collection, getDocs } from "firebase/firestore";
+import {
+  getFirestore,
+  collection,
+  getDocs,
+  doc,
+  updateDoc,
+} from "firebase/firestore";
 import { executeSuperAdminOperation } from "../../services/superAdminService";
 import toast from "react-hot-toast";
 import { CondominiumStatus } from "../../presentation/components/superAdmin/NewClientForm";
@@ -429,30 +435,53 @@ const useClientsConfig = create<ClientsConfigStore>()((set, get) => ({
     set({ updatingCondominium: true });
 
     try {
-      // Usar la Cloud Function para actualizar condominio
-      const result = await executeSuperAdminOperation(
-        "update_condominium",
-        currentCondominium.id,
-        {
-          clientId: currentClient.id,
-          name: currentCondominium.name,
-          address: currentCondominium.address,
-          plan: currentCondominium.plan,
-          proFunctions: currentCondominium.proFunctions,
-          status: currentCondominium.status,
-          condominiumLimit: currentCondominium.condominiumLimit,
-        }
-      );
+      const payload = {
+        clientId: currentClient.id,
+        name: currentCondominium.name,
+        address: currentCondominium.address,
+        plan: currentCondominium.plan,
+        proFunctions: currentCondominium.proFunctions || [],
+        status: currentCondominium.status,
+        condominiumLimit: Number(currentCondominium.condominiumLimit || 1),
+      };
 
-      if (result && result.success) {
-        toast.success("Condominio actualizado con éxito");
-        set({ updatingCondominium: false, currentCondominium: null });
-        return true;
-      } else {
-        toast.error(result?.message || "No se pudo actualizar el condominio");
-        set({ updatingCondominium: false });
-        return false;
+      // Intento primario: Cloud Function de super admin
+      try {
+        const result = await executeSuperAdminOperation(
+          "update_condominium",
+          currentCondominium.id,
+          payload
+        );
+
+        if (result && result.success) {
+          toast.success("Condominio actualizado con éxito");
+          set({ updatingCondominium: false, currentCondominium: null });
+          return true;
+        }
+      } catch (operationError: any) {
+        const message = String(operationError?.message || "");
+        if (!message.includes("Operación no soportada: update_condominium")) {
+          throw operationError;
+        }
       }
+
+      // Fallback: actualización directa si backend aún no soporta update_condominium
+      const condominiumRef = doc(
+        db,
+        `clients/${currentClient.id}/condominiums/${currentCondominium.id}`
+      );
+      await updateDoc(condominiumRef, {
+        name: payload.name,
+        address: payload.address,
+        plan: payload.plan || "Basic",
+        proFunctions: payload.proFunctions,
+        status: payload.status || CondominiumStatus.Pending,
+        condominiumLimit: payload.condominiumLimit,
+      });
+
+      toast.success("Condominio actualizado con éxito");
+      set({ updatingCondominium: false, currentCondominium: null });
+      return true;
     } catch (error: any) {
       console.error("Error al actualizar condominio:", error);
       toast.error(`Error al actualizar el condominio: ${error.message || ""}`);

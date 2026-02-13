@@ -170,6 +170,13 @@ service cloud.firestore {
           allow delete: if isSuperAdmin()
                           || (belongsToClient(clientId) && isAdmin());
         }
+
+        // ─── Usuarios del condominio (incluye referencia de avatar/photoURL) ───
+        match /users/{userId} {
+          allow read: if belongsToClientOrSuperAdmin(clientId);
+          allow create, update: if (isAdminOrAssistant() && belongsToClient(clientId)) || isSuperAdmin();
+          allow delete: if (isAdmin() && belongsToClient(clientId)) || isSuperAdmin();
+        }
         
         // ─── Subcolecciones genéricas de segundo nivel ───
         match /{collection}/{docId} {

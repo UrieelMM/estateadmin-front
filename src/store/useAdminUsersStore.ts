@@ -20,6 +20,7 @@ interface AdminUser {
   role: "admin" | "admin-assistant";
   condominiumUids: string[];
   photoURL?: string;
+  photoUrl?: string;
   createdDate: any;
   uid: string;
   active: boolean;
@@ -112,7 +113,7 @@ export const useAdminUsersStore = create<AdminUsersState>()((set, get) => ({
           email: data.email,
           role: data.role,
           condominiumUids: data.condominiumUids || [],
-          photoURL: data.photoURL,
+          photoURL: data.photoURL || data.photoUrl,
           createdDate: data.createdDate,
           uid: data.uid,
           active: data.active,
@@ -241,6 +242,7 @@ export const useAdminUsersStore = create<AdminUsersState>()((set, get) => ({
           name: userData.name,
           lastName: userData.lastName,
           condominiumUids: userData.condominiumUids,
+          photoURL: userData.photoURL || null,
           role: userData.role,
           active: userData.active,
         }

@@ -9,6 +9,13 @@ interface CondominiumEditModalProps {
   onSuccess: () => void;
 }
 
+const PLAN_LIMITS = {
+  Basic: { min: 1, max: 50 },
+  Essential: { min: 51, max: 100 },
+  Professional: { min: 101, max: 250 },
+  Premium: { min: 251, max: 500 },
+};
+
 const CondominiumEditModal: React.FC<CondominiumEditModalProps> = ({
   isOpen,
   onClose,
@@ -59,6 +66,11 @@ const CondominiumEditModal: React.FC<CondominiumEditModalProps> = ({
     [CondominiumStatus.Inactive]: "Inactivo",
     [CondominiumStatus.Blocked]: "Bloqueado",
   };
+
+  const selectedPlanKey = (currentCondominium.plan ||
+    "Basic") as keyof typeof PLAN_LIMITS;
+  const selectedPlanLimits =
+    PLAN_LIMITS[selectedPlanKey] || PLAN_LIMITS.Basic;
 
   const handleInputChange = (
     e: React.ChangeEvent<
@@ -199,6 +211,10 @@ const CondominiumEditModal: React.FC<CondominiumEditModalProps> = ({
               <option value="Professional">Professional</option>
               <option value="Premium">Premium</option>
             </select>
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              Límite del plan {selectedPlanKey}: {selectedPlanLimits.min} a{" "}
+              {selectedPlanLimits.max} condominios.
+            </p>
           </div>
 
           <div>
@@ -214,8 +230,14 @@ const CondominiumEditModal: React.FC<CondominiumEditModalProps> = ({
               id="condominiumLimit"
               value={currentCondominium.condominiumLimit || 1}
               onChange={handleInputChange}
+              min={selectedPlanLimits.min}
+              max={selectedPlanLimits.max}
               className="px-2 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
             />
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              Rango permitido para este plan: {selectedPlanLimits.min} -{" "}
+              {selectedPlanLimits.max}
+            </p>
           </div>
 
           <div>

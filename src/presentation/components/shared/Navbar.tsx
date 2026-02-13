@@ -24,6 +24,8 @@ const Navbar = () => {
   const { isDarkMode, toggleDarkMode } = useTheme();
   const navigate = useNavigate();
   const { logoutUser } = useAuthStore();
+  const userPhoto =
+    userData?.photoURL || (userData as UserData & { photoUrl?: string })?.photoUrl;
 
   useEffect(() => {
     setCurrentDate(getCurrentDateWithGreeting(isDarkMode));
@@ -95,10 +97,10 @@ const Navbar = () => {
               <Menu as="div" className="relative">
                 <Menu.Button className="relative flex rounded-full bg-gray-800 text-sm focus:outline-none">
                   <span className="absolute -inset-1.5" />
-                  {userData?.photoURL ? (
+                  {userPhoto ? (
                     <img
                       className="h-10 w-10 sm:h-12 sm:w-12 rounded-full"
-                      src={userData?.photoURL as string}
+                      src={userPhoto}
                       alt=""
                     />
                   ) : (

@@ -254,6 +254,19 @@ service firebase.storage {
       );
     }
 
+    /* ─── Administradores (fotos de perfil) ─── */
+    match /clients/{clientId}/condominiums/{condominiumId}/admin/{fileName} {
+      allow read: if belongsToClient(clientId) || isSuperAdmin();
+      allow create, update: if (
+        ((isAdminOrAssistant()) && belongsToClient(clientId) && isValidFileSize() && request.resource.contentType.matches('image/.*'))
+        || isSuperAdmin()
+      );
+      allow delete: if (
+        (isAdmin() && belongsToClient(clientId))
+        || isSuperAdmin()
+      );
+    }
+
     /* ─── Archivos de cargos ─── */
     match /clients/{clientId}/condominiums/{condominiumId}/users/{userId}/charges/{chargeId}/{fileName} {
       allow read:    if belongsToClient(clientId) || isSuperAdmin();

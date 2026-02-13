@@ -24,6 +24,8 @@ import {
   UserCircleIcon,
   SunIcon,
   MoonIcon,
+  ArrowDownTrayIcon,
+  TableCellsIcon,
 } from "@heroicons/react/24/solid";
 import { motion, AnimatePresence } from "framer-motion";
 import logo from "../../../../assets/logo.png";
@@ -42,6 +44,9 @@ import {
 import { getAuth, getIdTokenResult } from "firebase/auth";
 
 const InitialSetupSteps = () => {
+  const TOTAL_STEPS = 6;
+  const USERS_IMPORT_TEMPLATE_URL =
+    "https://res.cloudinary.com/dz5tntwl1/raw/upload/v1710883105/template-registro-de-usuarios_yw3tih.xlsx";
   const [currentStep, setCurrentStep] = useState(1);
   const { isDarkMode, toggleDarkMode } = useTheme();
   const { fetchCondominiums } = useCondominiumStore();
@@ -331,6 +336,11 @@ const InitialSetupSteps = () => {
             <SunIcon className="h-8 w-8 text-indigo-400" />
           ),
         };
+      case 6:
+        return {
+          title: "Plantilla de importación",
+          icon: <TableCellsIcon className="h-8 w-8 text-indigo-400" />,
+        };
       default:
         return { title: "", icon: null };
     }
@@ -352,6 +362,7 @@ const InitialSetupSteps = () => {
     { label: "Imágenes" },
     { label: "Cuenta Financiera" },
     { label: "Tema" },
+    { label: "Plantilla" },
   ];
 
   // Renderizado de los pasos en formato vertical (desktop)
@@ -703,6 +714,40 @@ const InitialSetupSteps = () => {
             </div>
           </div>
         );
+      case 6:
+        return (
+          <div className="space-y-5 text-start">
+            <div className="rounded-xl border border-indigo-200 bg-indigo-50/70 p-4 dark:border-indigo-800 dark:bg-indigo-900/20">
+              <p className="text-sm text-gray-700 dark:text-gray-200">
+                Antes de finalizar, descarga la plantilla oficial para importar
+                condóminos en el módulo de registro masivo.
+              </p>
+            </div>
+            <div className="rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-800">
+              <div className="flex items-start gap-3">
+                <TableCellsIcon className="mt-0.5 h-6 w-6 text-indigo-500" />
+                <div className="space-y-2">
+                  <p className="font-semibold text-gray-900 dark:text-gray-100">
+                    Plantilla Excel de condóminos
+                  </p>
+                  <p className="text-sm text-gray-600 dark:text-gray-300">
+                    Usa este archivo para cargar usuarios de forma masiva en
+                    <strong> Registro de Condóminos</strong>.
+                  </p>
+                  <a
+                    href={USERS_IMPORT_TEMPLATE_URL}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-indigo-700"
+                  >
+                    <ArrowDownTrayIcon className="h-4 w-4" />
+                    Descargar plantilla
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
       default:
         return null;
     }
@@ -761,7 +806,7 @@ const InitialSetupSteps = () => {
             ) : (
               <div />
             )}
-            {currentStep < 5 ? (
+            {currentStep < TOTAL_STEPS ? (
               <button
                 onClick={nextStep}
                 className="flex items-center bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-700 dark:hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded transition-colors"

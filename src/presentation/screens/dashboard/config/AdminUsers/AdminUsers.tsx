@@ -20,6 +20,8 @@ import {
   doc,
   setDoc,
 } from "firebase/firestore";
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
+import { useFileCompression } from "../../../../../hooks/useFileCompression";
 
 // Agregamos las interfaces necesarias
 interface Condominium {
@@ -43,6 +45,11 @@ const EditUserModal = ({
   condominiums,
 }: EditUserModalProps) => {
   const { updateUser, fetchUsers } = useAdminUsersStore();
+  const { compressFile, isCompressing } = useFileCompression({
+    maxSizeMB: 1,
+    maxWidthOrHeight: 1200,
+    useWebWorker: true,
+  });
   const [formData, setFormData] = useState({
     name: user?.name || "",
     lastName: user?.lastName || "",
@@ -53,6 +60,9 @@ const EditUserModal = ({
     photoURL: user?.photoURL || "",
   });
   const [processingChange, setProcessingChange] = useState(false);
+  const [showRoleHelp, setShowRoleHelp] = useState(false);
+  const [profilePhotoFile, setProfilePhotoFile] = useState<File | null>(null);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -76,13 +86,47 @@ const EditUserModal = ({
     const db = getFirestore();
 
     try {
+      let uploadedPhotoURL = formData.photoURL || "";
+      if (profilePhotoFile) {
+        const targetCondominiumId =
+          formData.condominiumUids[0] || user?.condominiumUids?.[0];
+        const targetCondominium = condominiums.find(
+          (condo) => condo.id === targetCondominiumId
+        );
+
+        if (!targetCondominium?.clientId || !targetCondominiumId) {
+          throw new Error("No se pudo resolver el condominio para la foto.");
+        }
+
+        setIsUploadingPhoto(true);
+        const compressed = await compressFile(profilePhotoFile);
+        const storage = getStorage();
+        const fileExtension =
+          compressed.name.split(".").pop()?.toLowerCase() || "jpg";
+        const fileName = `admin_${Date.now()}_${Math.random()
+          .toString(36)
+          .slice(2, 8)}.${fileExtension}`;
+        const path = `clients/${targetCondominium.clientId}/condominiums/${targetCondominiumId}/admin/${fileName}`;
+        const fileRef = storageRef(storage, path);
+
+        await uploadBytes(fileRef, compressed, {
+          contentType: compressed.type || "image/jpeg",
+        });
+        uploadedPhotoURL = await getDownloadURL(fileRef);
+      }
+
+      const payload = {
+        ...formData,
+        photoURL: uploadedPhotoURL,
+      };
+
       // Antes de procesar los nuevos condominios, primero actualizar los existentes si han cambiado
       const originalCondominiums = user.condominiumUids || [];
-      const newCondominiums = formData.condominiumUids.filter(
+      const newCondominiums = payload.condominiumUids.filter(
         (condoId: string) => !originalCondominiums.includes(condoId)
       );
       const removedCondominiums = originalCondominiums.filter(
-        (condoId: string) => !formData.condominiumUids.includes(condoId)
+        (condoId: string) => !payload.condominiumUids.includes(condoId)
       );
 
       // Variables para llevar un conteo de las operaciones
@@ -121,6 +165,7 @@ const EditUserModal = ({
             userDocRef,
             {
               condominiumUids: formData.condominiumUids,
+              photoURL: payload.photoURL || null,
               updatedDate: new Date(),
             },
             { merge: true } // Usar merge para no sobrescribir otros campos
@@ -165,13 +210,13 @@ const EditUserModal = ({
                 email: formData.email,
                 role: formData.role,
                 active: formData.active,
-                photoURL: formData.photoURL,
+                photoURL: payload.photoURL,
                 darkMode: user.darkMode || false,
                 fcmToken: user.fcmToken || "",
                 uid: user.uid, // Mantenemos el mismo uid para consistencia
                 createdDate: new Date(),
                 updatedDate: new Date(),
-                condominiumUids: formData.condominiumUids, // Usar todos los condominios seleccionados
+                condominiumUids: payload.condominiumUids, // Usar todos los condominios seleccionados
               };
 
               // Crear un nuevo documento para el usuario en el condominio
@@ -190,7 +235,7 @@ const EditUserModal = ({
       }
 
       // Actualizar el usuario en la base de datos principal
-      await updateUser(user.id, formData);
+      await updateUser(user.id, payload);
       await fetchUsers(user.condominiumUids[0]);
 
       // Mostrar un solo mensaje resumiendo todas las operaciones
@@ -252,6 +297,7 @@ const EditUserModal = ({
     } catch (error) {
       toast.error("Error al actualizar el usuario");
     } finally {
+      setIsUploadingPhoto(false);
       setProcessingChange(false);
     }
   };
@@ -342,6 +388,53 @@ const EditUserModal = ({
                       <option value="admin">Administrador</option>
                       <option value="admin-assistant">Asistente</option>
                     </select>
+                    <div className="mt-2 relative">
+                      <button
+                        type="button"
+                        onClick={() => setShowRoleHelp((prev) => !prev)}
+                        className="text-xs text-indigo-600 dark:text-indigo-300 underline underline-offset-2"
+                      >
+                        ¿Qué hay de diferencia?
+                      </button>
+                      {showRoleHelp && (
+                        <div className="absolute z-20 mt-2 w-full rounded-md border border-indigo-100 bg-white p-3 text-xs text-gray-700 shadow-lg dark:border-indigo-800 dark:bg-gray-800 dark:text-gray-200">
+                          <p className="font-semibold mb-1">
+                            Según reglas actuales:
+                          </p>
+                          <p>
+                            `Administrador`: puede crear, editar y eliminar
+                            registros del condominio.
+                          </p>
+                          <p className="mt-1">
+                            `Asistente`: puede crear y editar, pero no eliminar
+                            contenido sensible.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Foto de Perfil
+                    </label>
+                    <div className="mt-1 relative rounded-md shadow-sm">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <PhotoIcon className="h-5 w-5 text-gray-400" />
+                      </div>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) =>
+                          setProfilePhotoFile(e.target.files?.[0] || null)
+                        }
+                        className="px-10 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm ring-gray-300 file:mr-3 file:rounded-md file:border-0 file:bg-indigo-50 file:px-3 file:py-1 file:text-xs file:font-medium file:text-indigo-700 hover:file:bg-indigo-100 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:file:bg-indigo-900/40 dark:file:text-indigo-200"
+                      />
+                    </div>
+                    {!!profilePhotoFile && (
+                      <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        Archivo seleccionado: {profilePhotoFile.name}
+                      </p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -405,9 +498,11 @@ const EditUserModal = ({
                     <button
                       type="submit"
                       className="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 disabled:opacity-50"
-                      disabled={processingChange}
+                      disabled={processingChange || isUploadingPhoto || isCompressing}
                     >
-                      {processingChange ? "Procesando..." : "Guardar Cambios"}
+                      {processingChange || isUploadingPhoto || isCompressing
+                        ? "Procesando..."
+                        : "Guardar Cambios"}
                     </button>
                   </div>
                 </form>
@@ -531,6 +626,14 @@ const AdminUsers = () => {
   });
   const [generatedPassword, setGeneratedPassword] = useState<string>("");
   const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [showRoleHelp, setShowRoleHelp] = useState(false);
+  const [profilePhotoFile, setProfilePhotoFile] = useState<File | null>(null);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const { compressFile, isCompressing } = useFileCompression({
+    maxSizeMB: 1,
+    maxWidthOrHeight: 1200,
+    useWebWorker: true,
+  });
 
   useEffect(() => {
     const loadCondominiums = async () => {
@@ -556,8 +659,44 @@ const AdminUsers = () => {
     e.preventDefault();
     if (!selectedCondominium) return;
 
+    let uploadedPhotoURL = "";
+    if (profilePhotoFile) {
+      const selectedCondo = condominiums.find(
+        (condo) => condo.id === selectedCondominium
+      );
+      if (!selectedCondo?.clientId) {
+        toast.error("No se pudo resolver el cliente del condominio.");
+        return;
+      }
+
+      setIsUploadingPhoto(true);
+      try {
+        const compressed = await compressFile(profilePhotoFile);
+        const storage = getStorage();
+        const fileExtension =
+          compressed.name.split(".").pop()?.toLowerCase() || "jpg";
+        const fileName = `admin_${Date.now()}_${Math.random()
+          .toString(36)
+          .slice(2, 8)}.${fileExtension}`;
+        const path = `clients/${selectedCondo.clientId}/condominiums/${selectedCondominium}/admin/${fileName}`;
+        const fileRef = storageRef(storage, path);
+
+        await uploadBytes(fileRef, compressed, {
+          contentType: compressed.type || "image/jpeg",
+        });
+        uploadedPhotoURL = await getDownloadURL(fileRef);
+      } catch (error) {
+        console.error("Error al subir foto de perfil:", error);
+        toast.error("No se pudo subir la foto de perfil.");
+        return;
+      } finally {
+        setIsUploadingPhoto(false);
+      }
+    }
+
     const userData = {
       ...formData,
+      photoURL: uploadedPhotoURL || formData.photoURL || "",
       condominiumUids: [selectedCondominium],
       uid: Date.now().toString(),
     };
@@ -579,6 +718,7 @@ const AdminUsers = () => {
       uid: "",
       active: true,
     });
+    setProfilePhotoFile(null);
   };
 
   const handleToggleActive = async (userId: string, active: boolean) => {
@@ -708,25 +848,52 @@ const AdminUsers = () => {
                   <option value="admin-assistant">Asistente</option>
                 </select>
               </div>
+              <div className="mt-2 relative">
+                <button
+                  type="button"
+                  onClick={() => setShowRoleHelp((prev) => !prev)}
+                  className="text-xs text-indigo-600 dark:text-indigo-300 underline underline-offset-2"
+                >
+                  ¿Qué hay de diferencia?
+                </button>
+                {showRoleHelp && (
+                  <div className="absolute z-20 mt-2 w-full rounded-md border border-indigo-100 bg-white p-3 text-xs text-gray-700 shadow-lg dark:border-indigo-800 dark:bg-gray-800 dark:text-gray-200">
+                    <p className="font-semibold mb-1">Según reglas actuales:</p>
+                    <p>
+                      `Administrador`: puede crear, editar y eliminar registros
+                      del condominio.
+                    </p>
+                    <p className="mt-1">
+                      `Asistente`: puede crear y editar, pero no eliminar
+                      contenido sensible (por ejemplo usuarios, tickets,
+                      gastos, pagos y otros registros).
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Foto de Perfil (URL)
+                Foto de Perfil
               </label>
               <div className="mt-1 relative rounded-md shadow-sm">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <PhotoIcon className="h-5 w-5 text-gray-400" />
                 </div>
                 <input
-                  type="url"
-                  value={formData.photoURL}
+                  type="file"
+                  accept="image/*"
                   onChange={(e) =>
-                    setFormData({ ...formData, photoURL: e.target.value })
+                    setProfilePhotoFile(e.target.files?.[0] || null)
                   }
-                  className="px-10 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm  ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
-                  placeholder="https://ejemplo.com/foto.jpg"
+                  className="px-10 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm ring-gray-300 file:mr-3 file:rounded-md file:border-0 file:bg-indigo-50 file:px-3 file:py-1 file:text-xs file:font-medium file:text-indigo-700 hover:file:bg-indigo-100 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:file:bg-indigo-900/40 dark:file:text-indigo-200"
                 />
               </div>
+              {!!profilePhotoFile && (
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  Archivo seleccionado: {profilePhotoFile.name}
+                </p>
+              )}
             </div>
           </div>
           <div className="flex justify-end space-x-2">
@@ -739,9 +906,12 @@ const AdminUsers = () => {
             </button>
             <button
               type="submit"
+              disabled={isUploadingPhoto || isCompressing}
               className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
             >
-              Crear Usuario
+              {isUploadingPhoto || isCompressing
+                ? "Subiendo foto..."
+                : "Crear Usuario"}
             </button>
           </div>
         </form>
@@ -776,10 +946,10 @@ const AdminUsers = () => {
                 <tr key={user.id}>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
-                      {user.photoURL ? (
+                      {user.photoURL || user.photoUrl ? (
                         <img
                           className="h-8 w-8 rounded-full"
-                          src={user.photoURL}
+                          src={user.photoURL || user.photoUrl}
                           alt={user.name}
                         />
                       ) : (

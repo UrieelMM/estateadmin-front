@@ -31,10 +31,26 @@ const GrowthSection: React.FC = React.memo(() => {
 
   const overallGrowthMetrics = useMemo(() => {
     if (filteredMonthlyStats.length < 2) return [];
-    const previousMonthStats =
-      filteredMonthlyStats[filteredMonthlyStats.length - 2];
-    const currentMonthStats =
-      filteredMonthlyStats[filteredMonthlyStats.length - 1];
+
+    // Seleccionar meses con actividad para evitar comparar meses vacíos (ej. nov/dic en curso).
+    const statsWithActivity = filteredMonthlyStats.filter((stat) => {
+      return (
+        stat.paid !== 0 ||
+        stat.charges !== 0 ||
+        stat.pending !== 0 ||
+        stat.saldo !== 0 ||
+        stat.unidentifiedPayments !== 0 ||
+        stat.creditUsed !== 0
+      );
+    });
+
+    const sourceStats =
+      statsWithActivity.length >= 2 ? statsWithActivity : filteredMonthlyStats;
+    const previousMonthStats = sourceStats[sourceStats.length - 2];
+    const currentMonthStats = sourceStats[sourceStats.length - 1];
+
+    if (!previousMonthStats || !currentMonthStats) return [];
+
     return [
       {
         title: "Monto Abonado",
