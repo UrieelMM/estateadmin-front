@@ -42,6 +42,14 @@ const PAYMENT_TYPES = [
   "Depósito",
 ];
 
+const normalizeAccountName = (value: string) =>
+  (value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "")
+    .trim();
+
 const ExpenseForm: React.FC<ExpenseFormProps> = ({ open, setOpen }) => {
   const [amount, setAmount] = useState<string>("");
   const [amountDisplay, setAmountDisplay] = useState<string>("");
@@ -159,6 +167,15 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ open, setOpen }) => {
       expenseConcept.toLowerCase().includes(term)
     );
   }, [conceptSearch]);
+
+  const selectableFinancialAccounts = useMemo(
+    () =>
+      financialAccounts.filter((account) => {
+        const normalized = normalizeAccountName(account.name);
+        return !normalized.includes("cajachica");
+      }),
+    [financialAccounts]
+  );
 
   const getProviderLabel = (id: string) => {
     if (!id) return "";
@@ -585,7 +602,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ open, setOpen }) => {
                                   <option value="">
                                     -- Selecciona una cuenta --
                                   </option>
-                                  {financialAccounts.map((account) => (
+                                  {selectableFinancialAccounts.map((account) => (
                                     <option key={account.id} value={account.id}>
                                       {account.name}
                                     </option>

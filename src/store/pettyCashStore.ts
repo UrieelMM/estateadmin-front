@@ -262,6 +262,69 @@ function toIsoDate(value: any): string | undefined {
   return undefined;
 }
 
+function normalizeAccountName(value: string): string {
+  return (value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "")
+    .trim();
+}
+
+function roundTo2(value: number): number {
+  return Math.round((value + Number.EPSILON) * 100) / 100;
+}
+
+async function resolvePettyCashAccountId(
+  clientId: string,
+  condominiumId: string,
+  configuredAccountId?: string
+): Promise<string | null> {
+  if (configuredAccountId) return configuredAccountId;
+
+  const db = getFirestore();
+  const accountsRef = collection(
+    db,
+    `clients/${clientId}/condominiums/${condominiumId}/financialAccounts`
+  );
+  const accountsSnap = await getDocs(accountsRef);
+  for (const accountDoc of accountsSnap.docs) {
+    const accountData = accountDoc.data();
+    const normalizedName = normalizeAccountName(accountData.name || "");
+    if (normalizedName.includes("cajachica")) {
+      return accountDoc.id;
+    }
+  }
+
+  return null;
+}
+
+async function adjustFinancialAccountBalance(
+  clientId: string,
+  condominiumId: string,
+  accountId: string,
+  deltaAmountPesos: number
+): Promise<void> {
+  const db = getFirestore();
+  const accountRef = createDoc(
+    db,
+    `clients/${clientId}/condominiums/${condominiumId}/financialAccounts/${accountId}`
+  );
+  const accountSnap = await getDoc(accountRef);
+  if (!accountSnap.exists()) {
+    throw new Error("Cuenta financiera no encontrada para ajustar saldo.");
+  }
+
+  const accountData = accountSnap.data();
+  const currentBalance = Number(accountData.initialBalance || 0);
+  const nextBalance = roundTo2(currentBalance + deltaAmountPesos);
+
+  await updateDoc(accountRef, {
+    initialBalance: nextBalance,
+    updatedAt: serverTimestamp(),
+  });
+}
+
 // Función para obtener el usuario actual y su token
 async function getCurrentUserAndToken() {
   const auth = getAuth();
@@ -787,10 +850,13 @@ export const usePettyCashStore = create<PettyCashState>()((set, get) => ({
         transaction.previousCashBoxId = data.previousCashBoxId;
       }
 
+      let createdTransactionRef: ReturnType<typeof createDoc> | null = null;
+
       // Guardar en Firestore
       try {
         const docRef = createDoc(transactionsRef);
         await setDoc(docRef, transaction);
+        createdTransactionRef = docRef;
       } catch (writeError: any) {
         originalWriteError = writeError;
 
@@ -811,6 +877,80 @@ export const usePettyCashStore = create<PettyCashState>()((set, get) => ({
         }
 
         throw originalWriteError;
+      }
+
+      // Ajustar saldos de cuentas financieras cuando aplica (sin tocar cálculos globales).
+      // - Gasto: resta en cuenta de caja chica.
+      // - Reposición: suma en caja chica y, si existe cuenta origen, resta en cuenta origen.
+      try {
+        const resolvedPettyCashAccountId = await resolvePettyCashAccountId(
+          clientId,
+          condominiumId,
+          config.accountId
+        );
+        const movementAmount = Number(data.amount || 0);
+
+        if (
+          movementAmount > 0 &&
+          data.type === PettyCashTransactionType.EXPENSE &&
+          resolvedPettyCashAccountId
+        ) {
+          await adjustFinancialAccountBalance(
+            clientId,
+            condominiumId,
+            resolvedPettyCashAccountId,
+            -movementAmount
+          );
+        }
+
+        if (movementAmount > 0 && data.type === PettyCashTransactionType.REPLENISHMENT) {
+          if (resolvedPettyCashAccountId) {
+            await adjustFinancialAccountBalance(
+              clientId,
+              condominiumId,
+              resolvedPettyCashAccountId,
+              movementAmount
+            );
+          }
+
+          if (data.sourceAccountId) {
+            await adjustFinancialAccountBalance(
+              clientId,
+              condominiumId,
+              data.sourceAccountId,
+              -movementAmount
+            );
+          }
+        }
+      } catch (accountBalanceError: any) {
+        // Compensación: revertir transacción/egreso si falla ajuste de saldos.
+        if (createdTransactionRef) {
+          try {
+            await deleteDoc(createdTransactionRef);
+          } catch (rollbackTransactionError) {
+            console.error(
+              "No se pudo revertir transacción de caja chica tras fallo de saldo:",
+              rollbackTransactionError
+            );
+          }
+        }
+
+        if (createdExpenseId) {
+          try {
+            const expenseRef = createDoc(
+              db,
+              `clients/${clientId}/condominiums/${condominiumId}/expenses/${createdExpenseId}`
+            );
+            await deleteDoc(expenseRef);
+          } catch (rollbackExpenseError) {
+            console.error(
+              "No se pudo revertir egreso tras fallo de ajuste de saldo:",
+              rollbackExpenseError
+            );
+          }
+        }
+
+        throw accountBalanceError;
       }
 
       // Actualizar estado

@@ -1,4 +1,4 @@
-import { useState, useEffect, Fragment } from "react";
+import { useState, useEffect, Fragment, useMemo } from "react";
 import { Dialog, Transition } from "@headlessui/react";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import {
@@ -11,6 +11,7 @@ import { useTicketsStore } from "../../../screens/dashboard/maintenance/tickets/
 import useProviderStore from "../../../../store/providerStore";
 import toast from "react-hot-toast";
 import { useFileCompression } from "../../../../hooks/useFileCompression";
+import { usePaymentStore } from "../../../../store/usePaymentStore";
 
 interface MaintenanceCostFormProps {
   isOpen: boolean;
@@ -18,70 +19,96 @@ interface MaintenanceCostFormProps {
   initialData?: MaintenanceCost;
 }
 
-const MaintenanceCostForm = ({
+const normalizeAccountName = ( value: string ) =>
+  ( value || "" )
+    .normalize( "NFD" )
+    .replace( /[\u0300-\u036f]/g, "" )
+    .toLowerCase()
+    .replace( /[^a-z0-9]/g, "" )
+    .trim();
+
+const MaintenanceCostForm = ( {
   isOpen,
   onClose,
   initialData,
-}: MaintenanceCostFormProps) => {
+}: MaintenanceCostFormProps ) => {
   const { createCost, updateCost } = useMaintenanceCostStore();
   const { appointments, fetchAppointments } = useMaintenanceAppointmentStore();
   const { contracts, fetchContracts } = useMaintenanceContractStore();
   const { tickets, fetchTickets } = useTicketsStore();
   const { providers, fetchProviders } = useProviderStore();
-  const [loading, setLoading] = useState(false);
-  const [invoiceFile, setInvoiceFile] = useState<File | null>(null);
+  const { financialAccounts, fetchFinancialAccounts } = usePaymentStore(
+    ( state ) => ( {
+      financialAccounts: state.financialAccounts,
+      fetchFinancialAccounts: state.fetchFinancialAccounts,
+    } )
+  );
+  const [ loading, setLoading ] = useState( false );
+  const [ invoiceFile, setInvoiceFile ] = useState<File | null>( null );
   const { compressFile, isCompressing } = useFileCompression();
 
-  const [formData, setFormData] = useState<MaintenanceCost>({
+  const [ formData, setFormData ] = useState<MaintenanceCost>( {
     description: "",
     amount: 0,
-    date: new Date().toISOString().split("T")[0],
+    date: new Date().toISOString().split( "T" )[ 0 ],
     category: "Materiales",
     provider: "",
     providerId: "",
+    financialAccountId: "",
     status: "pending",
     notes: "",
-  });
+  } );
+
+  const selectableFinancialAccounts = useMemo(
+    () =>
+      financialAccounts.filter( ( account ) => {
+        const normalized = normalizeAccountName( account.name || "" );
+        return !normalized.includes( "cajachica" );
+      } ),
+    [ financialAccounts ]
+  );
 
   // Cargar datos necesarios al abrir el formulario
-  useEffect(() => {
-    if (isOpen) {
+  useEffect( () => {
+    if ( isOpen ) {
       const loadData = async () => {
-        await Promise.all([
+        await Promise.all( [
           fetchAppointments(),
           fetchTickets(),
           fetchContracts(),
           fetchProviders(),
-        ]);
+          fetchFinancialAccounts(),
+        ] );
       };
       loadData();
 
       // Si hay datos iniciales, cargarlos en el formulario
-      if (initialData) {
-        setFormData({
+      if ( initialData ) {
+        setFormData( {
           ...initialData,
           // Convertir amount a número si viene como string
           amount:
             typeof initialData.amount === "string"
-              ? parseInt(initialData.amount)
+              ? parseInt( initialData.amount )
               : initialData.amount,
-        });
+        } );
       } else {
         // Resetear el formulario
-        setFormData({
+        setFormData( {
           description: "",
           amount: 0,
-          date: new Date().toISOString().split("T")[0],
+          date: new Date().toISOString().split( "T" )[ 0 ],
           category: "Materiales",
           provider: "",
           providerId: "",
+          financialAccountId: "",
           status: "pending",
           notes: "",
-        });
-        setInvoiceFile(null);
+        } );
+        setInvoiceFile( null );
       }
     }
-  }, [isOpen, initialData]);
+  }, [ isOpen, initialData ] );
 
   const handleChange = (
     e: React.ChangeEvent<
@@ -91,40 +118,40 @@ const MaintenanceCostForm = ({
     const { name, value } = e.target;
 
     // Manejar el campo de monto especialmente
-    if (name === "amount") {
+    if ( name === "amount" ) {
       // Limpiar el valor de cualquier carácter que no sea número o punto
-      const cleanValue = value.replace(/[^0-9.]/g, "");
+      const cleanValue = value.replace( /[^0-9.]/g, "" );
 
       // Si está vacío, establecer 0
-      if (cleanValue === "" || cleanValue === ".") {
-        setFormData({ ...formData, [name]: 0 });
+      if ( cleanValue === "" || cleanValue === "." ) {
+        setFormData( { ...formData, [ name ]: 0 } );
       } else {
         // Convertir a centavos (multiplicar por 100)
-        const amountInCents = Math.round(parseFloat(cleanValue) * 100);
-        setFormData({ ...formData, [name]: amountInCents });
+        const amountInCents = Math.round( parseFloat( cleanValue ) * 100 );
+        setFormData( { ...formData, [ name ]: amountInCents } );
       }
-    } else if (name === "providerId") {
+    } else if ( name === "providerId" ) {
       // Cuando cambia el proveedor seleccionado
       const selectedProvider = providers.find(
-        (provider) => provider.id === value
+        ( provider ) => provider.id === value
       );
 
-      setFormData({
+      setFormData( {
         ...formData,
         providerId: value,
         provider: selectedProvider ? selectedProvider.name : "",
-      });
-    } else if (name === "contractId") {
+      } );
+    } else if ( name === "contractId" ) {
       const selectedContract = contracts.find(
-        (contract) => contract.id === value
+        ( contract ) => contract.id === value
       );
       const matchedProvider = selectedContract
         ? providers.find(
-            (provider) => provider.name === selectedContract.providerName
-          )
+          ( provider ) => provider.name === selectedContract.providerName
+        )
         : undefined;
 
-      setFormData((prev) => ({
+      setFormData( ( prev ) => ( {
         ...prev,
         contractId: value,
         providerId: prev.providerId || matchedProvider?.id || "",
@@ -135,9 +162,9 @@ const MaintenanceCostForm = ({
           "",
         description:
           prev.description ||
-          (selectedContract
-            ? `Contrato: ${selectedContract.serviceType} - ${selectedContract.providerName}`
-            : ""),
+          ( selectedContract
+            ? `Contrato: ${ selectedContract.serviceType } - ${ selectedContract.providerName }`
+            : "" ),
         amount:
           prev.amount && prev.amount > 0
             ? prev.amount
@@ -146,27 +173,27 @@ const MaintenanceCostForm = ({
           prev.category === "Materiales"
             ? "Servicios"
             : prev.category,
-      }));
+      } ) );
     } else {
-      setFormData({ ...formData, [name]: value });
+      setFormData( { ...formData, [ name ]: value } );
     }
   };
 
-  useEffect(() => {
-    if (!isOpen) return;
-    if (!formData.contractId || formData.providerId) return;
+  useEffect( () => {
+    if ( !isOpen ) return;
+    if ( !formData.contractId || formData.providerId ) return;
 
     const selectedContract = contracts.find(
-      (contract) => contract.id === formData.contractId
+      ( contract ) => contract.id === formData.contractId
     );
-    if (!selectedContract) return;
+    if ( !selectedContract ) return;
 
     const matchedProvider = providers.find(
-      (provider) => provider.name === selectedContract.providerName
+      ( provider ) => provider.name === selectedContract.providerName
     );
 
-    if (matchedProvider || selectedContract.providerName) {
-      setFormData((prev) => ({
+    if ( matchedProvider || selectedContract.providerName ) {
+      setFormData( ( prev ) => ( {
         ...prev,
         providerId: matchedProvider?.id || prev.providerId || "",
         provider:
@@ -174,48 +201,54 @@ const MaintenanceCostForm = ({
           matchedProvider?.name ||
           selectedContract.providerName ||
           "",
-      }));
+      } ) );
     }
-  }, [isOpen, formData.contractId, formData.providerId, contracts, providers]);
+  }, [ isOpen, formData.contractId, formData.providerId, contracts, providers ] );
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
+  const handleFileChange = async ( e: React.ChangeEvent<HTMLInputElement> ) => {
+    if ( e.target.files && e.target.files.length > 0 ) {
       try {
-        const compressed = await compressFile(e.target.files[0]);
-        setInvoiceFile(compressed);
-        toast.success("Factura procesada");
-      } catch (error) {
-        console.error(error);
-        setInvoiceFile(e.target.files[0]);
+        const compressed = await compressFile( e.target.files[ 0 ] );
+        setInvoiceFile( compressed );
+        toast.success( "Factura procesada" );
+      } catch ( error ) {
+        console.error( error );
+        setInvoiceFile( e.target.files[ 0 ] );
       }
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async ( e: React.FormEvent ) => {
     e.preventDefault();
-    setLoading(true);
+    setLoading( true );
 
     try {
-      if (initialData?.id) {
+      if ( !formData.financialAccountId ) {
+        toast.error( "Selecciona una cuenta financiera" );
+        setLoading( false );
+        return;
+      }
+
+      if ( initialData?.id ) {
         // Actualizar costo existente
-        await updateCost(initialData.id, formData, invoiceFile || undefined);
+        await updateCost( initialData.id, formData, invoiceFile || undefined );
       } else {
         // Crear nuevo costo
-        await createCost(formData, invoiceFile || undefined);
+        await createCost( formData, invoiceFile || undefined );
       }
       onClose();
-    } catch (error) {
-      console.error("Error al guardar el costo:", error);
+    } catch ( error ) {
+      console.error( "Error al guardar el costo:", error );
     } finally {
-      setLoading(false);
+      setLoading( false );
     }
   };
 
   return (
-    <Transition appear show={isOpen} as={Fragment}>
-      <Dialog as="div" className="relative z-10" onClose={onClose}>
+    <Transition appear show={ isOpen } as={ Fragment }>
+      <Dialog as="div" className="relative z-10" onClose={ onClose }>
         <Transition.Child
-          as={Fragment}
+          as={ Fragment }
           enter="ease-out duration-300"
           enterFrom="opacity-0"
           enterTo="opacity-100"
@@ -229,7 +262,7 @@ const MaintenanceCostForm = ({
         <div className="fixed inset-0 overflow-y-auto">
           <div className="flex min-h-full items-center justify-center p-4 text-center">
             <Transition.Child
-              as={Fragment}
+              as={ Fragment }
               enter="ease-out duration-300"
               enterFrom="opacity-0 scale-95"
               enterTo="opacity-100 scale-100"
@@ -242,19 +275,19 @@ const MaintenanceCostForm = ({
                   as="h3"
                   className="text-lg font-medium leading-6 text-gray-900 dark:text-white flex justify-between items-center"
                 >
-                  {initialData?.id
+                  { initialData?.id
                     ? "Editar Gasto de Mantenimiento"
-                    : "Registrar Gasto de Mantenimiento"}
+                    : "Registrar Gasto de Mantenimiento" }
                   <button
                     type="button"
-                    onClick={onClose}
+                    onClick={ onClose }
                     className="text-gray-400 hover:text-gray-500 focus:outline-none"
                   >
                     <XMarkIcon className="h-6 w-6" aria-hidden="true" />
                   </button>
                 </Dialog.Title>
 
-                <form onSubmit={handleSubmit} className="mt-4">
+                <form onSubmit={ handleSubmit } className="mt-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label
@@ -266,10 +299,10 @@ const MaintenanceCostForm = ({
                       <textarea
                         id="description"
                         name="description"
-                        rows={3}
+                        rows={ 3 }
                         placeholder="Descripción del gasto"
-                        value={formData.description}
-                        onChange={handleChange}
+                        value={ formData.description }
+                        onChange={ handleChange }
                         required
                         className="w-full mt-1 p-2 h-[90px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
                       />
@@ -294,7 +327,7 @@ const MaintenanceCostForm = ({
                             value={
                               formData.amount === 0 ? "" : formData.amount / 100
                             }
-                            onChange={handleChange}
+                            onChange={ handleChange }
                             step="0.01"
                             min="0"
                             required
@@ -315,8 +348,8 @@ const MaintenanceCostForm = ({
                           type="date"
                           id="date"
                           name="date"
-                          value={formData.date}
-                          onChange={handleChange}
+                          value={ formData.date }
+                          onChange={ handleChange }
                           required
                           className="w-full mt-1 pl-2 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
                         />
@@ -333,8 +366,8 @@ const MaintenanceCostForm = ({
                       <select
                         id="category"
                         name="category"
-                        value={formData.category}
-                        onChange={handleChange}
+                        value={ formData.category }
+                        onChange={ handleChange }
                         required
                         className="w-full mt-1 pl-2 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
                       >
@@ -356,16 +389,16 @@ const MaintenanceCostForm = ({
                       <select
                         id="providerId"
                         name="providerId"
-                        value={formData.providerId || ""}
-                        onChange={handleChange}
+                        value={ formData.providerId || "" }
+                        onChange={ handleChange }
                         className="w-full mt-1 pl-2 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
                       >
                         <option value="">Seleccionar proveedor</option>
-                        {providers.map((provider) => (
-                          <option key={provider.id} value={provider.id}>
-                            {provider.name}
+                        { providers.map( ( provider ) => (
+                          <option key={ provider.id } value={ provider.id }>
+                            { provider.name }
                           </option>
-                        ))}
+                        ) ) }
                       </select>
                     </div>
 
@@ -380,8 +413,8 @@ const MaintenanceCostForm = ({
                         type="text"
                         id="invoiceNumber"
                         name="invoiceNumber"
-                        value={formData.invoiceNumber || ""}
-                        onChange={handleChange}
+                        value={ formData.invoiceNumber || "" }
+                        onChange={ handleChange }
                         className="w-full mt-1 pl-2 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
                       />
                     </div>
@@ -397,16 +430,16 @@ const MaintenanceCostForm = ({
                         type="file"
                         id="invoiceFile"
                         name="invoiceFile"
-                        onChange={handleFileChange}
+                        onChange={ handleFileChange }
                         accept=".pdf,.png,.jpg,.jpeg"
                         className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 dark:text-gray-400 dark:file:bg-indigo-900 dark:file:text-indigo-300"
                       />
-                      {initialData?.invoiceFile && !invoiceFile && (
+                      { initialData?.invoiceFile && !invoiceFile && (
                         <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                           Ya existe un archivo. Sube uno nuevo solo si deseas
                           reemplazarlo.
                         </p>
-                      )}
+                      ) }
                     </div>
 
                     <div>
@@ -419,8 +452,8 @@ const MaintenanceCostForm = ({
                       <select
                         id="status"
                         name="status"
-                        value={formData.status}
-                        onChange={handleChange}
+                        value={ formData.status }
+                        onChange={ handleChange }
                         required
                         className="w-full mt-1 pl-2 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
                       >
@@ -445,16 +478,16 @@ const MaintenanceCostForm = ({
                           <select
                             id="ticketId"
                             name="ticketId"
-                            value={formData.ticketId || ""}
-                            onChange={handleChange}
+                            value={ formData.ticketId || "" }
+                            onChange={ handleChange }
                             className="w-full mt-1 pl-2 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
                           >
                             <option value="">No relacionado</option>
-                            {tickets.map((ticket) => (
-                              <option key={ticket.id} value={ticket.id}>
-                                {ticket.folio || "Sin folio"} - {ticket.title}
+                            { tickets.map( ( ticket ) => (
+                              <option key={ ticket.id } value={ ticket.id }>
+                                { ticket.folio || "Sin folio" } - { ticket.title }
                               </option>
-                            ))}
+                            ) ) }
                           </select>
                         </div>
                         <div>
@@ -467,19 +500,19 @@ const MaintenanceCostForm = ({
                           <select
                             id="appointmentId"
                             name="appointmentId"
-                            value={formData.appointmentId || ""}
-                            onChange={handleChange}
+                            value={ formData.appointmentId || "" }
+                            onChange={ handleChange }
                             className="w-full mt-1 pl-2 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
                           >
                             <option value="">No relacionada</option>
-                            {appointments.map((appointment) => (
+                            { appointments.map( ( appointment ) => (
                               <option
-                                key={appointment.id}
-                                value={appointment.id}
+                                key={ appointment.id }
+                                value={ appointment.id }
                               >
-                                {appointment.date} - {appointment.title}
+                                { appointment.date } - { appointment.title }
                               </option>
-                            ))}
+                            ) ) }
                           </select>
                         </div>
                         <div>
@@ -492,18 +525,42 @@ const MaintenanceCostForm = ({
                           <select
                             id="contractId"
                             name="contractId"
-                            value={formData.contractId || ""}
-                            onChange={handleChange}
+                            value={ formData.contractId || "" }
+                            onChange={ handleChange }
                             className="w-full mt-1 pl-2 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
                           >
                             <option value="">No relacionado</option>
-                            {contracts.map((contract) => (
-                              <option key={contract.id} value={contract.id}>
-                                {contract.providerName} - {contract.serviceType}
+                            { contracts.map( ( contract ) => (
+                              <option key={ contract.id } value={ contract.id }>
+                                { contract.providerName } - { contract.serviceType }
                               </option>
-                            ))}
+                            ) ) }
                           </select>
                         </div>
+                      </div>
+
+                      <div>
+                        <label
+                          htmlFor="financialAccountId"
+                          className="block text-sm mt-2 font-medium text-gray-700 dark:text-gray-300"
+                        >
+                          Cuenta Financiera *
+                        </label>
+                        <select
+                          id="financialAccountId"
+                          name="financialAccountId"
+                          value={ formData.financialAccountId || "" }
+                          onChange={ handleChange }
+                          required
+                          className="w-full mt-1 pl-2 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
+                        >
+                          <option value="">Seleccionar cuenta</option>
+                          { selectableFinancialAccounts.map( ( account ) => (
+                            <option key={ account.id } value={ account.id }>
+                              { account.name }
+                            </option>
+                          ) ) }
+                        </select>
                       </div>
                     </div>
 
@@ -517,9 +574,9 @@ const MaintenanceCostForm = ({
                       <textarea
                         id="notes"
                         name="notes"
-                        rows={3}
-                        value={formData.notes || ""}
-                        onChange={handleChange}
+                        rows={ 3 }
+                        value={ formData.notes || "" }
+                        onChange={ handleChange }
                         className="w-full mt-1 pl-2 h-[64px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
                       />
                     </div>
@@ -534,10 +591,10 @@ const MaintenanceCostForm = ({
                   <div className="mt-5 sm:mt-6 sm:grid sm:grid-cols-2 sm:gap-3 sm:grid-flow-row-dense">
                     <button
                       type="submit"
-                      disabled={loading || isCompressing}
+                      disabled={ loading || isCompressing }
                       className="inline-flex w-full justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:col-start-2 sm:text-sm disabled:bg-gray-300 disabled:cursor-not-allowed dark:disabled:bg-gray-700"
                     >
-                      {loading || isCompressing ? (
+                      { loading || isCompressing ? (
                         <span className="flex items-center">
                           <svg
                             className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
@@ -565,12 +622,12 @@ const MaintenanceCostForm = ({
                         "Actualizar Gasto"
                       ) : (
                         "Registrar Gasto"
-                      )}
+                      ) }
                     </button>
                     <button
                       type="button"
                       className="mt-3 inline-flex w-full justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-base font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:col-start-1 sm:mt-0 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-600"
-                      onClick={onClose}
+                      onClick={ onClose }
                     >
                       Cancelar
                     </button>

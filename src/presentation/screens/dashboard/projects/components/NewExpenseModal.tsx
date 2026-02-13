@@ -30,6 +30,14 @@ const createInitialExpenseFormData = (
   financialAccountId: "",
 });
 
+const normalizeAccountName = (value: string) =>
+  (value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "")
+    .trim();
+
 const NewExpenseModal: React.FC<NewExpenseModalProps> = ({
   isOpen,
   onClose,
@@ -177,6 +185,11 @@ const NewExpenseModal: React.FC<NewExpenseModalProps> = ({
 
     return tagLabels[tag] || tag;
   };
+
+  const selectableFinancialAccounts = financialAccounts.filter((account) => {
+    const normalized = normalizeAccountName(account.name || "");
+    return !normalized.includes("cajachica");
+  });
 
   return (
     <Transition.Root show={isOpen} as={Fragment}>
@@ -409,7 +422,7 @@ const NewExpenseModal: React.FC<NewExpenseModalProps> = ({
                           required
                         >
                           <option value="">Seleccionar cuenta</option>
-                          {financialAccounts.map((account) => (
+                          {selectableFinancialAccounts.map((account) => (
                             <option key={account.id} value={account.id}>
                               {account.name}
                             </option>

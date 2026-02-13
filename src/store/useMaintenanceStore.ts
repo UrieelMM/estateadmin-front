@@ -89,6 +89,7 @@ export type MaintenanceCost = {
   invoiceFile?: string;
   provider?: string;
   providerId?: string; // ID del proveedor
+  financialAccountId?: string;
   expenseId?: string; // ID del egreso asociado
   status: "pending" | "paid" | "cancelled";
   paymentDate?: string;
@@ -2167,13 +2168,12 @@ async function registerMaintenanceCostAsExpense(
     } - Ref: Costo de mantenimiento`,
     file: invoiceUrl ? undefined : file, // Solo pasar el archivo si no tenemos ya una URL
     invoiceUrl, // Usar URL existente si se proporciona
-    financialAccountId: "default", // Usar una cuenta financiera por defecto o ajustar según sea necesario
+    financialAccountId: cost.financialAccountId || "",
     providerId: cost.providerId, // Usar el ID del proveedor si existe
   };
 
   if (existingExpenseId) {
-    const { financialAccountId: _accountId, ...updateData } = expenseData;
-    await expenseStore.updateExpense(existingExpenseId, updateData);
+    await expenseStore.updateExpense(existingExpenseId, expenseData);
     return existingExpenseId;
   }
 
