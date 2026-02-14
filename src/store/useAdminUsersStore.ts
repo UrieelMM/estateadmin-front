@@ -7,7 +7,7 @@ import {
   query,
   where,
   doc,
-  updateDoc,
+  writeBatch,
 } from "firebase/firestore";
 import toast from "react-hot-toast";
 import axios from "axios";
@@ -49,7 +49,11 @@ interface AdminUsersState {
     userData: Omit<AdminUser, "id" | "createdDate">
   ) => Promise<CreateUserResponse>;
   updateUser: (userId: string, userData: Partial<AdminUser>) => Promise<void>;
-  toggleUserActive: (userId: string, active: boolean) => Promise<void>;
+  toggleUserActive: (
+    userId: string,
+    active: boolean,
+    condominiumId?: string
+  ) => Promise<void>;
 }
 
 function generatePassword(): string {
@@ -116,7 +120,7 @@ export const useAdminUsersStore = create<AdminUsersState>()((set, get) => ({
           photoURL: data.photoURL || data.photoUrl,
           createdDate: data.createdDate,
           uid: data.uid,
-          active: data.active,
+          active: typeof data.active === "boolean" ? data.active : true,
         });
       });
 
@@ -189,7 +193,7 @@ export const useAdminUsersStore = create<AdminUsersState>()((set, get) => ({
           condominiumUids: userData.condominiumUids,
           photoURL: userData.photoURL || null,
           role: userData.role,
-          active: userData.active,
+          active: true,
         }
       );
 
@@ -233,19 +237,30 @@ export const useAdminUsersStore = create<AdminUsersState>()((set, get) => ({
       if (!userToUpdate) throw new Error("Usuario no encontrado");
 
       // Actualizar usuario usando el endpoint con el uid correcto
+      const requestPayload = {
+        clientId,
+        email: userData.email || userToUpdate.email || "",
+        name: userData.name || userToUpdate.name || "",
+        lastName: userData.lastName || userToUpdate.lastName || "",
+        condominiumUids:
+          userData.condominiumUids || userToUpdate.condominiumUids || [],
+        photoURL:
+          userData.photoURL ||
+          userToUpdate.photoURL ||
+          userToUpdate.photoUrl ||
+          "",
+        role: userData.role || userToUpdate.role,
+        active:
+          typeof userData.active === "boolean"
+            ? userData.active
+            : userToUpdate.active,
+      };
+
       const response = await axios.put(
         `${import.meta.env.VITE_URL_SERVER}/users-auth/edit-administrator/${
           userToUpdate.uid
         }`,
-        {
-          clientId, // Agregar clientId al body
-          name: userData.name,
-          lastName: userData.lastName,
-          condominiumUids: userData.condominiumUids,
-          photoURL: userData.photoURL || null,
-          role: userData.role,
-          active: userData.active,
-        }
+        requestPayload
       );
 
       if (response.data) {
@@ -255,6 +270,9 @@ export const useAdminUsersStore = create<AdminUsersState>()((set, get) => ({
       }
     } catch (error: any) {
       console.error("Error al actualizar usuario:", error);
+      if (error?.response?.data) {
+        console.error("Detalle backend updateUser:", error.response.data);
+      }
       set({ error: error.message, loading: false });
       toast.error(
         error.response?.data?.message || "Error al actualizar usuario"
@@ -264,7 +282,7 @@ export const useAdminUsersStore = create<AdminUsersState>()((set, get) => ({
     }
   },
 
-  toggleUserActive: async (userId: string, active: boolean) => {
+  toggleUserActive: async (userId: string, active: boolean, condominiumId) => {
     set({ loading: true, error: null });
     try {
       const auth = getAuth();
@@ -275,24 +293,64 @@ export const useAdminUsersStore = create<AdminUsersState>()((set, get) => ({
       const clientId = tokenResult.claims["clientId"] as string;
       if (!clientId) throw new Error("clientId no disponible");
 
-      const condominiumId = localStorage.getItem("condominiumId");
-      if (!condominiumId) throw new Error("Condominio no seleccionado");
+      const userToToggle = get().users.find((u) => u.id === userId);
+      if (!userToToggle) throw new Error("Usuario no encontrado");
+
+      const targetCondominiumId =
+        condominiumId || localStorage.getItem("condominiumId");
+      if (!targetCondominiumId) throw new Error("Condominio no seleccionado");
+
+      if (!userToToggle.condominiumUids.includes(targetCondominiumId)) {
+        throw new Error(
+          "No autorizado para modificar usuarios fuera del condominio seleccionado"
+        );
+      }
+
+      // Actualiza Auth mediante backend (deshabilita/habilita inicio de sesión)
+      const requestPayload = {
+        clientId,
+        email: userToToggle.email || "",
+        name: userToToggle.name || "",
+        lastName: userToToggle.lastName || "",
+        condominiumUids: userToToggle.condominiumUids || [],
+        photoURL: userToToggle.photoURL || userToToggle.photoUrl || "",
+        role: userToToggle.role,
+        active,
+      };
+
+      await axios.put(
+        `${import.meta.env.VITE_URL_SERVER}/users-auth/edit-administrator/${
+          userToToggle.uid
+        }`,
+        requestPayload
+      );
 
       const db = getFirestore();
-      const userRef = doc(
-        db,
-        `clients/${clientId}/condominiums/${condominiumId}/users/${userId}`
-      );
-      await updateDoc(userRef, { active });
+      const batch = writeBatch(db);
+      userToToggle.condominiumUids.forEach((condoId) => {
+        const userRef = doc(
+          db,
+          `clients/${clientId}/condominiums/${condoId}/users/${userId}`
+        );
+        batch.set(userRef, { active }, { merge: true });
+      });
+      await batch.commit();
 
       toast.success(
         `Usuario ${active ? "activado" : "desactivado"} exitosamente`
       );
-      await get().fetchUsers(condominiumId);
+      await get().fetchUsers(targetCondominiumId);
     } catch (error: any) {
       console.error("Error al actualizar estado del usuario:", error);
+      if (error?.response?.data) {
+        console.error("Detalle backend toggleUserActive:", error.response.data);
+      }
       set({ error: error.message, loading: false });
-      toast.error("Error al actualizar estado del usuario");
+      toast.error(
+        error.response?.data?.message || "Error al actualizar estado del usuario"
+      );
+    } finally {
+      set({ loading: false });
     }
   },
 }));

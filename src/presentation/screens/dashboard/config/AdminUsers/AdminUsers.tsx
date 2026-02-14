@@ -28,7 +28,7 @@ interface Condominium {
   id: string;
   name: string;
   clientId: string;
-  [key: string]: any;
+  [ key: string ]: any;
 }
 
 interface EditUserModalProps {
@@ -38,81 +38,81 @@ interface EditUserModalProps {
   condominiums: Condominium[];
 }
 
-const EditUserModal = ({
+const EditUserModal = ( {
   isOpen,
   onClose,
   user,
   condominiums,
-}: EditUserModalProps) => {
+}: EditUserModalProps ) => {
   const { updateUser, fetchUsers } = useAdminUsersStore();
-  const { compressFile, isCompressing } = useFileCompression({
+  const { compressFile, isCompressing } = useFileCompression( {
     maxSizeMB: 1,
     maxWidthOrHeight: 1200,
     useWebWorker: true,
-  });
-  const [formData, setFormData] = useState({
+  } );
+  const [ formData, setFormData ] = useState( {
     name: user?.name || "",
     lastName: user?.lastName || "",
     email: user?.email || "",
-    role: user?.role || ("admin" as "admin" | "admin-assistant"),
+    role: user?.role || ( "admin" as "admin" | "admin-assistant" ),
     condominiumUids: user?.condominiumUids || [],
-    active: user?.active || true,
+    active: typeof user?.active === "boolean" ? user.active : true,
     photoURL: user?.photoURL || "",
-  });
-  const [processingChange, setProcessingChange] = useState(false);
-  const [showRoleHelp, setShowRoleHelp] = useState(false);
-  const [profilePhotoFile, setProfilePhotoFile] = useState<File | null>(null);
-  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  } );
+  const [ processingChange, setProcessingChange ] = useState( false );
+  const [ showRoleHelp, setShowRoleHelp ] = useState( false );
+  const [ profilePhotoFile, setProfilePhotoFile ] = useState<File | null>( null );
+  const [ isUploadingPhoto, setIsUploadingPhoto ] = useState( false );
 
-  useEffect(() => {
-    if (user) {
-      setFormData({
+  useEffect( () => {
+    if ( user ) {
+      setFormData( {
         name: user.name || "",
         lastName: user.lastName || "",
         email: user.email || "",
-        role: user.role || ("admin" as "admin" | "admin-assistant"),
+        role: user.role || ( "admin" as "admin" | "admin-assistant" ),
         condominiumUids: user.condominiumUids || [],
-        active: user.active || true,
+        active: typeof user.active === "boolean" ? user.active : true,
         photoURL: user.photoURL || "",
-      });
+      } );
     }
-  }, [user]);
+  }, [ user ] );
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async ( e: React.FormEvent ) => {
     e.preventDefault();
-    if (!user?.id) return;
+    if ( !user?.id ) return;
 
-    setProcessingChange(true);
+    setProcessingChange( true );
     const db = getFirestore();
 
     try {
       let uploadedPhotoURL = formData.photoURL || "";
-      if (profilePhotoFile) {
+      if ( profilePhotoFile ) {
         const targetCondominiumId =
-          formData.condominiumUids[0] || user?.condominiumUids?.[0];
+          formData.condominiumUids[ 0 ] || user?.condominiumUids?.[ 0 ];
         const targetCondominium = condominiums.find(
-          (condo) => condo.id === targetCondominiumId
+          ( condo ) => condo.id === targetCondominiumId
         );
 
-        if (!targetCondominium?.clientId || !targetCondominiumId) {
-          throw new Error("No se pudo resolver el condominio para la foto.");
+        if ( !targetCondominium?.clientId || !targetCondominiumId ) {
+          throw new Error( "No se pudo resolver el condominio para la foto." );
         }
 
-        setIsUploadingPhoto(true);
-        const compressed = await compressFile(profilePhotoFile);
+        setIsUploadingPhoto( true );
+        const compressed = await compressFile( profilePhotoFile );
         const storage = getStorage();
         const fileExtension =
-          compressed.name.split(".").pop()?.toLowerCase() || "jpg";
-        const fileName = `admin_${Date.now()}_${Math.random()
-          .toString(36)
-          .slice(2, 8)}.${fileExtension}`;
-        const path = `clients/${targetCondominium.clientId}/condominiums/${targetCondominiumId}/admin/${fileName}`;
-        const fileRef = storageRef(storage, path);
+          compressed.name.split( "." ).pop()?.toLowerCase() || "jpg";
+        const fileName = `admin_${ Date.now() }_${ Math.random()
+          .toString( 36 )
+          .slice( 2, 8 ) }.${ fileExtension }`;
+        const path = `clients/${ targetCondominium.clientId }/condominiums/${ targetCondominiumId }/admin/${ fileName }`;
+        const fileRef = storageRef( storage, path );
 
-        await uploadBytes(fileRef, compressed, {
+        await uploadBytes( fileRef, compressed, {
           contentType: compressed.type || "image/jpeg",
-        });
-        uploadedPhotoURL = await getDownloadURL(fileRef);
+        } );
+        uploadedPhotoURL = await getDownloadURL( fileRef );
       }
 
       const payload = {
@@ -123,10 +123,10 @@ const EditUserModal = ({
       // Antes de procesar los nuevos condominios, primero actualizar los existentes si han cambiado
       const originalCondominiums = user.condominiumUids || [];
       const newCondominiums = payload.condominiumUids.filter(
-        (condoId: string) => !originalCondominiums.includes(condoId)
+        ( condoId: string ) => !originalCondominiums.includes( condoId )
       );
       const removedCondominiums = originalCondominiums.filter(
-        (condoId: string) => !payload.condominiumUids.includes(condoId)
+        ( condoId: string ) => !payload.condominiumUids.includes( condoId )
       );
 
       // Variables para llevar un conteo de las operaciones
@@ -137,16 +137,16 @@ const EditUserModal = ({
 
       // Primero, actualizar los condominiumUids en los usuarios existentes en los condominios originales
       // (que no han sido removidos)
-      for (const condominiumId of originalCondominiums) {
+      for ( const condominiumId of originalCondominiums ) {
         // Omitir los condominios que han sido eliminados de la selección
-        if (removedCondominiums.includes(condominiumId)) {
+        if ( removedCondominiums.includes( condominiumId ) ) {
           continue;
         }
 
         try {
           // Buscar el condominio en la lista para obtener su clientId
-          const condominio = condominiums.find((c) => c.id === condominiumId);
-          if (!condominio) {
+          const condominio = condominiums.find( ( c ) => c.id === condominiumId );
+          if ( !condominio ) {
             failedOperations++;
             continue;
           }
@@ -156,9 +156,9 @@ const EditUserModal = ({
           // La ruta para buscar al usuario en este condominio
           const usersRef = collection(
             db,
-            `clients/${clientId}/condominiums/${condominiumId}/users`
+            `clients/${ clientId }/condominiums/${ condominiumId }/users`
           );
-          const userDocRef = doc(usersRef, user.id);
+          const userDocRef = doc( usersRef, user.id );
 
           // Actualizar el array de condominiumUids en este documento
           await setDoc(
@@ -171,19 +171,19 @@ const EditUserModal = ({
             { merge: true } // Usar merge para no sobrescribir otros campos
           );
           updatedUsers++;
-        } catch (error) {
+        } catch ( error ) {
           failedOperations++;
         }
       }
 
       // Si hay nuevos condominios, debemos crear copias del usuario en cada uno
-      if (newCondominiums.length > 0) {
+      if ( newCondominiums.length > 0 ) {
         // Procesar cada nuevo condominio
-        for (const condominiumId of newCondominiums) {
+        for ( const condominiumId of newCondominiums ) {
           try {
             // Buscar el condominio en la lista para obtener su clientId
-            const condominio = condominiums.find((c) => c.id === condominiumId);
-            if (!condominio) {
+            const condominio = condominiums.find( ( c ) => c.id === condominiumId );
+            if ( !condominio ) {
               failedOperations++;
               continue; // Pasar al siguiente condominio
             }
@@ -193,16 +193,16 @@ const EditUserModal = ({
             // clients/clientId/condominiums/condominiumId/users
             const usersRef = collection(
               db,
-              `clients/${clientId}/condominiums/${condominiumId}/users`
+              `clients/${ clientId }/condominiums/${ condominiumId }/users`
             );
 
             // Verificar si el usuario ya existe en el condominio basado en email
-            const q = query(usersRef, where("email", "==", formData.email));
+            const q = query( usersRef, where( "email", "==", formData.email ) );
 
-            const querySnapshot = await getDocs(q);
+            const querySnapshot = await getDocs( q );
 
             // Si el usuario no existe (no hay documentos con ese email), crearlo
-            if (querySnapshot.empty) {
+            if ( querySnapshot.empty ) {
               // Creamos un objeto con todos los campos que debe tener el usuario
               const userData = {
                 name: formData.name,
@@ -221,101 +221,97 @@ const EditUserModal = ({
 
               // Crear un nuevo documento para el usuario en el condominio
               // Usamos el mismo ID del usuario original para mantener consistencia
-              const userDocRef = doc(usersRef, user.id);
-              await setDoc(userDocRef, userData);
+              const userDocRef = doc( usersRef, user.id );
+              await setDoc( userDocRef, userData );
               createdUsers++;
             } else {
               existingUsers++;
             }
-          } catch (error) {
-            console.error("Error procesando condominio:", condominiumId, error);
+          } catch ( error ) {
+            console.error( "Error procesando condominio:", condominiumId, error );
             failedOperations++;
           }
         }
       }
 
       // Actualizar el usuario en la base de datos principal
-      await updateUser(user.id, payload);
-      await fetchUsers(user.condominiumUids[0]);
+      await updateUser( user.id, payload );
+      await fetchUsers( user.condominiumUids[ 0 ] );
 
       // Mostrar un solo mensaje resumiendo todas las operaciones
-      if (newCondominiums.length > 0 || updatedUsers > 0) {
+      if ( newCondominiums.length > 0 || updatedUsers > 0 ) {
         // Mensaje principal
         let results = [];
 
-        if (createdUsers > 0) {
+        if ( createdUsers > 0 ) {
           results.push(
-            `Creado en ${createdUsers} ${
-              createdUsers === 1 ? "nuevo condominio" : "nuevos condominios"
+            `Creado en ${ createdUsers } ${ createdUsers === 1 ? "nuevo condominio" : "nuevos condominios"
             }`
           );
         }
 
-        if (updatedUsers > 0) {
+        if ( updatedUsers > 0 ) {
           results.push(
-            `Actualizado en ${updatedUsers} ${
-              updatedUsers === 1
-                ? "condominio existente"
-                : "condominios existentes"
+            `Actualizado en ${ updatedUsers } ${ updatedUsers === 1
+              ? "condominio existente"
+              : "condominios existentes"
             }`
           );
         }
 
-        if (existingUsers > 0) {
+        if ( existingUsers > 0 ) {
           results.push(
-            `${existingUsers} ${
-              existingUsers === 1
-                ? "condominio ya tenía"
-                : "condominios ya tenían"
+            `${ existingUsers } ${ existingUsers === 1
+              ? "condominio ya tenía"
+              : "condominios ya tenían"
             } este usuario`
           );
         }
 
-        if (failedOperations > 0) {
+        if ( failedOperations > 0 ) {
           results.push(
-            `${failedOperations} ${
-              failedOperations === 1
-                ? "operación falló"
-                : "operaciones fallaron"
+            `${ failedOperations } ${ failedOperations === 1
+              ? "operación falló"
+              : "operaciones fallaron"
             }`
           );
         }
 
         let message = "Usuario actualizado";
-        if (results.length > 0) {
-          message += `: ${results.join(", ")}.`;
+        if ( results.length > 0 ) {
+          message += `: ${ results.join( ", " ) }.`;
         } else {
           message += ".";
         }
 
-        toast.success(message);
+        toast.success( message );
       } else {
-        toast.success("Usuario actualizado correctamente");
+        toast.success( "Usuario actualizado correctamente" );
       }
 
       onClose();
-    } catch (error) {
-      toast.error("Error al actualizar el usuario");
+    } catch ( error ) {
+      toast.error( "Error al actualizar el usuario" );
     } finally {
-      setIsUploadingPhoto(false);
-      setProcessingChange(false);
+      setIsUploadingPhoto( false );
+      setProcessingChange( false );
     }
   };
 
-  const handleCondominiumToggle = (condominiumId: string) => {
-    setFormData((prev) => ({
+  const handleCondominiumToggle = ( condominiumId: string ) => {
+    setFormData( ( prev ) => ( {
       ...prev,
-      condominiumUids: prev.condominiumUids.includes(condominiumId)
-        ? prev.condominiumUids.filter((id: string) => id !== condominiumId)
-        : [...prev.condominiumUids, condominiumId],
-    }));
+      condominiumUids: prev.condominiumUids.includes( condominiumId )
+        ? prev.condominiumUids.filter( ( id: string ) => id !== condominiumId )
+        : [ ...prev.condominiumUids, condominiumId ],
+    } ) );
   };
 
   return (
-    <Transition appear show={isOpen} as={Fragment}>
-      <Dialog as="div" className="relative z-50" onClose={onClose}>
+    <Transition appear show={ isOpen } as={ Fragment }>
+      <Dialog as="div" className="relative z-50" onClose={ onClose }>
         <Transition.Child
-          as={Fragment}
+          as={ Fragment }
           enter="ease-out duration-300"
           enterFrom="opacity-0"
           enterTo="opacity-100"
@@ -329,7 +325,7 @@ const EditUserModal = ({
         <div className="fixed inset-0 overflow-y-auto">
           <div className="flex min-h-full items-center justify-center p-4">
             <Transition.Child
-              as={Fragment}
+              as={ Fragment }
               enter="ease-out duration-300"
               enterFrom="opacity-0 scale-95"
               enterTo="opacity-100 scale-100"
@@ -344,16 +340,16 @@ const EditUserModal = ({
                 >
                   Editar Usuario
                 </Dialog.Title>
-                <form onSubmit={handleSubmit} className="space-y-4">
+                <form onSubmit={ handleSubmit } className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                       Nombre
                     </label>
                     <input
                       type="text"
-                      value={formData.name}
-                      onChange={(e) =>
-                        setFormData({ ...formData, name: e.target.value })
+                      value={ formData.name }
+                      onChange={ ( e ) =>
+                        setFormData( { ...formData, name: e.target.value } )
                       }
                       className="px-2 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm  ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
                     />
@@ -364,9 +360,9 @@ const EditUserModal = ({
                     </label>
                     <input
                       type="text"
-                      value={formData.lastName}
-                      onChange={(e) =>
-                        setFormData({ ...formData, lastName: e.target.value })
+                      value={ formData.lastName }
+                      onChange={ ( e ) =>
+                        setFormData( { ...formData, lastName: e.target.value } )
                       }
                       className="px-2 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm  ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
                     />
@@ -376,12 +372,12 @@ const EditUserModal = ({
                       Rol
                     </label>
                     <select
-                      value={formData.role}
-                      onChange={(e) =>
-                        setFormData({
+                      value={ formData.role }
+                      onChange={ ( e ) =>
+                        setFormData( {
                           ...formData,
                           role: e.target.value as "admin" | "admin-assistant",
-                        })
+                        } )
                       }
                       className="px-2 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm  ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
                     >
@@ -391,12 +387,12 @@ const EditUserModal = ({
                     <div className="mt-2 relative">
                       <button
                         type="button"
-                        onClick={() => setShowRoleHelp((prev) => !prev)}
+                        onClick={ () => setShowRoleHelp( ( prev ) => !prev ) }
                         className="text-xs text-indigo-600 dark:text-indigo-300 underline underline-offset-2"
                       >
                         ¿Qué hay de diferencia?
                       </button>
-                      {showRoleHelp && (
+                      { showRoleHelp && (
                         <div className="absolute z-20 mt-2 w-full rounded-md border border-indigo-100 bg-white p-3 text-xs text-gray-700 shadow-lg dark:border-indigo-800 dark:bg-gray-800 dark:text-gray-200">
                           <p className="font-semibold mb-1">
                             Según reglas actuales:
@@ -410,7 +406,7 @@ const EditUserModal = ({
                             contenido sensible.
                           </p>
                         </div>
-                      )}
+                      ) }
                     </div>
                   </div>
                   <div>
@@ -424,29 +420,29 @@ const EditUserModal = ({
                       <input
                         type="file"
                         accept="image/*"
-                        onChange={(e) =>
-                          setProfilePhotoFile(e.target.files?.[0] || null)
+                        onChange={ ( e ) =>
+                          setProfilePhotoFile( e.target.files?.[ 0 ] || null )
                         }
                         className="px-10 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm ring-gray-300 file:mr-3 file:rounded-md file:border-0 file:bg-indigo-50 file:px-3 file:py-1 file:text-xs file:font-medium file:text-indigo-700 hover:file:bg-indigo-100 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:file:bg-indigo-900/40 dark:file:text-indigo-200"
                       />
                     </div>
-                    {!!profilePhotoFile && (
+                    { !!profilePhotoFile && (
                       <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                        Archivo seleccionado: {profilePhotoFile.name}
+                        Archivo seleccionado: { profilePhotoFile.name }
                       </p>
-                    )}
+                    ) }
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                       Estado
                     </label>
                     <select
-                      value={formData.active.toString()}
-                      onChange={(e) =>
-                        setFormData({
+                      value={ formData.active.toString() }
+                      onChange={ ( e ) =>
+                        setFormData( {
                           ...formData,
                           active: e.target.value === "true",
-                        })
+                        } )
                       }
                       className="px-2 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm  ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
                     >
@@ -459,50 +455,50 @@ const EditUserModal = ({
                       Condominios Asignados
                     </label>
                     <div className="space-y-2 max-h-40 overflow-y-auto p-2 border border-gray-200 dark:border-gray-700 rounded">
-                      {condominiums.map((condo) => (
+                      { condominiums.map( ( condo ) => (
                         <label
-                          key={condo.id}
+                          key={ condo.id }
                           className="flex items-center space-x-2"
                         >
                           <input
                             type="checkbox"
-                            checked={formData.condominiumUids.includes(
+                            checked={ formData.condominiumUids.includes(
                               condo.id
-                            )}
-                            onChange={() => handleCondominiumToggle(condo.id)}
+                            ) }
+                            onChange={ () => handleCondominiumToggle( condo.id ) }
                             className="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                           />
                           <span className="text-sm text-gray-700 dark:text-gray-300">
-                            {condo.name}
+                            { condo.name }
                           </span>
                         </label>
-                      ))}
+                      ) ) }
                     </div>
-                    {formData.condominiumUids.length >
+                    { formData.condominiumUids.length >
                       user.condominiumUids?.length && (
-                      <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">
-                        Al agregar nuevos condominios, se copiará el usuario en
-                        cada uno de los condiminios seleccionados.
-                      </p>
-                    )}
+                        <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">
+                          Al agregar nuevos condominios, se copiará el usuario en
+                          cada uno de los condiminios seleccionados.
+                        </p>
+                      ) }
                   </div>
                   <div className="mt-4 flex justify-end space-x-2">
                     <button
                       type="button"
-                      onClick={onClose}
+                      onClick={ onClose }
                       className="inline-flex justify-center rounded-md border border-transparent bg-gray-100 px-4 py-2 text-sm font-medium text-gray-900 hover:bg-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 focus-visible:ring-offset-2"
-                      disabled={processingChange}
+                      disabled={ processingChange }
                     >
                       Cancelar
                     </button>
                     <button
                       type="submit"
                       className="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 disabled:opacity-50"
-                      disabled={processingChange || isUploadingPhoto || isCompressing}
+                      disabled={ processingChange || isUploadingPhoto || isCompressing }
                     >
-                      {processingChange || isUploadingPhoto || isCompressing
+                      { processingChange || isUploadingPhoto || isCompressing
                         ? "Procesando..."
-                        : "Guardar Cambios"}
+                        : "Guardar Cambios" }
                     </button>
                   </div>
                 </form>
@@ -521,17 +517,17 @@ interface PasswordModalProps {
   password: string;
 }
 
-const PasswordModal = ({ isOpen, onClose, password }: PasswordModalProps) => {
+const PasswordModal = ( { isOpen, onClose, password }: PasswordModalProps ) => {
   const handleCopyPassword = () => {
-    navigator.clipboard.writeText(password);
-    toast.success("Contraseña copiada al portapapeles");
+    navigator.clipboard.writeText( password );
+    toast.success( "Contraseña copiada al portapapeles" );
   };
 
   return (
-    <Transition appear show={isOpen} as={Fragment}>
-      <Dialog as="div" className="relative z-50" onClose={onClose}>
+    <Transition appear show={ isOpen } as={ Fragment }>
+      <Dialog as="div" className="relative z-50" onClose={ onClose }>
         <Transition.Child
-          as={Fragment}
+          as={ Fragment }
           enter="ease-out duration-300"
           enterFrom="opacity-0"
           enterTo="opacity-100"
@@ -545,7 +541,7 @@ const PasswordModal = ({ isOpen, onClose, password }: PasswordModalProps) => {
         <div className="fixed inset-0 overflow-y-auto">
           <div className="flex min-h-full items-center justify-center p-4">
             <Transition.Child
-              as={Fragment}
+              as={ Fragment }
               enter="ease-out duration-300"
               enterFrom="opacity-0 scale-95"
               enterTo="opacity-100 scale-100"
@@ -569,11 +565,11 @@ const PasswordModal = ({ isOpen, onClose, password }: PasswordModalProps) => {
                   <div className="flex items-center space-x-2">
                     <div className="flex-1 p-2 bg-gray-100 dark:bg-gray-700 rounded">
                       <code className="text-indigo-600 dark:text-indigo-400">
-                        {password}
+                        { password }
                       </code>
                     </div>
                     <button
-                      onClick={handleCopyPassword}
+                      onClick={ handleCopyPassword }
                       className="p-2 text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300"
                       title="Copiar contraseña"
                     >
@@ -586,7 +582,7 @@ const PasswordModal = ({ isOpen, onClose, password }: PasswordModalProps) => {
                   <button
                     type="button"
                     className="w-full inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
-                    onClick={onClose}
+                    onClick={ onClose }
                   >
                     Entendido
                   </button>
@@ -611,10 +607,10 @@ const AdminUsers = () => {
     toggleUserActive,
   } = useAdminUsersStore();
 
-  const [selectedCondominium, setSelectedCondominium] = useState("");
-  const [showCreateForm, setShowCreateForm] = useState(false);
-  const [editingUser, setEditingUser] = useState<any>(null);
-  const [formData, setFormData] = useState({
+  const [ selectedCondominium, setSelectedCondominium ] = useState( "" );
+  const [ showCreateForm, setShowCreateForm ] = useState( false );
+  const [ editingUser, setEditingUser ] = useState<any>( null );
+  const [ formData, setFormData ] = useState( {
     name: "",
     lastName: "",
     email: "",
@@ -623,92 +619,92 @@ const AdminUsers = () => {
     condominiumUids: [] as string[],
     uid: "",
     active: true,
-  });
-  const [generatedPassword, setGeneratedPassword] = useState<string>("");
-  const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [showRoleHelp, setShowRoleHelp] = useState(false);
-  const [profilePhotoFile, setProfilePhotoFile] = useState<File | null>(null);
-  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
-  const { compressFile, isCompressing } = useFileCompression({
+  } );
+  const [ generatedPassword, setGeneratedPassword ] = useState<string>( "" );
+  const [ showPasswordModal, setShowPasswordModal ] = useState( false );
+  const [ showRoleHelp, setShowRoleHelp ] = useState( false );
+  const [ profilePhotoFile, setProfilePhotoFile ] = useState<File | null>( null );
+  const [ isUploadingPhoto, setIsUploadingPhoto ] = useState( false );
+  const { compressFile, isCompressing } = useFileCompression( {
     maxSizeMB: 1,
     maxWidthOrHeight: 1200,
     useWebWorker: true,
-  });
+  } );
 
-  useEffect(() => {
+  useEffect( () => {
     const loadCondominiums = async () => {
       await fetchCondominiums();
 
       // Asegurarnos de que los condominios tengan la propiedad clientId
       // Esto es crítico para poder crear usuarios en los condominios correctamente
-      if (condominiums.length > 0 && !condominiums[0].clientId) {
-        toast.error("Error: Información de condominios incompleta");
+      if ( condominiums.length > 0 && !condominiums[ 0 ].clientId ) {
+        toast.error( "Error: Información de condominios incompleta" );
       }
     };
 
     loadCondominiums();
-  }, [fetchCondominiums]);
+  }, [ fetchCondominiums ] );
 
-  useEffect(() => {
-    if (selectedCondominium) {
-      fetchUsers(selectedCondominium);
+  useEffect( () => {
+    if ( selectedCondominium ) {
+      fetchUsers( selectedCondominium );
     }
-  }, [selectedCondominium, fetchUsers]);
+  }, [ selectedCondominium, fetchUsers ] );
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async ( e: React.FormEvent ) => {
     e.preventDefault();
-    if (!selectedCondominium) return;
+    if ( !selectedCondominium ) return;
 
     let uploadedPhotoURL = "";
-    if (profilePhotoFile) {
+    if ( profilePhotoFile ) {
       const selectedCondo = condominiums.find(
-        (condo) => condo.id === selectedCondominium
+        ( condo ) => condo.id === selectedCondominium
       );
-      if (!selectedCondo?.clientId) {
-        toast.error("No se pudo resolver el cliente del condominio.");
+      if ( !selectedCondo?.clientId ) {
+        toast.error( "No se pudo resolver el cliente del condominio." );
         return;
       }
 
-      setIsUploadingPhoto(true);
+      setIsUploadingPhoto( true );
       try {
-        const compressed = await compressFile(profilePhotoFile);
+        const compressed = await compressFile( profilePhotoFile );
         const storage = getStorage();
         const fileExtension =
-          compressed.name.split(".").pop()?.toLowerCase() || "jpg";
-        const fileName = `admin_${Date.now()}_${Math.random()
-          .toString(36)
-          .slice(2, 8)}.${fileExtension}`;
-        const path = `clients/${selectedCondo.clientId}/condominiums/${selectedCondominium}/admin/${fileName}`;
-        const fileRef = storageRef(storage, path);
+          compressed.name.split( "." ).pop()?.toLowerCase() || "jpg";
+        const fileName = `admin_${ Date.now() }_${ Math.random()
+          .toString( 36 )
+          .slice( 2, 8 ) }.${ fileExtension }`;
+        const path = `clients/${ selectedCondo.clientId }/condominiums/${ selectedCondominium }/admin/${ fileName }`;
+        const fileRef = storageRef( storage, path );
 
-        await uploadBytes(fileRef, compressed, {
+        await uploadBytes( fileRef, compressed, {
           contentType: compressed.type || "image/jpeg",
-        });
-        uploadedPhotoURL = await getDownloadURL(fileRef);
-      } catch (error) {
-        console.error("Error al subir foto de perfil:", error);
-        toast.error("No se pudo subir la foto de perfil.");
+        } );
+        uploadedPhotoURL = await getDownloadURL( fileRef );
+      } catch ( error ) {
+        console.error( "Error al subir foto de perfil:", error );
+        toast.error( "No se pudo subir la foto de perfil." );
         return;
       } finally {
-        setIsUploadingPhoto(false);
+        setIsUploadingPhoto( false );
       }
     }
 
     const userData = {
       ...formData,
       photoURL: uploadedPhotoURL || formData.photoURL || "",
-      condominiumUids: [selectedCondominium],
+      condominiumUids: [ selectedCondominium ],
       uid: Date.now().toString(),
     };
 
-    const result = await createUser(userData);
-    if (result.success && result.password) {
-      setGeneratedPassword(result.password);
-      setShowPasswordModal(true);
-      await fetchUsers(selectedCondominium);
+    const result = await createUser( userData );
+    if ( result.success && result.password ) {
+      setGeneratedPassword( result.password );
+      setShowPasswordModal( true );
+      await fetchUsers( selectedCondominium );
     }
-    setShowCreateForm(false);
-    setFormData({
+    setShowCreateForm( false );
+    setFormData( {
       name: "",
       lastName: "",
       email: "",
@@ -717,14 +713,14 @@ const AdminUsers = () => {
       condominiumUids: [],
       uid: "",
       active: true,
-    });
-    setProfilePhotoFile(null);
+    } );
+    setProfilePhotoFile( null );
   };
 
-  const handleToggleActive = async (userId: string, active: boolean) => {
-    await toggleUserActive(userId, active);
-    if (selectedCondominium) {
-      await fetchUsers(selectedCondominium);
+  const handleToggleActive = async ( userId: string, active: boolean ) => {
+    await toggleUserActive( userId, active, selectedCondominium );
+    if ( selectedCondominium ) {
+      await fetchUsers( selectedCondominium );
     }
   };
 
@@ -734,14 +730,14 @@ const AdminUsers = () => {
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
           Usuarios Administrativos
         </h2>
-        {selectedCondominium && users.length < 2 && (
+        { selectedCondominium && users.length < 2 && (
           <button
-            onClick={() => setShowCreateForm(true)}
+            onClick={ () => setShowCreateForm( true ) }
             className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition-colors"
           >
             Nuevo Usuario
           </button>
-        )}
+        ) }
       </div>
 
       <div className="w-full md:w-1/2">
@@ -749,22 +745,22 @@ const AdminUsers = () => {
           Seleccionar Condominio
         </label>
         <select
-          value={selectedCondominium}
-          onChange={(e) => setSelectedCondominium(e.target.value)}
+          value={ selectedCondominium }
+          onChange={ ( e ) => setSelectedCondominium( e.target.value ) }
           className="px-2 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm  ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
         >
           <option value="">Seleccione un condominio</option>
-          {condominiums.map((condo) => (
-            <option key={condo.id} value={condo.id}>
-              {condo.name}
+          { condominiums.map( ( condo ) => (
+            <option key={ condo.id } value={ condo.id }>
+              { condo.name }
             </option>
-          ))}
+          ) ) }
         </select>
       </div>
 
-      {showCreateForm && selectedCondominium && (
+      { showCreateForm && selectedCondominium && (
         <form
-          onSubmit={handleSubmit}
+          onSubmit={ handleSubmit }
           className="space-y-4 bg-gray-50 dark:bg-gray-700 p-4 rounded-lg"
         >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -779,9 +775,9 @@ const AdminUsers = () => {
                 <input
                   type="text"
                   required
-                  value={formData.name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, name: e.target.value })
+                  value={ formData.name }
+                  onChange={ ( e ) =>
+                    setFormData( { ...formData, name: e.target.value } )
                   }
                   className="px-10 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm  ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
                 />
@@ -798,9 +794,9 @@ const AdminUsers = () => {
                 <input
                   type="text"
                   required
-                  value={formData.lastName}
-                  onChange={(e) =>
-                    setFormData({ ...formData, lastName: e.target.value })
+                  value={ formData.lastName }
+                  onChange={ ( e ) =>
+                    setFormData( { ...formData, lastName: e.target.value } )
                   }
                   className="px-10 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm  ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
                 />
@@ -817,9 +813,9 @@ const AdminUsers = () => {
                 <input
                   type="email"
                   required
-                  value={formData.email}
-                  onChange={(e) =>
-                    setFormData({ ...formData, email: e.target.value })
+                  value={ formData.email }
+                  onChange={ ( e ) =>
+                    setFormData( { ...formData, email: e.target.value } )
                   }
                   className="px-10 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm  ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
                 />
@@ -835,12 +831,12 @@ const AdminUsers = () => {
                 </div>
                 <select
                   required
-                  value={formData.role}
-                  onChange={(e) =>
-                    setFormData({
+                  value={ formData.role }
+                  onChange={ ( e ) =>
+                    setFormData( {
                       ...formData,
                       role: e.target.value as "admin" | "admin-assistant",
-                    })
+                    } )
                   }
                   className="px-10 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm  ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
                 >
@@ -851,12 +847,12 @@ const AdminUsers = () => {
               <div className="mt-2 relative">
                 <button
                   type="button"
-                  onClick={() => setShowRoleHelp((prev) => !prev)}
+                  onClick={ () => setShowRoleHelp( ( prev ) => !prev ) }
                   className="text-xs text-indigo-600 dark:text-indigo-300 underline underline-offset-2"
                 >
                   ¿Qué hay de diferencia?
                 </button>
-                {showRoleHelp && (
+                { showRoleHelp && (
                   <div className="absolute z-20 mt-2 w-full rounded-md border border-indigo-100 bg-white p-3 text-xs text-gray-700 shadow-lg dark:border-indigo-800 dark:bg-gray-800 dark:text-gray-200">
                     <p className="font-semibold mb-1">Según reglas actuales:</p>
                     <p>
@@ -869,7 +865,7 @@ const AdminUsers = () => {
                       gastos, pagos y otros registros).
                     </p>
                   </div>
-                )}
+                ) }
               </div>
             </div>
             <div>
@@ -883,43 +879,43 @@ const AdminUsers = () => {
                 <input
                   type="file"
                   accept="image/*"
-                  onChange={(e) =>
-                    setProfilePhotoFile(e.target.files?.[0] || null)
+                  onChange={ ( e ) =>
+                    setProfilePhotoFile( e.target.files?.[ 0 ] || null )
                   }
                   className="px-10 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm ring-gray-300 file:mr-3 file:rounded-md file:border-0 file:bg-indigo-50 file:px-3 file:py-1 file:text-xs file:font-medium file:text-indigo-700 hover:file:bg-indigo-100 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:file:bg-indigo-900/40 dark:file:text-indigo-200"
                 />
               </div>
-              {!!profilePhotoFile && (
+              { !!profilePhotoFile && (
                 <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                  Archivo seleccionado: {profilePhotoFile.name}
+                  Archivo seleccionado: { profilePhotoFile.name }
                 </p>
-              )}
+              ) }
             </div>
           </div>
           <div className="flex justify-end space-x-2">
             <button
               type="button"
-              onClick={() => setShowCreateForm(false)}
+              onClick={ () => setShowCreateForm( false ) }
               className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 dark:bg-gray-600 dark:text-white dark:border-gray-500 dark:hover:bg-gray-500"
             >
               Cancelar
             </button>
             <button
               type="submit"
-              disabled={isUploadingPhoto || isCompressing}
+              disabled={ isUploadingPhoto || isCompressing }
               className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
             >
-              {isUploadingPhoto || isCompressing
+              { isUploadingPhoto || isCompressing
                 ? "Subiendo foto..."
-                : "Crear Usuario"}
+                : "Crear Usuario" }
             </button>
           </div>
         </form>
-      )}
+      ) }
 
-      {loading && <div className="text-center">Cargando...</div>}
+      { loading && <div className="text-center">Cargando...</div> }
 
-      {selectedCondominium && users.length > 0 && (
+      { selectedCondominium && users.length > 0 && (
         <div className="mt-4 overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
             <thead className="bg-gray-50 dark:bg-gray-700">
@@ -942,79 +938,78 @@ const AdminUsers = () => {
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-              {users.map((user) => (
-                <tr key={user.id}>
+              { users.map( ( user ) => (
+                <tr key={ user.id }>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
-                      {user.photoURL || user.photoUrl ? (
+                      { user.photoURL || user.photoUrl ? (
                         <img
-                          className="h-8 w-8 rounded-full"
-                          src={user.photoURL || user.photoUrl}
-                          alt={user.name}
+                          className="h-8 w-8 rounded-full object-cover"
+                          src={ user.photoURL || user.photoUrl }
+                          alt={ user.name }
                         />
                       ) : (
                         <UserCircleIcon className="h-8 w-8 text-gray-400" />
-                      )}
+                      ) }
                       <div className="ml-4">
                         <div className="text-sm font-medium text-gray-900 dark:text-white">
-                          {user.name} {user.lastName}
+                          { user.name } { user.lastName }
                         </div>
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-900 dark:text-white">
-                      {user.email}
+                      { user.email }
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100">
-                      {user.role === "admin" ? "Administrador" : "Asistente"}
+                      { user.role === "admin" ? "Administrador" : "Asistente" }
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <button
-                      onClick={() => handleToggleActive(user.id!, !user.active)}
-                      className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        user.active
+                      onClick={ () => handleToggleActive( user.id!, !user.active ) }
+                      className={ `px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${ user.active
                           ? "bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100"
                           : "bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100"
-                      }`}
+                        }` }
                     >
-                      {user.active ? "Activo" : "Inactivo"}
+                      { user.active ? "Activo" : "Inactivo" }
                     </button>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <button
-                      onClick={() => setEditingUser(user)}
+                      onClick={ () => setEditingUser( user ) }
                       className="bg-indigo-600 px-3 py-2 rounded-md text-white hover:bg-indigo-700 ml-2"
                     >
                       Editar
                     </button>
                   </td>
                 </tr>
-              ))}
+              ) ) }
             </tbody>
           </table>
         </div>
-      )}
+      ) }
 
-      {editingUser && (
+      { editingUser && (
         <EditUserModal
-          isOpen={!!editingUser}
-          onClose={() => setEditingUser(null)}
-          user={editingUser}
-          condominiums={condominiums}
+          isOpen={ !!editingUser }
+          onClose={ () => setEditingUser( null ) }
+          user={ editingUser }
+          condominiums={ condominiums }
         />
-      )}
+      ) }
 
-      {showPasswordModal && (
+      { showPasswordModal && (
         <PasswordModal
-          isOpen={showPasswordModal}
-          onClose={() => setShowPasswordModal(false)}
-          password={generatedPassword}
+          isOpen={ showPasswordModal }
+          onClose={ () => setShowPasswordModal( false ) }
+          password={ generatedPassword }
         />
-      )}
+      ) }
     </div>
   );
 };
