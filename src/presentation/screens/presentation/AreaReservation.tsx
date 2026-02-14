@@ -29,20 +29,20 @@ const AreaReservation = () => {
     <motion.section
       initial="hidden"
       whileInView="visible"
-      viewport={{ once: true, margin: "-100px" }}
-      variants={containerVariants}
+      viewport={ { once: true, margin: "-100px" } }
+      variants={ containerVariants }
       className="relative py-12 sm:py-16 lg:py-20"
     >
       <div className="px-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:items-center gap-y-8 md:grid-cols-2 md:gap-x-16">
-          <motion.div variants={itemVariants}>
+          <motion.div variants={ itemVariants }>
             <img
-              style={{
+              style={ {
                 filter:
                   "drop-shadow(0 0 20px rgba(68, 255, 154, 0.1)) drop-shadow(0 0 15px rgba(139, 90, 255, 0.3)) drop-shadow(0 0 15px rgba(139, 68, 255, 0.3)) drop-shadow(0 0 20px rgba(255, 102, 68, 0.1)) drop-shadow(0 0 20px rgba(235, 255, 112, 0.1))",
-              }}
+              } }
               className="w-full max-w-sm mx-auto"
-              src="https://res.cloudinary.com/dz5tntwl1/image/upload/v1744243752/OmniPixel/4_kldikc.svg"
+              src="https://res.cloudinary.com/dz5tntwl1/image/upload/v1771035689/4_kldikc_umubcl.svg"
               alt="Reserva de áreas comunes"
               loading="lazy"
               decoding="async"
@@ -50,8 +50,8 @@ const AreaReservation = () => {
             />
           </motion.div>
 
-          <motion.div variants={itemVariants}>
-            {/* Badge Superior */}
+          <motion.div variants={ itemVariants }>
+            {/* Badge Superior */ }
             <div className="inline-flex items-center gap-2 px-4 py-2 mb-6 rounded-full bg-gradient-to-r from-pink-500/10 via-rose-500/10 to-pink-500/10 dark:from-pink-500/20 dark:via-rose-500/20 dark:to-pink-500/20 border border-pink-200/50 dark:border-pink-700/50 backdrop-blur-sm">
               <CalendarDaysIcon className="h-4 w-4 text-pink-600 dark:text-pink-400" />
               <span className="text-sm font-semibold text-pink-600 dark:text-pink-400">
@@ -108,11 +108,11 @@ const AreaReservation = () => {
             </svg>
 
             <motion.ul
-              variants={containerVariants}
+              variants={ containerVariants }
               className="mt-5 space-y-5 sm:mt-10"
             >
               <motion.li
-                variants={itemVariants}
+                variants={ itemVariants }
                 className="flex items-center text-gray-900 dark:text-gray-100"
               >
                 <svg
@@ -135,7 +135,7 @@ const AreaReservation = () => {
               </motion.li>
 
               <motion.li
-                variants={itemVariants}
+                variants={ itemVariants }
                 className="flex items-center text-gray-900 dark:text-gray-100"
               >
                 <svg
@@ -158,7 +158,7 @@ const AreaReservation = () => {
               </motion.li>
 
               <motion.li
-                variants={itemVariants}
+                variants={ itemVariants }
                 className="flex items-center text-gray-900 dark:text-gray-100"
               >
                 <svg

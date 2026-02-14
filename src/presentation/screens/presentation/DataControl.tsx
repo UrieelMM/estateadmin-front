@@ -12,7 +12,7 @@ const DataControl = () => {
       <div className="max-w-7xl px-4 mx-auto sm:px-6 lg:px-8">
         <div className="grid items-center grid-cols-1 gap-y-6 md:grid-cols-2 md:gap-x-20">
           <div>
-            {/* Badge Superior */}
+            {/* Badge Superior */ }
             <div className="inline-flex items-center gap-2 px-4 py-2 mb-6 rounded-full bg-gradient-to-r from-green-500/10 via-emerald-500/10 to-green-500/10 dark:from-green-500/20 dark:via-emerald-500/20 dark:to-green-500/20 border border-green-200/50 dark:border-green-700/50 backdrop-blur-sm">
               <ShieldCheckIcon className="h-4 w-4 text-green-600 dark:text-green-400" />
               <span className="text-sm font-semibold text-green-600 dark:text-green-400">
@@ -91,11 +91,11 @@ const DataControl = () => {
             <div className="relative w-full max-w-xs mt-4 mb-10 ml-auto">
               <img
                 className="ml-auto rounded-lg"
-                style={{
+                style={ {
                   filter:
                     "drop-shadow(0 0 20px rgba(68, 255, 154, 0.1)) drop-shadow(0 0 15px rgba(139, 90, 255, 0.3)) drop-shadow(0 0 15px rgba(139, 68, 255, 0.3)) drop-shadow(0 0 20px rgba(255, 102, 68, 0.1)) drop-shadow(0 0 20px rgba(235, 255, 112, 0.1))",
-                }}
-                src="https://res.cloudinary.com/dz5tntwl1/image/upload/v1744327578/OmniPixel/asset10_kf8320.svg"
+                } }
+                src="https://res.cloudinary.com/dz5tntwl1/image/upload/v1771035690/asset10_kf8320_seive0.svg"
                 alt="Control de datos"
                 loading="lazy"
                 decoding="async"

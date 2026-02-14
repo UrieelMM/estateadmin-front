@@ -47,16 +47,16 @@ const FinancialDetails = () => {
     <motion.section
       initial="hidden"
       whileInView="visible"
-      viewport={{ once: true, margin: "-100px" }}
-      variants={containerVariants}
+      viewport={ { once: true, margin: "-100px" } }
+      variants={ containerVariants }
       className="relative py-12 sm:py-16 lg:py-20"
     >
       <div className="px-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
         <motion.div
-          variants={itemVariants}
+          variants={ itemVariants }
           className="max-w-4xl px-4 mx-auto text-center sm:px-0"
         >
-          {/* Badge Superior */}
+          {/* Badge Superior */ }
           <div className="inline-flex items-center gap-2 px-4 py-2 mb-6 rounded-full bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-pink-500/10 dark:from-indigo-500/20 dark:via-purple-500/20 dark:to-pink-500/20 border border-indigo-200/50 dark:border-indigo-700/50 backdrop-blur-sm">
             <SparklesIcon className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
             <span className="text-sm font-semibold text-indigo-600 dark:text-indigo-400">
@@ -79,15 +79,15 @@ const FinancialDetails = () => {
         </motion.div>
 
         <motion.div
-          variants={containerVariants}
+          variants={ containerVariants }
           className="relative max-w-md mx-auto mt-12 md:max-w-none md:mt-20"
         >
           <motion.div
-            variants={itemVariants}
+            variants={ itemVariants }
             className="absolute inset-x-0 hidden top-36 xl:block"
           >
             <motion.img
-              transition={{ type: "spring", stiffness: 300 }}
+              transition={ { type: "spring", stiffness: 300 } }
               className="object-contain w-full h-auto max-w-xl mx-auto"
               src="https://cdn.rareblocks.xyz/collection/clarity/images/how-it-works/2/line-pattern.png"
               alt=""
@@ -95,18 +95,18 @@ const FinancialDetails = () => {
           </motion.div>
 
           <motion.div
-            variants={containerVariants}
+            variants={ containerVariants }
             className="grid grid-cols-1 text-center md:text-left md:grid-cols-3 md:gap-x-16 gap-y-12 xl:gap-x-32"
           >
             <motion.div
-              variants={cardVariants}
+              variants={ cardVariants }
               className="group relative flex flex-col justify-between"
             >
-              {/* Glassmorphism Card Background */}
+              {/* Glassmorphism Card Background */ }
               <div className="absolute inset-0 bg-gradient-to-br from-white/80 to-indigo-50/50 dark:from-gray-800/80 dark:to-indigo-900/30 backdrop-blur-sm rounded-2xl border border-white/20 dark:border-gray-700/20 shadow-xl opacity-0 transition-opacity duration-300 -z-10"></div>
 
               <motion.div className="relative flex-shrink-0 mx-8 md:mx-0">
-                {/* Icon Badge */}
+                {/* Icon Badge */ }
                 <div className="absolute -top-4 -right-4 z-10">
                   <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-3 rounded-xl shadow-lg">
                     <ChartBarIcon className="h-5 w-5 text-white" />
@@ -115,17 +115,17 @@ const FinancialDetails = () => {
 
                 <motion.img
                   className="relative w-full h-auto mx-auto rounded-lg max-w-[200px] transition-all duration-300 group-hover:drop-shadow-2xl"
-                  style={{
+                  style={ {
                     filter:
                       "drop-shadow(0 0 20px rgba(68, 255, 154, 0.1)) drop-shadow(0 0 15px rgba(139, 90, 255, 0.2)) drop-shadow(0 0 15px rgba(139, 68, 255, 0.2)) drop-shadow(0 0 20px rgba(255, 102, 68, 0.1)) drop-shadow(0 0 20px rgba(235, 255, 112, 0.1))",
-                  }}
-                  src="https://res.cloudinary.com/dz5tntwl1/image/upload/v1744238996/OmniPixel/1_fc7uk1.svg"
+                  } }
+                  src="https://res.cloudinary.com/dz5tntwl1/image/upload/v1771035205/1_igwfte.svg"
                   alt="Pagos Sencillos"
                 />
               </motion.div>
 
               <motion.div
-                variants={itemVariants}
+                variants={ itemVariants }
                 className="mt-6 md:mt-10 relative z-10"
               >
                 <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 font-pj">
@@ -137,7 +137,7 @@ const FinancialDetails = () => {
                   cada residente.
                 </p>
 
-                {/* Feature Tags */}
+                {/* Feature Tags */ }
                 <div className="flex flex-wrap gap-2 mt-4">
                   <span className="px-3 py-1 text-xs font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 rounded-full">
                     Automático
@@ -150,14 +150,14 @@ const FinancialDetails = () => {
             </motion.div>
 
             <motion.div
-              variants={cardVariants}
+              variants={ cardVariants }
               className="group relative flex flex-col justify-between"
             >
-              {/* Glassmorphism Card Background */}
+              {/* Glassmorphism Card Background */ }
               <div className="absolute inset-0 bg-gradient-to-br from-white/80 to-purple-50/50 backdrop-blur-sm rounded-2xl border border-white/20 shadow-xl opacity-0 transition-opacity duration-300 -z-10"></div>
 
               <motion.div className="relative flex-shrink-0 mx-8 md:mx-0">
-                {/* Icon Badge */}
+                {/* Icon Badge */ }
                 <div className="absolute -top-4 -right-4 z-10">
                   <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-3 rounded-xl shadow-lg">
                     <BellAlertIcon className="h-5 w-5 text-white" />
@@ -166,17 +166,17 @@ const FinancialDetails = () => {
 
                 <motion.img
                   className="relative w-full h-auto mx-auto rounded-lg max-w-[200px] transition-all duration-300 group-hover:drop-shadow-2xl"
-                  style={{
+                  style={ {
                     filter:
                       "drop-shadow(0 0 20px rgba(68, 255, 154, 0.1)) drop-shadow(0 0 15px rgba(139, 90, 255, 0.2)) drop-shadow(0 0 15px rgba(139, 68, 255, 0.2)) drop-shadow(0 0 20px rgba(255, 102, 68, 0.1)) drop-shadow(0 0 20px rgba(235, 255, 112, 0.1))",
-                  }}
-                  src="https://res.cloudinary.com/dz5tntwl1/image/upload/v1744243752/OmniPixel/5_vxlcht.svg"
+                  } }
+                  src="https://res.cloudinary.com/dz5tntwl1/image/upload/v1771035205/2_l6yqii.svg"
                   alt="Notificaciones Automáticas"
                 />
               </motion.div>
 
               <motion.div
-                variants={itemVariants}
+                variants={ itemVariants }
                 className="mt-6 md:mt-10 relative z-10"
               >
                 <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 font-pj">
@@ -187,7 +187,7 @@ const FinancialDetails = () => {
                   para pagos y confirmaciones.
                 </p>
 
-                {/* Feature Tags */}
+                {/* Feature Tags */ }
                 <div className="flex flex-wrap gap-2 mt-4">
                   <span className="px-3 py-1 text-xs font-medium text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/30 rounded-full">
                     Instantáneo
@@ -200,14 +200,14 @@ const FinancialDetails = () => {
             </motion.div>
 
             <motion.div
-              variants={cardVariants}
+              variants={ cardVariants }
               className="group relative flex flex-col justify-between"
             >
-              {/* Glassmorphism Card Background */}
+              {/* Glassmorphism Card Background */ }
               <div className="absolute inset-0 bg-gradient-to-br from-white/80 to-pink-50/50 backdrop-blur-sm rounded-2xl border border-white/20 shadow-xl opacity-0 transition-opacity duration-300 -z-10"></div>
 
               <motion.div className="relative flex-shrink-0 mx-8 md:mx-0">
-                {/* Icon Badge */}
+                {/* Icon Badge */ }
                 <div className="absolute -top-4 -right-4 z-10">
                   <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-3 rounded-xl shadow-lg">
                     <DocumentChartBarIcon className="h-5 w-5 text-white" />
@@ -216,17 +216,17 @@ const FinancialDetails = () => {
 
                 <motion.img
                   className="relative w-full h-auto mx-auto rounded-lg max-w-[200px] transition-all duration-300 group-hover:drop-shadow-2xl"
-                  style={{
+                  style={ {
                     filter:
                       "drop-shadow(0 0 20px rgba(68, 255, 154, 0.1)) drop-shadow(0 0 15px rgba(139, 90, 255, 0.2)) drop-shadow(0 0 15px rgba(139, 68, 255, 0.2)) drop-shadow(0 0 20px rgba(255, 102, 68, 0.1)) drop-shadow(0 0 20px rgba(235, 255, 112, 0.1))",
-                  }}
-                  src="https://res.cloudinary.com/dz5tntwl1/image/upload/v1744238997/OmniPixel/3_en0ihl.svg"
+                  } }
+                  src="https://res.cloudinary.com/dz5tntwl1/image/upload/v1771035205/3_zzauer.svg"
                   alt="Reportes Financieros"
                 />
               </motion.div>
 
               <motion.div
-                variants={itemVariants}
+                variants={ itemVariants }
                 className="mt-6 md:mt-10 relative z-10"
               >
                 <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 font-pj ">
@@ -238,7 +238,7 @@ const FinancialDetails = () => {
                   real.
                 </p>
 
-                {/* Feature Tags */}
+                {/* Feature Tags */ }
                 <div className="flex flex-wrap gap-2 mt-4">
                   <span className="px-3 py-1 text-xs font-medium text-pink-600 dark:text-pink-400 bg-pink-50 dark:bg-pink-900/30 rounded-full">
                     Tiempo Real
