@@ -2,11 +2,15 @@ import { useEffect, useMemo } from "react";
 import { ArrowDownTrayIcon, ArrowPathIcon } from "@heroicons/react/24/outline";
 import { useAuditTrailStore } from "../../../../store/useAuditTrailStore";
 
+type AuditTrailProps = {
+  defaultModule?: string;
+};
+
 function formatDate(value: Date | null) {
   return value ? value.toLocaleString("es-MX") : "-";
 }
 
-const AuditTrail = () => {
+const AuditTrail = ({ defaultModule }: AuditTrailProps) => {
   const {
     loading,
     error,
@@ -25,6 +29,22 @@ const AuditTrail = () => {
   useEffect(() => {
     fetchLogs();
   }, [fetchLogs]);
+
+  useEffect(() => {
+    if (!defaultModule) return;
+    setFilters({ module: defaultModule });
+  }, [defaultModule, setFilters]);
+
+  useEffect(() => {
+    if (defaultModule) return;
+    setFilters({
+      module: "",
+      action: "",
+      search: "",
+      dateFrom: "",
+      dateTo: "",
+    });
+  }, [defaultModule, setFilters]);
 
   const moduleOptions = useMemo(() => {
     const values = new Set(logs.map((item) => item.module).filter(Boolean));
@@ -83,9 +103,10 @@ const AuditTrail = () => {
           <select
             value={filters.module}
             onChange={(e) => setFilters({ module: e.target.value })}
+            disabled={Boolean(defaultModule)}
             className="rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
           >
-            <option value="">Todos los módulos</option>
+            {!defaultModule && <option value="">Todos los módulos</option>}
             {moduleOptions.map((option) => (
               <option key={option} value={option}>
                 {option}
@@ -141,6 +162,9 @@ const AuditTrail = () => {
                   Acción
                 </th>
                 <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  Operación
+                </th>
+                <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
                   Entidad
                 </th>
                 <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
@@ -155,7 +179,7 @@ const AuditTrail = () => {
               {filteredLogs.length === 0 && (
                 <tr>
                   <td
-                    colSpan={6}
+                    colSpan={7}
                     className="px-4 py-10 text-center text-sm text-gray-500 dark:text-gray-400"
                   >
                     {loading ? "Cargando auditoría..." : "Sin eventos para mostrar."}
@@ -172,6 +196,9 @@ const AuditTrail = () => {
                   </td>
                   <td className="px-3 py-3 text-sm text-gray-700 dark:text-gray-200">
                     {item.action}
+                  </td>
+                  <td className="px-3 py-3 text-xs text-gray-700 dark:text-gray-200">
+                    {item.operation || "-"}
                   </td>
                   <td className="px-3 py-3 text-xs text-gray-700 dark:text-gray-200">
                     <p>{item.entityType}</p>

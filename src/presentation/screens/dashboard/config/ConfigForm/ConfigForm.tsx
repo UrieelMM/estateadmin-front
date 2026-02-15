@@ -21,6 +21,7 @@ import {
   DocumentTextIcon,
   UsersIcon,
   ChartBarIcon,
+  ClipboardDocumentCheckIcon,
 } from "@heroicons/react/24/solid";
 import FinancialAccounts from "../FinancialAccounts";
 import { useTheme } from "../../../../../context/Theme/ThemeContext";
@@ -32,6 +33,7 @@ import useClientInvoicesStore from "../../../../../store/useClientInvoicesStore"
 import PaymentMessageEditor from "../PaymentMessageEditor/PaymentMessageEditor";
 import CommitteeManagement from "../committee/CommitteeManagement";
 import ClientInvoicesTable from "../../client/invoices/ClientInvoicesTable";
+import AuditTrail from "../../audit/AuditTrail";
 
 const ConfigForm = () => {
   const { config, loading, error, fetchConfig, updateConfig, hasMaintenanceApp, checkMaintenanceAppAccess } =
@@ -195,6 +197,11 @@ const ConfigForm = () => {
           id: "users",
           label: "Administradores",
           icon: UsersIcon,
+        },
+        {
+          id: "audit",
+          label: "Auditoría",
+          icon: ClipboardDocumentCheckIcon,
         },
       ]
       : [] ),
@@ -881,6 +888,25 @@ const ConfigForm = () => {
           </div>
           <div className="p-6">
             <CommitteeManagement />
+          </div>
+        </div>
+      ) }
+
+      { userRole === "admin" && activeTab === "audit" && (
+        <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-3xl border border-gray-200/50 dark:border-gray-700/50 shadow-2xl overflow-hidden">
+          <div className="bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 dark:from-indigo-800 dark:via-purple-700 dark:to-indigo-800 p-4">
+            <div className="flex items-center gap-3 text-white">
+              <ClipboardDocumentCheckIcon className="h-8 w-8" />
+              <div>
+                <h2 className="text-lg md:text-xl font-bold">Auditoría</h2>
+                <p className="text-white/80">
+                  Trazabilidad de acciones críticas del sistema
+                </p>
+              </div>
+            </div>
+          </div>
+          <div className="p-6">
+            <AuditTrail />
           </div>
         </div>
       ) }

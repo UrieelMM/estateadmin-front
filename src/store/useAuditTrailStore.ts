@@ -8,6 +8,7 @@ type AuditLogItem = {
   entityType: string;
   entityId: string;
   action: string;
+  operation: string;
   summary: string;
   createdAt: Date | null;
   userName: string;
@@ -126,6 +127,7 @@ export const useAuditTrailStore = create<AuditTrailState>()((set, get) => ({
           entityType: String(data.entityType || ""),
           entityId: String(data.entityId || ""),
           action: String(data.action || ""),
+          operation: String(data?.metadata?.operation || ""),
           summary: String(data.summary || ""),
           createdAt: toDateOrNull(data.createdAt),
           userName: String(data?.performedBy?.displayName || ""),
@@ -186,6 +188,7 @@ export const useAuditTrailStore = create<AuditTrailState>()((set, get) => ({
       "fecha",
       "modulo",
       "accion",
+      "operacion",
       "entidad",
       "entidadId",
       "resumen",
@@ -197,6 +200,7 @@ export const useAuditTrailStore = create<AuditTrailState>()((set, get) => ({
       item.createdAt ? item.createdAt.toISOString() : "",
       item.module,
       item.action,
+      item.operation,
       item.entityType,
       item.entityId,
       item.summary,
@@ -211,4 +215,3 @@ export const useAuditTrailStore = create<AuditTrailState>()((set, get) => ({
       .join("\n");
   },
 }));
-

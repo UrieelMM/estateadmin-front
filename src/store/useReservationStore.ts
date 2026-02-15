@@ -13,6 +13,7 @@ import {
   deleteDoc,
 } from "firebase/firestore";
 import { getAuth, getIdTokenResult } from "firebase/auth";
+import { writeAuditLog } from "../services/auditService";
 
 export interface CalendarEvent {
   id: string;
@@ -249,7 +250,27 @@ export const useCalendarEventsStore = create<CalendarEventsState>()(
           db,
           `clients/${clientId}/condominiums/${condominiumId}/calendarEvents`
         );
-        await addDoc(eventsRef, { ...data, folio });
+        const createdRef = await addDoc(eventsRef, { ...data, folio });
+
+        await writeAuditLog({
+          module: "Calendario",
+          entityType: "calendar_event",
+          entityId: createdRef.id,
+          action: "create",
+          summary: `Se creó el evento ${data.commonArea} - ${data.eventDay}`,
+          after: {
+            name: data.name,
+            number: data.number,
+            commonArea: data.commonArea,
+            eventDay: data.eventDay,
+            startTime: data.startTime,
+            endTime: data.endTime,
+            folio,
+          },
+          metadata: {
+            operation: "create_event",
+          },
+        });
 
         // Refrescar la lista de eventos
         await get().fetchEvents();
@@ -330,6 +351,7 @@ export const useCalendarEventsStore = create<CalendarEventsState>()(
     ) => {
       set({ loading: true, error: null });
       try {
+        const oldEvent = get().events.find((event) => event.id === id) || null;
         // Sólo se permiten actualizar los siguientes campos:
         const allowedFields = [
           "eventDay",
@@ -370,6 +392,37 @@ export const useCalendarEventsStore = create<CalendarEventsState>()(
           id
         );
         await updateDoc(eventDocRef, updateData);
+
+        await writeAuditLog({
+          module: "Calendario",
+          entityType: "calendar_event",
+          entityId: id,
+          action: "update",
+          summary: `Se actualizó un evento de calendario`,
+          before: oldEvent
+            ? {
+                commonArea: oldEvent.commonArea,
+                eventDay: oldEvent.eventDay,
+                startTime: oldEvent.startTime,
+                endTime: oldEvent.endTime,
+                comments: oldEvent.comments || "",
+              }
+            : null,
+          after: {
+            commonArea: updateData.commonArea || oldEvent?.commonArea || "",
+            eventDay: updateData.eventDay || oldEvent?.eventDay || "",
+            startTime: updateData.startTime || oldEvent?.startTime || "",
+            endTime: updateData.endTime || oldEvent?.endTime || "",
+            comments:
+              typeof updateData.comments === "string"
+                ? updateData.comments
+                : oldEvent?.comments || "",
+          },
+          metadata: {
+            operation: "update_event",
+          },
+        });
+
         await get().fetchEvents();
       } catch (error: any) {
         console.error("Error updating event:", error);
@@ -386,6 +439,7 @@ export const useCalendarEventsStore = create<CalendarEventsState>()(
     deleteEvent: async (id: string) => {
       set({ loading: true, error: null });
       try {
+        const oldEvent = get().events.find((event) => event.id === id) || null;
         const auth = getAuth();
         const user = auth.currentUser;
         if (!user) {
@@ -406,6 +460,29 @@ export const useCalendarEventsStore = create<CalendarEventsState>()(
           id
         );
         await deleteDoc(eventDocRef);
+
+        await writeAuditLog({
+          module: "Calendario",
+          entityType: "calendar_event",
+          entityId: id,
+          action: "delete",
+          summary: `Se eliminó un evento de calendario`,
+          before: oldEvent
+            ? {
+                name: oldEvent.name,
+                number: oldEvent.number,
+                commonArea: oldEvent.commonArea,
+                eventDay: oldEvent.eventDay,
+                startTime: oldEvent.startTime,
+                endTime: oldEvent.endTime,
+                folio: oldEvent.folio,
+              }
+            : null,
+          metadata: {
+            operation: "delete_event",
+          },
+        });
+
         await get().fetchEvents();
       } catch (error: any) {
         console.error("Error deleting event:", error);

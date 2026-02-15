@@ -9,6 +9,7 @@ import {
   ChartBarIcon,
   CalendarIcon,
   BellIcon,
+  ClipboardDocumentCheckIcon,
 } from "@heroicons/react/24/solid";
 import { usePersonalAdministrationStore } from "../../../../store/PersonalAdministration";
 import { useTicketsStore } from "../maintenance/tickets/ticketsStore";
@@ -18,6 +19,7 @@ import ScheduleManagement from "./ScheduleManagement";
 import TaskManagement from "./TaskManagement";
 import Reports from "./Reports";
 import ActivityLog from "./ActivityLog";
+import AuditTrail from "../audit/AuditTrail";
 
 interface TabItem {
   id: string;
@@ -62,6 +64,12 @@ const tabs: TabItem[] = [
     name: "Reportes",
     icon: DocumentTextIcon,
     component: Reports,
+  },
+  {
+    id: "audit",
+    name: "Auditoría",
+    icon: ClipboardDocumentCheckIcon,
+    component: () => <AuditTrail defaultModule="Personal" />,
   },
 ];
 

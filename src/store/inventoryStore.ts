@@ -20,6 +20,7 @@ import {
   getDownloadURL,
 } from "firebase/storage";
 import toast from "react-hot-toast";
+import { writeAuditLog } from "../services/auditService";
 
 // Tipos de item
 export enum ItemType {
@@ -425,6 +426,21 @@ const useInventoryStore = create<InventoryStore>()((set, get) => ({
         notes: "Elemento creado en el inventario",
       });
 
+      await writeAuditLog({
+        module: "Inventario",
+        entityType: "inventory_item",
+        entityId: itemId,
+        action: "create",
+        summary: `Se creó el ítem de inventario ${item.name}`,
+        after: {
+          name: item.name,
+          category: item.category,
+          status: item.status,
+          stock: item.stock,
+          minStock: item.minStock,
+        },
+      });
+
       set((state) => ({
         items: [addedItem, ...state.items],
         filteredItems: [addedItem, ...state.filteredItems],
@@ -624,6 +640,34 @@ const useInventoryStore = create<InventoryStore>()((set, get) => ({
         });
       }
 
+      await writeAuditLog({
+        module: "Inventario",
+        entityType: "inventory_item",
+        entityId: id,
+        action: "update",
+        summary: `Se actualizó el ítem ${oldItem.name}`,
+        before: {
+          name: oldItem.name,
+          status: oldItem.status,
+          stock: oldItem.stock,
+          location: oldItem.location || "",
+          category: oldItem.category,
+        },
+        after: {
+          name: updatedItem.name || oldItem.name,
+          status: updatedItem.status || oldItem.status,
+          stock:
+            typeof updatedItem.stock === "number"
+              ? updatedItem.stock
+              : oldItem.stock,
+          location:
+            typeof updatedItem.location === "string"
+              ? updatedItem.location
+              : oldItem.location || "",
+          category: updatedItem.category || oldItem.category,
+        },
+      });
+
       set((state) => ({
         items: state.items.map((item) =>
           item.id === id ? { ...item, ...updatedItem } : item
@@ -729,6 +773,17 @@ const useInventoryStore = create<InventoryStore>()((set, get) => ({
               : item
           ),
         }));
+
+        await writeAuditLog({
+          module: "Inventario",
+          entityType: "inventory_item",
+          entityId: id,
+          action: "update",
+          summary: `Se inactivó el ítem ${item.name} por movimientos asociados`,
+          before: { status: item.status },
+          after: { status: ItemStatus.INACTIVE },
+          metadata: { reason: "has_associated_movements" },
+        });
       } else {
         // Si no hay movimientos, eliminamos el ítem
         const itemsRef = collection(
@@ -743,6 +798,20 @@ const useInventoryStore = create<InventoryStore>()((set, get) => ({
           items: state.items.filter((item) => item.id !== id),
           filteredItems: state.filteredItems.filter((item) => item.id !== id),
         }));
+
+        await writeAuditLog({
+          module: "Inventario",
+          entityType: "inventory_item",
+          entityId: id,
+          action: "delete",
+          summary: `Se eliminó el ítem ${item.name}`,
+          before: {
+            name: item.name,
+            status: item.status,
+            stock: item.stock,
+            category: item.category,
+          },
+        });
       }
 
       // Verificar alertas de stock
@@ -842,6 +911,19 @@ const useInventoryStore = create<InventoryStore>()((set, get) => ({
         categories: [...state.categories, addedCategory],
       }));
 
+      await writeAuditLog({
+        module: "Inventario",
+        entityType: "inventory_category",
+        entityId: docRef.id,
+        action: "create",
+        summary: `Se creó la categoría ${category.name}`,
+        after: {
+          name: category.name,
+          description: category.description || "",
+          parentId: category.parentId || "",
+        },
+      });
+
       return docRef.id;
     } catch (error) {
       console.error("Error en addCategory:", error);
@@ -930,6 +1012,27 @@ const useInventoryStore = create<InventoryStore>()((set, get) => ({
         ),
       }));
 
+      const oldCategory = get().categories.find((category) => category.id === id);
+      await writeAuditLog({
+        module: "Inventario",
+        entityType: "inventory_category",
+        entityId: id,
+        action: "update",
+        summary: `Se actualizó la categoría ${updates.name || oldCategory?.name || id}`,
+        before: oldCategory
+          ? {
+              name: oldCategory.name,
+              description: oldCategory.description || "",
+              parentId: oldCategory.parentId || "",
+            }
+          : null,
+        after: {
+          name: updates.name || oldCategory?.name || "",
+          description: updates.description || oldCategory?.description || "",
+          parentId: updates.parentId || oldCategory?.parentId || "",
+        },
+      });
+
       return true;
     } catch (error) {
       console.error("Error al actualizar categoría:", error);
@@ -980,9 +1083,26 @@ const useInventoryStore = create<InventoryStore>()((set, get) => ({
 
       await deleteDoc(categoryRef);
 
+      const categoryToDelete = get().categories.find((category) => category.id === id);
+
       set((state) => ({
         categories: state.categories.filter((category) => category.id !== id),
       }));
+
+      await writeAuditLog({
+        module: "Inventario",
+        entityType: "inventory_category",
+        entityId: id,
+        action: "delete",
+        summary: `Se eliminó la categoría ${categoryToDelete?.name || id}`,
+        before: categoryToDelete
+          ? {
+              name: categoryToDelete.name,
+              description: categoryToDelete.description || "",
+              parentId: categoryToDelete.parentId || "",
+            }
+          : null,
+      });
 
       return true;
     } catch (error) {
@@ -1129,6 +1249,27 @@ const useInventoryStore = create<InventoryStore>()((set, get) => ({
           newQuantity: newStock,
           notes: notes || `Consumo de ${quantity} unidades`,
         });
+
+        await writeAuditLog({
+          module: "Inventario",
+          entityType: "inventory_item",
+          entityId: itemId,
+          action: "update",
+          summary: `Consumo de inventario en ${item.name}`,
+          before: {
+            stock: item.stock,
+            status: item.status,
+          },
+          after: {
+            stock: newStock,
+            status: item.status,
+          },
+          metadata: {
+            operation: "consume_item",
+            quantity,
+            notes: notes || "",
+          },
+        });
         return true;
       }
       return false;
@@ -1172,6 +1313,27 @@ const useInventoryStore = create<InventoryStore>()((set, get) => ({
           newQuantity: newStock,
           notes: notes || `Adición de ${quantity} unidades al stock`,
         });
+
+        await writeAuditLog({
+          module: "Inventario",
+          entityType: "inventory_item",
+          entityId: itemId,
+          action: "update",
+          summary: `Reposición de stock en ${item.name}`,
+          before: {
+            stock: item.stock,
+            status: item.status,
+          },
+          after: {
+            stock: newStock,
+            status: item.status,
+          },
+          metadata: {
+            operation: "add_stock",
+            quantity,
+            notes: notes || "",
+          },
+        });
         return true;
       }
       return false;
@@ -1213,6 +1375,26 @@ const useInventoryStore = create<InventoryStore>()((set, get) => ({
           newLocation,
           notes: notes || `Traslado a ${newLocation}`,
         });
+
+        await writeAuditLog({
+          module: "Inventario",
+          entityType: "inventory_item",
+          entityId: itemId,
+          action: "update",
+          summary: `Traslado de ubicación de ${item.name}`,
+          before: {
+            location: item.location || "",
+            status: item.status,
+          },
+          after: {
+            location: newLocation,
+            status: item.status,
+          },
+          metadata: {
+            operation: "transfer_item",
+            notes: notes || "",
+          },
+        });
         return true;
       }
       return false;
@@ -1253,6 +1435,26 @@ const useInventoryStore = create<InventoryStore>()((set, get) => ({
           previousStatus: item.status,
           newStatus,
           notes: notes || `Cambio de estado a ${newStatus}`,
+        });
+
+        await writeAuditLog({
+          module: "Inventario",
+          entityType: "inventory_item",
+          entityId: itemId,
+          action: "update",
+          summary: `Cambio de estado de ${item.name}`,
+          before: {
+            status: item.status,
+            stock: item.stock,
+          },
+          after: {
+            status: newStatus,
+            stock: item.stock,
+          },
+          metadata: {
+            operation: "change_item_status",
+            notes: notes || "",
+          },
         });
         return true;
       }

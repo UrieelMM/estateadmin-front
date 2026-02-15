@@ -11,6 +11,7 @@ import {
 } from "firebase/firestore";
 import axios from "axios";
 import { getAuth, getIdTokenResult } from "firebase/auth";
+import { writeAuditLog } from "../services/auditService";
 
 type Publication = {
   title: string;
@@ -74,6 +75,20 @@ export const usePublicationStore = create<PublicationsState>()((set, get) => ({
           },
         }
       );
+
+      await writeAuditLog({
+        module: "Publicaciones",
+        entityType: "publication",
+        entityId: publication.title,
+        action: "create",
+        summary: `Se creó una publicación: ${publication.title}`,
+        after: {
+          title: publication.title,
+          tags: publication.tags,
+          sendTo: publication.sendTo,
+          condominiumId,
+        },
+      });
 
       // Refrescar listado principal para reflejar la nueva publicación
       // sin esperar a un cambio de ruta.

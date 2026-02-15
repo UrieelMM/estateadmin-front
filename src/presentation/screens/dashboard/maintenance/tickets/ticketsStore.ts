@@ -17,6 +17,7 @@ import {
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { create } from "../../../../../store/createStore";
 import toast from "react-hot-toast";
+import { writeAuditLog } from "../../../../../services/auditService";
 
 // Función helper para formatear los estados de los tickets con formato amigable
 const formatStatus = (status: string): string => {
@@ -560,7 +561,25 @@ export const useTicketsStore = create<TicketState>()((set, get) => ({
         condominiumId,
         "ticketsMaintenance"
       );
-      await addDoc(ticketsRef, ticketData);
+      const created = await addDoc(ticketsRef, ticketData);
+
+      await writeAuditLog({
+        module: "Personal",
+        entityType: "ticket",
+        entityId: created.id,
+        action: "create",
+        summary: `Se creó ticket ${ticket.title}`,
+        after: {
+          title: ticket.title,
+          status: ticket.status || "abierto",
+          priority: ticket.priority || "",
+          area: ticket.area || "",
+          assignedTo: ticket.assignedTo || "",
+          folio: ticket.folio || "",
+        },
+        metadata: { operation: "create_ticket" },
+      });
+
       set({ loading: false });
       await get().fetchTickets();
     } catch (error: any) {
@@ -831,6 +850,28 @@ export const useTicketsStore = create<TicketState>()((set, get) => ({
         ticketId
       );
       await updateDoc(ticketDocRef, updateData);
+
+      await writeAuditLog({
+        module: "Personal",
+        entityType: "ticket",
+        entityId: ticketId,
+        action: "update",
+        summary: `Se actualizó ticket ${currentTicket.title}`,
+        before: {
+          status: currentTicket.status,
+          priority: currentTicket.priority || "",
+          assignedTo: currentTicket.assignedTo || "",
+          area: currentTicket.area || "",
+        },
+        after: {
+          status: updateData.status || currentTicket.status,
+          priority: updateData.priority || currentTicket.priority || "",
+          assignedTo: updateData.assignedTo || currentTicket.assignedTo || "",
+          area: updateData.area || currentTicket.area || "",
+        },
+        metadata: { operation: "update_ticket" },
+      });
+
       set({ loading: false });
       await get().fetchTickets();
     } catch (error: any) {
@@ -855,6 +896,7 @@ export const useTicketsStore = create<TicketState>()((set, get) => ({
   deleteTicket: async (ticketId) => {
     set({ loading: true, error: null });
     try {
+      const currentTicket = get().tickets.find((ticket) => ticket.id === ticketId) || null;
       const condominiumId = localStorage.getItem("condominiumId");
       if (!condominiumId) {
         set({ loading: false });
@@ -886,6 +928,25 @@ export const useTicketsStore = create<TicketState>()((set, get) => ({
         ticketId
       );
       await deleteDoc(ticketDocRef);
+
+      await writeAuditLog({
+        module: "Personal",
+        entityType: "ticket",
+        entityId: ticketId,
+        action: "delete",
+        summary: `Se eliminó ticket ${currentTicket?.title || ""}`.trim(),
+        before: currentTicket
+          ? {
+              title: currentTicket.title,
+              status: currentTicket.status,
+              priority: currentTicket.priority || "",
+              area: currentTicket.area || "",
+              folio: currentTicket.folio || "",
+            }
+          : null,
+        metadata: { operation: "delete_ticket" },
+      });
+
       set({ loading: false });
       await get().fetchTickets();
     } catch (error: any) {

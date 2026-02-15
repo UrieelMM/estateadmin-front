@@ -23,6 +23,7 @@ import {
 import { getAuth, getIdTokenResult } from "firebase/auth";
 import { db, storage } from "../firebase/firebase";
 import { centsToPesos } from "../utils/curreyncy";
+import { writeAuditLog } from "../services/auditService";
 
 // Helper function to safely convert date strings to Date objects
 const safeDate = (dateValue: any): Date => {
@@ -788,6 +789,22 @@ export const usePersonalAdministrationStore =
           loading: false,
         }));
 
+        await writeAuditLog({
+          module: "Personal",
+          entityType: "employee",
+          entityId: docRef.id,
+          action: "create",
+          summary: `Se registró empleado ${employeeData.personalInfo.firstName} ${employeeData.personalInfo.lastName}`,
+          after: {
+            firstName: employeeData.personalInfo.firstName,
+            lastName: employeeData.personalInfo.lastName,
+            position: employeeData.employmentInfo.position,
+            area: employeeData.employmentInfo.area,
+            status: employeeData.employmentInfo.status,
+          },
+          metadata: { operation: "create_employee" },
+        });
+
         void get().addActivityLog({
           employeeId: docRef.id,
           type: "otro",
@@ -942,6 +959,20 @@ export const usePersonalAdministrationStore =
               : state.selectedEmployee,
           loading: false,
         }));
+
+        await writeAuditLog({
+          module: "Personal",
+          entityType: "employee",
+          entityId: id,
+          action: "update",
+          summary: `Se actualizó empleado ${stateUpdateData.personalInfo?.firstName || ""} ${stateUpdateData.personalInfo?.lastName || ""}`.trim(),
+          before: null,
+          after: {
+            personalInfo: stateUpdateData.personalInfo || {},
+            employmentInfo: stateUpdateData.employmentInfo || {},
+          },
+          metadata: { operation: "update_employee" },
+        });
       } catch (error) {
         console.error("Error updating employee:", error);
         set({ error: "Error al actualizar empleado", loading: false });
@@ -992,6 +1023,21 @@ export const usePersonalAdministrationStore =
             state.selectedEmployee?.id === id ? null : state.selectedEmployee,
           loading: false,
         }));
+
+        await writeAuditLog({
+          module: "Personal",
+          entityType: "employee",
+          entityId: id,
+          action: "delete",
+          summary: `Se eliminó empleado ${employee?.personalInfo?.firstName || ""} ${employee?.personalInfo?.lastName || ""}`.trim(),
+          before: employee
+            ? {
+                personalInfo: employee.personalInfo,
+                employmentInfo: employee.employmentInfo,
+              }
+            : null,
+          metadata: { operation: "delete_employee" },
+        });
       } catch (error) {
         console.error("Error deleting employee:", error);
         set({ error: "Error al eliminar empleado", loading: false });
@@ -1287,6 +1333,22 @@ export const usePersonalAdministrationStore =
           shifts: [...state.shifts, newShift],
         }));
 
+        await writeAuditLog({
+          module: "Personal",
+          entityType: "shift",
+          entityId: docRef.id,
+          action: "create",
+          summary: `Se creó turno ${shiftData.startTime}-${shiftData.endTime}`,
+          after: {
+            employeeId: shiftData.employeeId,
+            date: shiftData.date,
+            startTime: shiftData.startTime,
+            endTime: shiftData.endTime,
+            status: shiftData.status,
+          },
+          metadata: { operation: "create_shift" },
+        });
+
         void get().addActivityLog({
           employeeId: shiftData.employeeId,
           type: "otro",
@@ -1302,6 +1364,7 @@ export const usePersonalAdministrationStore =
 
     updateShift: async (id, updates) => {
       try {
+        const previousShift = get().shifts.find((shift) => shift.id === id) || null;
         const auth = getAuth();
         const user = auth.currentUser;
         if (!user) throw new Error("Usuario no autenticado");
@@ -1360,6 +1423,25 @@ export const usePersonalAdministrationStore =
             shift.id === id ? { ...shift, ...updateData } : shift
           ),
         }));
+
+        await writeAuditLog({
+          module: "Personal",
+          entityType: "shift",
+          entityId: id,
+          action: "update",
+          summary: `Se actualizó turno de personal`,
+          before: previousShift
+            ? {
+                employeeId: previousShift.employeeId,
+                date: previousShift.date,
+                startTime: previousShift.startTime,
+                endTime: previousShift.endTime,
+                status: previousShift.status,
+              }
+            : null,
+          after: updateData,
+          metadata: { operation: "update_shift" },
+        });
       } catch (error) {
         console.error("Error updating shift:", error);
         set({ error: "Error al actualizar turno" });
@@ -1368,6 +1450,7 @@ export const usePersonalAdministrationStore =
 
     deleteShift: async (id) => {
       try {
+        const previousShift = get().shifts.find((shift) => shift.id === id) || null;
         const auth = getAuth();
         const user = auth.currentUser;
         if (!user) throw new Error("Usuario no autenticado");
@@ -1389,6 +1472,24 @@ export const usePersonalAdministrationStore =
         set((state) => ({
           shifts: state.shifts.filter((shift) => shift.id !== id),
         }));
+
+        await writeAuditLog({
+          module: "Personal",
+          entityType: "shift",
+          entityId: id,
+          action: "delete",
+          summary: `Se eliminó turno de personal`,
+          before: previousShift
+            ? {
+                employeeId: previousShift.employeeId,
+                date: previousShift.date,
+                startTime: previousShift.startTime,
+                endTime: previousShift.endTime,
+                status: previousShift.status,
+              }
+            : null,
+          metadata: { operation: "delete_shift" },
+        });
       } catch (error) {
         console.error("Error deleting shift:", error);
         set({ error: "Error al eliminar turno" });
@@ -1540,6 +1641,21 @@ export const usePersonalAdministrationStore =
           evaluations: [...state.evaluations, newEvaluation],
         }));
 
+        await writeAuditLog({
+          module: "Personal",
+          entityType: "evaluation",
+          entityId: docRef.id,
+          action: "create",
+          summary: `Se creó evaluación de desempeño`,
+          after: {
+            employeeId: evaluationData.employeeId,
+            evaluatorId: evaluationData.evaluatorId,
+            overallScore,
+            period: evaluationData.period,
+          },
+          metadata: { operation: "create_evaluation" },
+        });
+
         void get().addActivityLog({
           employeeId: evaluationData.employeeId,
           type: "otro",
@@ -1557,6 +1673,8 @@ export const usePersonalAdministrationStore =
 
     updateEvaluation: async (id, updates) => {
       try {
+        const previousEvaluation =
+          get().evaluations.find((evaluation) => evaluation.id === id) || null;
         const auth = getAuth();
         const user = auth.currentUser;
         if (!user) throw new Error("Usuario no autenticado");
@@ -1616,6 +1734,24 @@ export const usePersonalAdministrationStore =
             evaluation.id === id ? { ...evaluation, ...updateData } : evaluation
           ),
         }));
+
+        await writeAuditLog({
+          module: "Personal",
+          entityType: "evaluation",
+          entityId: id,
+          action: "update",
+          summary: `Se actualizó evaluación de desempeño`,
+          before: previousEvaluation
+            ? {
+                employeeId: previousEvaluation.employeeId,
+                evaluatorId: previousEvaluation.evaluatorId,
+                overallScore: previousEvaluation.overallScore,
+                period: previousEvaluation.period,
+              }
+            : null,
+          after: updateData,
+          metadata: { operation: "update_evaluation" },
+        });
       } catch (error) {
         console.error("Error updating evaluation:", error);
         set({ error: "Error al actualizar evaluación" });
@@ -1624,6 +1760,8 @@ export const usePersonalAdministrationStore =
 
     deleteEvaluation: async (id) => {
       try {
+        const previousEvaluation =
+          get().evaluations.find((evaluation) => evaluation.id === id) || null;
         const auth = getAuth();
         const user = auth.currentUser;
         if (!user) throw new Error("Usuario no autenticado");
@@ -1647,6 +1785,23 @@ export const usePersonalAdministrationStore =
             (evaluation) => evaluation.id !== id
           ),
         }));
+
+        await writeAuditLog({
+          module: "Personal",
+          entityType: "evaluation",
+          entityId: id,
+          action: "delete",
+          summary: `Se eliminó evaluación de desempeño`,
+          before: previousEvaluation
+            ? {
+                employeeId: previousEvaluation.employeeId,
+                evaluatorId: previousEvaluation.evaluatorId,
+                overallScore: previousEvaluation.overallScore,
+                period: previousEvaluation.period,
+              }
+            : null,
+          metadata: { operation: "delete_evaluation" },
+        });
       } catch (error) {
         console.error("Error deleting evaluation:", error);
         set({ error: "Error al eliminar evaluación" });
@@ -1692,6 +1847,21 @@ export const usePersonalAdministrationStore =
           id: docRef.id,
           ...newLogData,
         };
+
+        await writeAuditLog({
+          module: "Personal",
+          entityType: "activity_log",
+          entityId: docRef.id,
+          action: "create",
+          summary: `Se registró actividad en bitácora: ${logData.description}`,
+          after: {
+            employeeId: logData.employeeId,
+            type: logData.type,
+            area: logData.area,
+            timestamp: logData.timestamp,
+          },
+          metadata: { operation: "create_activity_log" },
+        });
 
         set((state) => ({
           activityLogs: [...state.activityLogs, newLog],

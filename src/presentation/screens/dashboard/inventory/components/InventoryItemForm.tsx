@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   InventoryItem,
   ItemType,
@@ -6,6 +6,7 @@ import {
   Category,
   InventoryItemFormData,
 } from "../../../../../store/inventoryStore";
+import { useMaintenanceAppAccess } from "../../../../../hooks/useMaintenanceAppAccess";
 
 interface InventoryItemFormProps {
   item?: Partial<InventoryItem>;
@@ -27,6 +28,7 @@ const InventoryItemForm: React.FC<InventoryItemFormProps> = ({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [uploadedImages, setUploadedImages] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { hasMaintenanceApp } = useMaintenanceAppAccess();
 
   // Estado para el formulario
   const [formData, setFormData] = useState<Partial<InventoryItem>>({
@@ -58,6 +60,12 @@ const InventoryItemForm: React.FC<InventoryItemFormProps> = ({
     "Información adicional",
     "Imágenes y notas",
   ];
+
+  useEffect(() => {
+    if (!hasMaintenanceApp && formData.managedByMaintenanceApp) {
+      setFormData((prev) => ({ ...prev, managedByMaintenanceApp: false }));
+    }
+  }, [formData.managedByMaintenanceApp, hasMaintenanceApp]);
 
   // Manejar cambio de campos
   const handleChange = (
@@ -381,27 +389,29 @@ const InventoryItemForm: React.FC<InventoryItemFormProps> = ({
                 ></textarea>
               </div>
 
-              <div className="md:col-span-2">
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    name="managedByMaintenanceApp"
-                    id="managedByMaintenanceApp"
-                    checked={formData.managedByMaintenanceApp || false}
-                    onChange={handleChange}
-                    className="w-4 h-4 text-indigo-600 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded focus:ring-indigo-500 focus:ring-2"
-                  />
-                  <label
-                    htmlFor="managedByMaintenanceApp"
-                    className="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300"
-                  >
-                    Puede ser administrado por usuarios de la app de mantenimiento
-                  </label>
+              {hasMaintenanceApp && (
+                <div className="md:col-span-2">
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      name="managedByMaintenanceApp"
+                      id="managedByMaintenanceApp"
+                      checked={formData.managedByMaintenanceApp || false}
+                      onChange={handleChange}
+                      className="w-4 h-4 text-indigo-600 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded focus:ring-indigo-500 focus:ring-2"
+                    />
+                    <label
+                      htmlFor="managedByMaintenanceApp"
+                      className="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300"
+                    >
+                      Puede ser administrado por usuarios de la app de mantenimiento
+                    </label>
+                  </div>
+                  <p className="mt-1 text-xs text-gray-600 dark:text-gray-400 ml-6">
+                    Si se activa, los usuarios de la aplicación de mantenimiento podrán gestionar este ítem
+                  </p>
                 </div>
-                <p className="mt-1 text-xs text-gray-600 dark:text-gray-400 ml-6">
-                  Si se activa, los usuarios de la aplicación de mantenimiento podrán gestionar este ítem
-                </p>
-              </div>
+              )}
             </div>
           </div>
         )}
