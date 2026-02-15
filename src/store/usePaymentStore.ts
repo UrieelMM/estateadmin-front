@@ -43,6 +43,7 @@ export type MaintenancePayment = {
   creditBalance?: number;
   useCreditBalance?: boolean;
   paymentType?: string;
+  paymentReference?: string;
 
   // fecha de pago y cuenta financiera
   paymentDate?: string;
@@ -279,6 +280,7 @@ export const usePaymentStore = create<MaintenancePaymentState>()(
         );
         formData.append("paymentGroupId", payment.paymentGroupId || "");
         formData.append("paymentType", payment.paymentType || "");
+        formData.append("paymentReference", payment.paymentReference || "");
         formData.append("creditUsed", "0");
         formData.append("paymentDate", payment.paymentDate || "");
         formData.append("financialAccountId", payment.financialAccountId || "");
@@ -351,6 +353,7 @@ export const usePaymentStore = create<MaintenancePaymentState>()(
           payment.useCreditBalance ? "true" : "false"
         );
         formData.append("paymentType", payment.paymentType || "");
+        formData.append("paymentReference", payment.paymentReference || "");
         formData.append(
           "creditUsed",
           payment.creditUsed ? String(toCents(payment.creditUsed)) : "0"

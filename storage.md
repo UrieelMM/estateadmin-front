@@ -39,6 +39,12 @@ service firebase.storage {
           || request.resource.contentType.matches('application/msword')
           || request.resource.contentType.matches('application/vnd.openxmlformats-officedocument.*');
     }
+    function isValidCsvContentType() {
+      return request.resource.contentType.matches('text/csv')
+          || request.resource.contentType.matches('application/csv')
+          || request.resource.contentType.matches('application/vnd.ms-excel')
+          || request.resource.contentType.matches('application/octet-stream');
+    }
 
     /* ───────────── Rutas públicas ───────────── */
     match /estateAdminUploads/assets/{fileName} {
@@ -130,6 +136,19 @@ service firebase.storage {
         || isSuperAdmin()
       );
       allow delete:  if (
+        (isAdmin() && belongsToClient(clientId))
+        || isSuperAdmin()
+      );
+    }
+
+    /* ─── Conciliaciones (fuente CSV bancaria) ─── */
+    match /clients/{clientId}/condominiums/{condominiumId}/reconciliations/{reconciliationType}/{sessionId}/{fileName} {
+      allow read: if belongsToClient(clientId) || isSuperAdmin();
+      allow create, update: if (
+        (isAdminOrAssistant() && belongsToClient(clientId) && isValidFileSize() && isValidCsvContentType())
+        || isSuperAdmin()
+      );
+      allow delete: if (
         (isAdmin() && belongsToClient(clientId))
         || isSuperAdmin()
       );

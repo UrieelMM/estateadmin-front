@@ -4,6 +4,7 @@ import Balance from "../presentation/screens/dashboard/financialIncome/Balance/B
 import Charges from "../presentation/screens/dashboard/financialIncome/Charges/Charges";
 import Expenses from "../presentation/screens/dashboard/financialIncome/Expenses/Expenses";
 import Income from "../presentation/screens/dashboard/financialIncome/Income/Income";
+import FinancialReconciliation from "../presentation/screens/dashboard/financialIncome/Reconciliation/FinancialReconciliation";
 import DashboardHome from "../presentation/screens/dashboard/home/DashboardHome";
 import Maintenance from "../presentation/screens/dashboard/maintenance/Maintenance";
 import ParcelReception from "../presentation/screens/dashboard/parcel-reception/ParcelReception";
@@ -32,6 +33,7 @@ import InventoryMovements from "../presentation/screens/dashboard/inventory/Inve
 import InventoryAlerts from "../presentation/screens/dashboard/inventory/InventoryAlerts";
 import CommonAreas from "../presentation/screens/dashboard/commonAreas/CommonAreas";
 import PersonalDashboard from "../presentation/screens/dashboard/PersonalAdministration/PersonalDashboard";
+import AuditTrail from "../presentation/screens/dashboard/audit/AuditTrail";
 
 export const routesApp = [
   {
@@ -117,6 +119,20 @@ export const routesApp = [
     title: "Registro de gastos",
     description: "Gestión de gastos",
     component: <Expenses />,
+  },
+  {
+    to: "/dashboard/reconciliation",
+    icon: "fa-solid fa-scale-balanced",
+    title: "Conciliación",
+    description: "Conciliación bancaria de ingresos y egresos",
+    component: <FinancialReconciliation />,
+  },
+  {
+    to: "/dashboard/audit-trail",
+    icon: "fa-solid fa-clipboard-list",
+    title: "Auditoría",
+    description: "Bitácora de acciones críticas del sistema",
+    component: <AuditTrail />,
   },
   {
     to: "/dashboard/balance",

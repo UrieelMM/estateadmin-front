@@ -13,69 +13,69 @@ const InventoryMovements: React.FC = () => {
   const location = useLocation();
   const lowStockItems = stockAlerts.length;
 
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedItemId, setSelectedItemId] = useState<string>("");
-  const [movementTypeFilter, setMovementTypeFilter] = useState<
+  const [ searchTerm, setSearchTerm ] = useState( "" );
+  const [ selectedItemId, setSelectedItemId ] = useState<string>( "" );
+  const [ movementTypeFilter, setMovementTypeFilter ] = useState<
     MovementType | ""
-  >("");
-  const [dateRangeFilter, setDateRangeFilter] = useState({
+  >( "" );
+  const [ dateRangeFilter, setDateRangeFilter ] = useState( {
     startDate: "",
     endDate: "",
-  });
+  } );
 
   // Cargar datos al montar el componente
-  useEffect(() => {
+  useEffect( () => {
     fetchMovements();
     fetchItems();
-  }, [fetchMovements, fetchItems]);
+  }, [ fetchMovements, fetchItems ] );
 
   // Filtros combinados
-  const filteredMovements = movements.filter((movement) => {
+  const filteredMovements = movements.filter( ( movement ) => {
     // Filtro por ítem
-    if (selectedItemId && movement.itemId !== selectedItemId) {
+    if ( selectedItemId && movement.itemId !== selectedItemId ) {
       return false;
     }
 
     // Filtro por tipo de movimiento
-    if (movementTypeFilter && movement.type !== movementTypeFilter) {
+    if ( movementTypeFilter && movement.type !== movementTypeFilter ) {
       return false;
     }
 
     // Filtro por búsqueda
-    if (searchTerm) {
+    if ( searchTerm ) {
       const searchLower = searchTerm.toLowerCase();
       if (
-        !movement.itemName.toLowerCase().includes(searchLower) &&
-        !movement.createdByName.toLowerCase().includes(searchLower) &&
-        !movement.notes?.toLowerCase().includes(searchLower)
+        !movement.itemName.toLowerCase().includes( searchLower ) &&
+        !movement.createdByName.toLowerCase().includes( searchLower ) &&
+        !movement.notes?.toLowerCase().includes( searchLower )
       ) {
         return false;
       }
     }
 
     // Filtro por fecha
-    if (dateRangeFilter.startDate) {
-      const startDate = moment(dateRangeFilter.startDate)
-        .startOf("day")
+    if ( dateRangeFilter.startDate ) {
+      const startDate = moment( dateRangeFilter.startDate )
+        .startOf( "day" )
         .toDate();
-      if (movement.createdAt < startDate) {
+      if ( movement.createdAt < startDate ) {
         return false;
       }
     }
 
-    if (dateRangeFilter.endDate) {
-      const endDate = moment(dateRangeFilter.endDate).endOf("day").toDate();
-      if (movement.createdAt > endDate) {
+    if ( dateRangeFilter.endDate ) {
+      const endDate = moment( dateRangeFilter.endDate ).endOf( "day" ).toDate();
+      if ( movement.createdAt > endDate ) {
         return false;
       }
     }
 
     return true;
-  });
+  } );
 
   // Función para obtener el color del badge según el tipo de movimiento
-  const getMovementTypeStyle = (type: MovementType) => {
-    switch (type) {
+  const getMovementTypeStyle = ( type: MovementType ) => {
+    switch ( type ) {
       case MovementType.CREATED:
         return "bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200";
       case MovementType.UPDATED:
@@ -98,8 +98,8 @@ const InventoryMovements: React.FC = () => {
   };
 
   // Función para obtener el icono según el tipo de movimiento
-  const getMovementTypeIcon = (type: MovementType) => {
-    switch (type) {
+  const getMovementTypeIcon = ( type: MovementType ) => {
+    switch ( type ) {
       case MovementType.CREATED:
         return "fa-plus-circle";
       case MovementType.UPDATED:
@@ -122,8 +122,8 @@ const InventoryMovements: React.FC = () => {
   };
 
   // Función para obtener el texto según el tipo de movimiento
-  const getMovementTypeText = (type: MovementType) => {
-    switch (type) {
+  const getMovementTypeText = ( type: MovementType ) => {
+    switch ( type ) {
       case MovementType.CREATED:
         return "Creación";
       case MovementType.UPDATED:
@@ -146,16 +146,16 @@ const InventoryMovements: React.FC = () => {
   };
 
   // Formato de fecha
-  const formatDate = (date: Date) => {
-    return moment(date).locale("es").format("D [de] MMMM [de] YYYY, HH:mm");
+  const formatDate = ( date: Date ) => {
+    return moment( date ).locale( "es" ).format( "D [de] MMMM [de] YYYY, HH:mm" );
   };
 
   // Resetear filtros
   const resetFilters = () => {
-    setSearchTerm("");
-    setSelectedItemId("");
-    setMovementTypeFilter("");
-    setDateRangeFilter({ startDate: "", endDate: "" });
+    setSearchTerm( "" );
+    setSelectedItemId( "" );
+    setMovementTypeFilter( "" );
+    setDateRangeFilter( { startDate: "", endDate: "" } );
   };
 
   return (
@@ -165,16 +165,15 @@ const InventoryMovements: React.FC = () => {
           Historial de Movimientos
         </h1>
 
-        {/* Barra de navegación secundaria */}
-        <div className="dark:bg-gray-800 rounded-lg shadow-lg p-4 mb-6">
+        {/* Barra de navegación secundaria */ }
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 mb-6">
           <div className="flex flex-wrap gap-2">
             <Link
               to="/dashboard/inventory"
-              className={`px-4 py-2 rounded-md text-sm font-medium ${
-                location.pathname === "/dashboard/inventory"
+              className={ `px-4 py-2 rounded-md text-sm font-medium ${ location.pathname === "/dashboard/inventory"
                   ? "bg-indigo-600 text-white"
                   : "bg-indigo-100 text-indigo-600 hover:bg-indigo-200 dark:bg-indigo-900 dark:text-indigo-300 dark:hover:bg-indigo-800"
-              }`}
+                }` }
             >
               <i className="fas fa-boxes-stacked mr-2"></i>
               Inventario
@@ -182,11 +181,10 @@ const InventoryMovements: React.FC = () => {
 
             <Link
               to="/dashboard/inventory/categories"
-              className={`px-4 py-2 rounded-md text-sm font-medium ${
-                location.pathname === "/dashboard/inventory/categories"
+              className={ `px-4 py-2 rounded-md text-sm font-medium ${ location.pathname === "/dashboard/inventory/categories"
                   ? "bg-indigo-600 text-white"
                   : "bg-indigo-100 text-indigo-600 hover:bg-indigo-200 dark:bg-indigo-900 dark:text-indigo-300 dark:hover:bg-indigo-800"
-              }`}
+                }` }
             >
               <i className="fas fa-tags mr-2"></i>
               Categorías
@@ -194,11 +192,10 @@ const InventoryMovements: React.FC = () => {
 
             <Link
               to="/dashboard/inventory/movements"
-              className={`px-4 py-2 rounded-md text-sm font-medium ${
-                location.pathname === "/dashboard/inventory/movements"
+              className={ `px-4 py-2 rounded-md text-sm font-medium ${ location.pathname === "/dashboard/inventory/movements"
                   ? "bg-indigo-600 text-white"
                   : "bg-indigo-100 text-indigo-600 hover:bg-indigo-200 dark:bg-indigo-900 dark:text-indigo-300 dark:hover:bg-indigo-800"
-              }`}
+                }` }
             >
               <i className="fas fa-arrows-rotate mr-2"></i>
               Movimientos
@@ -206,29 +203,28 @@ const InventoryMovements: React.FC = () => {
 
             <Link
               to="/dashboard/inventory/alerts"
-              className={`px-4 py-2 rounded-md text-sm font-medium ${
-                location.pathname === "/dashboard/inventory/alerts"
+              className={ `px-4 py-2 rounded-md text-sm font-medium ${ location.pathname === "/dashboard/inventory/alerts"
                   ? "bg-indigo-600 text-white"
                   : "bg-indigo-100 text-indigo-600 hover:bg-indigo-200 dark:bg-indigo-900 dark:text-indigo-300 dark:hover:bg-indigo-800"
-              }`}
+                }` }
             >
               <i className="fas fa-triangle-exclamation mr-2"></i>
               Alertas
-              {lowStockItems > 0 && (
+              { lowStockItems > 0 && (
                 <span className="ml-2 bg-red-600 text-white text-xs font-medium rounded-full h-5 w-5 inline-flex items-center justify-center">
-                  {lowStockItems}
+                  { lowStockItems }
                 </span>
-              )}
+              ) }
             </Link>
           </div>
         </div>
 
-        {/* Filtros */}
-        <div className="dark:bg-gray-800 rounded-lg shadow-lg p-4 mb-6">
+        {/* Filtros */ }
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 mb-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-            {/* Búsqueda */}
+            {/* Búsqueda */ }
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Buscar
               </label>
               <div className="relative">
@@ -237,95 +233,95 @@ const InventoryMovements: React.FC = () => {
                 </div>
                 <input
                   type="text"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full ps-2 p-2.5"
+                  value={ searchTerm }
+                  onChange={ ( e ) => setSearchTerm( e.target.value ) }
+                  className="bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white text-sm rounded-lg block w-full ps-2 p-2.5"
                   placeholder="Buscar por ítem, usuario..."
                 />
               </div>
             </div>
 
-            {/* Filtro por ítem */}
+            {/* Filtro por ítem */ }
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Ítem
               </label>
               <select
-                value={selectedItemId}
-                onChange={(e) => setSelectedItemId(e.target.value)}
-                className="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5"
+                value={ selectedItemId }
+                onChange={ ( e ) => setSelectedItemId( e.target.value ) }
+                className="bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5"
               >
                 <option value="">Todos los ítems</option>
-                {items.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.name}
+                { items.map( ( item ) => (
+                  <option key={ item.id } value={ item.id }>
+                    { item.name }
                   </option>
-                ))}
+                ) ) }
               </select>
             </div>
 
-            {/* Filtro por tipo de movimiento */}
+            {/* Filtro por tipo de movimiento */ }
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Tipo de movimiento
               </label>
               <select
-                value={movementTypeFilter}
-                onChange={(e) =>
-                  setMovementTypeFilter(e.target.value as MovementType | "")
+                value={ movementTypeFilter }
+                onChange={ ( e ) =>
+                  setMovementTypeFilter( e.target.value as MovementType | "" )
                 }
-                className="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5"
+                className="bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5"
               >
                 <option value="">Todos los tipos</option>
-                {Object.values(MovementType).map((type) => (
-                  <option key={type} value={type}>
-                    {getMovementTypeText(type)}
+                { Object.values( MovementType ).map( ( type ) => (
+                  <option key={ type } value={ type }>
+                    { getMovementTypeText( type ) }
                   </option>
-                ))}
+                ) ) }
               </select>
             </div>
 
-            {/* Filtros de fecha */}
+            {/* Filtros de fecha */ }
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Fecha inicial
               </label>
               <input
                 type="date"
-                value={dateRangeFilter.startDate}
-                onChange={(e) =>
-                  setDateRangeFilter({
+                value={ dateRangeFilter.startDate }
+                onChange={ ( e ) =>
+                  setDateRangeFilter( {
                     ...dateRangeFilter,
                     startDate: e.target.value,
-                  })
+                  } )
                 }
-                className="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5"
+                className="bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Fecha final
               </label>
               <input
                 type="date"
-                value={dateRangeFilter.endDate}
-                onChange={(e) =>
-                  setDateRangeFilter({
+                value={ dateRangeFilter.endDate }
+                onChange={ ( e ) =>
+                  setDateRangeFilter( {
                     ...dateRangeFilter,
                     endDate: e.target.value,
-                  })
+                  } )
                 }
-                className="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5"
+                className="bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5"
               />
             </div>
           </div>
 
-          {/* Botón de reseteo */}
+          {/* Botón de reseteo */ }
           <div className="flex justify-end">
             <button
-              onClick={resetFilters}
-              className="inline-flex items-center px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-sm font-medium text-gray-300 hover:bg-gray-600"
+              onClick={ resetFilters }
+              className="inline-flex items-center px-4 py-2 bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
             >
               <i className="fas fa-redo-alt mr-2"></i>
               Limpiar filtros
@@ -334,9 +330,9 @@ const InventoryMovements: React.FC = () => {
         </div>
       </div>
 
-      {/* Timeline de movimientos */}
-      <div className="dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
-        {loading ? (
+      {/* Timeline de movimientos */ }
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+        { loading ? (
           <div className="flex justify-center items-center h-48">
             <div className="spinner-border text-indigo-500" role="status">
               <i className="fas fa-spinner fa-spin text-3xl text-indigo-500"></i>
@@ -344,152 +340,151 @@ const InventoryMovements: React.FC = () => {
           </div>
         ) : filteredMovements.length > 0 ? (
           <div className="p-6">
-            <ol className="relative border-l border-gray-700">
-              {filteredMovements.map((movement) => (
-                <li key={movement.id} className="mb-10 ml-6">
+            <ol className="relative border-l border-gray-300 dark:border-gray-700">
+              { filteredMovements.map( ( movement ) => (
+                <li key={ movement.id } className="mb-10 ml-6">
                   <span
-                    className={`absolute flex items-center justify-center w-8 h-8 rounded-full -left-4 ring-4 ring-gray-200 dark:ring-gray-800 ${getMovementTypeStyle(
+                    className={ `absolute flex items-center justify-center w-8 h-8 rounded-full -left-4 ring-4 ring-white dark:ring-gray-800 ${ getMovementTypeStyle(
                       movement.type
-                    )}`}
+                    ) }` }
                   >
                     <i
-                      className={`fas ${getMovementTypeIcon(movement.type)}`}
+                      className={ `fas ${ getMovementTypeIcon( movement.type ) }` }
                     ></i>
                   </span>
 
                   <div className="flex justify-between items-start mb-2">
                     <div>
                       <span
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium mr-2 ${getMovementTypeStyle(
+                        className={ `inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium mr-2 ${ getMovementTypeStyle(
                           movement.type
-                        )}`}
+                        ) }` }
                       >
-                        {getMovementTypeText(movement.type)}
+                        { getMovementTypeText( movement.type ) }
                       </span>
-                      <h3 className="text-lg font-semibold text-white">
-                        {movement.itemName}
+                      <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
+                        { movement.itemName }
                       </h3>
-                      <time className="block mb-2 text-sm font-normal leading-none text-gray-400">
-                        {formatDate(movement.createdAt)}
+                      <time className="block mb-2 text-sm font-normal leading-none text-gray-500 dark:text-gray-400">
+                        { formatDate( movement.createdAt ) }
                       </time>
                     </div>
-                    <div className="text-sm text-gray-400">
-                      Realizado por: {movement.createdByName}
+                    <div className="text-sm text-gray-500 dark:text-gray-400">
+                      Realizado por: { movement.createdByName }
                     </div>
                   </div>
 
-                  <div className="p-4 bg-gray-700 rounded-lg mb-4">
-                    {movement.type === MovementType.CONSUMED ||
-                    movement.type === MovementType.ADDED ? (
+                  <div className="p-4 bg-gray-100 dark:bg-gray-700 rounded-lg mb-4">
+                    { movement.type === MovementType.CONSUMED ||
+                      movement.type === MovementType.ADDED ? (
                       <div className="grid grid-cols-3 gap-4 mb-2">
                         <div>
-                          <span className="block text-sm text-gray-400">
+                          <span className="block text-sm text-gray-500 dark:text-gray-400">
                             Cantidad anterior
                           </span>
-                          <span className="text-white">
-                            {movement.previousQuantity}
+                          <span className="text-gray-800 dark:text-white">
+                            { movement.previousQuantity }
                           </span>
                         </div>
                         <div>
-                          <span className="block text-sm text-gray-400">
+                          <span className="block text-sm text-gray-500 dark:text-gray-400">
                             Cantidad
                           </span>
                           <span
-                            className={`text-white font-bold ${
-                              movement.type === MovementType.CONSUMED
-                                ? "text-yellow-400"
-                                : "text-green-400"
-                            }`}
+                            className={ `font-bold ${ movement.type === MovementType.CONSUMED
+                                ? "text-yellow-600 dark:text-yellow-400"
+                                : "text-green-600 dark:text-green-400"
+                              }` }
                           >
-                            {movement.type === MovementType.CONSUMED
+                            { movement.type === MovementType.CONSUMED
                               ? "-"
-                              : "+"}
-                            {movement.quantity}
+                              : "+" }
+                            { movement.quantity }
                           </span>
                         </div>
                         <div>
-                          <span className="block text-sm text-gray-400">
+                          <span className="block text-sm text-gray-500 dark:text-gray-400">
                             Cantidad final
                           </span>
-                          <span className="text-white">
-                            {movement.newQuantity}
+                          <span className="text-gray-800 dark:text-white">
+                            { movement.newQuantity }
                           </span>
                         </div>
                       </div>
                     ) : movement.type === MovementType.STATUS_CHANGE ? (
                       <div className="grid grid-cols-2 gap-4 mb-2">
                         <div>
-                          <span className="block text-sm text-gray-400">
+                          <span className="block text-sm text-gray-500 dark:text-gray-400">
                             Estado anterior
                           </span>
-                          <span className="text-white">
-                            {movement.previousStatus}
+                          <span className="text-gray-800 dark:text-white">
+                            { movement.previousStatus }
                           </span>
                         </div>
                         <div>
-                          <span className="block text-sm text-gray-400">
+                          <span className="block text-sm text-gray-500 dark:text-gray-400">
                             Nuevo estado
                           </span>
-                          <span className="text-white">
-                            {movement.newStatus}
+                          <span className="text-gray-800 dark:text-white">
+                            { movement.newStatus }
                           </span>
                         </div>
                       </div>
                     ) : movement.type === MovementType.TRANSFERRED ? (
                       <div className="grid grid-cols-2 gap-4 mb-2">
                         <div>
-                          <span className="block text-sm text-gray-400">
+                          <span className="block text-sm text-gray-500 dark:text-gray-400">
                             Ubicación anterior
                           </span>
-                          <span className="text-white">
-                            {movement.location || "Sin ubicación"}
+                          <span className="text-gray-800 dark:text-white">
+                            { movement.location || "Sin ubicación" }
                           </span>
                         </div>
                         <div>
-                          <span className="block text-sm text-gray-400">
+                          <span className="block text-sm text-gray-500 dark:text-gray-400">
                             Nueva ubicación
                           </span>
-                          <span className="text-white">
-                            {movement.newLocation}
+                          <span className="text-gray-800 dark:text-white">
+                            { movement.newLocation }
                           </span>
                         </div>
                       </div>
-                    ) : null}
+                    ) : null }
 
-                    {movement.notes && (
+                    { movement.notes && (
                       <div className="mt-2">
-                        <span className="block text-sm text-gray-400">
+                        <span className="block text-sm text-gray-500 dark:text-gray-400">
                           Notas
                         </span>
-                        <p className="text-white">{movement.notes}</p>
+                        <p className="text-gray-800 dark:text-white">{ movement.notes }</p>
                       </div>
-                    )}
+                    ) }
                   </div>
                 </li>
-              ))}
+              ) ) }
             </ol>
           </div>
         ) : (
           <div className="text-center py-8">
             <i className="fas fa-history text-gray-500 text-3xl mb-2"></i>
-            <p className="text-gray-400">
+            <p className="text-gray-600 dark:text-gray-400">
               No hay movimientos registrados o que coincidan con los filtros
               aplicados
             </p>
-            {(searchTerm ||
+            { ( searchTerm ||
               selectedItemId ||
               movementTypeFilter ||
               dateRangeFilter.startDate ||
-              dateRangeFilter.endDate) && (
-              <button
-                onClick={resetFilters}
-                className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm"
-              >
-                Limpiar filtros
-              </button>
-            )}
+              dateRangeFilter.endDate ) && (
+                <button
+                  onClick={ resetFilters }
+                  className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm"
+                >
+                  Limpiar filtros
+                </button>
+              ) }
           </div>
-        )}
+        ) }
       </div>
     </div>
   );

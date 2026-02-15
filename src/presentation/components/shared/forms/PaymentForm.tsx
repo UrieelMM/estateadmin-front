@@ -54,6 +54,7 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
 
   const [comments, setComments] = useState<string>("");
   const [paymentType, setPaymentType] = useState<string>("");
+  const [paymentReference, setPaymentReference] = useState<string>("");
 
   // Fecha y hora de pago (se almacena como Date)
   const [paymentDate, setPaymentDate] = useState<Date | null>(null);
@@ -309,6 +310,17 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
       if (!paymentType) {
         throw new Error("El campo 'tipo de pago' es obligatorio.");
       }
+      const normalizedPaymentReference = paymentReference
+        .trim()
+        .toUpperCase();
+      if (
+        ["Transferencia", "Depósito"].includes(paymentType) &&
+        !normalizedPaymentReference
+      ) {
+        throw new Error(
+          "La referencia es obligatoria para pagos por transferencia o depósito."
+        );
+      }
 
       // Validaciones para pago identificado
       if (!isUnidentifiedPayment) {
@@ -369,6 +381,7 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
         financialAccountId,
         creditUsed,
         isUnidentifiedPayment,
+        paymentReference: normalizedPaymentReference,
         concepts, // Se envía el concepto del cargo
         startAts, // Ahora es string[]
         ...(isUnidentifiedPayment && { appliedToUser: false }),
@@ -412,6 +425,7 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
     // El saldo pendiente ahora se calcula automáticamente basado en los cargos seleccionados
     setComments("");
     setPaymentType("");
+    setPaymentReference("");
     setFile(null);
     setFileName("");
     setSelectedCharges([]);
@@ -760,6 +774,34 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                                   <option value="Depósito">Depósito</option>
                                 </select>
                               </div>
+                            </div>
+                            {/* Referencia de pago */}
+                            <div>
+                              <label
+                                htmlFor="paymentReference"
+                                className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100"
+                              >
+                                Referencia de pago
+                              </label>
+                              <div className="mt-2 relative">
+                                <div className="absolute left-2 top-1/2 flex items-center transform -translate-y-1/2">
+                                  <ClipboardIcon className="h-5 w-5 text-gray-400" />
+                                </div>
+                                <input
+                                  type="text"
+                                  id="paymentReference"
+                                  name="paymentReference"
+                                  value={paymentReference}
+                                  onChange={(e) =>
+                                    setPaymentReference(e.target.value)
+                                  }
+                                  placeholder="Ej. SPEI1234567890"
+                                  className="px-8 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-50"
+                                />
+                              </div>
+                              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                Obligatoria para Transferencia y Depósito.
+                              </p>
                             </div>
                             {/* Selección de la cuenta */}
                             <div>

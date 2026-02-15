@@ -11,6 +11,7 @@ import {
 } from "firebase/firestore";
 import toast from "react-hot-toast";
 import axios from "axios";
+import { writeAuditLog } from "../services/auditService";
 
 interface AdminUser {
   id?: string;
@@ -199,6 +200,19 @@ export const useAdminUsersStore = create<AdminUsersState>()((set, get) => ({
 
       // Si la respuesta es exitosa, recargamos la tabla y devolvemos la contraseña
       if (response.data) {
+        await writeAuditLog({
+          module: "Administradores",
+          entityType: "admin_user",
+          entityId: response.data?.id || userData.email,
+          action: "create",
+          summary: `Se creó el administrador ${userData.name} ${userData.lastName}`,
+          after: {
+            email: userData.email,
+            role: userData.role,
+            condominiumUids: userData.condominiumUids,
+            active: true,
+          },
+        });
         toast.success("Usuario creado exitosamente");
         // Recargar la tabla de usuarios
         await get().fetchUsers(userData.condominiumUids[0]);
@@ -264,6 +278,25 @@ export const useAdminUsersStore = create<AdminUsersState>()((set, get) => ({
       );
 
       if (response.data) {
+        await writeAuditLog({
+          module: "Administradores",
+          entityType: "admin_user",
+          entityId: userToUpdate.uid,
+          action: "update",
+          summary: `Se actualizó el administrador ${requestPayload.name} ${requestPayload.lastName}`,
+          before: {
+            email: userToUpdate.email,
+            role: userToUpdate.role,
+            condominiumUids: userToUpdate.condominiumUids,
+            active: userToUpdate.active,
+          },
+          after: {
+            email: requestPayload.email,
+            role: requestPayload.role,
+            condominiumUids: requestPayload.condominiumUids,
+            active: requestPayload.active,
+          },
+        });
         await get().fetchUsers(condominiumId);
       } else {
         throw new Error("Error al actualizar usuario");
@@ -335,6 +368,17 @@ export const useAdminUsersStore = create<AdminUsersState>()((set, get) => ({
         batch.set(userRef, { active }, { merge: true });
       });
       await batch.commit();
+
+      await writeAuditLog({
+        module: "Administradores",
+        entityType: "admin_user",
+        entityId: userToToggle.uid,
+        action: "toggle",
+        summary: `Se ${active ? "activó" : "desactivó"} al administrador ${userToToggle.name} ${userToToggle.lastName}`,
+        before: { active: userToToggle.active },
+        after: { active },
+        metadata: { condominiumId: targetCondominiumId },
+      });
 
       toast.success(
         `Usuario ${active ? "activado" : "desactivado"} exitosamente`

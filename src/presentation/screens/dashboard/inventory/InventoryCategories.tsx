@@ -21,94 +21,94 @@ const InventoryCategories: React.FC = () => {
   const lowStockItems = stockAlerts.length;
 
   // Estados para modales
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<Category | null>(
+  const [ isAddModalOpen, setIsAddModalOpen ] = useState( false );
+  const [ isEditModalOpen, setIsEditModalOpen ] = useState( false );
+  const [ isDeleteModalOpen, setIsDeleteModalOpen ] = useState( false );
+  const [ selectedCategory, setSelectedCategory ] = useState<Category | null>(
     null
   );
-  const [submitLoading, setSubmitLoading] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [ submitLoading, setSubmitLoading ] = useState( false );
+  const [ searchTerm, setSearchTerm ] = useState( "" );
 
   // Cargar categorías al montar el componente
-  useEffect(() => {
+  useEffect( () => {
     fetchCategories();
-  }, [fetchCategories]);
+  }, [ fetchCategories ] );
 
-  useEffect(() => {
-    console.log("Modal de añadir categoría:", isAddModalOpen);
-  }, [isAddModalOpen]);
+  useEffect( () => {
+    console.log( "Modal de añadir categoría:", isAddModalOpen );
+  }, [ isAddModalOpen ] );
 
   // Filtrar categorías por término de búsqueda
   const filteredCategories = categories.filter(
-    (category) =>
-      category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      category.description?.toLowerCase().includes(searchTerm.toLowerCase())
+    ( category ) =>
+      category.name.toLowerCase().includes( searchTerm.toLowerCase() ) ||
+      category.description?.toLowerCase().includes( searchTerm.toLowerCase() )
   );
 
   // Handlers para operaciones CRUD
-  const handleAddCategory = async (data: Partial<Category>) => {
-    console.log("Iniciando handleAddCategory con datos:", data);
-    setSubmitLoading(true);
+  const handleAddCategory = async ( data: Partial<Category> ) => {
+    console.log( "Iniciando handleAddCategory con datos:", data );
+    setSubmitLoading( true );
 
     try {
-      console.log("Llamando a addCategory con:", data);
-      const categoryId = await addCategory(data as Omit<Category, "id">);
-      console.log("Resultado de addCategory:", categoryId);
+      console.log( "Llamando a addCategory con:", data );
+      const categoryId = await addCategory( data as Omit<Category, "id"> );
+      console.log( "Resultado de addCategory:", categoryId );
 
-      if (categoryId) {
-        console.log("Categoría agregada exitosamente con ID:", categoryId);
-        setIsAddModalOpen(false);
+      if ( categoryId ) {
+        console.log( "Categoría agregada exitosamente con ID:", categoryId );
+        setIsAddModalOpen( false );
       } else {
-        console.error("No se pudo crear la categoría: el ID retornado es nulo");
+        console.error( "No se pudo crear la categoría: el ID retornado es nulo" );
       }
-    } catch (error) {
-      console.error("Error al crear categoría:", error);
+    } catch ( error ) {
+      console.error( "Error al crear categoría:", error );
     } finally {
-      setSubmitLoading(false);
+      setSubmitLoading( false );
     }
   };
 
-  const handleEditCategory = async (data: Partial<Category>) => {
-    if (!selectedCategory) return;
-    setSubmitLoading(true);
-    const success = await updateCategory(selectedCategory.id, data);
-    setSubmitLoading(false);
-    if (success) {
-      setIsEditModalOpen(false);
-      setSelectedCategory(null);
+  const handleEditCategory = async ( data: Partial<Category> ) => {
+    if ( !selectedCategory ) return;
+    setSubmitLoading( true );
+    const success = await updateCategory( selectedCategory.id, data );
+    setSubmitLoading( false );
+    if ( success ) {
+      setIsEditModalOpen( false );
+      setSelectedCategory( null );
     }
   };
 
   const handleDeleteCategory = async () => {
-    if (!selectedCategory) return;
-    setSubmitLoading(true);
+    if ( !selectedCategory ) return;
+    setSubmitLoading( true );
     try {
-      const success = await deleteCategory(selectedCategory.id);
-      if (success) {
-        setIsDeleteModalOpen(false);
-        setSelectedCategory(null);
+      const success = await deleteCategory( selectedCategory.id );
+      if ( success ) {
+        setIsDeleteModalOpen( false );
+        setSelectedCategory( null );
       }
-    } catch (error) {
+    } catch ( error ) {
       // Si hay un error (por ejemplo, hay ítems asociados), mostrar mensaje
-      alert((error as Error).message);
+      alert( ( error as Error ).message );
     } finally {
-      setSubmitLoading(false);
+      setSubmitLoading( false );
     }
   };
 
   // Función para obtener el nombre de la categoría padre
-  const getParentCategoryName = (parentId?: string) => {
-    if (!parentId) return "";
-    const parent = categories.find((cat) => cat.id === parentId);
+  const getParentCategoryName = ( parentId?: string ) => {
+    if ( !parentId ) return "";
+    const parent = categories.find( ( cat ) => cat.id === parentId );
     return parent ? parent.name : "";
   };
 
   // Función específica para abrir modal
   const openAddModal = () => {
-    console.log("Intento abrir modal de categoría");
-    setIsAddModalOpen(true);
-    console.log("Después de setIsAddModalOpen (categoría):", true);
+    console.log( "Intento abrir modal de categoría" );
+    setIsAddModalOpen( true );
+    console.log( "Después de setIsAddModalOpen (categoría):", true );
   };
 
   return (
@@ -118,19 +118,18 @@ const InventoryCategories: React.FC = () => {
           <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-2 md:mb-0">
             Categorías de Inventario
           </h1>
-          <ModalButton text="Añadir categoría" onClick={openAddModal} />
+          <ModalButton text="Añadir categoría" onClick={ openAddModal } />
         </div>
 
-        {/* Barra de navegación secundaria */}
-        <div className="dark:bg-gray-800 rounded-lg shadow-lg p-4 mb-6">
+        {/* Barra de navegación secundaria */ }
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 mb-6">
           <div className="flex flex-wrap gap-2">
             <Link
               to="/dashboard/inventory"
-              className={`px-4 py-2 rounded-md text-sm font-medium ${
-                location.pathname === "/dashboard/inventory"
+              className={ `px-4 py-2 rounded-md text-sm font-medium ${ location.pathname === "/dashboard/inventory"
                   ? "bg-indigo-600 text-white"
                   : "bg-indigo-100 text-indigo-600 hover:bg-indigo-200 dark:bg-indigo-900 dark:text-indigo-300 dark:hover:bg-indigo-800"
-              }`}
+                }` }
             >
               <i className="fas fa-boxes-stacked mr-2"></i>
               Inventario
@@ -138,11 +137,10 @@ const InventoryCategories: React.FC = () => {
 
             <Link
               to="/dashboard/inventory/categories"
-              className={`px-4 py-2 rounded-md text-sm font-medium ${
-                location.pathname === "/dashboard/inventory/categories"
+              className={ `px-4 py-2 rounded-md text-sm font-medium ${ location.pathname === "/dashboard/inventory/categories"
                   ? "bg-indigo-600 text-white"
                   : "bg-indigo-100 text-indigo-600 hover:bg-indigo-200 dark:bg-indigo-900 dark:text-indigo-300 dark:hover:bg-indigo-800"
-              }`}
+                }` }
             >
               <i className="fas fa-tags mr-2"></i>
               Categorías
@@ -150,11 +148,10 @@ const InventoryCategories: React.FC = () => {
 
             <Link
               to="/dashboard/inventory/movements"
-              className={`px-4 py-2 rounded-md text-sm font-medium ${
-                location.pathname === "/dashboard/inventory/movements"
+              className={ `px-4 py-2 rounded-md text-sm font-medium ${ location.pathname === "/dashboard/inventory/movements"
                   ? "bg-indigo-600 text-white"
                   : "bg-indigo-100 text-indigo-600 hover:bg-indigo-200 dark:bg-indigo-900 dark:text-indigo-300 dark:hover:bg-indigo-800"
-              }`}
+                }` }
             >
               <i className="fas fa-arrows-rotate mr-2"></i>
               Movimientos
@@ -162,49 +159,48 @@ const InventoryCategories: React.FC = () => {
 
             <Link
               to="/dashboard/inventory/alerts"
-              className={`px-4 py-2 rounded-md text-sm font-medium ${
-                location.pathname === "/dashboard/inventory/alerts"
+              className={ `px-4 py-2 rounded-md text-sm font-medium ${ location.pathname === "/dashboard/inventory/alerts"
                   ? "bg-indigo-600 text-white"
                   : "bg-indigo-100 text-indigo-600 hover:bg-indigo-200 dark:bg-indigo-900 dark:text-indigo-300 dark:hover:bg-indigo-800"
-              }`}
+                }` }
             >
               <i className="fas fa-triangle-exclamation mr-2"></i>
               Alertas
-              {lowStockItems > 0 && (
+              { lowStockItems > 0 && (
                 <span className="ml-2 bg-red-600 text-white text-xs font-medium rounded-full h-5 w-5 inline-flex items-center justify-center">
-                  {lowStockItems}
+                  { lowStockItems }
                 </span>
-              )}
+              ) }
             </Link>
           </div>
         </div>
 
-        {/* Barra de búsqueda */}
+        {/* Barra de búsqueda */ }
         <div className="relative max-w-lg mb-6">
           <div className="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none">
             <i className="fas fa-search text-gray-400"></i>
           </div>
           <input
             type="text"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full ps-2 p-2.5"
+            value={ searchTerm }
+            onChange={ ( e ) => setSearchTerm( e.target.value ) }
+            className="bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white text-sm rounded-lg block w-full ps-2 p-2.5"
             placeholder="Buscar categorías..."
           />
-          {searchTerm && (
+          { searchTerm && (
             <button
-              className="absolute inset-y-0 end-0 flex items-center pe-3 text-gray-400 hover:text-white"
-              onClick={() => setSearchTerm("")}
+              className="absolute inset-y-0 end-0 flex items-center pe-3 text-gray-400 hover:text-gray-800 dark:hover:text-white"
+              onClick={ () => setSearchTerm( "" ) }
             >
               <i className="fas fa-times"></i>
             </button>
-          )}
+          ) }
         </div>
       </div>
 
-      {/* Tabla de categorías */}
-      <div className="bg-gray-800 rounded-lg shadow-lg overflow-hidden">
-        {loading ? (
+      {/* Tabla de categorías */ }
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+        { loading ? (
           <div className="flex justify-center items-center h-48">
             <div className="spinner-border text-indigo-500" role="status">
               <i className="fas fa-spinner fa-spin text-3xl text-indigo-500"></i>
@@ -212,8 +208,8 @@ const InventoryCategories: React.FC = () => {
           </div>
         ) : filteredCategories.length > 0 ? (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left text-gray-400">
-              <thead className="text-xs uppercase dar:bg-gray-700 text-gray-400">
+            <table className="w-full text-sm text-left text-gray-600 dark:text-gray-400">
+              <thead className="text-xs uppercase bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400">
                 <tr>
                   <th scope="col" className="px-6 py-3">
                     Nombre
@@ -230,25 +226,25 @@ const InventoryCategories: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {filteredCategories.map((category) => (
+                { filteredCategories.map( ( category ) => (
                   <tr
-                    key={category.id}
-                    className="border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-300 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-100"
+                    key={ category.id }
+                    className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-100"
                   >
-                    <td className="px-6 py-4 font-medium text-white">
-                      {category.name}
+                    <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">
+                      { category.name }
                     </td>
                     <td className="px-6 py-4">
-                      {getParentCategoryName(category.parentId) || "-"}
+                      { getParentCategoryName( category.parentId ) || "-" }
                     </td>
-                    <td className="px-6 py-4">{category.description || "-"}</td>
+                    <td className="px-6 py-4">{ category.description || "-" }</td>
                     <td className="px-6 py-4 text-center">
                       <div className="flex justify-center space-x-3">
                         <button
-                          onClick={() => {
-                            setSelectedCategory(category);
-                            setIsEditModalOpen(true);
-                          }}
+                          onClick={ () => {
+                            setSelectedCategory( category );
+                            setIsEditModalOpen( true );
+                          } }
                           className="px-2 py-1 bg-indigo-600 text-white rounded hover:bg-indigo-700 flex items-center"
                           title="Editar"
                         >
@@ -256,10 +252,10 @@ const InventoryCategories: React.FC = () => {
                           <span>Editar</span>
                         </button>
                         <button
-                          onClick={() => {
-                            setSelectedCategory(category);
-                            setIsDeleteModalOpen(true);
-                          }}
+                          onClick={ () => {
+                            setSelectedCategory( category );
+                            setIsDeleteModalOpen( true );
+                          } }
                           className="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700 flex items-center"
                           title="Eliminar"
                         >
@@ -269,31 +265,31 @@ const InventoryCategories: React.FC = () => {
                       </div>
                     </td>
                   </tr>
-                ))}
+                ) ) }
               </tbody>
             </table>
           </div>
         ) : (
           <div className="text-center py-8">
-            {searchTerm ? (
+            { searchTerm ? (
               <div>
-                <i className="fas fa-search text-gray-500 text-3xl mb-2"></i>
-                <p className="text-gray-400">
-                  No se encontraron categorías para "{searchTerm}"
+                <i className="fas fa-search text-gray-400 dark:text-gray-500 text-3xl mb-2"></i>
+                <p className="text-gray-600 dark:text-gray-400">
+                  No se encontraron categorías para "{ searchTerm }"
                 </p>
               </div>
             ) : (
               <div>
-                <i className="fas fa-folder-open text-gray-500 text-3xl mb-2"></i>
-                <p className="text-gray-400">No hay categorías creadas aún</p>
+                <i className="fas fa-folder-open text-gray-400 dark:text-gray-500 text-3xl mb-2"></i>
+                <p className="text-gray-600 dark:text-gray-400">No hay categorías creadas aún</p>
               </div>
-            )}
+            ) }
           </div>
-        )}
+        ) }
       </div>
 
-      {/* Modales */}
-      {isAddModalOpen && (
+      {/* Modales */ }
+      { isAddModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-indigo-100 bg-opacity-20 dark:bg-indigo-100 dark:bg-opacity-20">
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl overflow-hidden max-w-md w-full">
             <div className="flex justify-between items-center border-b border-gray-200 dark:border-gray-700 p-4">
@@ -301,70 +297,70 @@ const InventoryCategories: React.FC = () => {
                 Añadir categoría
               </h3>
               <button
-                onClick={() => setIsAddModalOpen(false)}
-                className="text-gray-400 hover:text-white"
+                onClick={ () => setIsAddModalOpen( false ) }
+                className="text-gray-400 hover:text-gray-800 dark:hover:text-white"
               >
                 <i className="fas fa-times"></i>
               </button>
             </div>
             <div className="p-6 dark:bg-gray-800">
               <CategoryForm
-                categories={categories}
-                onSubmit={handleAddCategory}
-                onCancel={() => setIsAddModalOpen(false)}
-                loading={submitLoading}
+                categories={ categories }
+                onSubmit={ handleAddCategory }
+                onCancel={ () => setIsAddModalOpen( false ) }
+                loading={ submitLoading }
               />
             </div>
           </div>
         </div>
-      )}
+      ) }
 
       <Modal
         title="Editar categoría"
-        isOpen={isEditModalOpen}
-        onClose={() => setIsEditModalOpen(false)}
+        isOpen={ isEditModalOpen }
+        onClose={ () => setIsEditModalOpen( false ) }
         size="md"
       >
-        {selectedCategory && (
+        { selectedCategory && (
           <div className="p-6">
             <CategoryForm
-              category={selectedCategory}
-              categories={categories}
-              onSubmit={handleEditCategory}
-              onCancel={() => setIsEditModalOpen(false)}
-              loading={submitLoading}
+              category={ selectedCategory }
+              categories={ categories }
+              onSubmit={ handleEditCategory }
+              onCancel={ () => setIsEditModalOpen( false ) }
+              loading={ submitLoading }
             />
           </div>
-        )}
+        ) }
       </Modal>
 
       <Modal
         title="Confirmar eliminación"
-        isOpen={isDeleteModalOpen}
-        onClose={() => setIsDeleteModalOpen(false)}
+        isOpen={ isDeleteModalOpen }
+        onClose={ () => setIsDeleteModalOpen( false ) }
         size="sm"
       >
         <div className="p-6">
-          <p className="text-center text-lg text-white mb-6">
-            ¿Estás seguro de que deseas eliminar la categoría{" "}
-            <span className="font-bold">{selectedCategory?.name}</span>?
+          <p className="text-center text-lg text-gray-800 dark:text-white mb-6">
+            ¿Estás seguro de que deseas eliminar la categoría{ " " }
+            <span className="font-bold">{ selectedCategory?.name }</span>?
           </p>
-          <p className="text-center text-sm text-gray-400 mb-6">
+          <p className="text-center text-sm text-gray-600 dark:text-gray-400 mb-6">
             No podrás eliminar categorías que tengan ítems asociados.
           </p>
           <div className="flex justify-center space-x-4">
             <button
-              onClick={() => setIsDeleteModalOpen(false)}
-              className="bg-gray-700 hover:bg-gray-600 text-white font-medium rounded-lg text-sm px-5 py-2.5"
+              onClick={ () => setIsDeleteModalOpen( false ) }
+              className="bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-white font-medium rounded-lg text-sm px-5 py-2.5"
             >
               Cancelar
             </button>
             <button
-              onClick={handleDeleteCategory}
+              onClick={ handleDeleteCategory }
               className="bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg text-sm px-5 py-2.5 flex items-center"
-              disabled={submitLoading}
+              disabled={ submitLoading }
             >
-              {submitLoading ? (
+              { submitLoading ? (
                 <>
                   <i className="fas fa-spinner fa-spin mr-2"></i>
                   Eliminando...
@@ -374,7 +370,7 @@ const InventoryCategories: React.FC = () => {
                   <i className="fas fa-trash-alt mr-2"></i>
                   Eliminar
                 </>
-              )}
+              ) }
             </button>
           </div>
         </div>

@@ -59,6 +59,9 @@ service cloud.firestore {
       && request.resource.data.createdAt is timestamp
       && request.resource.data.updatedAt is timestamp;
     }
+    function isReconciliationCollection(collectionName) {
+      return ['paymentReconciliations', 'expenseReconciliations'].hasAny([collectionName]);
+    }
     
     // ─── Colección de Links de Noticias y Guías (ahora lectura pública) ───
     match /linksNewsAndGuides/{docId} {
@@ -177,12 +180,38 @@ service cloud.firestore {
           allow create, update: if (isAdminOrAssistant() && belongsToClient(clientId)) || isSuperAdmin();
           allow delete: if (isAdmin() && belongsToClient(clientId)) || isSuperAdmin();
         }
+
+        // ─── Conciliaciones financieras (inmutables para trazabilidad) ───
+        match /paymentReconciliations/{sessionId} {
+          allow read: if belongsToClientOrSuperAdmin(clientId);
+          allow create: if (isAdminOrAssistant() && belongsToClient(clientId)) || isSuperAdmin();
+          allow update: if ((isAdminOrAssistant() && belongsToClient(clientId)) || isSuperAdmin())
+                        && resource.data.status == 'draft';
+          allow delete: if false;
+        }
+
+        match /expenseReconciliations/{sessionId} {
+          allow read: if belongsToClientOrSuperAdmin(clientId);
+          allow create: if (isAdminOrAssistant() && belongsToClient(clientId)) || isSuperAdmin();
+          allow update: if ((isAdminOrAssistant() && belongsToClient(clientId)) || isSuperAdmin())
+                        && resource.data.status == 'draft';
+          allow delete: if false;
+        }
+
+        // ─── Bitácora de auditoría transversal ───
+        match /auditLogs/{logId} {
+          allow read: if belongsToClientOrSuperAdmin(clientId);
+          allow create: if (isAdminOrAssistant() && belongsToClient(clientId)) || isSuperAdmin();
+          allow update, delete: if false;
+        }
         
         // ─── Subcolecciones genéricas de segundo nivel ───
         match /{collection}/{docId} {
           allow read:   if belongsToClientOrSuperAdmin(clientId);
-          allow create, update: if (isAdminOrAssistant() && belongsToClient(clientId)) || isSuperAdmin();
-          allow delete: if (isAdmin() && belongsToClient(clientId)) || isSuperAdmin();
+          allow create, update: if !isReconciliationCollection(collection)
+                                  && ((isAdminOrAssistant() && belongsToClient(clientId)) || isSuperAdmin());
+          allow delete: if !isReconciliationCollection(collection)
+                         && ((isAdmin() && belongsToClient(clientId)) || isSuperAdmin());
           
           // ─── Cargos ───
           match /charges/{chargeId} {
@@ -300,6 +329,7 @@ service cloud.firestore {
         'creditBalance','creditUsed','dateRegistered','email',
         'financialAccountId','folio','invoiceRequired','month',
         'numberCondominium','paymentDate','paymentGroupId',
+        'paymentReference',
         'paymentId','paymentType','phone','startAt',
         'userId','yearMonth', 'paymentAmountReference'
       ])
@@ -323,6 +353,7 @@ service cloud.firestore {
       && request.resource.data.numberCondominium is string
       && request.resource.data.paymentDate is timestamp
       && request.resource.data.paymentGroupId is string
+      && request.resource.data.paymentReference is string
       && request.resource.data.paymentId is string
       && request.resource.data.paymentType is string
       && (request.resource.data.phone is int || request.resource.data.phone is float)
