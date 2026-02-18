@@ -315,7 +315,7 @@ const MorosidadPDFReport: React.FC = () => {
       const footerY = pageHeight - 15;
       doc.setFontSize( 11 );
       doc.text( "Un servicio de Omnipixel.", margin, footerY - 10 );
-      doc.text( "Correo: administracion@estate-admin.com", margin, footerY - 5 );
+      doc.text( "Correo: info@estate-admin.com", margin, footerY - 5 );
 
       const generatedAt = new Date().toLocaleString( "es-MX" );
       const totalPages = doc.getNumberOfPages();

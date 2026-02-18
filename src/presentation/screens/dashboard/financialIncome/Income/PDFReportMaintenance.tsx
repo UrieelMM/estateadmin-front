@@ -1,7 +1,15 @@
 // src/components/PDFReportGeneratorMaintenance.tsx
-import React from "react";
+import React, { useEffect, useState } from "react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import {
+  collectionGroup,
+  getDocs,
+  getFirestore,
+  query,
+  where,
+} from "firebase/firestore";
+import { getAuth, getIdTokenResult } from "firebase/auth";
 import {
   PaymentRecord,
   usePaymentSummaryStore,
@@ -90,6 +98,10 @@ const PDFReportGeneratorMaintenance: React.FC<PDFReportGeneratorProps> = ( {
   concept,
   renderButton,
 } ) => {
+  const [ paymentLinesByCondoMonth, setPaymentLinesByCondoMonth ] = useState<
+    Record<string, Array<{ date: string; amount: number; chargeId: string; concept: string; }>>
+  >( {} );
+
   // Se obtienen datos del store de pagos
   const {
     detailed,
@@ -116,6 +128,156 @@ const PDFReportGeneratorMaintenance: React.FC<PDFReportGeneratorProps> = ( {
   } ) );
 
   const reportConcept = concept ? concept : "Cuota de mantenimiento";
+  const isSpecificYear = /^\d{4}$/.test( year );
+
+  const normalizeCondoNumber = ( value: unknown ): string =>
+    String( value || "" ).trim();
+
+  const getCondoMonthKey = ( numberCondominium: string, month: string ): string =>
+    `${ normalizeCondoNumber( numberCondominium ) }__${ month }`;
+
+  const normalizeConcept = ( value: unknown ): string => {
+    if ( Array.isArray( value ) ) {
+      return value.map( ( item ) => String( item || "" ).toLowerCase().trim() ).join( "," );
+    }
+    return String( value || "" ).toLowerCase().trim();
+  };
+
+  const formatDate = ( date: Date ): string => {
+    const day = String( date.getDate() ).padStart( 2, "0" );
+    const month = String( date.getMonth() + 1 ).padStart( 2, "0" );
+    const fullYear = date.getFullYear();
+    return `${ day }/${ month }/${ fullYear }`;
+  };
+
+  const formatCompactDate = ( date: Date ): string => {
+    const day = String( date.getDate() ).padStart( 2, "0" );
+    const month = String( date.getMonth() + 1 ).padStart( 2, "0" );
+    if ( isSpecificYear ) {
+      return `${ day }/${ month }`;
+    }
+    const shortYear = String( date.getFullYear() ).slice( -2 );
+    return `${ day }/${ month }/${ shortYear }`;
+  };
+
+  const parseAmountPaid = ( rawValue: unknown ): number => {
+    const numeric = Number( rawValue );
+    if ( !Number.isFinite( numeric ) ) return 0;
+    return numeric / 100;
+  };
+
+  const parsePaymentDate = ( rawValue: unknown ): Date | null => {
+    if ( !rawValue ) return null;
+    if (
+      typeof rawValue === "object" &&
+      rawValue !== null &&
+      "toDate" in ( rawValue as Record<string, unknown> ) &&
+      typeof ( rawValue as { toDate?: () => Date; } ).toDate === "function"
+    ) {
+      return ( rawValue as { toDate: () => Date; } ).toDate();
+    }
+    if ( rawValue instanceof Date ) {
+      return rawValue;
+    }
+    if ( typeof rawValue === "string" ) {
+      const date = new Date( rawValue );
+      if ( !Number.isNaN( date.getTime() ) ) {
+        return date;
+      }
+      const parts = rawValue.split( "/" );
+      if ( parts.length === 3 ) {
+        const [ day, month, fullYear ] = parts;
+        const parsed = new Date( `${ fullYear }-${ month }-${ day }` );
+        if ( !Number.isNaN( parsed.getTime() ) ) {
+          return parsed;
+        }
+      }
+    }
+    return null;
+  };
+
+  useEffect( () => {
+    let isMounted = true;
+
+    const fetchPaymentLinesByMonth = async () => {
+      try {
+        const auth = getAuth();
+        const user = auth.currentUser;
+        if ( !user ) return;
+
+        const tokenResult = await getIdTokenResult( user );
+        const clientId = tokenResult.claims[ "clientId" ] as string;
+        const condominiumId = localStorage.getItem( "condominiumId" );
+        if ( !clientId || !condominiumId ) return;
+
+        const db = getFirestore();
+        const paymentsQuery = query(
+          collectionGroup( db, "payments" ),
+          where( "clientId", "==", clientId ),
+          where( "condominiumId", "==", condominiumId )
+        );
+        const snapshot = await getDocs( paymentsQuery );
+
+        const groupedLines = new Map<
+          string,
+          Array<{ date: string; amount: number; chargeId: string; concept: string; }>
+        >();
+
+        snapshot.forEach( ( docSnap ) => {
+          const data = docSnap.data() as Record<string, unknown>;
+          const paymentDate = parsePaymentDate( data.paymentDate );
+          if ( !paymentDate ) return;
+
+          const paymentYear = String( paymentDate.getFullYear() );
+          if ( year && year !== paymentYear ) return;
+
+          const month =
+            typeof data.month === "string" && data.month
+              ? data.month.padStart( 2, "0" )
+              : String( paymentDate.getMonth() + 1 ).padStart( 2, "0" );
+          const numberCondominium = normalizeCondoNumber( data.numberCondominium );
+          if ( !numberCondominium ) return;
+
+          const key = getCondoMonthKey( numberCondominium, month );
+          if ( !groupedLines.has( key ) ) {
+            groupedLines.set( key, [] );
+          }
+          groupedLines.get( key )!.push( {
+            date: formatDate( paymentDate ),
+            amount: parseAmountPaid( data.amountPaid ),
+            chargeId: String( data.chargeId || "" ),
+            concept: normalizeConcept( data.concept ),
+          } );
+        } );
+
+        const linesByCondoMonth: Record<
+          string,
+          Array<{ date: string; amount: number; chargeId: string; concept: string; }>
+        > = {};
+        groupedLines.forEach( ( lines, key ) => {
+          linesByCondoMonth[ key ] = lines.sort( ( a, b ) => {
+            const [ dayA, monthA, yearA ] = a.date.split( "/" );
+            const [ dayB, monthB, yearB ] = b.date.split( "/" );
+            const dateA = new Date( `${ yearA }-${ monthA }-${ dayA }` ).getTime();
+            const dateB = new Date( `${ yearB }-${ monthB }-${ dayB }` ).getTime();
+            if ( dateA !== dateB ) return dateA - dateB;
+            return a.amount - b.amount;
+          } );
+        } );
+
+        if ( isMounted ) {
+          setPaymentLinesByCondoMonth( linesByCondoMonth );
+        }
+      } catch ( error ) {
+        console.error( "Error obteniendo detalle de pagos para PDF:", error );
+      }
+    };
+
+    fetchPaymentLinesByMonth();
+    return () => {
+      isMounted = false;
+    };
+  }, [ year ] );
 
   // Función para formatear números como moneda
   const formatCurrency = ( value: number ): string =>
@@ -129,7 +291,7 @@ const PDFReportGeneratorMaintenance: React.FC<PDFReportGeneratorProps> = ( {
   // Definir encabezado de la tabla global con meses abreviados para mejor distribución
   const tableHead = [
     [
-      "Nombre y Condomino",
+      "Condómino",
       "Ene",
       "Feb",
       "Mar",
@@ -174,7 +336,7 @@ const PDFReportGeneratorMaintenance: React.FC<PDFReportGeneratorProps> = ( {
     const row = [];
     // Columna A: Nombre y Número de Condomino
     row.push( {
-      content: `${ cond.number }${ cond.name ? " - " + cond.name : "" }`,
+      content: `${ cond.number }`,
       styles: { fontStyle: "bold" },
     } );
     let totalPendingForCondo = 0;
@@ -209,13 +371,52 @@ const PDFReportGeneratorMaintenance: React.FC<PDFReportGeneratorProps> = ( {
       const monthRecords = filteredRecords.filter(
         ( rec ) => rec.month === monthKey
       );
-      const dates = monthRecords
-        .map( ( rec ) => rec.paymentDate )
-        .filter( ( d ): d is string => !!d )
-        .join( ", " );
-      dateRow.push( dates || "-" );
+      const mappedLines =
+        paymentLinesByCondoMonth[ getCondoMonthKey( cond.number, monthKey ) ] || [];
+      const chargeIds = new Set(
+        monthRecords.map( ( record ) => String( record.id || "" ) ).filter( Boolean )
+      );
+      const normalizedReportConcept = normalizeConcept( reportConcept );
+      const relevantMappedLines = mappedLines.filter( ( line ) => {
+        if ( line.chargeId && chargeIds.size > 0 ) {
+          return chargeIds.has( line.chargeId );
+        }
+        if ( !line.concept ) {
+          return true;
+        }
+        return line.concept.includes( normalizedReportConcept );
+      } );
+      const compactLinesMap = new Map<string, number>();
+      relevantMappedLines.forEach( ( line ) => {
+        compactLinesMap.set(
+          line.date,
+          ( compactLinesMap.get( line.date ) || 0 ) + line.amount
+        );
+      } );
+      const compactLines = Array.from( compactLinesMap.entries() ).map(
+        ( [ lineDate, amount ] ) => {
+          const [ day, month, fullYear ] = lineDate.split( "/" );
+          const parsedDate = new Date( `${ fullYear }-${ month }-${ day }` );
+          const visualDate = Number.isNaN( parsedDate.getTime() )
+            ? lineDate
+            : formatCompactDate( parsedDate );
+          return `${ visualDate } · ${ formatCurrency( amount ) }`;
+        }
+      );
+      const fallbackDates = Array.from(
+        new Set(
+          monthRecords
+            .map( ( rec ) => rec.paymentDate )
+            .filter( ( d ): d is string => !!d )
+        )
+      );
+      const linesToRender = compactLines.length > 0 ? compactLines : fallbackDates;
+      dateRow.push( {
+        content: linesToRender.length > 0 ? linesToRender.join( "\n" ) : "-",
+        styles: { fontSize: 8, halign: "left", valign: "top", cellPadding: 1.2 },
+      } );
     }
-    dateRow.push( "-" );
+    dateRow.push( { content: "-", styles: { fontSize: 8 } } );
     tableBody.push( dateRow );
   } );
 
@@ -269,15 +470,20 @@ const PDFReportGeneratorMaintenance: React.FC<PDFReportGeneratorProps> = ( {
       },
       styles: { fontSize: 9, cellPadding: 2 },
       columnStyles: {
-        0: { cellWidth: 40 }, // Nombre
+        0: { cellWidth: 26 }, // Condómino
         // Las columnas de meses (1-12) se ajustan automáticamente o se pueden definir si es necesario
         13: { cellWidth: 25, halign: "right" }, // Pendiente
       },
       theme: "grid",
       margin: { left: 14, right: 14 },
       didParseCell: ( data ) => {
+        const rowRaw = data.row.raw as Array<any> | undefined;
+        const isDateRow =
+          Array.isArray( rowRaw ) &&
+          typeof rowRaw[ 0 ] === "object" &&
+          rowRaw[ 0 ]?.content === "Fecha";
         // Alinear columnas numéricas a la derecha (solo en el cuerpo de la tabla)
-        if ( data.section === "body" && data.column.index > 0 ) {
+        if ( data.section === "body" && data.column.index > 0 && !isDateRow ) {
           data.cell.styles.halign = "right";
         }
         // Agregar sombreado alternado en las filas de datos (excluyendo el encabezado)

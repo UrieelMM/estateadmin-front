@@ -38,14 +38,33 @@ export interface PaymentRecord {
   creditUsed?: number; // NUEVO: crédito utilizado (en pesos, float)
   concept: string;
   paymentDate?: string;
+  paymentDateISO?: string;
   referenceAmount: number; // Monto original del cargo que no se modifica con los pagos
   referenceId?: string; // Identificador de referencia para evitar duplicados
+  recordType?: "charge" | "payment";
+  // Trazabilidad del cargo
+  chargeId?: string;
+  chargeStartAt?: string;
+  chargeConcept?: string;
+  chargeReferenceAmount?: number;
+  chargeCurrentPending?: number;
+  chargePaid?: boolean;
+  // Trazabilidad del pago
+  paymentId?: string;
+  folio?: string;
+  paymentType?: string;
+  financialAccountId?: string;
+  paymentReference?: string;
+  paymentGroupId?: string;
+  comments?: string;
+  attachmentPayment?: string;
 }
 
 type PaymentHistoryState = {
   payments: PaymentRecord[];
   detailed: Record<string, PaymentRecord[]>;
   detailedByConcept: Record<string, Record<string, PaymentRecord[]>>;
+  financialAccountsMap: Record<string, string>;
   loading: boolean;
   error: string | null;
   selectedYear: string;
@@ -81,10 +100,48 @@ function timestampToSpanishString(ts: Timestamp): string {
   return `${day} de ${monthName} de ${year}`;
 }
 
+function parseCreditBalanceToPesos(value: unknown): number {
+  if (value === null || value === undefined) return 0;
+  if (typeof value === "number") {
+    if (!Number.isFinite(value)) return 0;
+    return Number.isInteger(value) ? value / 100 : value;
+  }
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed) return 0;
+    const parsed = Number(trimmed);
+    if (!Number.isFinite(parsed)) return 0;
+    return trimmed.includes(".") ? parsed : parsed / 100;
+  }
+  return 0;
+}
+
+function toIsoStringSafe(value: unknown): string | undefined {
+  if (!value) return undefined;
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? undefined : value.toISOString();
+  }
+  if (
+    typeof value === "object" &&
+    value !== null &&
+    "toDate" in (value as Record<string, unknown>) &&
+    typeof (value as { toDate?: () => Date }).toDate === "function"
+  ) {
+    const date = (value as { toDate: () => Date }).toDate();
+    return Number.isNaN(date.getTime()) ? undefined : date.toISOString();
+  }
+  if (typeof value === "string") {
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? undefined : date.toISOString();
+  }
+  return undefined;
+}
+
 export const usePaymentHistoryStore = create<PaymentHistoryState>()((set) => ({
   payments: [],
   detailed: {},
   detailedByConcept: {},
+  financialAccountsMap: {},
   loading: false,
   error: null,
   selectedYear: new Date().getFullYear().toString(),
@@ -115,6 +172,19 @@ export const usePaymentHistoryStore = create<PaymentHistoryState>()((set) => ({
       }
 
       const db = getFirestore();
+      const financialAccountsMap: Record<string, string> = {};
+
+      const financialAccountsRef = collection(
+        db,
+        `clients/${clientId}/condominiums/${condominiumId}/financialAccounts`
+      );
+      const financialAccountsSnapshot = await getDocs(financialAccountsRef);
+      financialAccountsSnapshot.forEach((accountDoc) => {
+        const data = accountDoc.data() as Record<string, unknown>;
+        financialAccountsMap[accountDoc.id] = String(
+          data.name || data.accountName || "Cuenta sin nombre"
+        );
+      });
 
       // 1. Obtener datos de la administradora
       const clientDocRef = doc(db, "clients", clientId);
@@ -159,8 +229,8 @@ export const usePaymentHistoryStore = create<PaymentHistoryState>()((set) => ({
       const userData = userDoc.data();
       const userId = userDoc.id;
       // Se obtiene el saldo a favor actual directamente del usuario
-      const currentCreditBalance = parseFloat(
-        userData.totalCreditBalance || "0"
+      const currentCreditBalance = parseCreditBalanceToPesos(
+        userData.totalCreditBalance
       );
 
       // 3. Cargar todos los cargos
@@ -221,6 +291,14 @@ export const usePaymentHistoryStore = create<PaymentHistoryState>()((set) => ({
             creditUsed: 0,
             concept: chargeData.concept || "Sin concepto",
             referenceAmount: chargesByMonth[monthValue], // Usamos el total de cargos del mes
+            recordType: "charge",
+            chargeId: chargeDoc.id,
+            chargeStartAt: chargeData.startAt || "",
+            chargeConcept: chargeData.concept || "Sin concepto",
+            chargeReferenceAmount: centsToPesos(chargeData.referenceAmount || 0),
+            chargeCurrentPending: centsToPesos(chargeData.amount || 0),
+            chargePaid: chargeData.paid === true,
+            referenceId: `${chargeDoc.id}-pending`,
           };
           paymentRecords.push(record);
           continue;
@@ -231,13 +309,16 @@ export const usePaymentHistoryStore = create<PaymentHistoryState>()((set) => ({
           const paymentData = paymentDoc.data();
 
           let finalDateStr = "";
+          let paymentDateISO = "";
           if (paymentData.paymentDate) {
             if ((paymentData.paymentDate as any).toDate) {
               finalDateStr = timestampToSpanishString(
                 paymentData.paymentDate as Timestamp
               );
+              paymentDateISO = toIsoStringSafe(paymentData.paymentDate) || "";
             } else if (typeof paymentData.paymentDate === "string") {
               finalDateStr = paymentData.paymentDate;
+              paymentDateISO = toIsoStringSafe(paymentData.paymentDate) || "";
             }
           }
 
@@ -253,7 +334,24 @@ export const usePaymentHistoryStore = create<PaymentHistoryState>()((set) => ({
               : 0,
             concept: chargeData.concept || "Sin concepto",
             paymentDate: finalDateStr,
+            paymentDateISO,
             referenceAmount: chargesByMonth[monthValue], // Usamos el total de cargos del mes
+            recordType: "payment",
+            chargeId: chargeDoc.id,
+            chargeStartAt: chargeData.startAt || "",
+            chargeConcept: chargeData.concept || "Sin concepto",
+            chargeReferenceAmount: centsToPesos(chargeData.referenceAmount || 0),
+            chargeCurrentPending: centsToPesos(chargeData.amount || 0),
+            chargePaid: chargeData.paid === true,
+            paymentId: paymentDoc.id,
+            folio: paymentData.folio || "",
+            paymentType: paymentData.paymentType || "",
+            financialAccountId: paymentData.financialAccountId || "",
+            paymentReference: paymentData.paymentReference || "",
+            paymentGroupId: paymentData.paymentGroupId || "",
+            comments: paymentData.comments || "",
+            attachmentPayment: paymentData.attachmentPayment || "",
+            referenceId: chargeDoc.id,
           };
 
           paymentRecords.push(record);
@@ -311,6 +409,7 @@ export const usePaymentHistoryStore = create<PaymentHistoryState>()((set) => ({
         payments: paymentRecords,
         detailed,
         detailedByConcept,
+        financialAccountsMap,
         loading: false,
         adminCompany,
         adminPhone,

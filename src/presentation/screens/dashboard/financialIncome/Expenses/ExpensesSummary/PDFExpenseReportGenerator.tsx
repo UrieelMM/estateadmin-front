@@ -280,7 +280,7 @@ const PDFExpenseReportGenerator: React.FC<PDFExpenseReportGeneratorProps> = ( {
     const footerY = pageHeight - 15;
     doc.setFontSize( 11 );
     doc.text( footerText, margin, footerY - 10 );
-    doc.text( "Contacto: administracion@estate-admin.com", margin, footerY - 5 );
+    doc.text( "Contacto: info@estate-admin.com", margin, footerY - 5 );
 
     const generatedAt = new Date().toLocaleString( "es-MX" );
     const totalPages = doc.getNumberOfPages();

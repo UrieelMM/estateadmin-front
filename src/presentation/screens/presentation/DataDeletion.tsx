@@ -23,7 +23,7 @@ const DataDeletion = () => {
           <Link to="/" className="flex items-center">
             <img
               className="h-10 w-auto"
-              src={logo}
+              src={ logo }
               alt="EstateAdmin Logo"
               loading="eager"
               decoding="async"
@@ -35,24 +35,22 @@ const DataDeletion = () => {
           </Link>
           <div className="flex items-center gap-4">
             <button
-              onClick={toggleDarkMode}
+              onClick={ toggleDarkMode }
               className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 transition-all duration-300"
               aria-label="Toggle dark mode"
             >
               <div className="relative w-5 h-5">
                 <SunIcon
-                  className={`absolute inset-0 w-5 h-5 text-yellow-500 transition-all duration-500 transform ${
-                    !isDarkMode
-                      ? "opacity-100 rotate-0 scale-100"
-                      : "opacity-0 rotate-180 scale-75"
-                  }`}
+                  className={ `absolute inset-0 w-5 h-5 text-yellow-500 transition-all duration-500 transform ${ !isDarkMode
+                    ? "opacity-100 rotate-0 scale-100"
+                    : "opacity-0 rotate-180 scale-75"
+                    }` }
                 />
                 <MoonIcon
-                  className={`absolute inset-0 w-5 h-5 text-indigo-400 transition-all duration-500 transform ${
-                    isDarkMode
-                      ? "opacity-100 rotate-0 scale-100"
-                      : "opacity-0 -rotate-180 scale-75"
-                  }`}
+                  className={ `absolute inset-0 w-5 h-5 text-indigo-400 transition-all duration-500 transform ${ isDarkMode
+                    ? "opacity-100 rotate-0 scale-100"
+                    : "opacity-0 -rotate-180 scale-75"
+                    }` }
                 />
               </div>
             </button>
@@ -66,10 +64,10 @@ const DataDeletion = () => {
         </div>
       </header>
       <PublicBreadcrumb
-        items={[
+        items={ [
           { label: "Inicio", to: "/" },
           { label: "Eliminación de Datos" },
-        ]}
+        ] }
       />
 
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
@@ -157,8 +155,8 @@ const DataDeletion = () => {
                 B. Por correo electrónico
               </h3>
               <p className="text-gray-700 dark:text-gray-300">
-                Envíe un correo electrónico a{" "}
-                <strong>privacidad@estate-admin.com</strong> con el asunto
+                Envíe un correo electrónico a{ " " }
+                <strong>soporte@estate-admin.com</strong> con el asunto
                 "Solicitud de eliminación de datos". En su correo, incluya:
               </p>
               <ul className="list-disc ml-6 mt-2 mb-4 text-gray-700 dark:text-gray-300">
@@ -269,7 +267,7 @@ const DataDeletion = () => {
               </p>
               <ul className="list-none ml-6 mt-2 mb-4">
                 <li className="text-gray-700 dark:text-gray-300">
-                  <strong>Email:</strong> privacidad@estate-admin.com
+                  <strong>Email:</strong> soporte@estate-admin.com
                 </li>
                 <li className="text-gray-700 dark:text-gray-300">
                   <strong>Dirección:</strong> 43815 Guerreo 11 Tizayuca Hidalgo,
@@ -280,7 +278,7 @@ const DataDeletion = () => {
               <div className="border-t border-gray-200 pt-6 mt-8">
                 <p className="text-gray-700 dark:text-gray-300">
                   Para obtener más información sobre cómo manejamos sus datos
-                  personales, consulte nuestra{" "}
+                  personales, consulte nuestra{ " " }
                   <Link
                     to="/privacidad"
                     className="text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300"
@@ -298,7 +296,7 @@ const DataDeletion = () => {
       <footer className="bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 transition-colors duration-300">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <p className="text-center text-gray-500 dark:text-gray-400 text-sm">
-            &copy; {new Date().getFullYear()} EstateAdmin. Todos los derechos
+            &copy; { new Date().getFullYear() } EstateAdmin. Todos los derechos
             reservados.
           </p>
         </div>

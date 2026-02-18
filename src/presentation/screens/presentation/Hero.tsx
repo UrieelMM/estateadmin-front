@@ -29,7 +29,7 @@ const navigation = [
 ];
 
 const Hero = () => {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [ mobileMenuOpen, setMobileMenuOpen ] = useState( false );
   const { isDarkMode, toggleDarkMode } = useLocalDarkMode();
 
   const handleScroll = (
@@ -39,11 +39,11 @@ const Hero = () => {
     e.preventDefault();
 
     // Si es un enlace interno (inicia con #), hacer scroll
-    if (href.startsWith("#")) {
-      const element = document.querySelector(href);
-      if (element) {
-        element.scrollIntoView({ behavior: "smooth" });
-        setMobileMenuOpen(false);
+    if ( href.startsWith( "#" ) ) {
+      const element = document.querySelector( href );
+      if ( element ) {
+        element.scrollIntoView( { behavior: "smooth" } );
+        setMobileMenuOpen( false );
       }
     } else {
       // Si es un enlace externo (no inicia con #), navegar a esa URL
@@ -53,20 +53,20 @@ const Hero = () => {
 
   return (
     <div className="relative isolate bg-white dark:bg-gray-900 transition-colors duration-300 overflow-hidden">
-      {/* Grid Pattern Background - Global para toda la landing */}
+      {/* Grid Pattern Background - Global para toda la landing */ }
       <div className="fixed inset-0 -z-10">
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] dark:bg-[linear-gradient(to_right,#ffffff0a_1px,transparent_1px),linear-gradient(to_bottom,#ffffff0a_1px,transparent_1px)] bg-[size:14px_24px]"></div>
         <div className="absolute left-0 right-0 top-0 -z-10 m-auto h-[310px] w-[310px] rounded-full bg-indigo-400 dark:bg-indigo-600 opacity-20 blur-[100px]"></div>
       </div>
 
-      {/* Animated Gradient Blobs - Global */}
+      {/* Animated Gradient Blobs - Global */ }
       <div className="fixed inset-x-0 -top-40 opacity-90 -z-10 transform-gpu overflow-hidden blur-3xl sm:-top-80">
         <div
           className="relative left-[calc(50%-11rem)] aspect-[1155/678] w-[36.125rem] -translate-x-1/2 rotate-[30deg] bg-gradient-to-tr from-[#ff80b5] to-[#9089fc] sm:left-[calc(50%-30rem)] sm:w-[72.1875rem] animate-slow-pulse"
-          style={{
+          style={ {
             clipPath:
               "polygon(74.1% 44.1%, 100% 61.6%, 97.5% 26.9%, 85.5% 0.1%, 80.7% 2%, 72.5% 32.5%, 60.2% 62.4%, 52.4% 68.1%, 47.5% 58.3%, 45.2% 34.5%, 27.5% 76.7%, 0.1% 64.9%, 17.9% 100%, 27.6% 76.8%, 76.1% 97.7%, 74.1% 44.1%)",
-          }}
+          } }
         />
       </div>
 
@@ -88,7 +88,7 @@ const Hero = () => {
         <meta name="revisit-after" content="7 days" />
         <meta name="theme-color" content="#4F46E5" />
 
-        {/* Open Graph / Facebook */}
+        {/* Open Graph / Facebook */ }
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://estate-admin.com" />
         <meta
@@ -99,11 +99,11 @@ const Hero = () => {
           property="og:description"
           content="Plataforma integral para la gestión eficiente de condominios. Administra pagos, mantenimiento y comunicación."
         />
-        <meta property="og:image" content={logo} />
+        <meta property="og:image" content={ logo } />
         <meta property="og:site_name" content="EstateAdmin" />
         <meta property="og:locale" content="es_MX" />
 
-        {/* Twitter */}
+        {/* Twitter */ }
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:url" content="https://estate-admin.com" />
         <meta
@@ -114,17 +114,17 @@ const Hero = () => {
           name="twitter:description"
           content="Plataforma integral para la gestión eficiente de condominios."
         />
-        <meta name="twitter:image" content={logo} />
+        <meta name="twitter:image" content={ logo } />
         <meta name="twitter:creator" content="@estateadmin" />
 
-        {/* WhatsApp Business */}
+        {/* WhatsApp Business */ }
         <meta
           property="business:contact_data:street_address"
           content="43815 Guerreo Tizayuca Hidalgo, México"
         />
         <meta
           property="business:contact_data:email"
-          content="administraction@estate-admin.com"
+          content="info@estate-admin.com"
         />
         <meta property="business:contact_data:phone" content="+527711953837" />
         <meta
@@ -140,11 +140,11 @@ const Hero = () => {
           content="Sistema integral para la gestión de condominios"
         />
 
-        {/* Favicon */}
+        {/* Favicon */ }
         <link rel="icon" type="image/png" href="/favicon.png" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 
-        {/* Canonical URL */}
+        {/* Canonical URL */ }
         <link rel="canonical" href="https://estate-admin.com" />
       </Helmet>
 
@@ -157,7 +157,7 @@ const Hero = () => {
             <a href="#" className="-m-1.5 p-1.5">
               <img
                 className="h-8 w-auto"
-                src={logo}
+                src={ logo }
                 alt="EstateAdmin Logo"
                 loading="eager"
                 decoding="async"
@@ -169,46 +169,44 @@ const Hero = () => {
             <button
               type="button"
               className="-m-2.5 inline-flex items-center justify-center rounded-md p-2.5 text-gray-700 dark:text-gray-100"
-              onClick={() => setMobileMenuOpen(true)}
+              onClick={ () => setMobileMenuOpen( true ) }
             >
               <Bars3Icon className="h-6 w-6" aria-hidden="true" />
             </button>
           </div>
           <div className="hidden lg:flex lg:gap-x-12">
-            {navigation.map((item) => (
+            { navigation.map( ( item ) => (
               <a
-                key={item.name}
-                href={item.href}
-                onClick={(e) => handleScroll(e, item.href)}
+                key={ item.name }
+                href={ item.href }
+                onClick={ ( e ) => handleScroll( e, item.href ) }
                 className="text-sm font-semibold leading-6 text-gray-900 dark:text-gray-100 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
               >
-                {item.name}
+                { item.name }
               </a>
-            ))}
+            ) ) }
           </div>
           <div className="hidden lg:flex lg:flex-1 lg:justify-end lg:items-center lg:gap-4">
-            {/* Theme Toggle Button */}
+            {/* Theme Toggle Button */ }
             <button
-              onClick={toggleDarkMode}
+              onClick={ toggleDarkMode }
               className="relative p-2 rounded-full bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 transition-all duration-300 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400"
               aria-label="Toggle dark mode"
             >
               <div className="relative w-5 h-5">
-                {/* Sol icon */}
+                {/* Sol icon */ }
                 <SunIcon
-                  className={`absolute inset-0 w-5 h-5 text-yellow-500 transition-all duration-500 transform ${
-                    !isDarkMode
+                  className={ `absolute inset-0 w-5 h-5 text-yellow-500 transition-all duration-500 transform ${ !isDarkMode
                       ? "opacity-100 rotate-0 scale-100"
                       : "opacity-0 rotate-180 scale-75"
-                  }`}
+                    }` }
                 />
-                {/* Luna icon */}
+                {/* Luna icon */ }
                 <MoonIcon
-                  className={`absolute inset-0 w-5 h-5 text-indigo-400 transition-all duration-500 transform ${
-                    isDarkMode
+                  className={ `absolute inset-0 w-5 h-5 text-indigo-400 transition-all duration-500 transform ${ isDarkMode
                       ? "opacity-100 rotate-0 scale-100"
                       : "opacity-0 -rotate-180 scale-75"
-                  }`}
+                    }` }
                 />
               </div>
             </button>
@@ -223,8 +221,8 @@ const Hero = () => {
         <Dialog
           as="div"
           className="lg:hidden"
-          open={mobileMenuOpen}
-          onClose={setMobileMenuOpen}
+          open={ mobileMenuOpen }
+          onClose={ setMobileMenuOpen }
         >
           <div className="fixed inset-0 z-50" />
           <Dialog.Panel className="fixed inset-y-0 right-0 z-50 w-full overflow-y-auto bg-white dark:bg-gray-900 px-6 py-6 sm:max-w-sm sm:ring-1 sm:ring-gray-900/10 dark:sm:ring-gray-700/50">
@@ -232,7 +230,7 @@ const Hero = () => {
               <a href="#" className="-m-1.5 p-1.5">
                 <img
                   className="h-8 w-auto"
-                  src={logo}
+                  src={ logo }
                   alt="EstateAdmin Logo"
                   loading="eager"
                   decoding="async"
@@ -241,7 +239,7 @@ const Hero = () => {
               <button
                 type="button"
                 className="-m-2.5 rounded-md p-2.5 text-gray-700 dark:text-gray-100"
-                onClick={() => setMobileMenuOpen(false)}
+                onClick={ () => setMobileMenuOpen( false ) }
               >
                 <span className="sr-only">Cerrar menú</span>
                 <XMarkIcon className="h-6 w-6" aria-hidden="true" />
@@ -250,40 +248,38 @@ const Hero = () => {
             <div className="mt-6 flow-root">
               <div className="-my-6 divide-y divide-gray-500/10">
                 <div className="space-y-2 py-6">
-                  {navigation.map((item) => (
+                  { navigation.map( ( item ) => (
                     <a
-                      key={item.name}
-                      href={item.href}
-                      onClick={(e) => handleScroll(e, item.href)}
+                      key={ item.name }
+                      href={ item.href }
+                      onClick={ ( e ) => handleScroll( e, item.href ) }
                       className="-mx-3 block rounded-lg px-3 py-2 text-base font-semibold leading-7 text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-800"
                     >
-                      {item.name}
+                      { item.name }
                     </a>
-                  ))}
+                  ) ) }
                 </div>
                 <div className="py-6 space-y-2">
-                  {/* Theme Toggle Button Mobile */}
+                  {/* Theme Toggle Button Mobile */ }
                   <button
-                    onClick={toggleDarkMode}
+                    onClick={ toggleDarkMode }
                     className="-mx-3 flex items-center gap-3 rounded-lg px-3 py-2.5 text-base font-semibold leading-7 text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-800 w-full"
                   >
                     <div className="relative w-5 h-5">
                       <SunIcon
-                        className={`absolute inset-0 w-5 h-5 text-yellow-500 transition-all duration-500 transform ${
-                          !isDarkMode
+                        className={ `absolute inset-0 w-5 h-5 text-yellow-500 transition-all duration-500 transform ${ !isDarkMode
                             ? "opacity-100 rotate-0 scale-100"
                             : "opacity-0 rotate-180 scale-75"
-                        }`}
+                          }` }
                       />
                       <MoonIcon
-                        className={`absolute inset-0 w-5 h-5 text-indigo-400 transition-all duration-500 transform ${
-                          isDarkMode
+                        className={ `absolute inset-0 w-5 h-5 text-indigo-400 transition-all duration-500 transform ${ isDarkMode
                             ? "opacity-100 rotate-0 scale-100"
                             : "opacity-0 -rotate-180 scale-75"
-                        }`}
+                          }` }
                       />
                     </div>
-                    <span>{isDarkMode ? "Modo Oscuro" : "Modo Claro"}</span>
+                    <span>{ isDarkMode ? "Modo Oscuro" : "Modo Claro" }</span>
                   </button>
                   <a
                     href="/login"
@@ -310,7 +306,7 @@ const Hero = () => {
                 </span>
                 <a
                   href="#features"
-                  onClick={(e) => handleScroll(e, "#features")}
+                  onClick={ ( e ) => handleScroll( e, "#features" ) }
                   className="font-semibold text-indigo-600 dark:text-indigo-400 ml-1 hover:text-indigo-700 dark:hover:text-indigo-300"
                 >
                   <span className="absolute inset-0" aria-hidden="true" />
@@ -320,7 +316,7 @@ const Hero = () => {
             </div>
           </div>
           <div className="text-center relative">
-            {/* Main Title with Gradient */}
+            {/* Main Title with Gradient */ }
             <div className="relative inline-block">
               <h1 className="text-5xl md:text-7xl lg:text-8xl font-black tracking-tight mb-4">
                 <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 animate-gradient">
@@ -331,7 +327,7 @@ const Hero = () => {
             </div>
 
             <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-gray-900 dark:text-gray-100 mt-4 mb-6">
-              Tecnología que une y{" "}
+              Tecnología que une y{ " " }
               <br className="hidden sm:block" /> cuentas que cuadran
             </h2>
 
@@ -341,7 +337,7 @@ const Hero = () => {
               <br className="hidden sm:block" />
               <span className="font-semibold text-gray-900 dark:text-gray-100">
                 Gestiona pagos, mantenimiento, comunicación
-              </span>{" "}
+              </span>{ " " }
               y más de manera eficiente y segura.
             </p>
             <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-x-6">
@@ -356,7 +352,7 @@ const Hero = () => {
               </a>
               <a
                 href="#features"
-                onClick={(e) => handleScroll(e, "#features")}
+                onClick={ ( e ) => handleScroll( e, "#features" ) }
                 className="group inline-flex items-center gap-2 text-base font-semibold text-gray-900 dark:text-gray-100 cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
               >
                 Ver características
@@ -390,7 +386,7 @@ const Hero = () => {
               </a>
             </div>
 
-            {/* Trust Indicators */}
+            {/* Trust Indicators */ }
             <div className="mt-16 flex flex-wrap items-center justify-center gap-8 text-sm text-gray-600 dark:text-gray-400">
               <div className="flex items-center gap-2">
                 <CheckBadgeIcon className="h-5 w-5 text-green-500" />
@@ -410,11 +406,11 @@ const Hero = () => {
         <div className="absolute inset-x-0 top-[calc(100%-13rem)] -z-10 transform-gpu overflow-hidden blur-3xl sm:top-[calc(100%-30rem)]">
           <div
             className="relative left-[calc(50%+3rem)] aspect-[1155/678] w-[36.125rem] -translate-x-1/2 bg-gradient-to-tr from-[#ff80b5] via-[#9c80ff] to-[#9089fc] opacity-30 sm:left-[calc(50%+36rem)] sm:w-[72.1875rem] animate-pulse"
-            style={{
+            style={ {
               clipPath:
                 "polygon(74.1% 44.1%, 100% 61.6%, 97.5% 26.9%, 85.5% 0.1%, 80.7% 2%, 72.5% 32.5%, 60.2% 62.4%, 52.4% 68.1%, 47.5% 58.3%, 45.2% 34.5%, 27.5% 76.7%, 0.1% 64.9%, 17.9% 100%, 27.6% 76.8%, 76.1% 97.7%, 74.1% 44.1%)",
               animationDuration: "4s",
-            }}
+            } }
           />
         </div>
       </div>

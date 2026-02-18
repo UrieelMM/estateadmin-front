@@ -1,7 +1,10 @@
 // src/components/PaymentHistory.tsx
 
 import { useState, useEffect, useMemo } from "react";
-import { usePaymentHistoryStore } from "../../../../../store/paymentHistoryStore";
+import {
+  PaymentRecord,
+  usePaymentHistoryStore,
+} from "../../../../../store/paymentHistoryStore";
 import useUserStore from "../../../../../store/UserDataStore";
 import {
   LineChart,
@@ -15,6 +18,7 @@ import {
 } from "recharts";
 import LoadingApp from "../../../../components/shared/loaders/LoadingApp";
 import PDFReportGeneratorSingle from "./PDFReportGeneratorSingle";
+import Modal from "../../../../../components/Modal";
 
 const chartColors = [ "#8093E8", "#74B9E7", "#A7CFE6", "#B79FE6", "#C2ABE6" ];
 
@@ -35,6 +39,11 @@ const PaymentHistory = () => {
   const [ selectedUserUid, setSelectedUserUid ] = useState<string>( "" );
   const [ selectedCondominiumNumber, setSelectedCondominiumNumber ] =
     useState<string>( "" );
+  const [ detailMonthFilter, setDetailMonthFilter ] = useState<string>( "" );
+  const [ detailConceptFilter, setDetailConceptFilter ] = useState<string>( "" );
+  const [ detailStatusFilter, setDetailStatusFilter ] = useState<string>( "all" );
+  const [ detailSearch, setDetailSearch ] = useState<string>( "" );
+  const [ selectedChargeDetailId, setSelectedChargeDetailId ] = useState<string | null>( null );
 
   // Obtener lista de condominios (usuarios)
   const fetchCondominiumsUsers = useUserStore(
@@ -44,8 +53,10 @@ const PaymentHistory = () => {
 
   // Store de historial individual
   const {
+    payments,
     detailed,
     detailedByConcept,
+    financialAccountsMap,
     loading,
     error,
     selectedYear,
@@ -55,7 +66,7 @@ const PaymentHistory = () => {
     adminPhone,
     adminEmail,
     logoBase64,
-    // currentCreditBalance, // NUEVO: saldo actual (en centavos)
+    currentCreditBalance,
     pendingAmount, // NUEVO: monto pendiente (suma de cargos no pagados)
   } = usePaymentHistoryStore();
 
@@ -104,6 +115,250 @@ const PaymentHistory = () => {
     "11": "Noviembre",
     "12": "Diciembre",
   };
+
+  const normalizeText = ( value: string ) =>
+    value
+      .toLowerCase()
+      .normalize( "NFD" )
+      .replace( /[\u0300-\u036f]/g, "" )
+      .trim();
+
+  const getMonthCodeFromRecord = ( record: PaymentRecord ) => {
+    if ( record.month ) {
+      const parts = record.month.split( "-" );
+      if ( parts.length === 2 ) return parts[ 1 ];
+      if ( parts.length === 1 ) return parts[ 0 ];
+    }
+    if ( record.paymentDateISO ) {
+      const date = new Date( record.paymentDateISO );
+      if ( !Number.isNaN( date.getTime() ) ) {
+        return String( date.getMonth() + 1 ).padStart( 2, "0" );
+      }
+    }
+    return "";
+  };
+
+  const getPeriodLabel = ( startAt?: string, fallbackMonth?: string ) => {
+    if ( startAt ) {
+      const values = startAt.split( "-" );
+      if ( values.length >= 2 ) {
+        const year = values[ 0 ];
+        const month = values[ 1 ];
+        return `${ monthNames[ month ] || month } ${ year }`;
+      }
+      return startAt;
+    }
+    if ( fallbackMonth ) {
+      const values = fallbackMonth.split( "-" );
+      if ( values.length >= 2 ) {
+        const year = values[ 0 ];
+        const month = values[ 1 ];
+        return `${ monthNames[ month ] || month } ${ year }`;
+      }
+    }
+    return "-";
+  };
+
+  const getFinancialAccountLabel = ( accountId?: string ) => {
+    if ( !accountId ) return "-";
+    return financialAccountsMap[ accountId ] || accountId;
+  };
+
+  const paymentRows = useMemo(
+    () =>
+      payments
+        .filter( ( record ) => record.recordType === "payment" )
+        .sort( ( a, b ) => {
+          const dateA = a.paymentDateISO ? new Date( a.paymentDateISO ).getTime() : 0;
+          const dateB = b.paymentDateISO ? new Date( b.paymentDateISO ).getTime() : 0;
+          return dateB - dateA;
+        } ),
+    [ payments ]
+  );
+
+  const chargeRows = useMemo( () => {
+    const map = new Map<
+      string,
+      {
+        chargeId: string;
+        concept: string;
+        period: string;
+        monthCode: string;
+        referenceAmount: number;
+        paidAccumulated: number;
+        pendingAmount: number;
+        status: "pending" | "settled";
+      }
+    >();
+
+    payments.forEach( ( record ) => {
+      const key = record.chargeId || record.referenceId || record.id;
+      if ( !key ) return;
+
+      const current = map.get( key ) || {
+        chargeId: record.chargeId || record.id,
+        concept: record.chargeConcept || record.concept || "Sin concepto",
+        period: getPeriodLabel( record.chargeStartAt, record.month ),
+        monthCode:
+          record.chargeStartAt?.split( "-" )[ 1 ] ||
+          getMonthCodeFromRecord( record ),
+        referenceAmount:
+          record.chargeReferenceAmount ?? record.referenceAmount ?? 0,
+        paidAccumulated: 0,
+        pendingAmount:
+          typeof record.chargeCurrentPending === "number"
+            ? record.chargeCurrentPending
+            : Math.max(
+              0,
+              ( record.chargeReferenceAmount ?? record.referenceAmount ?? 0 ) -
+              ( record.amountPaid || 0 )
+            ),
+        status: "pending" as const,
+      };
+
+      if ( record.recordType === "payment" ) {
+        current.paidAccumulated += record.amountPaid || 0;
+      }
+
+      if ( typeof record.chargeCurrentPending === "number" ) {
+        current.pendingAmount = record.chargeCurrentPending;
+      } else {
+        current.pendingAmount = Math.max(
+          0,
+          current.referenceAmount - current.paidAccumulated
+        );
+      }
+
+      current.status = current.pendingAmount > 0 ? "pending" : "settled";
+      map.set( key, current );
+    } );
+
+    return Array.from( map.values() ).sort( ( a, b ) => b.pendingAmount - a.pendingAmount );
+  }, [ payments ] );
+
+  const conceptSummaryRows = useMemo( () => {
+    const map = new Map<
+      string,
+      { concept: string; paid: number; pending: number; paymentsCount: number; chargesCount: number }
+    >();
+
+    paymentRows.forEach( ( row ) => {
+      const key = row.chargeConcept || row.concept || "Sin concepto";
+      const current = map.get( key ) || {
+        concept: key,
+        paid: 0,
+        pending: 0,
+        paymentsCount: 0,
+        chargesCount: 0,
+      };
+      current.paid += row.amountPaid || 0;
+      current.paymentsCount += 1;
+      map.set( key, current );
+    } );
+
+    chargeRows.forEach( ( row ) => {
+      const key = row.concept || "Sin concepto";
+      const current = map.get( key ) || {
+        concept: key,
+        paid: 0,
+        pending: 0,
+        paymentsCount: 0,
+        chargesCount: 0,
+      };
+      current.pending += row.pendingAmount || 0;
+      current.chargesCount += 1;
+      map.set( key, current );
+    } );
+
+    return Array.from( map.values() ).sort( ( a, b ) => b.paid - a.paid );
+  }, [ chargeRows, paymentRows ] );
+
+  const conceptOptions = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          conceptSummaryRows
+            .map( ( row ) => row.concept )
+            .filter( Boolean )
+        )
+      ).sort( ( a, b ) => a.localeCompare( b, "es", { sensitivity: "base" } ) ),
+    [ conceptSummaryRows ]
+  );
+
+  const filteredPaymentRows = useMemo( () => {
+    const search = normalizeText( detailSearch );
+    return paymentRows.filter( ( row ) => {
+      const monthCode = getMonthCodeFromRecord( row );
+      if ( detailMonthFilter && monthCode !== detailMonthFilter ) return false;
+      if ( detailConceptFilter ) {
+        const concept = row.chargeConcept || row.concept || "";
+        if ( normalizeText( concept ) !== normalizeText( detailConceptFilter ) ) return false;
+      }
+      if ( search ) {
+        const haystack = normalizeText(
+          [
+            row.chargeConcept || row.concept || "",
+            row.paymentReference || "",
+            row.paymentType || "",
+            row.financialAccountId || "",
+            row.chargeId || "",
+            row.id || "",
+          ].join( " " )
+        );
+        if ( !haystack.includes( search ) ) return false;
+      }
+      return true;
+    } );
+  }, [ detailConceptFilter, detailMonthFilter, detailSearch, paymentRows ] );
+
+  const filteredChargeRows = useMemo( () => {
+    const search = normalizeText( detailSearch );
+    return chargeRows.filter( ( row ) => {
+      if ( detailMonthFilter && row.monthCode !== detailMonthFilter ) return false;
+      if ( detailConceptFilter && normalizeText( row.concept ) !== normalizeText( detailConceptFilter ) ) {
+        return false;
+      }
+      if ( detailStatusFilter !== "all" && row.status !== detailStatusFilter ) {
+        return false;
+      }
+      if ( search ) {
+        const haystack = normalizeText(
+          [ row.concept, row.chargeId, row.period ].join( " " )
+        );
+        if ( !haystack.includes( search ) ) return false;
+      }
+      return true;
+    } );
+  }, [ chargeRows, detailConceptFilter, detailMonthFilter, detailSearch, detailStatusFilter ] );
+
+  const filteredConceptSummaryRows = useMemo( () => {
+    if ( !detailConceptFilter ) return conceptSummaryRows;
+    return conceptSummaryRows.filter(
+      ( row ) => normalizeText( row.concept ) === normalizeText( detailConceptFilter )
+    );
+  }, [ conceptSummaryRows, detailConceptFilter ] );
+
+  const selectedChargeDetail = useMemo(
+    () =>
+      selectedChargeDetailId
+        ? chargeRows.find( ( row ) => row.chargeId === selectedChargeDetailId ) || null
+        : null,
+    [ chargeRows, selectedChargeDetailId ]
+  );
+
+  const selectedChargePayments = useMemo(
+    () =>
+      selectedChargeDetailId
+        ? paymentRows
+          .filter( ( row ) => ( row.chargeId || row.id ) === selectedChargeDetailId )
+          .sort( ( a, b ) => {
+            const dateA = a.paymentDateISO ? new Date( a.paymentDateISO ).getTime() : 0;
+            const dateB = b.paymentDateISO ? new Date( b.paymentDateISO ).getTime() : 0;
+            return dateB - dateA;
+          } )
+        : [],
+    [ paymentRows, selectedChargeDetailId ]
+  );
 
   // Preparar datos para la gráfica: agrupar por mes (YYYY-MM) => { paid, pending, saldo }
   const chartData = useMemo( () => {
@@ -345,6 +600,355 @@ const PaymentHistory = () => {
           <p>No hay datos para mostrar en el gráfico.</p>
         ) }
       </div>
+
+      { selectedUserUid && (
+        <div className="mt-8 space-y-6">
+          <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              Detalle operativo
+            </h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              Filtra por mes, concepto, estado o referencia para revisar pagos y adeudos por cargo.
+            </p>
+            <p className="text-xs text-indigo-600 dark:text-indigo-300 mt-1">
+              Saldo a favor actual: { formatCurrency( currentCreditBalance || 0 ) }
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-3 mt-4">
+              <select
+                value={ detailMonthFilter }
+                onChange={ ( e ) => setDetailMonthFilter( e.target.value ) }
+                className="h-10 rounded-lg border border-gray-300 dark:border-gray-600 px-3 text-sm dark:bg-gray-700 dark:text-gray-100"
+              >
+                <option value="">Todos los meses</option>
+                { Object.entries( monthNames ).map( ( [ code, name ] ) => (
+                  <option key={ code } value={ code }>
+                    { name }
+                  </option>
+                ) ) }
+              </select>
+
+              <select
+                value={ detailConceptFilter }
+                onChange={ ( e ) => setDetailConceptFilter( e.target.value ) }
+                className="h-10 rounded-lg border border-gray-300 dark:border-gray-600 px-3 text-sm dark:bg-gray-700 dark:text-gray-100"
+              >
+                <option value="">Todos los conceptos</option>
+                { conceptOptions.map( ( conceptName ) => (
+                  <option key={ conceptName } value={ conceptName }>
+                    { conceptName }
+                  </option>
+                ) ) }
+              </select>
+
+              <select
+                value={ detailStatusFilter }
+                onChange={ ( e ) => setDetailStatusFilter( e.target.value ) }
+                className="h-10 rounded-lg border border-gray-300 dark:border-gray-600 px-3 text-sm dark:bg-gray-700 dark:text-gray-100"
+              >
+                <option value="all">Todos los estados</option>
+                <option value="pending">Con adeudo</option>
+                <option value="settled">Saldado</option>
+              </select>
+
+              <input
+                type="text"
+                value={ detailSearch }
+                onChange={ ( e ) => setDetailSearch( e.target.value ) }
+                placeholder="Buscar referencia, cargo o cuenta"
+                className="h-10 rounded-lg border border-gray-300 dark:border-gray-600 px-3 text-sm dark:bg-gray-700 dark:text-gray-100"
+              />
+
+              <button
+                type="button"
+                onClick={ () => {
+                  setDetailMonthFilter( "" );
+                  setDetailConceptFilter( "" );
+                  setDetailStatusFilter( "all" );
+                  setDetailSearch( "" );
+                } }
+                className="h-10 rounded-lg border border-indigo-200 text-indigo-700 dark:border-indigo-700 dark:text-indigo-300 px-3 text-sm font-medium hover:bg-indigo-50 dark:hover:bg-indigo-900/20"
+              >
+                Limpiar filtros
+              </button>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-hidden">
+            <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+              <h4 className="font-semibold text-gray-900 dark:text-gray-100">
+                Historial detallado de pagos ({ filteredPaymentRows.length })
+              </h4>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm">
+                <thead className="bg-gray-50 dark:bg-gray-900/20 text-gray-600 dark:text-gray-300">
+                  <tr>
+                    <th className="px-3 py-2 text-left">Fecha</th>
+                    <th className="px-3 py-2 text-left">Concepto</th>
+                    <th className="px-3 py-2 text-left">Periodo del cargo</th>
+                    <th className="px-3 py-2 text-right">Monto pago</th>
+                    <th className="px-3 py-2 text-right">Saldo cargo</th>
+                    <th className="px-3 py-2 text-left">Tipo</th>
+                    <th className="px-3 py-2 text-left">Referencia</th>
+                    <th className="px-3 py-2 text-left">Cuenta</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                  { filteredPaymentRows.length === 0 && (
+                    <tr>
+                      <td className="px-3 py-4 text-center text-gray-500 dark:text-gray-400" colSpan={ 8 }>
+                        Sin pagos para los filtros seleccionados.
+                      </td>
+                    </tr>
+                  ) }
+                  { filteredPaymentRows.map( ( row ) => (
+                    <tr
+                      key={ row.id }
+                      className="hover:bg-gray-50 dark:hover:bg-gray-700/20 cursor-pointer"
+                      onClick={ () => setSelectedChargeDetailId( row.chargeId || row.id ) }
+                      title="Ver trazabilidad del cargo"
+                    >
+                      <td className="px-3 py-2 text-gray-700 dark:text-gray-200">
+                        { row.paymentDate || "-" }
+                      </td>
+                      <td className="px-3 py-2 text-gray-700 dark:text-gray-200">
+                        { row.chargeConcept || row.concept || "-" }
+                      </td>
+                      <td className="px-3 py-2 text-gray-700 dark:text-gray-200">
+                        { getPeriodLabel( row.chargeStartAt, row.month ) }
+                      </td>
+                      <td className="px-3 py-2 text-right font-medium text-emerald-700 dark:text-emerald-300">
+                        { formatCurrency( row.amountPaid || 0 ) }
+                      </td>
+                      <td className="px-3 py-2 text-right text-gray-700 dark:text-gray-200">
+                        { formatCurrency( row.chargeCurrentPending || 0 ) }
+                      </td>
+                      <td className="px-3 py-2 text-gray-700 dark:text-gray-200">
+                        { row.paymentType || "-" }
+                      </td>
+                      <td className="px-3 py-2 text-gray-700 dark:text-gray-200">
+                        { row.paymentReference || "-" }
+                      </td>
+                      <td className="px-3 py-2 text-gray-700 dark:text-gray-200">
+                        { getFinancialAccountLabel( row.financialAccountId ) }
+                      </td>
+                    </tr>
+                  ) ) }
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-hidden">
+            <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+              <h4 className="font-semibold text-gray-900 dark:text-gray-100">
+                Adeudos por cargo ({ filteredChargeRows.length })
+              </h4>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm">
+                <thead className="bg-gray-50 dark:bg-gray-900/20 text-gray-600 dark:text-gray-300">
+                  <tr>
+                    <th className="px-3 py-2 text-left">Cargo</th>
+                    <th className="px-3 py-2 text-left">ID cargo</th>
+                    <th className="px-3 py-2 text-left">Periodo</th>
+                    <th className="px-3 py-2 text-right">Referencia cargo</th>
+                    <th className="px-3 py-2 text-right">Abonado</th>
+                    <th className="px-3 py-2 text-right">Pendiente</th>
+                    <th className="px-3 py-2 text-left">Estado</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                  { filteredChargeRows.length === 0 && (
+                    <tr>
+                      <td className="px-3 py-4 text-center text-gray-500 dark:text-gray-400" colSpan={ 7 }>
+                        Sin cargos para los filtros seleccionados.
+                      </td>
+                    </tr>
+                  ) }
+                  { filteredChargeRows.map( ( row ) => (
+                    <tr
+                      key={ row.chargeId }
+                      className="hover:bg-gray-50 dark:hover:bg-gray-700/20 cursor-pointer"
+                      onClick={ () => setSelectedChargeDetailId( row.chargeId ) }
+                      title="Ver trazabilidad del cargo"
+                    >
+                      <td className="px-3 py-2 text-gray-700 dark:text-gray-200">{ row.concept }</td>
+                      <td className="px-3 py-2 text-gray-700 dark:text-gray-200">{ row.chargeId || "-" }</td>
+                      <td className="px-3 py-2 text-gray-700 dark:text-gray-200">{ row.period }</td>
+                      <td className="px-3 py-2 text-right text-gray-700 dark:text-gray-200">
+                        { formatCurrency( row.referenceAmount || 0 ) }
+                      </td>
+                      <td className="px-3 py-2 text-right text-emerald-700 dark:text-emerald-300 font-medium">
+                        { formatCurrency( row.paidAccumulated || 0 ) }
+                      </td>
+                      <td className="px-3 py-2 text-right font-semibold text-rose-700 dark:text-rose-300">
+                        { formatCurrency( row.pendingAmount || 0 ) }
+                      </td>
+                      <td className="px-3 py-2">
+                        <span
+                          className={
+                            row.status === "pending"
+                              ? "inline-flex px-2 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300"
+                              : "inline-flex px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
+                          }
+                        >
+                          { row.status === "pending" ? "Con adeudo" : "Saldado" }
+                        </span>
+                      </td>
+                    </tr>
+                  ) ) }
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-hidden">
+            <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+              <h4 className="font-semibold text-gray-900 dark:text-gray-100">
+                Desglose por concepto ({ filteredConceptSummaryRows.length })
+              </h4>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm">
+                <thead className="bg-gray-50 dark:bg-gray-900/20 text-gray-600 dark:text-gray-300">
+                  <tr>
+                    <th className="px-3 py-2 text-left">Concepto</th>
+                    <th className="px-3 py-2 text-right">Pagado</th>
+                    <th className="px-3 py-2 text-right">Pendiente</th>
+                    <th className="px-3 py-2 text-right">Pagos</th>
+                    <th className="px-3 py-2 text-right">Cargos</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                  { filteredConceptSummaryRows.length === 0 && (
+                    <tr>
+                      <td className="px-3 py-4 text-center text-gray-500 dark:text-gray-400" colSpan={ 5 }>
+                        Sin conceptos para los filtros seleccionados.
+                      </td>
+                    </tr>
+                  ) }
+                  { filteredConceptSummaryRows.map( ( row ) => (
+                    <tr key={ row.concept } className="hover:bg-gray-50 dark:hover:bg-gray-700/20">
+                      <td className="px-3 py-2 text-gray-700 dark:text-gray-200">{ row.concept }</td>
+                      <td className="px-3 py-2 text-right text-emerald-700 dark:text-emerald-300 font-medium">
+                        { formatCurrency( row.paid ) }
+                      </td>
+                      <td className="px-3 py-2 text-right text-rose-700 dark:text-rose-300 font-medium">
+                        { formatCurrency( row.pending ) }
+                      </td>
+                      <td className="px-3 py-2 text-right text-gray-700 dark:text-gray-200">{ row.paymentsCount }</td>
+                      <td className="px-3 py-2 text-right text-gray-700 dark:text-gray-200">{ row.chargesCount }</td>
+                    </tr>
+                  ) ) }
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      ) }
+
+      <Modal
+        title="Detalle del cargo y trazabilidad"
+        isOpen={ !!selectedChargeDetailId }
+        onClose={ () => setSelectedChargeDetailId( null ) }
+        size="xl"
+      >
+        <div className="p-5 space-y-5">
+          { !selectedChargeDetail ? (
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              No se encontró información del cargo seleccionado.
+            </p>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
+                <div className="rounded-xl border border-gray-200 dark:border-gray-700 p-3">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Concepto</p>
+                  <p className="text-sm font-semibold text-gray-800 dark:text-gray-100 mt-1">
+                    { selectedChargeDetail.concept || "-" }
+                  </p>
+                </div>
+                <div className="rounded-xl border border-gray-200 dark:border-gray-700 p-3">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Periodo</p>
+                  <p className="text-sm font-semibold text-gray-800 dark:text-gray-100 mt-1">
+                    { selectedChargeDetail.period || "-" }
+                  </p>
+                </div>
+                <div className="rounded-xl border border-gray-200 dark:border-gray-700 p-3">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Referencia del cargo</p>
+                  <p className="text-sm font-semibold text-gray-800 dark:text-gray-100 mt-1">
+                    { formatCurrency( selectedChargeDetail.referenceAmount || 0 ) }
+                  </p>
+                </div>
+                <div className="rounded-xl border border-gray-200 dark:border-gray-700 p-3">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Saldo pendiente</p>
+                  <p className="text-sm font-semibold mt-1 text-rose-700 dark:text-rose-300">
+                    { formatCurrency( selectedChargeDetail.pendingAmount || 0 ) }
+                  </p>
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+                <div className="px-4 py-3 bg-gray-50 dark:bg-gray-900/20 border-b border-gray-200 dark:border-gray-700">
+                  <h5 className="font-semibold text-gray-900 dark:text-gray-100">
+                    Timeline de pagos aplicados ({ selectedChargePayments.length })
+                  </h5>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full text-sm">
+                    <thead className="bg-gray-50 dark:bg-gray-900/20 text-gray-600 dark:text-gray-300">
+                      <tr>
+                        <th className="px-3 py-2 text-left">Fecha</th>
+                        <th className="px-3 py-2 text-right">Monto</th>
+                        <th className="px-3 py-2 text-left">Folio</th>
+                        <th className="px-3 py-2 text-left">Tipo</th>
+                        <th className="px-3 py-2 text-left">Referencia</th>
+                        <th className="px-3 py-2 text-left">Cuenta</th>
+                        <th className="px-3 py-2 text-left">ID pago</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                      { selectedChargePayments.length === 0 && (
+                        <tr>
+                          <td className="px-3 py-4 text-center text-gray-500 dark:text-gray-400" colSpan={ 7 }>
+                            Este cargo no tiene pagos aplicados aún.
+                          </td>
+                        </tr>
+                      ) }
+                      { selectedChargePayments.map( ( payment ) => (
+                        <tr key={ payment.id } className="hover:bg-gray-50 dark:hover:bg-gray-700/20">
+                          <td className="px-3 py-2 text-gray-700 dark:text-gray-200">
+                            { payment.paymentDate || "-" }
+                          </td>
+                          <td className="px-3 py-2 text-right text-emerald-700 dark:text-emerald-300 font-medium">
+                            { formatCurrency( payment.amountPaid || 0 ) }
+                          </td>
+                          <td className="px-3 py-2 text-gray-700 dark:text-gray-200">
+                            { payment.folio || "-" }
+                          </td>
+                          <td className="px-3 py-2 text-gray-700 dark:text-gray-200">
+                            { payment.paymentType || "-" }
+                          </td>
+                          <td className="px-3 py-2 text-gray-700 dark:text-gray-200">
+                            { payment.paymentReference || "-" }
+                          </td>
+                          <td className="px-3 py-2 text-gray-700 dark:text-gray-200">
+                            { getFinancialAccountLabel( payment.financialAccountId ) }
+                          </td>
+                          <td className="px-3 py-2 text-gray-500 dark:text-gray-400">
+                            { payment.paymentId || payment.id }
+                          </td>
+                        </tr>
+                      ) ) }
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </>
+          ) }
+        </div>
+      </Modal>
 
       {/* Reporte PDF individual */ }
       { selectedUserUid && selectedCondo && (
