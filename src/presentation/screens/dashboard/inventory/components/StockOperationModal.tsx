@@ -53,40 +53,35 @@ const StockOperationModal: React.FC<StockOperationModalProps> = ( {
     setError( "" );
   };
 
-  const icons = {
-    add: "fa-plus-circle",
-    consume: "fa-minus-circle",
-  };
-
-  const colors = {
-    add: "bg-green-600 hover:bg-green-700",
-    consume: "bg-yellow-600 hover:bg-yellow-700",
-  };
+  const isAdd = operation === "add";
 
   return (
     <div className="p-6">
-      <div className="mb-6 text-center">
-        <div className="inline-flex justify-center items-center w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-700 mb-4">
-          <i
-            className={ `fas ${ icons[ operation ] } text-2xl ${ operation === "add" ? "text-green-500" : "text-yellow-500"
-              }` }
-          ></i>
+      {/* Header visual */ }
+      <div className="flex flex-col items-center mb-6">
+        <div className={ `w-20 h-20 rounded-2xl flex items-center justify-center mb-4 shadow-lg ${ isAdd
+            ? "bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-emerald-500/30"
+            : "bg-gradient-to-br from-amber-400 to-amber-600 shadow-amber-500/30"
+          }` }>
+          <i className={ `fas ${ isAdd ? "fa-plus" : "fa-minus" } text-3xl text-white` } />
         </div>
-        <h3 className="text-xl font-medium text-gray-800 dark:text-white">{ title }</h3>
-        <p className="text-gray-500 dark:text-gray-400 mt-1">
-          { operation === "add"
-            ? "Añadir stock al ítem:"
-            : "Consumir stock del ítem:" }
+        <h3 className="text-xl font-bold text-gray-800 dark:text-white">{ title }</h3>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+          { isAdd ? "Añadir stock al ítem:" : "Consumir stock del ítem:" }
         </p>
-        <div className="font-bold text-lg text-gray-800 dark:text-white mt-2">{ item.name }</div>
-        <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          Stock actual: { item.stock }
+        <div className="mt-3 px-4 py-2 bg-gray-50 dark:bg-gray-700/60 rounded-xl text-center">
+          <p className="font-bold text-gray-800 dark:text-white">{ item.name }</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+            Stock actual:{ " " }
+            <span className="font-semibold text-gray-700 dark:text-gray-300">{ item.stock }</span>
+          </p>
         </div>
       </div>
 
       <form onSubmit={ handleSubmit } className="space-y-4">
+        {/* Cantidad */ }
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
             Cantidad
           </label>
           <input
@@ -95,31 +90,38 @@ const StockOperationModal: React.FC<StockOperationModalProps> = ( {
             onChange={ handleQuantityChange }
             min="1"
             max={ operation === "consume" ? maxQuantity : undefined }
-            className={ `bg-white dark:bg-gray-700 border ${ error ? "border-red-500" : "border-gray-300 dark:border-gray-600"
-              } text-gray-900 dark:text-white sm:text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5` }
+            className={ `w-full bg-gray-50 dark:bg-gray-700/60 border ${ error ? "border-red-400 focus:ring-red-500" : "border-gray-200 dark:border-gray-600 focus:ring-indigo-500"
+              } text-gray-900 dark:text-white text-sm rounded-xl focus:outline-none focus:ring-2 focus:border-transparent p-3 transition-all` }
             placeholder="Cantidad"
           />
-          { error && <p className="mt-1 text-sm text-red-500">{ error }</p> }
+          { error && (
+            <p className="mt-1.5 text-xs text-red-500 flex items-center gap-1">
+              <i className="fas fa-exclamation-circle" />
+              { error }
+            </p>
+          ) }
         </div>
 
+        {/* Notas */ }
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Notas (opcional)
+          <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+            Notas <span className="font-normal text-gray-400">(opcional)</span>
           </label>
           <textarea
             rows={ 3 }
             value={ notes }
             onChange={ ( e ) => setNotes( e.target.value ) }
-            className="bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white sm:text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+            className="w-full bg-gray-50 dark:bg-gray-700/60 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white text-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent p-3 transition-all resize-none"
             placeholder="Agregar notas sobre esta operación..."
-          ></textarea>
+          />
         </div>
 
-        <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+        {/* Acciones */ }
+        <div className="flex justify-end gap-3 pt-2 border-t border-gray-100 dark:border-gray-700">
           <button
             type="button"
             onClick={ onCancel }
-            className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white text-sm font-medium rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600"
+            className="px-5 py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm font-semibold rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors disabled:opacity-60"
             disabled={ loading }
           >
             Cancelar
@@ -128,18 +130,21 @@ const StockOperationModal: React.FC<StockOperationModalProps> = ( {
           <button
             type="submit"
             disabled={ loading }
-            className={ `px-4 py-2 ${ colors[ operation ] } text-white text-sm font-medium rounded-lg disabled:opacity-70 disabled:cursor-not-allowed` }
+            className={ `px-5 py-2.5 text-white text-sm font-semibold rounded-xl shadow-md transition-all disabled:opacity-60 disabled:cursor-not-allowed ${ isAdd
+                ? "bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 shadow-emerald-500/30"
+                : "bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 shadow-amber-500/30"
+              }` }
           >
             { loading ? (
-              <>
-                <i className="fas fa-spinner fa-spin mr-2"></i>
-                { operation === "add" ? "Añadiendo..." : "Consumiendo..." }
-              </>
+              <span className="flex items-center gap-2">
+                <i className="fas fa-spinner fa-spin" />
+                { isAdd ? "Añadiendo..." : "Consumiendo..." }
+              </span>
             ) : (
-              <>
-                <i className={ `fas ${ icons[ operation ] } mr-2` }></i>
-                { operation === "add" ? "Añadir stock" : "Consumir stock" }
-              </>
+              <span className="flex items-center gap-2">
+                <i className={ `fas ${ isAdd ? "fa-plus-circle" : "fa-minus-circle" }` } />
+                { isAdd ? "Añadir stock" : "Consumir stock" }
+              </span>
             ) }
           </button>
         </div>
