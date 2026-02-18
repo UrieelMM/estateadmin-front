@@ -10,21 +10,21 @@ import useUserStore from "../../../../../store/UserDataStore";
 
 // Función auxiliar para convertir una URL de imagen a base64
 // Función auxiliar para convertir una URL de imagen a base64 con optimización
-async function getBase64FromUrl(url: string): Promise<string> {
-  const response = await fetch(url);
+async function getBase64FromUrl( url: string ): Promise<string> {
+  const response = await fetch( url );
   const blob = await response.blob();
 
-  return new Promise((resolve, reject) => {
+  return new Promise( ( resolve, reject ) => {
     const img = new Image();
     img.crossOrigin = "anonymous";
 
     img.onload = () => {
       // Crear canvas para redimensionar y comprimir
-      const canvas = document.createElement("canvas");
-      const ctx = canvas.getContext("2d");
+      const canvas = document.createElement( "canvas" );
+      const ctx = canvas.getContext( "2d" );
 
-      if (!ctx) {
-        reject(new Error("No se pudo obtener el contexto del canvas"));
+      if ( !ctx ) {
+        reject( new Error( "No se pudo obtener el contexto del canvas" ) );
         return;
       }
 
@@ -35,8 +35,8 @@ async function getBase64FromUrl(url: string): Promise<string> {
       let { width, height } = img;
 
       // Calcular nuevas dimensiones manteniendo aspect ratio
-      if (width > maxWidth || height > maxHeight) {
-        const ratio = Math.min(maxWidth / width, maxHeight / height);
+      if ( width > maxWidth || height > maxHeight ) {
+        const ratio = Math.min( maxWidth / width, maxHeight / height );
         width = width * ratio;
         height = height * ratio;
       }
@@ -47,14 +47,14 @@ async function getBase64FromUrl(url: string): Promise<string> {
 
       // Fondo blanco para firmas con transparencia
       ctx.fillStyle = "white";
-      ctx.fillRect(0, 0, width, height);
+      ctx.fillRect( 0, 0, width, height );
 
       // Dibujar la imagen redimensionada
-      ctx.drawImage(img, 0, 0, width, height);
+      ctx.drawImage( img, 0, 0, width, height );
 
       // Convertir a base64 con compresión JPEG (más eficiente que PNG para fotos/firmas)
-      const base64 = canvas.toDataURL("image/jpeg", 0.7); // 70% de calidad es suficiente para firmas
-      resolve(base64);
+      const base64 = canvas.toDataURL( "image/jpeg", 0.7 ); // 70% de calidad es suficiente para firmas
+      resolve( base64 );
     };
 
     img.onerror = () => {
@@ -62,15 +62,15 @@ async function getBase64FromUrl(url: string): Promise<string> {
       const reader = new FileReader();
       reader.onerror = reject;
       reader.onloadend = () => {
-        resolve(reader.result as string);
+        resolve( reader.result as string );
       };
-      reader.readAsDataURL(blob);
+      reader.readAsDataURL( blob );
     };
 
     // Crear URL del blob para cargar en la imagen
-    const objectUrl = URL.createObjectURL(blob);
+    const objectUrl = URL.createObjectURL( blob );
     img.src = objectUrl;
-  });
+  } );
 }
 
 interface Condominium {
@@ -81,15 +81,15 @@ interface Condominium {
 export interface PDFReportGeneratorProps {
   year: string;
   concept?: string;
-  renderButton?: (onClick: () => void) => React.ReactNode;
+  renderButton?: ( onClick: () => void ) => React.ReactNode;
 }
 
 // Si no se pasa un concepto se asume "Cuota de mantenimiento"
-const PDFReportGeneratorMaintenance: React.FC<PDFReportGeneratorProps> = ({
+const PDFReportGeneratorMaintenance: React.FC<PDFReportGeneratorProps> = ( {
   year,
   concept,
   renderButton,
-}) => {
+} ) => {
   // Se obtienen datos del store de pagos
   const {
     detailed,
@@ -98,7 +98,7 @@ const PDFReportGeneratorMaintenance: React.FC<PDFReportGeneratorProps> = ({
     adminCompany,
     adminPhone,
     adminEmail,
-  } = usePaymentSummaryStore((state) => ({
+  } = usePaymentSummaryStore( ( state ) => ( {
     detailed: state.detailed,
     logoBase64: state.logoBase64,
     signatureUrl: state.signatureUrl,
@@ -106,25 +106,25 @@ const PDFReportGeneratorMaintenance: React.FC<PDFReportGeneratorProps> = ({
     adminPhone: state.adminPhone,
     adminEmail: state.adminEmail,
     conceptRecords: state.conceptRecords,
-  }));
+  } ) );
 
   // Se obtienen los condóminos desde el store de usuarios
-  const condominiumsUsers = useUserStore((state) => state.condominiumsUsers);
-  const allCondominiums: Condominium[] = condominiumsUsers.map((user) => ({
-    number: String(user.number),
+  const condominiumsUsers = useUserStore( ( state ) => state.condominiumsUsers );
+  const allCondominiums: Condominium[] = condominiumsUsers.map( ( user ) => ( {
+    number: String( user.number ),
     name: user.name,
-  }));
+  } ) );
 
   const reportConcept = concept ? concept : "Cuota de mantenimiento";
 
   // Función para formatear números como moneda
-  const formatCurrency = (value: number): string =>
-    new Intl.NumberFormat("en-US", {
+  const formatCurrency = ( value: number ): string =>
+    new Intl.NumberFormat( "en-US", {
       style: "currency",
       currency: "USD",
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
-    }).format(value);
+    } ).format( value );
 
   // Definir encabezado de la tabla global con meses abreviados para mejor distribución
   const tableHead = [
@@ -148,7 +148,7 @@ const PDFReportGeneratorMaintenance: React.FC<PDFReportGeneratorProps> = ({
 
   // Armar el cuerpo de la tabla global
   const tableBody: any[][] = [];
-  const totals: { [month: string]: number } = {
+  const totals: { [ month: string ]: number; } = {
     "01": 0,
     "02": 0,
     "03": 0,
@@ -164,76 +164,76 @@ const PDFReportGeneratorMaintenance: React.FC<PDFReportGeneratorProps> = ({
   };
   let totalPendingGlobal = 0;
 
-  allCondominiums.forEach((cond) => {
+  allCondominiums.forEach( ( cond ) => {
     // Se obtienen los registros de pago del condómino (clave: número)
-    const condoRecords: PaymentRecord[] = detailed[cond.number] || [];
+    const condoRecords: PaymentRecord[] = detailed[ cond.number ] || [];
     // Filtrar registros correspondientes al concepto indicado
     const filteredRecords = condoRecords.filter(
-      (rec) => rec.concept.toLowerCase() === reportConcept.toLowerCase()
+      ( rec ) => rec.concept.toLowerCase() === reportConcept.toLowerCase()
     );
     const row = [];
     // Columna A: Nombre y Número de Condomino
-    row.push({
-      content: `${cond.number}${cond.name ? " - " + cond.name : ""}`,
+    row.push( {
+      content: `${ cond.number }${ cond.name ? " - " + cond.name : "" }`,
       styles: { fontStyle: "bold" },
-    });
+    } );
     let totalPendingForCondo = 0;
     // Para cada mes, se suma el monto abonado (amountPaid + creditBalance) y se acumula el pendiente
-    for (let m = 1; m <= 12; m++) {
-      const monthKey = m.toString().padStart(2, "0");
+    for ( let m = 1; m <= 12; m++ ) {
+      const monthKey = m.toString().padStart( 2, "0" );
       const monthRecords = filteredRecords.filter(
-        (rec) => rec.month === monthKey
+        ( rec ) => rec.month === monthKey
       );
       const paidSum = monthRecords.reduce(
-        (sum, rec) => sum + rec.amountPaid + (rec.creditBalance || 0),
+        ( sum, rec ) => sum + rec.amountPaid + ( rec.creditBalance || 0 ),
         0
       );
       const pendingSum = monthRecords.reduce(
-        (sum, rec) => sum + rec.amountPending,
+        ( sum, rec ) => sum + rec.amountPending,
         0
       );
-      row.push(formatCurrency(paidSum));
-      totals[monthKey] += paidSum;
+      row.push( formatCurrency( paidSum ) );
+      totals[ monthKey ] += paidSum;
       totalPendingForCondo += pendingSum;
     }
-    row.push(formatCurrency(totalPendingForCondo));
+    row.push( formatCurrency( totalPendingForCondo ) );
     totalPendingGlobal += totalPendingForCondo;
-    tableBody.push(row);
+    tableBody.push( row );
 
     // NUEVA FILA: Agregar fila con las fechas de pago por mes para este condómino.
     // En la primera celda se muestra "Fecha" en normal.
     const dateRow = [];
-    dateRow.push({ content: "Fecha", styles: { fontStyle: "normal" } });
-    for (let m = 1; m <= 12; m++) {
-      const monthKey = m.toString().padStart(2, "0");
+    dateRow.push( { content: "Fecha", styles: { fontStyle: "normal" } } );
+    for ( let m = 1; m <= 12; m++ ) {
+      const monthKey = m.toString().padStart( 2, "0" );
       const monthRecords = filteredRecords.filter(
-        (rec) => rec.month === monthKey
+        ( rec ) => rec.month === monthKey
       );
       const dates = monthRecords
-        .map((rec) => rec.paymentDate)
-        .filter((d): d is string => !!d)
-        .join(", ");
-      dateRow.push(dates || "-");
+        .map( ( rec ) => rec.paymentDate )
+        .filter( ( d ): d is string => !!d )
+        .join( ", " );
+      dateRow.push( dates || "-" );
     }
-    dateRow.push("-");
-    tableBody.push(dateRow);
-  });
+    dateRow.push( "-" );
+    tableBody.push( dateRow );
+  } );
 
   // Fila de totales globales
-  const totalsRow = ["Total"];
-  for (let m = 1; m <= 12; m++) {
-    const monthKey = m.toString().padStart(2, "0");
-    totalsRow.push(formatCurrency(totals[monthKey]));
+  const totalsRow = [ "Total" ];
+  for ( let m = 1; m <= 12; m++ ) {
+    const monthKey = m.toString().padStart( 2, "0" );
+    totalsRow.push( formatCurrency( totals[ monthKey ] ) );
   }
-  totalsRow.push(formatCurrency(totalPendingGlobal));
-  tableBody.push(totalsRow);
+  totalsRow.push( formatCurrency( totalPendingGlobal ) );
+  tableBody.push( totalsRow );
 
   const generatePDF = async () => {
     // Se crea el PDF en orientación horizontal
-    const doc = new jsPDF({ orientation: "landscape" });
+    const doc = new jsPDF( { orientation: "landscape" } );
 
     // --- Encabezado del reporte ---
-    if (logoBase64) {
+    if ( logoBase64 ) {
       doc.addImage(
         logoBase64,
         "PNG",
@@ -243,26 +243,26 @@ const PDFReportGeneratorMaintenance: React.FC<PDFReportGeneratorProps> = ({
         30
       );
     }
-    doc.setFontSize(14);
-    doc.text(`Reporte de Ingresos - ${reportConcept}`, 14, 20);
-    doc.setFontSize(12);
+    doc.setFontSize( 14 );
+    doc.text( `Reporte de Ingresos - ${ reportConcept }`, 14, 20 );
+    doc.setFontSize( 12 );
     const reportDate = new Date().toLocaleString();
-    doc.setFont("helvetica", "bold");
-    doc.text("Fecha:", 14, 30);
-    doc.setFont("helvetica", "normal");
-    doc.text(reportDate, 14 + doc.getTextWidth("Fecha:") + 2, 30);
-    doc.setFont("helvetica", "bold");
-    doc.text("Año:", 14, 40);
-    doc.setFont("helvetica", "normal");
-    doc.text(year, 14 + doc.getTextWidth("Año:") + 2, 40);
+    doc.setFont( "helvetica", "bold" );
+    doc.text( "Fecha:", 14, 30 );
+    doc.setFont( "helvetica", "normal" );
+    doc.text( reportDate, 14 + doc.getTextWidth( "Fecha:" ) + 2, 30 );
+    doc.setFont( "helvetica", "bold" );
+    doc.text( "Año:", 14, 40 );
+    doc.setFont( "helvetica", "normal" );
+    doc.text( year, 14 + doc.getTextWidth( "Año:" ) + 2, 40 );
 
     // --- Agregar la tabla global con autoTable ---
-    autoTable(doc, {
+    autoTable( doc, {
       startY: 50,
       head: tableHead,
       body: tableBody,
       headStyles: {
-        fillColor: [75, 68, 224],
+        fillColor: [ 75, 68, 224 ],
         textColor: 255,
         fontStyle: "bold",
         halign: "center",
@@ -275,30 +275,30 @@ const PDFReportGeneratorMaintenance: React.FC<PDFReportGeneratorProps> = ({
       },
       theme: "grid",
       margin: { left: 14, right: 14 },
-      didParseCell: (data) => {
+      didParseCell: ( data ) => {
         // Alinear columnas numéricas a la derecha (solo en el cuerpo de la tabla)
-        if (data.section === "body" && data.column.index > 0) {
+        if ( data.section === "body" && data.column.index > 0 ) {
           data.cell.styles.halign = "right";
         }
         // Agregar sombreado alternado en las filas de datos (excluyendo el encabezado)
-        if (data.row.index > 0 && data.row.index % 2 === 0) {
-          data.cell.styles.fillColor = [249, 250, 251]; // gray-50
+        if ( data.row.index > 0 && data.row.index % 2 === 0 ) {
+          data.cell.styles.fillColor = [ 249, 250, 251 ]; // gray-50
         }
         // Mantener el estilo bold en la última fila (totales)
-        if (data.row.index === tableBody.length - 1) {
+        if ( data.row.index === tableBody.length - 1 ) {
           data.cell.styles.fontStyle = "bold";
         }
       },
-    });
+    } );
 
     // --- Página para firma y datos de la administradora ---
     doc.addPage();
     const pageHeight = doc.internal.pageSize.height;
     const margin = 14;
     const adminSectionY = pageHeight - 80;
-    if (signatureUrl) {
+    if ( signatureUrl ) {
       try {
-        const signatureImage = await getBase64FromUrl(signatureUrl);
+        const signatureImage = await getBase64FromUrl( signatureUrl );
         doc.addImage(
           signatureImage,
           "JPEG",
@@ -307,43 +307,55 @@ const PDFReportGeneratorMaintenance: React.FC<PDFReportGeneratorProps> = ({
           50,
           20
         ); // Usar JPEG y dimensiones optimizadas
-      } catch (error) {
-        console.error("Error al cargar la firma:", error);
+      } catch ( error ) {
+        console.error( "Error al cargar la firma:", error );
       }
     }
-    doc.setFontSize(12);
-    doc.text("Firma del Administrador", margin, adminSectionY);
-    doc.setFont("helvetica", "bold");
-    doc.text("Administradora:", margin, adminSectionY + 10);
-    doc.setFont("helvetica", "normal");
-    doc.text(adminCompany, margin + 40, adminSectionY + 10);
-    doc.setFont("helvetica", "bold");
-    doc.text("Teléfono:", margin, adminSectionY + 20);
-    doc.setFont("helvetica", "normal");
-    doc.text(adminPhone, margin + 40, adminSectionY + 20);
-    doc.setFont("helvetica", "bold");
-    doc.text("Contacto:", margin, adminSectionY + 30);
-    doc.setFont("helvetica", "normal");
-    doc.text(adminEmail, margin + 40, adminSectionY + 30);
+    doc.setFontSize( 12 );
+    doc.text( "Firma del Administrador", margin, adminSectionY );
+    doc.setFont( "helvetica", "bold" );
+    doc.text( "Administradora:", margin, adminSectionY + 10 );
+    doc.setFont( "helvetica", "normal" );
+    doc.text( adminCompany, margin + 40, adminSectionY + 10 );
+    doc.setFont( "helvetica", "bold" );
+    doc.text( "Teléfono:", margin, adminSectionY + 20 );
+    doc.setFont( "helvetica", "normal" );
+    doc.text( adminPhone, margin + 40, adminSectionY + 20 );
+    doc.setFont( "helvetica", "bold" );
+    doc.text( "Contacto:", margin, adminSectionY + 30 );
+    doc.setFont( "helvetica", "normal" );
+    doc.text( adminEmail, margin + 40, adminSectionY + 30 );
     const footerY = pageHeight - 15;
-    doc.setFontSize(11);
-    doc.text("Un servicio de Omnipixel.", margin, footerY - 10);
-    doc.text("Correo: administracion@estate-admin.com", margin, footerY - 5);
+    doc.setFontSize( 11 );
+    doc.text( "Un servicio de Omnipixel.", margin, footerY - 10 );
+    doc.text( "Correo: administracion@estate-admin.com", margin, footerY - 5 );
+
+    const generatedAt = new Date().toLocaleString( "es-MX" );
+    const totalPages = doc.getNumberOfPages();
+    const pageWidthMaint = doc.internal.pageSize.getWidth();
+    const pageHeightMaint = doc.internal.pageSize.getHeight();
+    for ( let i = 1; i <= totalPages; i++ ) {
+      doc.setPage( i );
+      doc.setFontSize( 9 );
+      doc.setTextColor( 120 );
+      doc.text( `EstateAdmin - ${ generatedAt }`, pageWidthMaint / 2, pageHeightMaint - 8, { align: "center" } );
+      doc.text( `Página ${ i } de ${ totalPages }`, pageWidthMaint - 14, pageHeightMaint - 8, { align: "right" } );
+    }
 
     doc.save(
-      `reporte_ingresos_${year}_${reportConcept.replace(/\s+/g, "_")}.pdf`
+      `reporte_ingresos_${ year }_${ reportConcept.replace( /\s+/g, "_" ) }.pdf`
     );
   };
 
   return renderButton ? (
-    renderButton(() => generatePDF())
+    renderButton( () => generatePDF() )
   ) : (
     <div className="flex">
       <button
-        onClick={() => generatePDF()}
+        onClick={ () => generatePDF() }
         className="bg-indigo-600 text-white text-sm py-2 px-3 rounded font-medium hover:bg-indigo-700"
       >
-        {`Cuotas de Mantenimiento`}
+        { `Cuotas de Mantenimiento` }
       </button>
     </div>
   );
