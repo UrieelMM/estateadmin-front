@@ -8,8 +8,6 @@ import {
   CheckCircleIcon,
   XCircleIcon,
 } from "@heroicons/react/24/outline";
-import { doc, getDoc, collection, addDoc, getDocs } from "firebase/firestore";
-import { db } from "../../../firebase/firebase";
 import LoadingApp from "../../components/shared/loaders/LoadingApp";
 
 // Helper function to safely convert Firestore timestamps to Date objects
@@ -21,18 +19,22 @@ const safeFirestoreDate = (firestoreDate: any): Date => {
   return new Date(firestoreDate);
 };
 
-// Interface para el empleado
-interface Employee {
-  id: string;
-  personalInfo: {
-    firstName: string;
-    lastName: string;
-  };
-  employmentInfo: {
-    employeeNumber: string;
-    pin: string;
-  };
-}
+const API_BASE = (
+  import.meta.env.VITE_URL_SERVER ||
+  import.meta.env.VITE_API_URL ||
+  ""
+).replace(/\/$/, "");
+
+const extractErrorMessage = async (response: Response) => {
+  try {
+    const payload = await response.json();
+    if (typeof payload?.message === "string") return payload.message;
+    if (Array.isArray(payload?.message) && payload.message[0]) {
+      return String(payload.message[0]);
+    }
+  } catch (_error) {}
+  return `Error HTTP ${response.status}`;
+};
 
 const AttendancePublic: React.FC = () => {
   const { qrId } = useParams<{ qrId: string }>();
@@ -59,6 +61,9 @@ const AttendancePublic: React.FC = () => {
         if (!qrId) {
           throw new Error("ID de QR no válido");
         }
+        if (!API_BASE) {
+          throw new Error("URL del backend no configurada");
+        }
 
         // Obtener clientId y condominiumId de los parámetros de la URL
         const clientId = searchParams.get("clientId");
@@ -70,18 +75,17 @@ const AttendancePublic: React.FC = () => {
           );
         }
 
-        // Acceder al QR usando la estructura completa
-        const qrDocRef = doc(
-          db,
-          `clients/${clientId}/condominiums/${condominiumId}/attendanceQR/${qrId}`
-        );
-        const qrDoc = await getDoc(qrDocRef);
-
-        if (!qrDoc.exists()) {
-          throw new Error("Código QR no válido");
+        const url = `${API_BASE}/attendance-qr/${encodeURIComponent(
+          qrId
+        )}?clientId=${encodeURIComponent(
+          clientId
+        )}&condominiumId=${encodeURIComponent(condominiumId)}`;
+        const response = await fetch(url, { method: "GET" });
+        if (!response.ok) {
+          throw new Error(await extractErrorMessage(response));
         }
-
-        const data = qrDoc.data();
+        const payload = await response.json();
+        const data = payload?.data || payload;
 
         // Verificar si no ha expirado
         const expiresAt = safeFirestoreDate(data.expiresAt);
@@ -138,66 +142,39 @@ const AttendancePublic: React.FC = () => {
       setError(null);
       setSuccess(null);
 
-      const { clientId, condominiumId } = qrData;
-
-      // Buscar empleado por número y PIN
-      const employeesRef = collection(
-        db,
-        `clients/${clientId}/condominiums/${condominiumId}/employees`
-      );
-      const employeesSnapshot = await getDocs(employeesRef);
-
-      let employee: Employee | null = null;
-      employeesSnapshot.forEach((doc) => {
-        const data = doc.data();
-        if (
-          data.employmentInfo?.employeeNumber === formData.employeeNumber &&
-          data.employmentInfo?.pin === formData.pin
-        ) {
-          employee = {
-            id: doc.id,
-            personalInfo: {
-              firstName: data.personalInfo?.firstName || "",
-              lastName: data.personalInfo?.lastName || "",
-            },
-            employmentInfo: {
-              employeeNumber: data.employmentInfo?.employeeNumber || "",
-              pin: data.employmentInfo?.pin || "",
-            },
-          };
-        }
-      });
-
-      if (!employee) {
-        throw new Error("Número de empleado o PIN incorrecto");
+      if (!API_BASE) {
+        throw new Error("URL del backend no configurada");
       }
 
-      // En este punto, employee no es null
-      const validEmployee = employee as Employee;
-
-      // Crear registro de asistencia - usar una colección a nivel de condominio
-      const attendanceRef = collection(
-        db,
-        `clients/${clientId}/condominiums/${condominiumId}/attendance`
-      );
-
-      const attendanceRecord = {
-        employeeId: validEmployee.id,
-        employeeNumber: validEmployee.employmentInfo.employeeNumber,
-        employeeName: `${validEmployee.personalInfo.firstName} ${validEmployee.personalInfo.lastName}`,
+      const body = {
+        clientId: qrData.clientId,
+        condominiumId: qrData.condominiumId,
+        employeeNumber: formData.employeeNumber.trim(),
+        pin: formData.pin.trim(),
         type: formData.type,
-        timestamp: new Date(),
-        method: "qr",
-        qrId: qrId,
       };
-
-      await addDoc(attendanceRef, attendanceRecord);
-
-      setSuccess(
-        formData.type === "check-in"
-          ? "✅ Entrada registrada exitosamente"
-          : "✅ Salida registrada exitosamente"
+      const response = await fetch(
+        `${API_BASE}/attendance-qr/${encodeURIComponent(qrId || "")}/register`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(body),
+        }
       );
+      if (!response.ok) {
+        throw new Error(await extractErrorMessage(response));
+      }
+      const payload = await response.json();
+      const successMessage =
+        typeof payload?.message === "string"
+          ? payload.message
+          : formData.type === "check-in"
+          ? "✅ Entrada registrada exitosamente"
+          : "✅ Salida registrada exitosamente";
+
+      setSuccess(successMessage);
 
       // Limpiar formulario
       setFormData({

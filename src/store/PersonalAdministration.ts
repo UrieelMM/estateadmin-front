@@ -6,6 +6,7 @@ import {
   doc,
   addDoc,
   updateDoc,
+  setDoc,
   deleteDoc,
   getDocs,
   getDoc,
@@ -2080,6 +2081,31 @@ export const usePersonalAdministrationStore =
         const expiresAt = new Date(Date.now() + 15 * 24 * 60 * 60 * 1000);
         const createdAt = new Date();
 
+        // Snapshot de empleados habilitados para validar asistencia pública sin login
+        const employeesCollectionPath = get().getEmployeesCollectionPath(
+          clientId,
+          condominiumId
+        );
+        const employeesRef = collection(db, employeesCollectionPath);
+        const employeesSnap = await getDocs(employeesRef);
+        const allowedEmployees = employeesSnap.docs
+          .map((employeeDoc) => {
+            const data = employeeDoc.data();
+            const employeeNumber = data?.employmentInfo?.employeeNumber || "";
+            const pin = data?.employmentInfo?.pin || "";
+            const firstName = data?.personalInfo?.firstName || "";
+            const lastName = data?.personalInfo?.lastName || "";
+            const employeeName = `${firstName} ${lastName}`.trim();
+            if (!employeeNumber || !pin) return null;
+            return {
+              employeeId: employeeDoc.id,
+              employeeNumber,
+              pin,
+              employeeName,
+            };
+          })
+          .filter(Boolean);
+
         const qrData = {
           clientId,
           condominiumId,
@@ -2088,12 +2114,24 @@ export const usePersonalAdministrationStore =
           active: true,
           type: "attendance",
           createdBy: user.uid,
+          allowedEmployees,
         };
 
         const docRef = await addDoc(qrRef, qrData);
 
         // Actualizar con el ID del documento
         await updateDoc(docRef, { qrId: docRef.id });
+
+        // Mantener copia pública en `publicQRs` para escaneo sin autenticación
+        const publicQrRef = doc(
+          db,
+          `clients/${clientId}/condominiums/${condominiumId}/publicQRs/${docRef.id}`
+        );
+        await setDoc(publicQrRef, {
+          ...qrData,
+          qrId: docRef.id,
+          type: "attendance",
+        });
 
         // Actualizar estado local
         set({

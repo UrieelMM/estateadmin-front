@@ -181,6 +181,21 @@ service cloud.firestore {
           allow delete: if (isAdmin() && belongsToClient(clientId)) || isSuperAdmin();
         }
 
+        // ─── QR de asistencia (lectura pública para escaneo) ───
+        match /attendanceQR/{qrId} {
+          allow read: if true;
+          allow create, update: if (isAdminOrAssistant() && belongsToClient(clientId)) || isSuperAdmin();
+          allow delete: if (isAdmin() && belongsToClient(clientId)) || isSuperAdmin();
+        }
+
+        // ─── Registros de asistencia (creación pública controlada por QR activo) ───
+        match /attendance/{attendanceId} {
+          allow read: if belongsToClientOrSuperAdmin(clientId);
+          // Público para registro desde QR sin autenticación del empleado
+          allow create: if true;
+          allow update, delete: if (isAdmin() && belongsToClient(clientId)) || isSuperAdmin();
+        }
+
         // ─── Conciliaciones financieras (inmutables para trazabilidad) ───
         match /paymentReconciliations/{sessionId} {
           allow read: if belongsToClientOrSuperAdmin(clientId);
@@ -299,6 +314,30 @@ service cloud.firestore {
     // ─── CollectionGroup: publicQRs (solo lectura) ───
     match /{path=**}/publicQRs/{qrId} {
       allow read: if true;
+    }
+
+    // ─── CollectionGroup: attendanceQR (lectura pública para escaneo) ───
+    match /{path=**}/attendanceQR/{qrId} {
+      allow read: if true;
+    }
+
+    // ─── CollectionGroup: attendance (registro público por QR) ───
+    match /{path=**}/attendance/{attendanceId} {
+      allow create: if true;
+    }
+
+    // ─── Rutas absolutas públicas de asistencia (fallback explícito) ───
+    match /clients/{clientId}/condominiums/{condominiumId}/attendanceQR/{qrId} {
+      allow read: if true;
+    }
+
+    match /clients/{clientId}/condominiums/{condominiumId}/publicQRs/{qrId} {
+      allow read: if true;
+      allow create: if true;
+    }
+
+    match /clients/{clientId}/condominiums/{condominiumId}/attendance/{attendanceId} {
+      allow create: if true;
     }
     
     // ─── Validaciones para "charges" y "payments" ───
