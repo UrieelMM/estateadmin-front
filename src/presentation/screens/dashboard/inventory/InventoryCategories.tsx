@@ -5,6 +5,7 @@ import CategoryForm from "./components/CategoryForm";
 import Modal from "../../../../components/Modal";
 import { Link, useLocation } from "react-router-dom";
 import ModalButton from "./components/ModalButton";
+import toast from "react-hot-toast";
 
 const InventoryCategories: React.FC = () => {
   const {
@@ -35,10 +36,6 @@ const InventoryCategories: React.FC = () => {
     fetchCategories();
   }, [ fetchCategories ] );
 
-  useEffect( () => {
-    console.log( "Modal de añadir categoría:", isAddModalOpen );
-  }, [ isAddModalOpen ] );
-
   // Filtrar categorías por término de búsqueda
   const filteredCategories = categories.filter(
     ( category ) =>
@@ -48,19 +45,13 @@ const InventoryCategories: React.FC = () => {
 
   // Handlers para operaciones CRUD
   const handleAddCategory = async ( data: Partial<Category> ) => {
-    console.log( "Iniciando handleAddCategory con datos:", data );
     setSubmitLoading( true );
 
     try {
-      console.log( "Llamando a addCategory con:", data );
       const categoryId = await addCategory( data as Omit<Category, "id"> );
-      console.log( "Resultado de addCategory:", categoryId );
 
       if ( categoryId ) {
-        console.log( "Categoría agregada exitosamente con ID:", categoryId );
         setIsAddModalOpen( false );
-      } else {
-        console.error( "No se pudo crear la categoría: el ID retornado es nulo" );
       }
     } catch ( error ) {
       console.error( "Error al crear categoría:", error );
@@ -88,10 +79,11 @@ const InventoryCategories: React.FC = () => {
       if ( success ) {
         setIsDeleteModalOpen( false );
         setSelectedCategory( null );
+      } else {
+        toast.error( "No fue posible eliminar la categoría" );
       }
     } catch ( error ) {
-      // Si hay un error (por ejemplo, hay ítems asociados), mostrar mensaje
-      alert( ( error as Error ).message );
+      toast.error( ( error as Error ).message || "No fue posible eliminar la categoría" );
     } finally {
       setSubmitLoading( false );
     }
@@ -106,9 +98,7 @@ const InventoryCategories: React.FC = () => {
 
   // Función específica para abrir modal
   const openAddModal = () => {
-    console.log( "Intento abrir modal de categoría" );
     setIsAddModalOpen( true );
-    console.log( "Después de setIsAddModalOpen (categoría):", true );
   };
 
   return (
@@ -289,31 +279,21 @@ const InventoryCategories: React.FC = () => {
       </div>
 
       {/* Modales */ }
-      { isAddModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-indigo-100 bg-opacity-20 dark:bg-indigo-100 dark:bg-opacity-20">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl overflow-hidden max-w-md w-full">
-            <div className="flex justify-between items-center border-b border-gray-200 dark:border-gray-700 p-4">
-              <h3 className="text-xl font-medium text-gray-700 dark:text-gray-100">
-                Añadir categoría
-              </h3>
-              <button
-                onClick={ () => setIsAddModalOpen( false ) }
-                className="text-gray-400 hover:text-gray-800 dark:hover:text-white"
-              >
-                <i className="fas fa-times"></i>
-              </button>
-            </div>
-            <div className="p-6 dark:bg-gray-800">
-              <CategoryForm
-                categories={ categories }
-                onSubmit={ handleAddCategory }
-                onCancel={ () => setIsAddModalOpen( false ) }
-                loading={ submitLoading }
-              />
-            </div>
-          </div>
+      <Modal
+        title="Añadir categoría"
+        isOpen={ isAddModalOpen }
+        onClose={ () => setIsAddModalOpen( false ) }
+        size="md"
+      >
+        <div className="p-6">
+          <CategoryForm
+            categories={ categories }
+            onSubmit={ handleAddCategory }
+            onCancel={ () => setIsAddModalOpen( false ) }
+            loading={ submitLoading }
+          />
         </div>
-      ) }
+      </Modal>
 
       <Modal
         title="Editar categoría"

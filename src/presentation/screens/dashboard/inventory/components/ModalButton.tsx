@@ -16,7 +16,6 @@ const ModalButton: React.FC<ModalButtonProps> = ( {
   const handleClick = ( e: React.MouseEvent ) => {
     e.preventDefault();
     e.stopPropagation();
-    console.log( `Botón '${ text }' clickeado` );
 
     // Timeout para asegurar que el evento se maneje correctamente
     setTimeout( () => {

@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import useInventoryStore, {
   ItemStatus,
   InventoryItem,
   InventoryItemFormData,
+  MovementType,
 } from "../../../../store/inventoryStore";
 import FilterBar from "./components/FilterBar";
 import InventoryTable from "./components/InventoryTable";
@@ -13,6 +14,7 @@ import KPICard from "./components/KPICard";
 import { Link, useLocation } from "react-router-dom";
 import ModalButton from "./components/ModalButton";
 import { formatCurrencyInventory } from "../../../../utils/curreyncy";
+import toast from "react-hot-toast";
 
 const navLinks = [
   { to: "/dashboard/inventory", icon: "fa-boxes-stacked", label: "Inventario" },
@@ -26,11 +28,13 @@ const InventoryList: React.FC = () => {
     items,
     filteredItems,
     categories,
+    movements,
     loading,
     stockAlerts,
     filters,
     fetchItems,
     fetchCategories,
+    fetchMovements,
     addItem,
     updateItem,
     deleteItem,
@@ -56,9 +60,8 @@ const InventoryList: React.FC = () => {
   useEffect( () => {
     fetchItems();
     fetchCategories();
-  }, [ fetchItems, fetchCategories ] );
-
-  useEffect( () => { }, [ isAddModalOpen ] );
+    fetchMovements();
+  }, [ fetchItems, fetchCategories, fetchMovements ] );
 
   // Handlers para modales
   const handleAddItem = async ( data: Partial<InventoryItemFormData> ) => {
@@ -125,23 +128,186 @@ const InventoryList: React.FC = () => {
 
   // KPI Calculations
   const totalItems = items.length;
-  const activeItems = items.filter(
-    ( item ) => item.status === ItemStatus.ACTIVE
-  ).length;
   const lowStockItems = stockAlerts.length;
-  const totalValue = items.reduce(
+  const now = new Date();
+  const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+  const SIXTY_DAYS_MS = 60 * 24 * 60 * 60 * 1000;
+
+  const lastMovementByItem = useMemo( () => {
+    const map = new Map<string, Date>();
+    movements.forEach( ( movement ) => {
+      const movementDate =
+        movement.createdAt instanceof Date
+          ? movement.createdAt
+          : movement.createdAt
+            ? new Date( movement.createdAt as unknown as string )
+            : null;
+      if ( !movementDate || Number.isNaN( movementDate.getTime() ) ) return;
+      const current = map.get( movement.itemId );
+      if ( !current || movementDate > current ) {
+        map.set( movement.itemId, movementDate );
+      }
+    } );
+    return map;
+  }, [ movements ] );
+
+  const criticalItems = items.filter(
+    ( item ) => item.status === ItemStatus.ACTIVE && item.stock <= item.minStock
+  );
+  const nearExpirationItems = items.filter( ( item ) => {
+    if ( !item.expirationDate ) return false;
+    const expirationDate =
+      item.expirationDate instanceof Date
+        ? item.expirationDate
+        : new Date( item.expirationDate as unknown as string );
+    if ( Number.isNaN( expirationDate.getTime() ) ) return false;
+    const diffMs = expirationDate.getTime() - now.getTime();
+    return diffMs >= 0 && diffMs <= THIRTY_DAYS_MS;
+  } );
+  const staleItems = items.filter( ( item ) => {
+    const lastMovement = lastMovementByItem.get( item.id );
+    const referenceDate = lastMovement || item.updatedAt || item.createdAt;
+    const refDate =
+      referenceDate instanceof Date
+        ? referenceDate
+        : new Date( referenceDate as unknown as string );
+    if ( Number.isNaN( refDate.getTime() ) ) return false;
+    return now.getTime() - refDate.getTime() > SIXTY_DAYS_MS && item.stock > 0;
+  } );
+  const immobilizedValue = staleItems.reduce(
     ( sum, item ) => sum + ( item.price || 0 ) * item.stock,
     0
+  );
+
+  const consumptionByItemLast30 = useMemo( () => {
+    const cutoff = now.getTime() - THIRTY_DAYS_MS;
+    const map = new Map<string, number>();
+    movements.forEach( ( movement ) => {
+      if ( movement.type !== MovementType.CONSUMED ) return;
+      const movementDate =
+        movement.createdAt instanceof Date
+          ? movement.createdAt
+          : movement.createdAt
+            ? new Date( movement.createdAt as unknown as string )
+            : null;
+      if ( !movementDate || movementDate.getTime() < cutoff ) return;
+      const qty = movement.quantity || 0;
+      if ( qty <= 0 ) return;
+      map.set( movement.itemId, ( map.get( movement.itemId ) || 0 ) + qty );
+    } );
+    return map;
+  }, [ movements, now ] );
+
+  const replenishmentRecommendations = useMemo( () => {
+    return items
+      .map( ( item ) => {
+        const consumed30 = consumptionByItemLast30.get( item.id ) || 0;
+        if ( consumed30 <= 0 ) return null;
+        const desiredStock = Math.max( item.minStock, consumed30 );
+        const suggestedQty = Math.max( 0, desiredStock - item.stock );
+        if ( suggestedQty <= 0 ) return null;
+        const stockCoverageDays = item.stock > 0 ? Math.round( ( item.stock / consumed30 ) * 30 ) : 0;
+        return {
+          id: item.id,
+          name: item.name,
+          currentStock: item.stock,
+          consumed30,
+          suggestedQty,
+          stockCoverageDays,
+        };
+      } )
+      .filter( ( item ): item is NonNullable<typeof item> => item !== null )
+      .sort( ( a, b ) => a.stockCoverageDays - b.stockCoverageDays || b.suggestedQty - a.suggestedQty )
+      .slice( 0, 5 );
+  }, [ items, consumptionByItemLast30 ] );
+
+  const locations = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          items
+            .map( ( item ) => ( item.location || "" ).trim() )
+            .filter( ( location ) => location.length > 0 )
+        )
+      ).sort( ( a, b ) => a.localeCompare( b, "es", { sensitivity: "base" } ) ),
+    [ items ]
   );
 
   // Verificar si hay categorías disponibles
   const hasCategoriesWarning = categories.length === 0;
 
+  const statusLabelMap: Record<ItemStatus, string> = {
+    [ ItemStatus.ACTIVE ]: "Activo",
+    [ ItemStatus.INACTIVE ]: "Inactivo",
+    [ ItemStatus.MAINTENANCE ]: "Mantenimiento",
+    [ ItemStatus.DISCONTINUED ]: "Descontinuado",
+  };
+
+  const typeLabelMap: Record<string, string> = {
+    machinery: "Maquinaria",
+    supplies: "Insumos",
+    tool: "Herramientas",
+    material: "Materiales",
+  };
+
+  const escapeCsvCell = ( value: string | number ) => {
+    const cell = String( value ?? "" );
+    if ( /[",\n]/.test( cell ) ) {
+      return `"${ cell.replace( /"/g, "\"\"" ) }"`;
+    }
+    return cell;
+  };
+
+  const handleExportFilteredCsv = () => {
+    if ( filteredItems.length === 0 ) {
+      toast( "No hay datos filtrados para exportar." );
+      return;
+    }
+    const headers = [
+      "Nombre",
+      "Tipo",
+      "Categoría",
+      "Ubicación",
+      "Estado",
+      "Stock",
+      "Stock mínimo",
+      "Precio unitario",
+      "Valor total",
+      "Última actualización",
+    ];
+
+    const rows = filteredItems.map( ( item ) => [
+      item.name,
+      typeLabelMap[ item.type ] || item.type,
+      item.categoryName || "-",
+      item.location || "-",
+      statusLabelMap[ item.status ] || item.status,
+      item.stock,
+      item.minStock,
+      item.price ?? 0,
+      ( item.price || 0 ) * item.stock,
+      item.updatedAt ? new Date( item.updatedAt ).toLocaleString( "es-MX" ) : "-",
+    ] );
+
+    const csvContent = [
+      headers.map( escapeCsvCell ).join( "," ),
+      ...rows.map( ( row ) => row.map( escapeCsvCell ).join( "," ) ),
+    ].join( "\n" );
+
+    const blob = new Blob( [ "\uFEFF" + csvContent ], { type: "text/csv;charset=utf-8;" } );
+    const url = URL.createObjectURL( blob );
+    const link = document.createElement( "a" );
+    link.href = url;
+    link.download = `inventory_${ new Date().toISOString().slice( 0, 10 ) }.csv`;
+    document.body.appendChild( link );
+    link.click();
+    document.body.removeChild( link );
+    URL.revokeObjectURL( url );
+  };
+
   // Función específica para abrir modal
   const openAddModal = () => {
-    console.log( "Intento abrir modal" );
     setIsAddModalOpen( true );
-    console.log( "Después de setIsAddModalOpen:", true );
   };
 
   return (
@@ -159,7 +325,17 @@ const InventoryList: React.FC = () => {
               Gestiona los ítems, categorías y movimientos de tu inventario
             </p>
           </div>
-          <ModalButton text="Añadir ítem" onClick={ openAddModal } />
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={ handleExportFilteredCsv }
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold border border-indigo-200 text-indigo-700 bg-indigo-50 hover:bg-indigo-100 dark:border-indigo-700 dark:text-indigo-300 dark:bg-indigo-900/20 dark:hover:bg-indigo-900/30"
+            >
+              <i className="fas fa-file-csv text-xs" />
+              Exportar CSV
+            </button>
+            <ModalButton text="Añadir ítem" onClick={ openAddModal } />
+          </div>
         </div>
 
         {/* ── Secondary Navigation (Tabs) ── */ }
@@ -213,30 +389,78 @@ const InventoryList: React.FC = () => {
         {/* ── KPIs ── */ }
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <KPICard
-            title="Total de ítems"
-            value={ totalItems }
-            icon="fa-boxes-stacked"
-            color="border-blue-500"
-          />
-          <KPICard
-            title="Ítems activos"
-            value={ activeItems }
-            icon="fa-check-circle"
-            color="border-green-500"
-          />
-          <KPICard
-            title="Stock bajo"
-            value={ lowStockItems }
-            icon="fa-exclamation-triangle"
-            color="border-red-500"
+            title="Ítems críticos"
+            value={ criticalItems.length }
+            icon="fa-triangle-exclamation"
+            color="rose"
+            hint="Stock en mínimo o por debajo."
             onClick={ () => applyFilters( { lowStock: true } ) }
           />
           <KPICard
-            title="Valor total"
-            value={ formatCurrencyInventory( totalValue ) }
-            icon="fa-dollar-sign"
-            color="border-yellow-500"
+            title="Por vencer (30 días)"
+            value={ nearExpirationItems.length }
+            icon="fa-calendar-days"
+            color="amber"
+            hint="Revisa consumibles y materiales."
           />
+          <KPICard
+            title="Sin movimiento (+60 días)"
+            value={ staleItems.length }
+            icon="fa-clock-rotate-left"
+            color="slate"
+            hint="Posible sobreinventario o baja rotación."
+          />
+          <KPICard
+            title="Valor inmovilizado"
+            value={ formatCurrencyInventory( immobilizedValue ) }
+            icon="fa-coins"
+            color="indigo"
+            hint="Capital detenido en ítems sin rotación."
+          />
+        </div>
+
+        <div className="rounded-2xl border border-indigo-100 dark:border-indigo-900/60 bg-gradient-to-r from-indigo-50 to-white dark:from-indigo-900/20 dark:to-gray-900 p-4 mb-6">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h2 className="text-sm font-semibold text-indigo-700 dark:text-indigo-300 flex items-center gap-2">
+                <i className="fas fa-lightbulb text-xs" />
+                Recomendaciones de reposición (basado en consumo últimos 30 días)
+              </h2>
+              <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                Prioriza ítems con menor cobertura de stock para evitar faltantes operativos.
+              </p>
+            </div>
+            <span className="text-xs font-semibold px-2 py-1 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300">
+              { replenishmentRecommendations.length } sugerencias
+            </span>
+          </div>
+
+          { replenishmentRecommendations.length > 0 ? (
+            <div className="mt-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+              { replenishmentRecommendations.map( ( recommendation ) => (
+                <div
+                  key={ recommendation.id }
+                  className="rounded-xl border border-indigo-100 dark:border-indigo-900/50 bg-white/90 dark:bg-gray-800/80 p-3"
+                >
+                  <p className="text-sm font-semibold text-gray-800 dark:text-gray-100 truncate">
+                    { recommendation.name }
+                  </p>
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    Cobertura estimada: <span className="font-semibold">{ recommendation.stockCoverageDays } días</span>
+                  </p>
+                  <div className="mt-2 text-xs text-gray-600 dark:text-gray-300 space-y-1">
+                    <p>Stock actual: <span className="font-semibold">{ recommendation.currentStock }</span></p>
+                    <p>Consumo 30d: <span className="font-semibold">{ recommendation.consumed30 }</span></p>
+                    <p>Reposición sugerida: <span className="font-semibold text-indigo-600 dark:text-indigo-300">{ recommendation.suggestedQty }</span></p>
+                  </div>
+                </div>
+              ) ) }
+            </div>
+          ) : (
+            <div className="mt-4 rounded-xl border border-dashed border-indigo-200 dark:border-indigo-800 p-3 text-sm text-gray-600 dark:text-gray-400">
+              Aún no hay consumo suficiente en los últimos 30 días para generar recomendaciones automáticas.
+            </div>
+          ) }
         </div>
       </div>
 
@@ -244,6 +468,9 @@ const InventoryList: React.FC = () => {
       <FilterBar
         filters={ filters }
         categories={ categories }
+        locations={ locations }
+        totalItems={ totalItems }
+        filteredItems={ filteredItems.length }
         onFilterChange={ applyFilters }
         onResetFilters={ resetFilters }
         lowStockCount={ lowStockItems }

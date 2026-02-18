@@ -142,11 +142,7 @@ const InventoryItemForm: React.FC<InventoryItemFormProps> = ({
       e.stopPropagation(); // Detener cualquier propagación del evento
     }
 
-    console.log("Intentando enviar formulario...");
-
     if (validateForm(step)) {
-      console.log("Formulario validado correctamente");
-
       // Procesar fechas antes de enviar para evitar valores undefined en Firestore
       const processedData: Record<string, any> = { ...formData };
 
@@ -199,10 +195,7 @@ const InventoryItemForm: React.FC<InventoryItemFormProps> = ({
         images: uploadedImages,
       };
 
-      console.log("Datos a enviar:", dataToSubmit);
       onSubmit(dataToSubmit);
-    } else {
-      console.log("Error de validación en el formulario");
     }
   };
 

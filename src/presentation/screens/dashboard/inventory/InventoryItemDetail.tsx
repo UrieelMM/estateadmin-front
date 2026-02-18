@@ -62,11 +62,6 @@ const InventoryItemDetail: React.FC = () => {
     }
   }, [ id, items, setSelectedItem, fetchMovements, navigate ] );
 
-  // Monitorear los movimientos cargados
-  useEffect( () => {
-    console.log( "Movimientos actualizados:", movements );
-  }, [ movements ] );
-
   // Limpiar el ítem seleccionado al desmontar el componente
   useEffect( () => {
     return () => {

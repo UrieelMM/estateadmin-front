@@ -9,6 +9,9 @@ import {
 interface FilterBarProps {
   filters: InventoryFilters;
   categories: Category[];
+  locations: string[];
+  totalItems: number;
+  filteredItems: number;
   onFilterChange: ( filters: Partial<InventoryFilters> ) => void;
   onResetFilters: () => void;
   lowStockCount: number;
@@ -20,15 +23,15 @@ const selectClass =
 const FilterBar: React.FC<FilterBarProps> = ( {
   filters,
   categories,
+  locations,
+  totalItems,
+  filteredItems,
   onFilterChange,
   onResetFilters,
   lowStockCount,
 } ) => {
   // Estado local para el término de búsqueda (para evitar demasiadas actualizaciones)
   const [ searchTerm, setSearchTerm ] = useState( filters.search || "" );
-
-  // Ubicaciones únicas extraídas de otros componentes
-  const [ locations, setLocations ] = useState<string[]>( [] );
 
   // Actualizar el término de búsqueda después de un tiempo de inactividad
   useEffect( () => {
@@ -43,33 +46,92 @@ const FilterBar: React.FC<FilterBarProps> = ( {
     };
   }, [ searchTerm, filters.search, onFilterChange ] );
 
-  // Simulación de obtener ubicaciones únicas - en una aplicación real, estas vendrían del store
-  useEffect( () => {
-    // Aquí normalmente obtendrías ubicaciones únicas de los ítems
-    setLocations( [
-      "Almacén principal",
-      "Oficina",
-      "Bodega",
-      "Taller",
-      "Exteriores",
-    ] );
-  }, [] );
+  const getTypeLabel = ( type?: ItemType ) => {
+    if ( !type ) return "";
+    if ( type === ItemType.MACHINERY ) return "Maquinaria";
+    if ( type === ItemType.SUPPLIES ) return "Insumos";
+    if ( type === ItemType.TOOL ) return "Herramientas";
+    return "Materiales";
+  };
+
+  const getStatusLabel = ( status?: ItemStatus ) => {
+    if ( !status ) return "";
+    if ( status === ItemStatus.ACTIVE ) return "Activo";
+    if ( status === ItemStatus.INACTIVE ) return "Inactivo";
+    if ( status === ItemStatus.MAINTENANCE ) return "En mantenimiento";
+    return "Descontinuado";
+  };
+
+  const getCategoryLabel = ( categoryId?: string ) => {
+    if ( !categoryId ) return "";
+    return categories.find( ( category ) => category.id === categoryId )?.name || "";
+  };
+
+  const activeFilters = [
+    filters.search
+      ? {
+        key: "search",
+        label: `Búsqueda: ${ filters.search }`,
+        onRemove: () => {
+          setSearchTerm( "" );
+          onFilterChange( { search: "" } );
+        },
+      }
+      : null,
+    filters.type
+      ? {
+        key: "type",
+        label: `Tipo: ${ getTypeLabel( filters.type ) }`,
+        onRemove: () => onFilterChange( { type: undefined } ),
+      }
+      : null,
+    filters.category
+      ? {
+        key: "category",
+        label: `Categoría: ${ getCategoryLabel( filters.category ) }`,
+        onRemove: () => onFilterChange( { category: undefined } ),
+      }
+      : null,
+    filters.status
+      ? {
+        key: "status",
+        label: `Estado: ${ getStatusLabel( filters.status ) }`,
+        onRemove: () => onFilterChange( { status: undefined } ),
+      }
+      : null,
+    filters.location
+      ? {
+        key: "location",
+        label: `Ubicación: ${ filters.location }`,
+        onRemove: () => onFilterChange( { location: undefined } ),
+      }
+      : null,
+    filters.lowStock
+      ? {
+        key: "lowStock",
+        label: "Stock bajo",
+        onRemove: () => onFilterChange( { lowStock: false } ),
+      }
+      : null,
+  ].filter( Boolean ) as Array<{ key: string; label: string; onRemove: () => void; }>;
 
   // Manejar el cambio de filtros
   const handleFilterChange = ( e: React.ChangeEvent<HTMLSelectElement> ) => {
     const { name, value } = e.target;
-
-    if ( value === "" ) {
-      // Si se selecciona "Todos", eliminamos ese filtro
-      const newFilters = { ...filters };
-      delete newFilters[ name as keyof InventoryFilters ];
-      onFilterChange( newFilters );
-    } else if ( name === "type" ) {
-      onFilterChange( { type: value as ItemType } );
-    } else if ( name === "status" ) {
-      onFilterChange( { status: value as ItemStatus } );
-    } else {
-      onFilterChange( { [ name ]: value } );
+    if ( name === "type" ) {
+      onFilterChange( { type: value ? ( value as ItemType ) : undefined } );
+      return;
+    }
+    if ( name === "status" ) {
+      onFilterChange( { status: value ? ( value as ItemStatus ) : undefined } );
+      return;
+    }
+    if ( name === "category" ) {
+      onFilterChange( { category: value || undefined } );
+      return;
+    }
+    if ( name === "location" ) {
+      onFilterChange( { location: value || undefined } );
     }
   };
 
@@ -81,6 +143,11 @@ const FilterBar: React.FC<FilterBarProps> = ( {
   const hasActiveFilters =
     !!filters.search || !!filters.type || !!filters.status ||
     !!filters.category || !!filters.location || !!filters.lowStock;
+
+  const handleResetFilters = () => {
+    setSearchTerm( "" );
+    onResetFilters();
+  };
 
   return (
     <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl shadow-sm p-4 mb-6">
@@ -170,16 +237,43 @@ const FilterBar: React.FC<FilterBarProps> = ( {
           </label>
 
           <button
-            onClick={ onResetFilters }
+            onClick={ handleResetFilters }
             className={ `inline-flex items-center gap-1.5 text-sm font-medium px-3.5 py-2 rounded-xl border transition-all duration-150 ${ hasActiveFilters
                 ? "border-indigo-300 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 dark:border-indigo-700 dark:text-indigo-400 dark:bg-indigo-900/20 dark:hover:bg-indigo-900/40"
                 : "border-gray-200 text-gray-500 bg-white hover:bg-gray-50 dark:border-gray-600 dark:text-gray-400 dark:bg-gray-700/40 dark:hover:bg-gray-700"
               }` }
           >
             <i className="fas fa-redo-alt text-xs" />
-            Limpiar
+            Limpiar filtros
           </button>
         </div>
+      </div>
+
+      <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+        <p className="text-sm text-gray-600 dark:text-gray-400">
+          Mostrando{ " " }
+          <span className="font-semibold text-gray-800 dark:text-gray-100">{ filteredItems }</span>{ " " }
+          de{ " " }
+          <span className="font-semibold text-gray-800 dark:text-gray-100">{ totalItems }</span>{ " " }
+          ítems
+        </p>
+
+        { activeFilters.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            { activeFilters.map( ( filter ) => (
+              <button
+                key={ filter.key }
+                type="button"
+                onClick={ filter.onRemove }
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-700"
+                title="Quitar filtro"
+              >
+                { filter.label }
+                <i className="fas fa-times text-[10px]" />
+              </button>
+            ) ) }
+          </div>
+        ) }
       </div>
     </div>
   );

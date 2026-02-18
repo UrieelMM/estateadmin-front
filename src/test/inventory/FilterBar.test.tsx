@@ -1,7 +1,7 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import FilterBar from "../../presentation/screens/dashboard/inventory/components/FilterBar";
-import { InventoryFilters } from "../../store/inventoryStore";
+import { InventoryFilters, ItemType } from "../../store/inventoryStore";
 
 // Mock de las categorías
 const mockCategories = [
@@ -34,6 +34,9 @@ describe("FilterBar Component", () => {
         categories={mockCategories}
         onFilterChange={mockOnFilterChange}
         onResetFilters={mockOnResetFilters}
+        locations={["Oficina", "Bodega"]}
+        totalItems={10}
+        filteredItems={10}
         lowStockCount={0}
       />
     );
@@ -57,6 +60,9 @@ describe("FilterBar Component", () => {
         categories={mockCategories}
         onFilterChange={mockOnFilterChange}
         onResetFilters={mockOnResetFilters}
+        locations={["Oficina", "Bodega"]}
+        totalItems={10}
+        filteredItems={10}
         lowStockCount={0}
       />
     );
@@ -74,10 +80,33 @@ describe("FilterBar Component", () => {
         categories={mockCategories}
         onFilterChange={mockOnFilterChange}
         onResetFilters={mockOnResetFilters}
+        locations={["Oficina", "Bodega"]}
+        totalItems={10}
+        filteredItems={10}
         lowStockCount={5}
       />
     );
 
     expect(screen.getByText("5")).toBeInTheDocument();
+  });
+
+  it("limpia el filtro de tipo al seleccionar 'Todos los tipos'", () => {
+    render(
+      <FilterBar
+        filters={{ ...mockFilters, type: ItemType.SUPPLIES }}
+        categories={mockCategories}
+        onFilterChange={mockOnFilterChange}
+        onResetFilters={mockOnResetFilters}
+        locations={["Oficina", "Bodega"]}
+        totalItems={10}
+        filteredItems={4}
+        lowStockCount={0}
+      />
+    );
+
+    const typeSelect = screen.getAllByRole("combobox")[0];
+    fireEvent.change(typeSelect, { target: { value: "" } });
+
+    expect(mockOnFilterChange).toHaveBeenCalledWith({ type: undefined });
   });
 });

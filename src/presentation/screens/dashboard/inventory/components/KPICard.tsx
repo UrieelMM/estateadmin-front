@@ -5,18 +5,20 @@ interface KPICardProps {
   value: string | number;
   icon: string;
   color: string;
+  hint?: string;
   onClick?: () => void;
 }
 
 const colorMap: Record<string, { icon: string; ring: string; bg: string; text: string; border: string; }> = {
-  "border-blue-500": { icon: "text-blue-500", ring: "ring-blue-100 dark:ring-blue-900", bg: "bg-blue-50 dark:bg-blue-900/30", text: "text-blue-600 dark:text-blue-400", border: "border-t-blue-500" },
-  "border-green-500": { icon: "text-green-500", ring: "ring-green-100 dark:ring-green-900", bg: "bg-green-50 dark:bg-green-900/30", text: "text-green-600 dark:text-green-400", border: "border-t-green-500" },
-  "border-red-500": { icon: "text-red-500", ring: "ring-red-100 dark:ring-red-900", bg: "bg-red-50 dark:bg-red-900/30", text: "text-red-600 dark:text-red-400", border: "border-t-red-500" },
-  "border-yellow-500": { icon: "text-yellow-500", ring: "ring-yellow-100 dark:ring-yellow-900", bg: "bg-yellow-50 dark:bg-yellow-900/30", text: "text-yellow-600 dark:text-yellow-400", border: "border-t-yellow-500" },
+  indigo: { icon: "text-indigo-500", ring: "ring-indigo-100 dark:ring-indigo-900", bg: "bg-indigo-50 dark:bg-indigo-900/30", text: "text-indigo-600 dark:text-indigo-400", border: "border-t-indigo-500" },
+  emerald: { icon: "text-emerald-500", ring: "ring-emerald-100 dark:ring-emerald-900", bg: "bg-emerald-50 dark:bg-emerald-900/30", text: "text-emerald-600 dark:text-emerald-400", border: "border-t-emerald-500" },
+  amber: { icon: "text-amber-500", ring: "ring-amber-100 dark:ring-amber-900", bg: "bg-amber-50 dark:bg-amber-900/30", text: "text-amber-600 dark:text-amber-400", border: "border-t-amber-500" },
+  rose: { icon: "text-rose-500", ring: "ring-rose-100 dark:ring-rose-900", bg: "bg-rose-50 dark:bg-rose-900/30", text: "text-rose-600 dark:text-rose-400", border: "border-t-rose-500" },
+  slate: { icon: "text-slate-500", ring: "ring-slate-100 dark:ring-slate-900", bg: "bg-slate-50 dark:bg-slate-900/30", text: "text-slate-600 dark:text-slate-400", border: "border-t-slate-500" },
 };
 
-const KPICard: React.FC<KPICardProps> = ( { title, value, icon, color, onClick } ) => {
-  const theme = colorMap[ color ] ?? colorMap[ "border-blue-500" ];
+const KPICard: React.FC<KPICardProps> = ( { title, value, icon, color, hint, onClick } ) => {
+  const theme = colorMap[ color ] ?? colorMap.indigo;
 
   return (
     <div
@@ -46,6 +48,9 @@ const KPICard: React.FC<KPICardProps> = ( { title, value, icon, color, onClick }
           <i className="fas fa-arrow-right text-[10px]" />
           Ver detalles
         </p>
+      ) }
+      { hint && !onClick && (
+        <p className="mt-3 text-xs text-gray-400 dark:text-gray-500">{ hint }</p>
       ) }
     </div>
   );

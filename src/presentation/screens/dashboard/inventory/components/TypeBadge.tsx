@@ -6,10 +6,10 @@ interface TypeBadgeProps {
 }
 
 const badgeStyle: Record<ItemType, string> = {
-  [ ItemType.SUPPLIES ]: "bg-sky-50 text-sky-700 ring-1 ring-sky-200 dark:bg-sky-900/30 dark:text-sky-400 dark:ring-sky-800",
-  [ ItemType.MACHINERY ]: "bg-violet-50 text-violet-700 ring-1 ring-violet-200 dark:bg-violet-900/30 dark:text-violet-400 dark:ring-violet-800",
-  [ ItemType.TOOL ]: "bg-orange-50 text-orange-700 ring-1 ring-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:ring-orange-800",
-  [ ItemType.MATERIAL ]: "bg-teal-50 text-teal-700 ring-1 ring-teal-200 dark:bg-teal-900/30 dark:text-teal-400 dark:ring-teal-800",
+  [ ItemType.SUPPLIES ]: "bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-300 dark:ring-indigo-800",
+  [ ItemType.MACHINERY ]: "bg-slate-100 text-slate-700 ring-1 ring-slate-200 dark:bg-slate-700/40 dark:text-slate-300 dark:ring-slate-600",
+  [ ItemType.TOOL ]: "bg-amber-50 text-amber-700 ring-1 ring-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:ring-amber-800",
+  [ ItemType.MATERIAL ]: "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:ring-emerald-800",
 };
 
 const badgeIcon: Record<ItemType, string> = {

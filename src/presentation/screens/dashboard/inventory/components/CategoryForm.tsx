@@ -1,5 +1,9 @@
 import React, { useState } from "react";
 import { Category } from "../../../../../store/inventoryStore";
+import {
+  sanitizeCategoryDescription,
+  sanitizeCategoryName,
+} from "../../../../../utils/inventoryCategory";
 
 interface CategoryFormProps {
   category?: Partial<Category>;
@@ -25,6 +29,13 @@ const CategoryForm: React.FC<CategoryFormProps> = ({
     ...category,
   });
 
+  const sanitizeCategoryData = (data: Partial<Category>): Partial<Category> => ({
+    ...data,
+    name: sanitizeCategoryName(data.name || ""),
+    description: sanitizeCategoryDescription(data.description),
+    parentId: (data.parentId || "").trim(),
+  });
+
   // Manejar cambio de campos
   const handleChange = (
     e: React.ChangeEvent<
@@ -43,8 +54,8 @@ const CategoryForm: React.FC<CategoryFormProps> = ({
   // Validar formulario
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
-
-    if (!formData.name?.trim()) {
+    const sanitizedName = sanitizeCategoryName(formData.name || "");
+    if (!sanitizedName) {
       newErrors.name = "El nombre es obligatorio";
     }
 
@@ -56,17 +67,15 @@ const CategoryForm: React.FC<CategoryFormProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    console.log("Formulario enviado", formData);
 
+    const sanitizedData = sanitizeCategoryData(formData);
+    setFormData((prev) => ({ ...prev, ...sanitizedData }));
     if (validateForm()) {
-      console.log("Formulario válido, llamando a onSubmit");
       try {
-        onSubmit(formData);
+        onSubmit(sanitizedData);
       } catch (error) {
         console.error("Error al enviar formulario:", error);
       }
-    } else {
-      console.log("Formulario inválido", errors);
     }
   };
 
@@ -74,21 +83,17 @@ const CategoryForm: React.FC<CategoryFormProps> = ({
   const handleSaveClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    console.log("Botón guardar clickeado directamente");
 
+    const sanitizedData = sanitizeCategoryData(formData);
+    setFormData((prev) => ({ ...prev, ...sanitizedData }));
     if (validateForm()) {
-      console.log("Formulario válido (clic directo), llamando a onSubmit");
       try {
-        onSubmit(formData);
+        onSubmit(sanitizedData);
       } catch (error) {
         console.error("Error al enviar formulario (clic directo):", error);
       }
-    } else {
-      console.log("Formulario inválido (clic directo)", errors);
     }
   };
-
-  console.log("Renderizando CategoryForm", { formData, loading });
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">

@@ -1,7 +1,8 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import useInventoryStore from "../../../../store/inventoryStore";
 import InventoryTable from "./components/InventoryTable";
 import { useNavigate, Link, useLocation } from "react-router-dom";
+import Modal from "../../../../components/Modal";
 
 const InventoryAlerts: React.FC = () => {
   const {
@@ -16,6 +17,14 @@ const InventoryAlerts: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const lowStockItems = stockAlerts.length;
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [selectedDeleteId, setSelectedDeleteId] = useState<string | null>(null);
+  const [submitLoading, setSubmitLoading] = useState(false);
+
+  const selectedDeleteItem = useMemo(
+    () => stockAlerts.find((item) => item.id === selectedDeleteId) || null,
+    [selectedDeleteId, stockAlerts]
+  );
 
   useEffect(() => {
     fetchItems();
@@ -25,6 +34,15 @@ const InventoryAlerts: React.FC = () => {
 
   const handleViewItem = (id: string) => {
     navigate(`/dashboard/inventory/item/${id}`);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!selectedDeleteId) return;
+    setSubmitLoading(true);
+    await deleteItem(selectedDeleteId);
+    setSubmitLoading(false);
+    setIsDeleteModalOpen(false);
+    setSelectedDeleteId(null);
   };
 
   return (
@@ -127,20 +145,54 @@ const InventoryAlerts: React.FC = () => {
           loading={loading}
           onEdit={(item) => handleViewItem(item.id)}
           onDelete={(id) => {
-            // Confirmación adicional para eliminar
-            if (
-              window.confirm(
-                "¿Estás seguro de eliminar este ítem con stock bajo?"
-              )
-            ) {
-              deleteItem(id);
-            }
+            setSelectedDeleteId(id);
+            setIsDeleteModalOpen(true);
           }}
           onChangeStatus={changeItemStatus}
           onAddStock={(id) => handleViewItem(id)}
           onConsumeStock={(id) => handleViewItem(id)}
         />
       </div>
+
+      <Modal
+        title="Confirmar eliminación"
+        isOpen={isDeleteModalOpen}
+        onClose={() => {
+          setIsDeleteModalOpen(false);
+          setSelectedDeleteId(null);
+        }}
+        size="sm"
+      >
+        <div className="p-6">
+          <p className="text-center text-base text-gray-800 dark:text-white mb-2">
+            ¿Eliminar el ítem{ " " }
+            <span className="font-semibold">{selectedDeleteItem?.name || "seleccionado"}</span>?
+          </p>
+          <p className="text-center text-sm text-gray-500 dark:text-gray-400 mb-6">
+            Esta acción no se puede deshacer si no tiene movimientos asociados.
+          </p>
+          <div className="flex justify-center gap-3">
+            <button
+              type="button"
+              onClick={() => {
+                setIsDeleteModalOpen(false);
+                setSelectedDeleteId(null);
+              }}
+              className="px-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 text-sm font-medium"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              onClick={handleConfirmDelete}
+              disabled={submitLoading}
+              className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-semibold disabled:opacity-60"
+            >
+              {submitLoading ? "Eliminando..." : "Eliminar"}
+            </button>
+          </div>
+        </div>
+      </Modal>
 
       {stockAlerts.length === 0 && !loading && (
         <div className="text-center py-8 bg-white dark:bg-gray-800 rounded-lg shadow-lg mt-6">

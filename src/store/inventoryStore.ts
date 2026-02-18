@@ -21,6 +21,12 @@ import {
 } from "firebase/storage";
 import toast from "react-hot-toast";
 import { writeAuditLog } from "../services/auditService";
+import {
+  hasDuplicateCategoryName,
+  normalizeCategoryName,
+  sanitizeCategoryDescription,
+  sanitizeCategoryName,
+} from "../utils/inventoryCategory";
 
 // Tipos de item
 export enum ItemType {
@@ -44,6 +50,7 @@ export interface Category {
   name: string;
   description?: string;
   parentId?: string; // Para subcategorías
+  normalizedName?: string;
 }
 
 // Estructura para los items de inventario
@@ -329,15 +336,12 @@ const useInventoryStore = create<InventoryStore>()((set, get) => ({
         firestoreItem.expirationDate = null;
 
       // Crear el documento primero para obtener el ID
-      console.log("Creando documento de inventario...");
       const docRef = await addDoc(itemsRef, firestoreItem);
       const itemId = docRef.id;
-      console.log("Item guardado con ID:", itemId);
 
       // Si hay archivos de imagen, los subimos a Storage
       const imageUrls: string[] = [];
       if (item.images && item.images.length > 0) {
-        console.log(`Subiendo ${item.images.length} imágenes al Storage...`);
         const storage = getStorage();
 
         try {
@@ -361,7 +365,6 @@ const useInventoryStore = create<InventoryStore>()((set, get) => ({
 
               // Obtener la URL pública
               const downloadUrl = await getDownloadURL(imageRef);
-              console.log(`Imagen ${index} subida. URL:`, downloadUrl);
               return downloadUrl;
             }
 
@@ -400,7 +403,6 @@ const useInventoryStore = create<InventoryStore>()((set, get) => ({
 
       // Actualizar el documento con las URLs de las imágenes
       if (imageUrls.length > 0) {
-        console.log("Actualizando documento con URLs de imágenes:", imageUrls);
         const itemRef = doc(itemsRef, itemId);
         await updateDoc(itemRef, {
           images: imageUrls,
@@ -542,7 +544,6 @@ const useInventoryStore = create<InventoryStore>()((set, get) => ({
 
         // Subir nuevas imágenes si las hay
         if (newImages.length > 0) {
-          console.log(`Subiendo ${newImages.length} imágenes nuevas...`);
           const storage = getStorage();
 
           try {
@@ -900,12 +901,32 @@ const useInventoryStore = create<InventoryStore>()((set, get) => ({
         `clients/${clientId}/condominiums/${condominiumId}/inventory_categories`
       );
 
-      console.log(
-        "Intentando guardar categoría en:",
-        `clients/${clientId}/condominiums/${condominiumId}/inventory_categories`
+      const sanitizedName = sanitizeCategoryName(category.name || "");
+      const normalizedName = normalizeCategoryName(sanitizedName);
+      const sanitizedDescription = sanitizeCategoryDescription(
+        category.description
       );
-      const docRef = await addDoc(categoriesRef, category);
-      const addedCategory = { id: docRef.id, ...category };
+      const sanitizedParentId = (category.parentId || "").trim();
+
+      if (!sanitizedName) {
+        throw new Error("El nombre de la categoría es obligatorio");
+      }
+
+      if (
+        hasDuplicateCategoryName(get().categories, normalizedName)
+      ) {
+        throw new Error("Ya existe una categoría con un nombre similar");
+      }
+
+      const payload: Omit<Category, "id"> = {
+        name: sanitizedName,
+        description: sanitizedDescription,
+        parentId: sanitizedParentId || "",
+        normalizedName,
+      };
+
+      const docRef = await addDoc(categoriesRef, payload);
+      const addedCategory = { id: docRef.id, ...payload };
 
       set((state) => ({
         categories: [...state.categories, addedCategory],
@@ -916,18 +937,20 @@ const useInventoryStore = create<InventoryStore>()((set, get) => ({
         entityType: "inventory_category",
         entityId: docRef.id,
         action: "create",
-        summary: `Se creó la categoría ${category.name}`,
+        summary: `Se creó la categoría ${payload.name}`,
         after: {
-          name: category.name,
-          description: category.description || "",
-          parentId: category.parentId || "",
+          name: payload.name,
+          description: payload.description || "",
+          parentId: payload.parentId || "",
         },
       });
 
       return docRef.id;
     } catch (error) {
       console.error("Error en addCategory:", error);
-      set({ error: (error as Error).message });
+      const message = (error as Error).message;
+      toast.error(message || "No se pudo crear la categoría");
+      set({ error: message });
       return null;
     } finally {
       set({ loading: false });
@@ -956,13 +979,47 @@ const useInventoryStore = create<InventoryStore>()((set, get) => ({
         `clients/${clientId}/condominiums/${condominiumId}/inventory_categories`
       );
       const categoryRef = doc(categoriesRef, id);
+      const oldCategory = get().categories.find((category) => category.id === id);
 
-      await updateDoc(categoryRef, updates);
+      if (!oldCategory) {
+        throw new Error("Categoría no encontrada");
+      }
+
+      const sanitizedUpdates: Partial<Category> = {};
+
+      if (Object.prototype.hasOwnProperty.call(updates, "name")) {
+        const sanitizedName = sanitizeCategoryName(updates.name || "");
+        if (!sanitizedName) {
+          throw new Error("El nombre de la categoría es obligatorio");
+        }
+        const normalizedName = normalizeCategoryName(sanitizedName);
+        if (
+          hasDuplicateCategoryName(get().categories, normalizedName, id)
+        ) {
+          throw new Error("Ya existe una categoría con un nombre similar");
+        }
+        sanitizedUpdates.name = sanitizedName;
+        sanitizedUpdates.normalizedName = normalizedName;
+      }
+
+      if (Object.prototype.hasOwnProperty.call(updates, "description")) {
+        sanitizedUpdates.description = sanitizeCategoryDescription(
+          updates.description
+        );
+      }
+
+      if (Object.prototype.hasOwnProperty.call(updates, "parentId")) {
+        sanitizedUpdates.parentId = (updates.parentId || "").trim();
+      }
+
+      if (Object.keys(sanitizedUpdates).length === 0) {
+        return true;
+      }
+
+      await updateDoc(categoryRef, sanitizedUpdates);
 
       // Si se actualiza el nombre de la categoría, actualizamos todos los items que la usan
-      if (updates.name) {
-        const oldCategory = get().categories.find((cat) => cat.id === id);
-        if (oldCategory && oldCategory.name !== updates.name) {
+      if (sanitizedUpdates.name && oldCategory.name !== sanitizedUpdates.name) {
           const itemsRef = collection(
             db,
             `clients/${clientId}/condominiums/${condominiumId}/inventory_items`
@@ -974,7 +1031,7 @@ const useInventoryStore = create<InventoryStore>()((set, get) => ({
           const batch = itemsSnapshot.docs.map(async (itemDoc) => {
             const itemRef = doc(itemsRef, itemDoc.id);
             await updateDoc(itemRef, {
-              categoryName: updates.name,
+              categoryName: sanitizedUpdates.name,
               updatedAt: new Date(),
               updatedBy: user.uid,
             });
@@ -988,7 +1045,7 @@ const useInventoryStore = create<InventoryStore>()((set, get) => ({
               item.category === id
                 ? {
                     ...item,
-                    categoryName: updates.name as string,
+                    categoryName: sanitizedUpdates.name as string,
                     updatedAt: new Date(),
                   }
                 : item
@@ -997,46 +1054,50 @@ const useInventoryStore = create<InventoryStore>()((set, get) => ({
               item.category === id
                 ? {
                     ...item,
-                    categoryName: updates.name as string,
+                    categoryName: sanitizedUpdates.name as string,
                     updatedAt: new Date(),
                   }
                 : item
             ),
           }));
-        }
       }
 
       set((state) => ({
         categories: state.categories.map((category) =>
-          category.id === id ? { ...category, ...updates } : category
+          category.id === id ? { ...category, ...sanitizedUpdates } : category
         ),
       }));
 
-      const oldCategory = get().categories.find((category) => category.id === id);
       await writeAuditLog({
         module: "Inventario",
         entityType: "inventory_category",
         entityId: id,
         action: "update",
-        summary: `Se actualizó la categoría ${updates.name || oldCategory?.name || id}`,
-        before: oldCategory
-          ? {
-              name: oldCategory.name,
-              description: oldCategory.description || "",
-              parentId: oldCategory.parentId || "",
-            }
-          : null,
+        summary: `Se actualizó la categoría ${sanitizedUpdates.name || oldCategory.name || id}`,
+        before: {
+          name: oldCategory.name,
+          description: oldCategory.description || "",
+          parentId: oldCategory.parentId || "",
+        },
         after: {
-          name: updates.name || oldCategory?.name || "",
-          description: updates.description || oldCategory?.description || "",
-          parentId: updates.parentId || oldCategory?.parentId || "",
+          name: sanitizedUpdates.name || oldCategory.name || "",
+          description:
+            typeof sanitizedUpdates.description === "string"
+              ? sanitizedUpdates.description
+              : oldCategory.description || "",
+          parentId:
+            typeof sanitizedUpdates.parentId === "string"
+              ? sanitizedUpdates.parentId
+              : oldCategory.parentId || "",
         },
       });
 
       return true;
     } catch (error) {
       console.error("Error al actualizar categoría:", error);
-      set({ error: (error as Error).message });
+      const message = (error as Error).message;
+      toast.error(message || "No se pudo actualizar la categoría");
+      set({ error: message });
       return false;
     } finally {
       set({ loading: false });
@@ -1137,8 +1198,6 @@ const useInventoryStore = create<InventoryStore>()((set, get) => ({
         `clients/${clientId}/condominiums/${condominiumId}/inventory_movements`
       );
 
-      console.log("Buscando movimientos para itemId:", itemId);
-
       let q = query(movementsRef, orderBy("createdAt", "desc"));
 
       // Si se proporciona un ID de ítem, filtramos por ese ítem
@@ -1151,11 +1210,8 @@ const useInventoryStore = create<InventoryStore>()((set, get) => ({
       }
 
       const snapshot = await getDocs(q);
-      console.log(`Se encontraron ${snapshot.docs.length} movimientos`);
-
       const movements = snapshot.docs.map((doc) => {
         const data = doc.data();
-        console.log("Datos del movimiento:", data);
         return {
           id: doc.id,
           ...data,
@@ -1163,7 +1219,6 @@ const useInventoryStore = create<InventoryStore>()((set, get) => ({
         };
       }) as InventoryMovement[];
 
-      console.log("Movimientos procesados:", movements);
       set({ movements });
     } catch (error) {
       console.error("Error al cargar movimientos:", error);

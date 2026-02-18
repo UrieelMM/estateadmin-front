@@ -1,15 +1,17 @@
-import React, { useState, useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { InventoryItem, ItemStatus } from "../../../../../store/inventoryStore";
 import TypeBadge from "./TypeBadge";
 import StatusBadge from "./StatusBadge";
 import { formatCurrencyInventory } from "../../../../../utils/curreyncy";
+import { createPortal } from "react-dom";
 
 interface Column {
   id: string;
   label: string;
   sortable: boolean;
   render: ( item: InventoryItem ) => React.ReactNode;
+  align?: "left" | "center";
 }
 
 interface InventoryTableProps {
@@ -35,6 +37,37 @@ const InventoryTable: React.FC<InventoryTableProps> = ( {
   const [ itemsPerPage, setItemsPerPage ] = useState( 10 );
   const [ sortField, setSortField ] = useState<string>( "name" );
   const [ sortDirection, setSortDirection ] = useState<"asc" | "desc">( "asc" );
+  const [ actionMenu, setActionMenu ] = useState<{
+    itemId: string;
+    top: number;
+    left: number;
+    width: number;
+  } | null>( null );
+
+  useEffect( () => {
+    const handleOutsideClick = ( event: MouseEvent ) => {
+      const target = event.target as HTMLElement | null;
+      if ( !target ) return;
+      if ( target.closest( "[data-action-menu-root='true']" ) ) return;
+      setActionMenu( null );
+    };
+    const handleEscape = ( event: KeyboardEvent ) => {
+      if ( event.key === "Escape" ) {
+        setActionMenu( null );
+      }
+    };
+    const handleScroll = () => {
+      setActionMenu( null );
+    };
+    document.addEventListener( "click", handleOutsideClick );
+    document.addEventListener( "keydown", handleEscape );
+    window.addEventListener( "scroll", handleScroll, true );
+    return () => {
+      document.removeEventListener( "click", handleOutsideClick );
+      document.removeEventListener( "keydown", handleEscape );
+      window.removeEventListener( "scroll", handleScroll, true );
+    };
+  }, [] );
 
   // Definición de columnas
   const columns: Column[] = useMemo(
@@ -44,7 +77,12 @@ const InventoryTable: React.FC<InventoryTableProps> = ( {
         label: "Nombre",
         sortable: true,
         render: ( item ) => (
-          <span className="font-semibold text-gray-800 dark:text-gray-100">{ item.name }</span>
+          <Link
+            to={ `/dashboard/inventory/item/${ item.id }` }
+            className="font-semibold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300"
+          >
+            { item.name }
+          </Link>
         ),
       },
       {
@@ -124,6 +162,45 @@ const InventoryTable: React.FC<InventoryTableProps> = ( {
         sortable: true,
         render: ( item ) => <StatusBadge status={ item.status } />,
       },
+      {
+        id: "actions",
+        label: "Acciones",
+        sortable: false,
+        align: "center",
+        render: ( item ) => (
+          <div
+            className="relative inline-flex justify-center"
+            data-action-menu-root="true"
+          >
+            <button
+              type="button"
+              onClick={ ( event ) => {
+                event.stopPropagation();
+                const button = event.currentTarget as HTMLButtonElement;
+                const rect = button.getBoundingClientRect();
+                const menuWidth = Math.min( 220, Math.max( 180, window.innerWidth - 16 ) );
+                const menuHeight = 220;
+                const top =
+                  rect.bottom + menuHeight > window.innerHeight
+                    ? Math.max( 8, rect.top - menuHeight )
+                    : rect.bottom + 6;
+                const idealLeft = rect.right - menuWidth;
+                const maxLeft = Math.max( 8, window.innerWidth - menuWidth - 8 );
+                const left = Math.min( Math.max( 8, idealLeft ), maxLeft );
+                setActionMenu( ( current ) =>
+                  current?.itemId === item.id
+                    ? null
+                    : { itemId: item.id, top, left, width: menuWidth }
+                );
+              } }
+              className="inline-flex items-center justify-center h-8 w-8 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700/70"
+              title="Abrir acciones"
+            >
+              <span className="text-lg leading-none">⋯</span>
+            </button>
+          </div>
+        ),
+      },
     ],
     [ onEdit, onDelete, onChangeStatus, onAddStock, onConsumeStock ]
   );
@@ -159,6 +236,16 @@ const InventoryTable: React.FC<InventoryTableProps> = ( {
 
   const totalPages = Math.ceil( items.length / itemsPerPage );
 
+  useEffect( () => {
+    if ( totalPages === 0 && currentPage !== 1 ) {
+      setCurrentPage( 1 );
+      return;
+    }
+    if ( totalPages > 0 && currentPage > totalPages ) {
+      setCurrentPage( totalPages );
+    }
+  }, [ currentPage, totalPages ] );
+
   // Manejar click en cabecera para ordenar
   const handleSort = ( fieldId: string ) => {
     const column = columns.find( ( col ) => col.id === fieldId );
@@ -190,11 +277,11 @@ const InventoryTable: React.FC<InventoryTableProps> = ( {
               <th
                 key={ column.id }
                 scope="col"
-                className={ `px-5 py-3.5 text-xs font-semibold uppercase tracking-wider first:rounded-tl-xl last:rounded-tr-xl ${ column.sortable ? "cursor-pointer hover:bg-white/10 transition-colors select-none" : ""
+                className={ `px-5 py-3.5 text-xs font-semibold uppercase tracking-wider first:rounded-tl-xl last:rounded-tr-xl ${ column.align === "center" ? "text-center" : "text-left" } ${ column.sortable ? "cursor-pointer hover:bg-white/10 transition-colors select-none" : ""
                   }` }
                 onClick={ () => handleSort( column.id ) }
               >
-                <div className="flex items-center gap-1.5">
+                <div className={ `flex items-center gap-1.5 ${ column.align === "center" ? "justify-center" : "" }` }>
                   { column.label }
                   { column.sortable && (
                     <span className="opacity-70">
@@ -218,15 +305,16 @@ const InventoryTable: React.FC<InventoryTableProps> = ( {
                 className={ `group transition-colors duration-100 ${ idx % 2 === 0
                     ? "bg-white dark:bg-gray-800"
                     : "bg-gray-50/60 dark:bg-gray-800/60"
-                  } hover:bg-indigo-50/60 dark:hover:bg-indigo-900/20 cursor-pointer` }
+                  } hover:bg-indigo-50/60 dark:hover:bg-indigo-900/20` }
               >
-                <Link to={ `/dashboard/inventory/item/${ item.id }` } className="contents">
-                  { columns.map( ( column ) => (
-                    <td key={ `${ item.id }-${ column.id }` } className="px-5 py-3.5">
-                      { column.render( item ) }
-                    </td>
-                  ) ) }
-                </Link>
+                { columns.map( ( column ) => (
+                  <td
+                    key={ `${ item.id }-${ column.id }` }
+                    className={ `px-5 py-3.5 ${ column.align === "center" ? "text-center" : "" }` }
+                  >
+                    { column.render( item ) }
+                  </td>
+                ) ) }
               </tr>
             ) )
           ) : (
@@ -244,6 +332,87 @@ const InventoryTable: React.FC<InventoryTableProps> = ( {
           ) }
         </tbody>
       </table>
+
+      { actionMenu &&
+        createPortal(
+          <div
+            className="fixed z-[120] rounded-xl border border-gray-200 bg-white shadow-xl dark:border-gray-700 dark:bg-gray-800 overflow-hidden"
+            style={ { top: actionMenu.top, left: actionMenu.left, width: actionMenu.width } }
+            data-action-menu-root="true"
+          >
+            { ( () => {
+              const menuItem = items.find( ( entry ) => entry.id === actionMenu.itemId );
+              if ( !menuItem ) return null;
+              return (
+                <>
+                  <button
+                    type="button"
+                    onClick={ () => {
+                      onAddStock( menuItem.id );
+                      setActionMenu( null );
+                    } }
+                    className="w-full px-3 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-700/60"
+                  >
+                    <i className="fas fa-plus mr-2 text-emerald-500" />
+                    Añadir stock
+                  </button>
+                  <button
+                    type="button"
+                    onClick={ () => {
+                      onConsumeStock( menuItem.id );
+                      setActionMenu( null );
+                    } }
+                    className="w-full px-3 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-700/60"
+                  >
+                    <i className="fas fa-minus mr-2 text-amber-500" />
+                    Consumir stock
+                  </button>
+                  <button
+                    type="button"
+                    onClick={ () => {
+                      onEdit( menuItem );
+                      setActionMenu( null );
+                    } }
+                    className="w-full px-3 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-700/60"
+                  >
+                    <i className="fas fa-pen mr-2 text-indigo-500" />
+                    Editar ítem
+                  </button>
+                  <button
+                    type="button"
+                    onClick={ () => {
+                      onChangeStatus(
+                        menuItem.id,
+                        menuItem.status === ItemStatus.ACTIVE
+                          ? ItemStatus.INACTIVE
+                          : ItemStatus.ACTIVE
+                      );
+                      setActionMenu( null );
+                    } }
+                    className="w-full px-3 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-700/60"
+                  >
+                    <i className="fas fa-power-off mr-2 text-slate-500" />
+                    { menuItem.status === ItemStatus.ACTIVE
+                      ? "Marcar como inactivo"
+                      : "Marcar como activo" }
+                  </button>
+                  <button
+                    type="button"
+                    onClick={ () => {
+                      onDelete( menuItem.id );
+                      setActionMenu( null );
+                    } }
+                    className="w-full px-3 py-2.5 text-left text-sm text-rose-600 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-900/20"
+                  >
+                    <i className="fas fa-trash mr-2" />
+                    Eliminar ítem
+                  </button>
+                </>
+              );
+            } )() }
+          </div>,
+          document.body
+        ) }
 
       {/* Paginación */ }
       { totalPages > 1 && (
