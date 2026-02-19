@@ -25,6 +25,20 @@ import { getAuth, getIdTokenResult } from "firebase/auth";
 import { db, storage } from "../firebase/firebase";
 import { centsToPesos } from "../utils/curreyncy";
 import { writeAuditLog } from "../services/auditService";
+import { emitDomainNotificationEvent } from "../services/notificationCenterService";
+
+const PERSONAL_SIGNAL_WINDOW_MS = 6 * 60 * 60 * 1000;
+const personalSignalThrottle = new Map<string, number>();
+
+const shouldEmitPersonalSignal = (key: string): boolean => {
+  const now = Date.now();
+  const previous = personalSignalThrottle.get(key) || 0;
+  if (now - previous < PERSONAL_SIGNAL_WINDOW_MS) {
+    return false;
+  }
+  personalSignalThrottle.set(key, now);
+  return true;
+};
 
 // Helper function to safely convert date strings to Date objects
 const safeDate = (dateValue: any): Date => {
@@ -532,6 +546,56 @@ export const usePersonalAdministrationStore =
           } as PersonalProfile);
         });
 
+        const now = new Date();
+        const cutoffDate = new Date();
+        cutoffDate.setDate(cutoffDate.getDate() + 30);
+
+        employees.forEach((employee) => {
+          employee.documents.forEach((employeeDocument) => {
+            if (!employeeDocument.expirationDate) return;
+            if (
+              employeeDocument.expirationDate < now ||
+              employeeDocument.expirationDate > cutoffDate
+            ) {
+              return;
+            }
+
+            const daysToExpire = Math.ceil(
+              (employeeDocument.expirationDate.getTime() - now.getTime()) /
+                (1000 * 60 * 60 * 24)
+            );
+            const expirationKey = employeeDocument.expirationDate
+              .toISOString()
+              .slice(0, 10);
+            const dedupeKey = `staff:document_expiring:${employee.id}:${employeeDocument.id}:${expirationKey}`;
+
+            if (!shouldEmitPersonalSignal(dedupeKey)) return;
+
+            const employeeName = `${employee.personalInfo.firstName} ${employee.personalInfo.lastName}`.trim();
+            void emitDomainNotificationEvent({
+              eventType: "staff.document_expiring",
+              module: "staff",
+              priority: daysToExpire <= 7 ? "high" : "medium",
+              dedupeKey,
+              entityId: employee.id,
+              entityType: "employee_document",
+              title: "Documento laboral próximo a vencer",
+              body: `${employeeDocument.name} de ${
+                employeeName || employee.id
+              } vence en ${daysToExpire} día(s).`,
+              metadata: {
+                employeeId: employee.id,
+                employeeName,
+                documentId: employeeDocument.id,
+                documentName: employeeDocument.name,
+                documentType: employeeDocument.type,
+                expirationDate: employeeDocument.expirationDate.toISOString(),
+                daysToExpire,
+              },
+            });
+          });
+        });
+
         set({ employees, loading: false });
       } catch (error) {
         console.error("Error fetching employees:", error);
@@ -578,6 +642,51 @@ export const usePersonalAdministrationStore =
               ? safeFirestoreDate(data.checkOutTime)
               : undefined,
             notes: data.notes || "",
+          });
+        });
+
+        const now = new Date();
+        shifts.forEach((shift) => {
+          if (!shift.checkInTime || shift.checkOutTime) return;
+          const [hour, minute] = (shift.endTime || "")
+            .split(":")
+            .map((value) => Number(value));
+          if (!Number.isFinite(hour) || !Number.isFinite(minute)) return;
+
+          const shiftDate = new Date(shift.date);
+          shiftDate.setHours(hour, minute, 0, 0);
+          const graceLimit = new Date(shiftDate.getTime() + 60 * 60 * 1000);
+          if (now <= graceLimit) return;
+
+          const dedupeDayKey = shiftDate.toISOString().slice(0, 10);
+          const dedupeKey = `staff:shift_missing_checkout:${shift.id}:${dedupeDayKey}`;
+          if (!shouldEmitPersonalSignal(dedupeKey)) return;
+
+          const employee = get().employees.find((item) => item.id === shift.employeeId);
+          const employeeName = employee
+            ? `${employee.personalInfo.firstName} ${employee.personalInfo.lastName}`.trim()
+            : shift.employeeId;
+
+          void emitDomainNotificationEvent({
+            eventType: "staff.shift_missing_checkout",
+            module: "staff",
+            priority: "high",
+            dedupeKey,
+            entityId: shift.id,
+            entityType: "work_shift",
+            title: "Empleado con entrada sin salida",
+            body: `El turno de ${
+              employeeName || shift.employeeId
+            } no registra check-out.`,
+            metadata: {
+              shiftId: shift.id,
+              employeeId: shift.employeeId,
+              employeeName,
+              date: shift.date instanceof Date ? shift.date.toISOString() : String(shift.date),
+              startTime: shift.startTime,
+              endTime: shift.endTime,
+              status: shift.status,
+            },
           });
         });
 
@@ -822,6 +931,8 @@ export const usePersonalAdministrationStore =
     updateEmployee: async (id, updates, photoFile) => {
       try {
         set({ loading: true, error: null });
+        const previousEmployee =
+          get().employees.find((emp) => emp.id === id) || null;
 
         const auth = getAuth();
         const user = auth.currentUser;
@@ -974,6 +1085,42 @@ export const usePersonalAdministrationStore =
           },
           metadata: { operation: "update_employee" },
         });
+
+        const previousStatus = previousEmployee?.employmentInfo?.status;
+        const nextStatus = updates.employmentInfo?.status;
+        const movedToAlertStatus =
+          nextStatus &&
+          nextStatus !== previousStatus &&
+          (nextStatus === "inactivo" || nextStatus === "suspendido");
+
+        if (movedToAlertStatus) {
+          const employeeName = `${
+            updates.personalInfo?.firstName ||
+            previousEmployee?.personalInfo?.firstName ||
+            ""
+          } ${
+            updates.personalInfo?.lastName ||
+            previousEmployee?.personalInfo?.lastName ||
+            ""
+          }`.trim();
+
+          void emitDomainNotificationEvent({
+            eventType: "staff.employee_status_alert",
+            module: "staff",
+            priority: nextStatus === "suspendido" ? "high" : "medium",
+            dedupeKey: `staff:employee:${id}:status:${nextStatus}`,
+            entityId: id,
+            entityType: "employee",
+            title: "Cambio de estatus en personal",
+            body: `El empleado ${employeeName || id.slice(0, 8)} cambió a estado ${nextStatus}.`,
+            metadata: {
+              employeeId: id,
+              employeeName,
+              previousStatus: previousStatus || "",
+              currentStatus: nextStatus,
+            },
+          });
+        }
       } catch (error) {
         console.error("Error updating employee:", error);
         set({ error: "Error al actualizar empleado", loading: false });

@@ -1,9 +1,10 @@
 // NotificationBell.tsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import useNotificationStore, {
   UserNotification,
 } from "../../../../store/useNotificationsStore";
 import { BellIcon } from "@heroicons/react/16/solid";
+import { DocumentTextIcon } from "@heroicons/react/24/outline";
 import { motion, AnimatePresence } from "framer-motion";
 import * as Sentry from "@sentry/react";
 
@@ -20,10 +21,11 @@ const itemVariants = {
 };
 
 const NotificationBell: React.FC = () => {
-  const { notifications, fetchNotifications, markAsRead } =
+  const { notifications, fetchNotifications, markAllAsRead } =
     useNotificationStore();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const containerRef = useRef<HTMLDivElement | null>(null);
 
   // Obtiene las notificaciones al montar el componente
   useEffect(() => {
@@ -46,25 +48,88 @@ const NotificationBell: React.FC = () => {
 
   // Al abrir el dropdown, marca como leídas todas las notificaciones no leídas
   useEffect(() => {
-    const markAllAsRead = async () => {
-      if (dropdownOpen && notifications.length > 0) {
-        // Marcamos notificaciones una por una
-        for (const notif of notifications) {
-          if (!notif.read) {
-            await markAsRead(notif.id);
-          }
-        }
+    if (!dropdownOpen || notifications.length === 0) return;
+    void markAllAsRead();
+  }, [dropdownOpen, notifications.length, markAllAsRead]);
+
+  useEffect(() => {
+    if (!dropdownOpen) return;
+    void fetchNotifications();
+  }, [dropdownOpen, fetchNotifications]);
+
+  useEffect(() => {
+    const handleWindowFocus = () => {
+      void fetchNotifications();
+    };
+    window.addEventListener("focus", handleWindowFocus);
+    return () => window.removeEventListener("focus", handleWindowFocus);
+  }, [fetchNotifications]);
+
+  useEffect(() => {
+    if (!dropdownOpen) return;
+
+    const handleOutsideClick = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (containerRef.current && !containerRef.current.contains(target)) {
+        setDropdownOpen(false);
       }
     };
 
-    markAllAsRead();
-  }, [dropdownOpen, notifications, markAsRead]);
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, [dropdownOpen]);
 
-  // Mostrar solo las últimas 5 notificaciones
-  const latestNotifications = notifications.slice(0, 5);
+  // Mostrar solo las últimas 15 notificaciones
+  const latestNotifications = notifications.slice(0, 15);
   const unreadCount = notifications.filter(
     (notif: UserNotification) => !notif.read
   ).length;
+
+  const getPriorityStyles = (priority?: string) => {
+    switch (priority) {
+      case "critical":
+        return "bg-indigo-700 text-white";
+      case "high":
+        return "bg-indigo-100 text-indigo-700 dark:bg-indigo-800 dark:text-indigo-100";
+      case "medium":
+        return "bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-100";
+      default:
+        return "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-100";
+    }
+  };
+
+  const getPriorityLabel = (priority?: string) => {
+    switch (priority) {
+      case "critical":
+        return "Crítica";
+      case "high":
+        return "Alta";
+      case "medium":
+        return "Media";
+      case "low":
+      default:
+        return "Baja";
+    }
+  };
+
+  const getModuleLabel = (module?: string) => {
+    switch (module) {
+      case "inventory":
+        return "Inventario";
+      case "maintenance":
+        return "Mantenimiento";
+      case "staff":
+        return "Personal";
+      case "projects":
+        return "Proyectos";
+      case "finance":
+        return "Finanzas";
+      case "system":
+        return "Sistema";
+      default:
+        return "Sistema";
+    }
+  };
 
   // Función para formatear el monto en el body
   // Se asume que el body viene con el formato: "Monto: <amount>. Vence: <dueDate>. <optionalMessage>"
@@ -86,8 +151,11 @@ const NotificationBell: React.FC = () => {
     return body;
   };
 
+  const isInvoicePendingNotification = (notif: UserNotification) =>
+    notif.eventType === "finance.invoice_pending_payment";
+
   return (
-    <div className="relative">
+    <div className="relative" ref={containerRef}>
       <button
         onClick={() => setDropdownOpen(!dropdownOpen)}
         className="relative focus:outline-none bg-white rounded-full p-1 dark:bg-gray-800"
@@ -132,36 +200,64 @@ const NotificationBell: React.FC = () => {
                   No hay notificaciones.
                 </p>
               ) : (
-                latestNotifications.map((notif: UserNotification) => (
-                  <motion.div
-                    key={notif.id}
-                    variants={itemVariants}
-                    initial="hidden"
-                    animate="visible"
-                    exit="exit"
-                    transition={{ duration: 0.2 }}
-                    className={`border-b border-gray-200 py-2 ${
-                      !notif.read
-                        ? "bg-indigo-50 dark:bg-indigo-900/10 rounded"
-                        : ""
-                    }`}
-                  >
-                    <h4 className="text-sm font-semibold">{notif.title}</h4>
-                    <p className="text-xs text-gray-800 dark:text-gray-100">
-                      {formatNotificationBody(notif.body)}
-                    </p>
-                    {!notif.read && (
-                      <div className="w-2 h-2 bg-indigo-500 rounded-full absolute top-2 right-2" />
-                    )}
-                  </motion.div>
-                ))
+                <div className="max-h-[390px] overflow-y-auto pr-1">
+                  {latestNotifications.map((notif: UserNotification) => (
+                    <motion.div
+                      key={notif.id}
+                      variants={itemVariants}
+                      initial="hidden"
+                      animate="visible"
+                      exit="exit"
+                      transition={{ duration: 0.2 }}
+                      className={`relative border-b border-gray-200 py-2 px-2 ${
+                        isInvoicePendingNotification(notif)
+                          ? "border-l-4 border-l-indigo-500 bg-indigo-50/80 dark:bg-indigo-900/20"
+                          : ""
+                      } ${
+                        !notif.read && !isInvoicePendingNotification(notif)
+                          ? "bg-indigo-50 dark:bg-indigo-900/10 rounded"
+                          : ""
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-1.5">
+                          {isInvoicePendingNotification(notif) ? (
+                            <DocumentTextIcon className="h-4 w-4 text-indigo-500" />
+                          ) : null}
+                          <h4 className="text-sm font-semibold">{notif.title}</h4>
+                        </div>
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${getPriorityStyles(
+                            notif.priority
+                          )}`}
+                        >
+                          {getPriorityLabel(notif.priority)}
+                        </span>
+                      </div>
+                      <p className="text-xs text-gray-800 dark:text-gray-100">
+                        {formatNotificationBody(notif.body)}
+                      </p>
+                      <p className="mt-1 text-[11px] text-gray-500 dark:text-gray-400">
+                        Módulo: {getModuleLabel(notif.module)}
+                      </p>
+                      {isInvoicePendingNotification(notif) ? (
+                        <p className="mt-1 text-[11px] font-semibold text-indigo-700 dark:text-indigo-300">
+                          Facturación pendiente
+                        </p>
+                      ) : null}
+                      {!notif.read && (
+                        <div className="w-2 h-2 bg-indigo-500 rounded-full absolute top-2 right-2" />
+                      )}
+                    </motion.div>
+                  ))}
+                </div>
               )}
             </div>
-            {notifications.length > 5 && (
+            {notifications.length > 15 && (
               <div className="border-t border-gray-200 p-2 text-center">
-                <button className="text-xs text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300">
-                  Ver todas las notificaciones
-                </button>
+                <p className="text-xs text-indigo-600 dark:text-indigo-300">
+                  Mostrando las últimas 15 notificaciones
+                </p>
               </div>
             )}
           </motion.div>

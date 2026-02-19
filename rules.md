@@ -59,8 +59,28 @@ service cloud.firestore {
       && request.resource.data.createdAt is timestamp
       && request.resource.data.updatedAt is timestamp;
     }
-    function isReconciliationCollection(collectionName) {
-      return ['paymentReconciliations', 'expenseReconciliations'].hasAny([collectionName]);
+    function isProtectedCondominiumCollection(collectionName) {
+      return [
+        'paymentReconciliations',
+        'expenseReconciliations',
+        'notificationEvents',
+        'notificationQueue'
+      ].hasAny([collectionName]);
+    }
+    function isSameClientUser(clientId, userId) {
+      return isAuthenticated()
+             && belongsToClient(clientId)
+             && request.auth.uid == userId;
+    }
+    function isSafeNotificationStateUpdate() {
+      return request.resource.data.diff(resource.data).changedKeys().hasOnly([
+        'read',
+        'readAt',
+        'archivedAt',
+        'seen',
+        'seenAt',
+        'updatedAt'
+      ]);
     }
     
     // ─── Colección de Links de Noticias y Guías (ahora lectura pública) ───
@@ -179,6 +199,28 @@ service cloud.firestore {
           allow read: if belongsToClientOrSuperAdmin(clientId);
           allow create, update: if (isAdminOrAssistant() && belongsToClient(clientId)) || isSuperAdmin();
           allow delete: if (isAdmin() && belongsToClient(clientId)) || isSuperAdmin();
+
+          // ─── Notificaciones internas por usuario ───
+          match /notifications/{notificationId} {
+            allow read: if belongsToClientOrSuperAdmin(clientId) || isSameClientUser(clientId, userId);
+            allow create: if (isAdminOrAssistant() && belongsToClient(clientId)) || isSuperAdmin();
+            allow update: if ((isAdminOrAssistant() && belongsToClient(clientId)) || isSuperAdmin())
+                          || (isSameClientUser(clientId, userId) && isSafeNotificationStateUpdate());
+            allow delete: if false;
+          }
+        }
+
+        // ─── Eventos y cola de notificaciones (base escalable) ───
+        match /notificationEvents/{eventId} {
+          allow read: if belongsToClientOrSuperAdmin(clientId);
+          allow create: if (isAdminOrAssistant() && belongsToClient(clientId)) || isSuperAdmin();
+          allow update, delete: if false;
+        }
+
+        match /notificationQueue/{queueId} {
+          allow read: if belongsToClientOrSuperAdmin(clientId);
+          allow create: if (isAdminOrAssistant() && belongsToClient(clientId)) || isSuperAdmin();
+          allow update, delete: if false;
         }
 
         // ─── QR de asistencia (lectura pública para escaneo) ───
@@ -223,9 +265,9 @@ service cloud.firestore {
         // ─── Subcolecciones genéricas de segundo nivel ───
         match /{collection}/{docId} {
           allow read:   if belongsToClientOrSuperAdmin(clientId);
-          allow create, update: if !isReconciliationCollection(collection)
+          allow create, update: if !isProtectedCondominiumCollection(collection)
                                   && ((isAdminOrAssistant() && belongsToClient(clientId)) || isSuperAdmin());
-          allow delete: if !isReconciliationCollection(collection)
+          allow delete: if !isProtectedCondominiumCollection(collection)
                          && ((isAdmin() && belongsToClient(clientId)) || isSuperAdmin());
           
           // ─── Cargos ───
@@ -247,8 +289,10 @@ service cloud.firestore {
           // ─── Otras subcolecciones de tercer nivel ───
           match /{subcollection}/{subdocId} {
             allow read:   if belongsToClientOrSuperAdmin(clientId);
-            allow create, update: if (isAdminOrAssistant() && belongsToClient(clientId)) || isSuperAdmin();
-            allow delete: if (isAdmin() && belongsToClient(clientId)) || isSuperAdmin();
+            allow create, update: if !['notifications'].hasAny([subcollection])
+                                  && ((isAdminOrAssistant() && belongsToClient(clientId)) || isSuperAdmin());
+            allow delete: if !['notifications'].hasAny([subcollection])
+                          && ((isAdmin() && belongsToClient(clientId)) || isSuperAdmin());
           }
         }
 

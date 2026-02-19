@@ -20,6 +20,7 @@ import {
 } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { useExpenseStore } from "./expenseStore";
+import { emitDomainNotificationEvent } from "../services/notificationCenterService";
 
 // Configurar moment.js para usar el idioma español
 moment.locale("es");
@@ -744,6 +745,8 @@ export const usePettyCashStore = create<PettyCashState>()((set, get) => ({
         throw new Error("La caja chica no está configurada");
       }
 
+      const previousBalance = Number(get().calculateBalance() || 0);
+
       // Si es un gasto, verificar que hay saldo suficiente
       if (data.type === PettyCashTransactionType.EXPENSE) {
         const currentBalance = get().calculateBalance();
@@ -955,6 +958,58 @@ export const usePettyCashStore = create<PettyCashState>()((set, get) => ({
 
       // Actualizar estado
       await get().fetchTransactions();
+
+      const thresholdPesos = centsToPesos(Number(config.thresholdAmount || 0));
+      const movementAmount = Number(data.amount || 0);
+      const movementDelta =
+        data.type === PettyCashTransactionType.EXPENSE
+          ? -movementAmount
+          : data.type === PettyCashTransactionType.REPLENISHMENT
+            ? movementAmount
+            : data.type === PettyCashTransactionType.ADJUSTMENT
+              ? movementAmount
+              : data.type === PettyCashTransactionType.INITIAL
+                ? movementAmount
+                : 0;
+      const nextBalance = roundTo2(previousBalance + movementDelta);
+      const crossedBelowThreshold =
+        thresholdPesos > 0 &&
+        previousBalance > thresholdPesos &&
+        nextBalance <= thresholdPesos;
+
+      if (crossedBelowThreshold) {
+        void emitDomainNotificationEvent({
+          eventType: "finance.petty_cash_low_threshold",
+          module: "finance",
+          priority: "high",
+          dedupeKey: `finance:petty_cash:low_threshold:${config.id || "active"}`,
+          entityId: config.id || "active",
+          entityType: "petty_cash_config",
+          title: "Caja chica por debajo del umbral",
+          body: `El saldo de caja chica quedó en $${nextBalance.toLocaleString(
+            "en-US",
+            {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            }
+          )}, por debajo del umbral configurado de $${thresholdPesos.toLocaleString(
+            "en-US",
+            {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            }
+          )}.`,
+          metadata: {
+            cashBoxId: config.id || "",
+            period: config.period || "",
+            thresholdAmount: thresholdPesos,
+            previousBalance,
+            currentBalance: nextBalance,
+            transactionType: data.type,
+            transactionId,
+          },
+        });
+      }
 
       return transactionId;
     } catch (error: any) {

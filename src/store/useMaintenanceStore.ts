@@ -19,6 +19,7 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { Ticket } from "../presentation/screens/dashboard/maintenance/tickets/ticketsStore";
 import moment from "moment";
 import { useExpenseStore } from "./expenseStore";
+import { emitDomainNotificationEvent } from "../services/notificationCenterService";
 
 export type MaintenanceReport = {
   id?: string;
@@ -226,6 +227,15 @@ type MaintenanceBudgetState = {
     { category: string; budgeted: number; spent: number; remaining: number }[]
   >;
 };
+
+function isWithinNext24Hours(date: string, time: string): boolean {
+  if (!date || !time) return false;
+  const appointmentMoment = moment(`${date} ${time}`, "YYYY-MM-DD HH:mm", true);
+  if (!appointmentMoment.isValid()) return false;
+  const now = moment();
+  const diffHours = appointmentMoment.diff(now, "hours", true);
+  return diffHours >= 0 && diffHours <= 24;
+}
 
 export const useMaintenanceReportStore = create<MaintenanceReportState>()(
   (set, get) => ({
@@ -869,7 +879,33 @@ export const useMaintenanceAppointmentStore =
         delete appointmentData.ticket;
         delete appointmentData.contract;
 
-        await addDoc(appointmentsRef, appointmentData);
+        const createdRef = await addDoc(appointmentsRef, appointmentData);
+
+        if (
+          appointmentData.status !== "completed" &&
+          appointmentData.status !== "cancelled" &&
+          isWithinNext24Hours(appointmentData.date, appointmentData.time)
+        ) {
+          void emitDomainNotificationEvent({
+            eventType: "maintenance.appointment_24h",
+            module: "maintenance",
+            priority: "medium",
+            dedupeKey: `maintenance:appointment_24h:${createdRef.id}:${appointmentData.date}`,
+            entityId: createdRef.id,
+            entityType: "maintenance_appointment",
+            title: "Visita de mantenimiento en menos de 24h",
+            body: `La visita "${appointmentData.title}" está programada para ${appointmentData.date} ${appointmentData.time}.`,
+            metadata: {
+              appointmentId: createdRef.id,
+              title: appointmentData.title,
+              date: appointmentData.date,
+              time: appointmentData.time,
+              location: appointmentData.location || "",
+              technician: appointmentData.technician || "",
+              ticketId: appointmentData.ticketId || "",
+            },
+          });
+        }
         set({ loading: false });
         await get().fetchAppointments();
       } catch (error: any) {
@@ -904,12 +940,56 @@ export const useMaintenanceAppointmentStore =
           appointmentId
         );
 
+        const previousAppointment = get().appointments.find(
+          (appointment) => appointment.id === appointmentId
+        );
+
         // Creamos una copia del data eliminando propiedades complejas
         const updateData = { ...data };
         delete updateData.ticket;
         delete updateData.contract;
 
         await updateDoc(appointmentDocRef, updateData);
+
+        const nextDate = (updateData.date as string) || previousAppointment?.date || "";
+        const nextTime = (updateData.time as string) || previousAppointment?.time || "";
+        const nextStatus =
+          (updateData.status as MaintenanceAppointment["status"]) ||
+          previousAppointment?.status ||
+          "pending";
+        const nextTitle = (updateData.title as string) || previousAppointment?.title || "";
+        const nextLocation =
+          (updateData.location as string) || previousAppointment?.location || "";
+        const nextTechnician =
+          (updateData.technician as string) || previousAppointment?.technician || "";
+        const nextTicketId =
+          (updateData.ticketId as string) || previousAppointment?.ticketId || "";
+
+        if (
+          nextStatus !== "completed" &&
+          nextStatus !== "cancelled" &&
+          isWithinNext24Hours(nextDate, nextTime)
+        ) {
+          void emitDomainNotificationEvent({
+            eventType: "maintenance.appointment_24h",
+            module: "maintenance",
+            priority: "medium",
+            dedupeKey: `maintenance:appointment_24h:${appointmentId}:${nextDate}`,
+            entityId: appointmentId,
+            entityType: "maintenance_appointment",
+            title: "Visita de mantenimiento en menos de 24h",
+            body: `La visita "${nextTitle}" está programada para ${nextDate} ${nextTime}.`,
+            metadata: {
+              appointmentId,
+              title: nextTitle,
+              date: nextDate,
+              time: nextTime,
+              location: nextLocation,
+              technician: nextTechnician,
+              ticketId: nextTicketId,
+            },
+          });
+        }
         set({ loading: false });
         await get().fetchAppointments();
       } catch (error: any) {

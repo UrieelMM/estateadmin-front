@@ -21,6 +21,7 @@ import {
 } from "firebase/storage";
 import toast from "react-hot-toast";
 import { writeAuditLog } from "../services/auditService";
+import { emitDomainNotificationEvent } from "../services/notificationCenterService";
 import {
   hasDuplicateCategoryName,
   normalizeCategoryName,
@@ -451,6 +452,34 @@ const useInventoryStore = create<InventoryStore>()((set, get) => ({
       // Verificar alertas de stock
       get().checkStockAlerts();
 
+      if (addedItem.stock <= addedItem.minStock) {
+        const isOutOfStock = addedItem.stock <= 0;
+        void emitDomainNotificationEvent({
+          eventType: isOutOfStock
+            ? "inventory.out_of_stock"
+            : "inventory.low_stock",
+          module: "inventory",
+          priority: isOutOfStock ? "critical" : "high",
+          dedupeKey: isOutOfStock
+            ? `inventory:${itemId}:out_of_stock`
+            : `inventory:${itemId}:low_stock`,
+          entityId: itemId,
+          entityType: "inventory_item",
+          title: isOutOfStock
+            ? `Inventario sin existencias: ${addedItem.name}`
+            : `Stock bajo en inventario: ${addedItem.name}`,
+          body: isOutOfStock
+            ? `El ítem ${addedItem.name} quedó sin existencias (stock 0).`
+            : `El ítem ${addedItem.name} está en ${addedItem.stock} unidades (mínimo ${addedItem.minStock}).`,
+          metadata: {
+            itemId,
+            itemName: addedItem.name,
+            stock: addedItem.stock,
+            minStock: addedItem.minStock,
+          },
+        });
+      }
+
       return itemId;
     } catch (error: any) {
       console.error("Error al añadir item:", error);
@@ -680,6 +709,60 @@ const useInventoryStore = create<InventoryStore>()((set, get) => ({
 
       // Verificar alertas de stock
       get().checkStockAlerts();
+
+      const previousStock = oldItem.stock;
+      const previousMinStock = oldItem.minStock;
+      const nextStock =
+        typeof updatedItem.stock === "number" ? updatedItem.stock : oldItem.stock;
+      const nextMinStock =
+        typeof updatedItem.minStock === "number"
+          ? updatedItem.minStock
+          : oldItem.minStock;
+
+      if (typeof updatedItem.stock === "number" || typeof updatedItem.minStock === "number") {
+        const crossedToOutOfStock = previousStock > 0 && nextStock <= 0;
+        const wasLowStock = previousStock <= previousMinStock;
+        const isLowStock = nextStock > 0 && nextStock <= nextMinStock;
+        const crossedToLowStock = !wasLowStock && isLowStock;
+
+        if (crossedToOutOfStock) {
+          void emitDomainNotificationEvent({
+            eventType: "inventory.out_of_stock",
+            module: "inventory",
+            priority: "critical",
+            dedupeKey: `inventory:${id}:out_of_stock`,
+            entityId: id,
+            entityType: "inventory_item",
+            title: `Inventario sin existencias: ${oldItem.name}`,
+            body: `El ítem ${oldItem.name} quedó en stock 0.`,
+            metadata: {
+              itemId: id,
+              itemName: oldItem.name,
+              previousStock,
+              stock: nextStock,
+              minStock: nextMinStock,
+            },
+          });
+        } else if (crossedToLowStock) {
+          void emitDomainNotificationEvent({
+            eventType: "inventory.low_stock",
+            module: "inventory",
+            priority: "high",
+            dedupeKey: `inventory:${id}:low_stock`,
+            entityId: id,
+            entityType: "inventory_item",
+            title: `Stock bajo en inventario: ${oldItem.name}`,
+            body: `El ítem ${oldItem.name} está en ${nextStock} unidades (mínimo ${nextMinStock}).`,
+            metadata: {
+              itemId: id,
+              itemName: oldItem.name,
+              previousStock,
+              stock: nextStock,
+              minStock: nextMinStock,
+            },
+          });
+        }
+      }
 
       return true;
     } catch (error: any) {

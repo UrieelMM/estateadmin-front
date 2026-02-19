@@ -18,6 +18,7 @@ import {
 } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import toast from "react-hot-toast";
+import { emitDomainNotificationEvent } from "../../services/notificationCenterService";
 
 export interface InvoiceData {
   amount: number;
@@ -165,7 +166,7 @@ const useBillingStore = create<BillingStore>()((set, _get) => ({
         .toUpperCase();
       const invoiceNumber = `INV-${randomSuffix}`;
 
-      await addDoc(invoicesRef, {
+      const invoiceDocRef = await addDoc(invoicesRef, {
         ...invoiceData,
         invoiceURL,
         xmlURL,
@@ -178,6 +179,44 @@ const useBillingStore = create<BillingStore>()((set, _get) => ({
         condominiumName,
         invoiceNumber,
         companyName,
+      });
+
+      const invoiceAmount = Number(invoiceData.amount || 0);
+      void emitDomainNotificationEvent({
+        eventType: "finance.invoice_pending_payment",
+        module: "finance",
+        priority: "high",
+        dedupeKey: `finance:invoice_pending:${invoiceDocRef.id}`,
+        context: {
+          clientId,
+          condominiumId,
+        },
+        audience:
+          invoiceData.userUID && invoiceData.userUID.trim().length > 0
+            ? { scope: "specific_users", userIds: [invoiceData.userUID] }
+            : { scope: "admins_and_assistants" },
+        entityId: invoiceDocRef.id,
+        entityType: "invoice_generated",
+        title: "Nueva factura pendiente de pago",
+        body: `Se generó la factura ${invoiceNumber} por $${invoiceAmount.toLocaleString(
+          "en-US",
+          {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          }
+        )}. Fecha límite: ${invoiceData.dueDate.toLocaleDateString("es-MX")}.`,
+        metadata: {
+          invoiceId: invoiceDocRef.id,
+          invoiceNumber,
+          amount: invoiceAmount,
+          dueDate: invoiceData.dueDate.toISOString(),
+          clientId,
+          condominiumId,
+          condominiumName,
+          companyName,
+          userUID: invoiceData.userUID || "",
+          userEmail: invoiceData.userEmail || "",
+        },
       });
 
       set({ loading: false });

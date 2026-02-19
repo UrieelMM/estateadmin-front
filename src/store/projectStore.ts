@@ -16,6 +16,7 @@ import {
   getDoc,
 } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { emitDomainNotificationEvent } from "../services/notificationCenterService";
 
 // Enumeración para el estado del proyecto
 export enum ProjectStatus {
@@ -299,6 +300,19 @@ async function calculateCurrentBudget(
   }
 }
 
+const PROJECT_SIGNAL_WINDOW_MS = 6 * 60 * 60 * 1000;
+const projectSignalThrottle = new Map<string, number>();
+
+function shouldEmitProjectSignal(key: string): boolean {
+  const now = Date.now();
+  const previous = projectSignalThrottle.get(key) || 0;
+  if (now - previous < PROJECT_SIGNAL_WINDOW_MS) {
+    return false;
+  }
+  projectSignalThrottle.set(key, now);
+  return true;
+}
+
 export const useProjectStore = create<ProjectState>()((set, get) => ({
   projects: [],
   projectExpenses: [],
@@ -374,6 +388,87 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
 
         const currentBudgetCents = initialBudgetCents - projectExpensesCents;
         project.currentBudget = centsToPesos(currentBudgetCents);
+
+        const projectName = project.name || docSnap.id;
+        const now = new Date();
+        const startDate = new Date(project.startDate);
+        const endDate = new Date(project.endDate);
+        const hasValidDates =
+          !Number.isNaN(startDate.getTime()) && !Number.isNaN(endDate.getTime());
+        const plannedDurationDays = hasValidDates
+          ? Math.max(
+              1,
+              Math.ceil(
+                (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)
+              )
+            )
+          : 0;
+
+        if (initialBudgetCents > 0) {
+          const costDeviationRatio =
+            (projectExpensesCents - initialBudgetCents) / initialBudgetCents;
+          if (costDeviationRatio > 0.1) {
+            const signalKey = `projects:cost_deviation:${docSnap.id}`;
+            if (shouldEmitProjectSignal(signalKey)) {
+              void emitDomainNotificationEvent({
+                eventType: "projects.cost_deviation",
+                module: "projects",
+                priority: costDeviationRatio > 0.25 ? "critical" : "high",
+                dedupeKey: signalKey,
+                entityId: docSnap.id,
+                entityType: "project",
+                title: `Desviación de costo > 10% en ${projectName}`,
+                body: `El proyecto supera el presupuesto en ${(
+                  costDeviationRatio * 100
+                ).toFixed(2)}%.`,
+                metadata: {
+                  projectId: docSnap.id,
+                  projectName,
+                  initialBudget: centsToPesos(initialBudgetCents),
+                  currentSpent: centsToPesos(projectExpensesCents),
+                  deviationRatio: costDeviationRatio,
+                },
+              });
+            }
+          }
+        }
+
+        if (
+          hasValidDates &&
+          project.status === ProjectStatus.IN_PROGRESS &&
+          now > endDate
+        ) {
+          const delayDays = Math.ceil(
+            (now.getTime() - endDate.getTime()) / (1000 * 60 * 60 * 24)
+          );
+          const scheduleDeviationRatio =
+            plannedDurationDays > 0 ? delayDays / plannedDurationDays : 0;
+
+          if (scheduleDeviationRatio > 0.1) {
+            const signalKey = `projects:schedule_deviation:${docSnap.id}`;
+            if (shouldEmitProjectSignal(signalKey)) {
+              void emitDomainNotificationEvent({
+                eventType: "projects.schedule_deviation",
+                module: "projects",
+                priority: scheduleDeviationRatio > 0.25 ? "high" : "medium",
+                dedupeKey: signalKey,
+                entityId: docSnap.id,
+                entityType: "project",
+                title: `Desviación de tiempo > 10% en ${projectName}`,
+                body: `El proyecto acumula ${delayDays} día(s) de atraso sobre su plan.`,
+                metadata: {
+                  projectId: docSnap.id,
+                  projectName,
+                  plannedDurationDays,
+                  delayDays,
+                  deviationRatio: scheduleDeviationRatio,
+                  startDate: project.startDate,
+                  endDate: project.endDate,
+                },
+              });
+            }
+          }
+        }
 
         projects.push(project);
       }
@@ -850,8 +945,71 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
       // Guardar en Firestore
       await setDoc(newDocRef, expenseData);
 
+      const projectName =
+        get().currentProject?.id === data.projectId
+          ? get().currentProject?.name
+          : get().projects.find((item) => item.id === data.projectId)?.name;
+
+      void emitDomainNotificationEvent({
+        eventType: "projects.expense_movement_registered",
+        module: "projects",
+        priority: "medium",
+        dedupeKey: `projects:expense_movement:${newDocRef.id}`,
+        entityId: newDocRef.id,
+        entityType: "project_expense",
+        title: "Nuevo movimiento de gasto en proyecto",
+        body: `Se registró un gasto de $${data.amount.toLocaleString("en-US", {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })} en ${projectName || "proyecto"}.`,
+        metadata: {
+          expenseId: newDocRef.id,
+          projectId: data.projectId,
+          projectName: projectName || "",
+          folio,
+          concept: data.concept,
+          tags: data.tags || [],
+          amount: data.amount,
+        },
+      });
+
       // Actualizar la lista de gastos del proyecto
       await get().fetchProjectExpenses(data.projectId);
+
+      const selectedProject =
+        get().currentProject?.id === data.projectId
+          ? get().currentProject
+          : get().projects.find((item) => item.id === data.projectId) || null;
+      const totalProjectExpensesPesos = get().projectExpenses.reduce(
+        (acc, item) => acc + Number(item.amount || 0),
+        0
+      );
+      const initialBudgetPesos = Number(selectedProject?.initialBudget || 0);
+      if (initialBudgetPesos > 0) {
+        const deviationRatio =
+          (totalProjectExpensesPesos - initialBudgetPesos) / initialBudgetPesos;
+        if (deviationRatio > 0.1) {
+          void emitDomainNotificationEvent({
+            eventType: "projects.cost_deviation",
+            module: "projects",
+            priority: deviationRatio > 0.25 ? "critical" : "high",
+            dedupeKey: `projects:cost_deviation:${data.projectId}`,
+            entityId: data.projectId,
+            entityType: "project",
+            title: "Desviación de costo > 10% en proyecto",
+            body: `El proyecto ${projectName || data.projectId} supera su presupuesto en ${(
+              deviationRatio * 100
+            ).toFixed(2)}%.`,
+            metadata: {
+              projectId: data.projectId,
+              projectName: projectName || "",
+              initialBudget: initialBudgetPesos,
+              currentSpent: totalProjectExpensesPesos,
+              deviationRatio,
+            },
+          });
+        }
+      }
 
       // Actualizar el proyecto actual para reflejar el nuevo presupuesto
       const { currentProject } = get();

@@ -18,6 +18,7 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { create } from "../../../../../store/createStore";
 import toast from "react-hot-toast";
 import { writeAuditLog } from "../../../../../services/auditService";
+import { emitDomainNotificationEvent } from "../../../../../services/notificationCenterService";
 
 // Función helper para formatear los estados de los tickets con formato amigable
 const formatStatus = (status: string): string => {
@@ -580,6 +581,45 @@ export const useTicketsStore = create<TicketState>()((set, get) => ({
         metadata: { operation: "create_ticket" },
       });
 
+      void emitDomainNotificationEvent({
+        eventType: "maintenance.ticket_created",
+        module: "maintenance",
+        priority: ticket.priority === "alta" ? "high" : "medium",
+        dedupeKey: `maintenance:ticket:${created.id}:created`,
+        entityId: created.id,
+        entityType: "ticket_maintenance",
+        title: `Nuevo ticket de mantenimiento: ${ticket.title}`,
+        body: `Se registró el ticket ${ticket.folio || created.id.slice(0, 8)} con estado ${
+          ticket.status || "abierto"
+        }.`,
+        metadata: {
+          ticketId: created.id,
+          folio: ticket.folio || "",
+          title: ticket.title,
+          priority: ticket.priority || "media",
+          status: ticket.status || "abierto",
+        },
+      });
+
+      if (ticket.priority === "alta") {
+        void emitDomainNotificationEvent({
+          eventType: "maintenance.ticket_high_priority",
+          module: "maintenance",
+          priority: "high",
+          dedupeKey: `maintenance:ticket:${created.id}:high_priority`,
+          entityId: created.id,
+          entityType: "ticket_maintenance",
+          title: `Ticket de alta prioridad: ${ticket.title}`,
+          body: `El ticket ${ticket.folio || created.id.slice(0, 8)} fue marcado con prioridad alta.`,
+          metadata: {
+            ticketId: created.id,
+            folio: ticket.folio || "",
+            title: ticket.title,
+            priority: "alta",
+          },
+        });
+      }
+
       set({ loading: false });
       await get().fetchTickets();
     } catch (error: any) {
@@ -871,6 +911,25 @@ export const useTicketsStore = create<TicketState>()((set, get) => ({
         },
         metadata: { operation: "update_ticket" },
       });
+
+      if (data.priority === "alta" && currentTicket.priority !== "alta") {
+        void emitDomainNotificationEvent({
+          eventType: "maintenance.ticket_high_priority",
+          module: "maintenance",
+          priority: "high",
+          dedupeKey: `maintenance:ticket:${ticketId}:high_priority`,
+          entityId: ticketId,
+          entityType: "ticket_maintenance",
+          title: "Ticket escalado a prioridad alta",
+          body: `El ticket ${currentTicket.folio || ticketId.slice(0, 8)} ahora requiere atención prioritaria.`,
+          metadata: {
+            ticketId,
+            folio: currentTicket.folio || "",
+            title: data.title || currentTicket.title,
+            priority: "alta",
+          },
+        });
+      }
 
       set({ loading: false });
       await get().fetchTickets();

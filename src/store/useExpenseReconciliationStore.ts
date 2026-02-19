@@ -16,6 +16,7 @@ import {
 } from "firebase/firestore";
 import { getDownloadURL, getStorage, ref, uploadBytes } from "firebase/storage";
 import { writeAuditLog } from "../services/auditService";
+import { emitDomainNotificationEvent } from "../services/notificationCenterService";
 
 type ReconciliationStatus = "pending" | "matched" | "manual_match" | "ignored";
 
@@ -788,6 +789,7 @@ export const useExpenseReconciliationStore = create<UseExpenseReconciliationStat
         const { bankMovements, internalExpenses, summary, activeSessionId } = get();
         const sessionName =
           name.trim() || `Conciliacion egresos ${new Date().toISOString()}`;
+        let savedSessionId = activeSessionId || "";
         const tracePayload = JSON.stringify({
           summary,
           bankCount: bankMovements.length,
@@ -868,6 +870,7 @@ export const useExpenseReconciliationStore = create<UseExpenseReconciliationStat
               ).length,
             },
           });
+          savedSessionId = activeSessionId;
         } else {
           const saved = await addDoc(
             collection(
@@ -904,9 +907,38 @@ export const useExpenseReconciliationStore = create<UseExpenseReconciliationStat
               ).length,
             },
           });
+          savedSessionId = saved.id;
         }
 
         set({ loading: false, activeSessionId: null });
+
+        const netDifference = Number(summary.unmatchedDifference || 0);
+        if (Math.abs(netDifference) >= 0.01) {
+          void emitDomainNotificationEvent({
+            eventType: "finance.reconciliation_net_difference",
+            module: "finance",
+            priority: Math.abs(netDifference) >= 1000 ? "high" : "medium",
+            dedupeKey: `finance:reconciliation:expense:${savedSessionId}:net_difference`,
+            entityId: savedSessionId,
+            entityType: "expense_reconciliation",
+            title: "Conciliación de egresos con diferencia neta",
+            body: `La conciliación ${sessionName} cerró con diferencia neta de $${netDifference.toLocaleString(
+              "en-US",
+              {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              }
+            )}.`,
+            metadata: {
+              reconciliationType: "expense",
+              sessionId: savedSessionId,
+              sessionName,
+              unmatchedDifference: netDifference,
+              bankDebits: summary.bankDebits,
+              internalMatched: summary.internalMatched,
+            },
+          });
+        }
       } catch (error: any) {
         console.error("Error saving expense reconciliation session:", error);
         set({

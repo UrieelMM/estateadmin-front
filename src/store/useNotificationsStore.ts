@@ -1,49 +1,64 @@
-// notificationsStore.ts
 import { create } from "./createStore";
 import {
-  getFirestore,
   collection,
-  query,
-  orderBy,
-  onSnapshot,
-  updateDoc,
   doc,
+  getFirestore,
+  limit,
+  onSnapshot,
+  orderBy,
+  query,
   Unsubscribe,
+  updateDoc,
+  writeBatch,
 } from "firebase/firestore";
 import { auth } from "../firebase/firebase";
-// No dependemos directamente del AuthStore, usamos Firebase Auth
-// import useAuthStore from "./AuthStore";
+import {
+  NotificationEventType,
+  NotificationModule,
+  NotificationPriority,
+} from "../types/notifications";
 
 export interface UserNotification {
   id: string;
   title: string;
   body: string;
-  invoiceId?: string;
-  createdAt: any; // normalmente un Timestamp de Firestore
   read: boolean;
+  readAt?: any;
+  createdAt: any;
+  module?: NotificationModule;
+  priority?: NotificationPriority;
+  eventType?: NotificationEventType;
+  sourceEventId?: string;
+  sourceQueueId?: string;
+  entityId?: string;
+  entityType?: string;
+  metadata?: Record<string, unknown>;
 }
 
 interface NotificationStore {
   notifications: UserNotification[];
   isInitialized: boolean;
   unsubscribe: Unsubscribe | null;
+  subscriptionPath: string | null;
   fetchNotifications: () => Promise<void>;
   markAsRead: (notificationId: string) => Promise<void>;
+  markAllAsRead: () => Promise<void>;
   clearNotifications: () => void;
 }
 
 const db = getFirestore();
-
-// Variable global para mantener la suscripción entre renders
 let globalUnsubscribe: Unsubscribe | null = null;
 
 const waitForAuthUser = async (): Promise<any> => {
-  // Si auth.currentUser ya existe, lo retornamos
   if (auth.currentUser) return auth.currentUser;
-  // De lo contrario, esperamos a que se establezca el usuario
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      unsubscribe();
+      reject(new Error("Tiempo de espera agotado para usuario autenticado"));
+    }, 5000);
     const unsubscribe = auth.onAuthStateChanged((user) => {
       if (user) {
+        clearTimeout(timeout);
         unsubscribe();
         resolve(user);
       }
@@ -51,118 +66,133 @@ const waitForAuthUser = async (): Promise<any> => {
   });
 };
 
+const resolveNotificationPath = async (): Promise<{
+  path: string;
+  uid: string;
+} | null> => {
+  const currentUser = await waitForAuthUser();
+  if (!currentUser) return null;
+
+  const condominiumId = localStorage.getItem("condominiumId");
+  if (!condominiumId) return null;
+
+  const tokenResult = await currentUser.getIdTokenResult();
+  const clientId = tokenResult?.claims["clientId"] as string;
+  if (!clientId) return null;
+
+  return {
+    uid: currentUser.uid,
+    path: `clients/${clientId}/condominiums/${condominiumId}/users/${currentUser.uid}/notifications`,
+  };
+};
+
 const useNotificationStore = create<NotificationStore>()((set, get) => ({
   notifications: [],
   isInitialized: false,
   unsubscribe: null,
+  subscriptionPath: null,
 
   fetchNotifications: async () => {
     try {
-      // Si ya estamos inicializados y tenemos una suscripción, no hacemos nada
-      if (get().isInitialized && globalUnsubscribe) {
+      const pathData = await resolveNotificationPath();
+      if (!pathData) {
+        set({ isInitialized: false });
         return;
       }
 
-      // Primero cancelamos cualquier suscripción existente
+      const nextPath = pathData.path;
+      if (
+        get().isInitialized &&
+        globalUnsubscribe &&
+        get().subscriptionPath === nextPath
+      ) {
+        return;
+      }
+
       if (globalUnsubscribe) {
         globalUnsubscribe();
         globalUnsubscribe = null;
       }
 
-      const currentUser = await waitForAuthUser();
-      if (!currentUser) {
-        console.error("No hay usuario autenticado");
-        return;
-      }
+      const notifRef = collection(db, pathData.path);
+      const q = query(notifRef, orderBy("createdAt", "desc"), limit(100));
 
-      const condominiumId = localStorage.getItem("condominiumId");
-      if (!condominiumId) {
-        console.error("No se encontró condominiumId en localStorage");
-        return;
-      }
-
-      const tokenResult = await currentUser.getIdTokenResult();
-      const clientId = tokenResult?.claims["clientId"] as string;
-      if (!clientId) {
-        console.error("No se encontró clientId en los claims");
-        return;
-      }
-
-      // Referencia a la subcolección de notificaciones
-      const notifPath = `clients/${clientId}/condominiums/${condominiumId}/users/${currentUser.uid}/notifications`;
-
-      const notifRef = collection(db, notifPath);
-      const q = query(notifRef, orderBy("createdAt", "desc"));
-
-      // Se establece la suscripción en tiempo real
       const unsubscribeListener = onSnapshot(
         q,
         (snapshot) => {
-          const notifs: UserNotification[] = [];
-          snapshot.forEach((docSnap) => {
-            const data = docSnap.data();
-            notifs.push({ id: docSnap.id, ...data } as UserNotification);
-          });
+          const nextNotifications: UserNotification[] = snapshot.docs.map(
+            (docSnap) => ({
+              id: docSnap.id,
+              ...(docSnap.data() as Omit<UserNotification, "id">),
+            })
+          );
           set({
-            notifications: notifs,
+            notifications: nextNotifications,
             isInitialized: true,
           });
         },
         (error) => {
-          console.error("Error en la suscripción de notificaciones:", error);
+          console.error("Error en listener de notificaciones:", error);
           set({ isInitialized: false });
         }
       );
 
-      // Guardamos la función de cancelación tanto en el store como globalmente
       globalUnsubscribe = unsubscribeListener;
-      set({ unsubscribe: unsubscribeListener });
+      set({ unsubscribe: unsubscribeListener, subscriptionPath: nextPath });
     } catch (error) {
       console.error("Error en fetchNotifications:", error);
       set({ isInitialized: false });
     }
   },
 
-  markAsRead: async (notificationId: string) => {
+  markAsRead: async (notificationId) => {
     try {
-      const currentUser = await waitForAuthUser();
-      if (!currentUser) {
-        console.error("No hay usuario autenticado");
-        return;
-      }
-      const condominiumId = localStorage.getItem("condominiumId");
-      if (!condominiumId) {
-        console.error("No se encontró condominiumId en localStorage");
-        return;
-      }
-      const tokenResult = await currentUser.getIdTokenResult();
-      const clientId = tokenResult?.claims["clientId"] as string;
-      if (!clientId) {
-        console.error("No se encontró clientId en los claims");
-        return;
-      }
+      const pathData = await resolveNotificationPath();
+      if (!pathData) return;
 
-      const notifDocRef = doc(
-        db,
-        `clients/${clientId}/condominiums/${condominiumId}/users/${currentUser.uid}/notifications`,
-        notificationId
-      );
-
-      await updateDoc(notifDocRef, { read: true });
-
-      // No actualizamos el estado local porque la suscripción en tiempo real lo hará automáticamente
+      const notifDocRef = doc(db, pathData.path, notificationId);
+      await updateDoc(notifDocRef, {
+        read: true,
+        readAt: new Date(),
+      });
     } catch (error) {
-      console.error("Error al marcar notificación como leída:", error);
+      console.error("Error marcando notificación como leída:", error);
+    }
+  },
+
+  markAllAsRead: async () => {
+    try {
+      const pathData = await resolveNotificationPath();
+      if (!pathData) return;
+
+      const unread = get().notifications.filter((item) => !item.read);
+      if (unread.length === 0) return;
+
+      const batch = writeBatch(db);
+      unread.forEach((notification) => {
+        const notifDocRef = doc(db, pathData.path, notification.id);
+        batch.update(notifDocRef, {
+          read: true,
+          readAt: new Date(),
+        });
+      });
+      await batch.commit();
+    } catch (error) {
+      console.error("Error marcando todas como leídas:", error);
     }
   },
 
   clearNotifications: () => {
-    // Cancelamos la suscripción si existe
     if (globalUnsubscribe) {
       globalUnsubscribe();
       globalUnsubscribe = null;
     }
-    set({ notifications: [], unsubscribe: null, isInitialized: false });
+    set({
+      notifications: [],
+      unsubscribe: null,
+      isInitialized: false,
+      subscriptionPath: null,
+    });
   },
 }));
 

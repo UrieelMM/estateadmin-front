@@ -14,6 +14,7 @@ import {
   deleteDoc,
 } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { emitDomainNotificationEvent } from "../services/notificationCenterService";
 
 /**
  * Tipos de datos para un egreso
@@ -102,6 +103,16 @@ async function generateUniqueFolio(): Promise<string> {
     Math.floor(Math.random() * 10)
   ).join("");
   return `EA-${randomNumbers}`;
+}
+
+function calculateMedian(values: number[]): number {
+  if (!values.length) return 0;
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  if (sorted.length % 2 === 0) {
+    return (sorted[mid - 1] + sorted[mid]) / 2;
+  }
+  return sorted[mid];
 }
 
 export const useExpenseStore = create<ExpenseState>()((set, get) => ({
@@ -235,6 +246,46 @@ export const useExpenseStore = create<ExpenseState>()((set, get) => ({
 
       // Guardar en Firestore
       await setDoc(newDocRef, expenseData);
+
+      const historicalAmounts = get()
+        .expenses.map((item) => Number(item.amount || 0))
+        .filter((value) => Number.isFinite(value) && value > 0);
+      if (historicalAmounts.length >= 5) {
+        const median = calculateMedian(historicalAmounts);
+        const average =
+          historicalAmounts.reduce((acc, value) => acc + value, 0) /
+          historicalAmounts.length;
+        const dynamicThreshold = Math.max(median * 1.8, average * 2, 3000);
+        const isOutlier = data.amount >= dynamicThreshold;
+
+        if (isOutlier) {
+          void emitDomainNotificationEvent({
+            eventType: "finance.expense_outlier",
+            module: "finance",
+            priority: "high",
+            dedupeKey: `finance:expense_outlier:${newDocRef.id}`,
+            entityId: newDocRef.id,
+            entityType: "expense",
+            title: "Egreso alto fuera de patrón",
+            body: `Se registró un egreso de $${data.amount.toLocaleString(
+              "en-US",
+              {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              }
+            )} en ${data.concept}, por encima del patrón histórico.`,
+            metadata: {
+              expenseId: newDocRef.id,
+              folio,
+              concept: data.concept,
+              amount: data.amount,
+              historicalMedian: median,
+              historicalAverage: average,
+              dynamicThreshold,
+            },
+          });
+        }
+      }
 
       // Actualizar la lista de egresos
       await get().refreshExpenses();

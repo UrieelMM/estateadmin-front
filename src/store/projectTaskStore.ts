@@ -21,6 +21,7 @@ import {
   getDownloadURL,
   deleteObject,
 } from "firebase/storage";
+import { emitDomainNotificationEvent } from "../services/notificationCenterService";
 
 // Define task status options
 export enum TaskStatus {
@@ -73,6 +74,34 @@ function normalizeAttachments(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
   return value.filter(
     (item): item is string => typeof item === "string" && item.length > 0
+  );
+}
+
+const TASK_SIGNAL_WINDOW_MS = 6 * 60 * 60 * 1000;
+const taskSignalThrottle = new Map<string, number>();
+
+function shouldEmitTaskSignal(key: string): boolean {
+  const now = Date.now();
+  const previous = taskSignalThrottle.get(key) || 0;
+  if (now - previous < TASK_SIGNAL_WINDOW_MS) {
+    return false;
+  }
+  taskSignalThrottle.set(key, now);
+  return true;
+}
+
+function isTaskDependencyBlocked(task: Partial<ProjectTaskCreateInput>): boolean {
+  const tokens = `${task.title || ""} ${task.description || ""} ${task.notes || ""} ${
+    (task.tags || []).join(" ")
+  }`
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+  return (
+    tokens.includes("dependencia") ||
+    tokens.includes("bloquead") ||
+    tokens.includes("blocked") ||
+    tokens.includes("en espera")
   );
 }
 
@@ -190,6 +219,40 @@ export const useProjectTaskStore = create<ProjectTaskState>()((set, get) => ({
         };
       });
 
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      tasks.forEach((task) => {
+        if (!task.dueDate || task.status === TaskStatus.COMPLETED) return;
+        const dueDate = new Date(task.dueDate);
+        if (Number.isNaN(dueDate.getTime())) return;
+        dueDate.setHours(0, 0, 0, 0);
+        if (dueDate >= today) return;
+
+        const dayKey = today.toISOString().slice(0, 10);
+        const dedupeKey = `projects:task_overdue:${task.id}:${dayKey}`;
+        if (!shouldEmitTaskSignal(dedupeKey)) return;
+
+        void emitDomainNotificationEvent({
+          eventType: "projects.task_overdue",
+          module: "projects",
+          priority: "high",
+          dedupeKey,
+          entityId: task.id,
+          entityType: "project_task",
+          title: `Tarea vencida: ${task.title}`,
+          body: `La tarea ${task.title} venció el ${task.dueDate} y sigue en estado ${task.status}.`,
+          metadata: {
+            taskId: task.id,
+            projectId: task.projectId,
+            title: task.title,
+            dueDate: task.dueDate,
+            status: task.status,
+            priority: task.priority,
+            assignedTo: task.assignedTo || "",
+          },
+        });
+      });
+
       set({ tasks, loading: false, error: null });
     } catch (error: any) {
       console.error("Error al cargar tareas:", error);
@@ -251,6 +314,28 @@ export const useProjectTaskStore = create<ProjectTaskState>()((set, get) => ({
 
       // Save the task
       await setDoc(newTaskRef, taskData);
+
+      if (isTaskDependencyBlocked(data)) {
+        void emitDomainNotificationEvent({
+          eventType: "projects.dependency_blocked",
+          module: "projects",
+          priority: "high",
+          dedupeKey: `projects:dependency_blocked:${newTaskRef.id}`,
+          entityId: newTaskRef.id,
+          entityType: "project_task",
+          title: "Tarea bloqueada por dependencia",
+          body: `La tarea ${data.title} fue registrada con bloqueo por dependencia.`,
+          metadata: {
+            taskId: newTaskRef.id,
+            projectId: data.projectId,
+            title: data.title,
+            status: data.status,
+            priority: data.priority,
+            notes: data.notes || "",
+            tags: data.tags || [],
+          },
+        });
+      }
 
       // Update local state
       await get().fetchProjectTasks(data.projectId);
@@ -318,6 +403,47 @@ export const useProjectTaskStore = create<ProjectTaskState>()((set, get) => ({
       }
 
       await updateDoc(taskRef, updateData);
+
+      const mergedTaskData: Partial<ProjectTaskCreateInput> = {
+        projectId: task.projectId,
+        title: data.title ?? task.title,
+        description: data.description ?? task.description,
+        status: data.status ?? task.status,
+        priority: data.priority ?? task.priority,
+        assignedTo:
+          data.assignedTo !== undefined
+            ? normalizeAssignedTo(data.assignedTo)
+            : task.assignedTo,
+        dueDate: data.dueDate ?? task.dueDate,
+        tags: data.tags ?? task.tags,
+        notes:
+          data.notes !== undefined
+            ? typeof data.notes === "string"
+              ? data.notes
+              : ""
+            : task.notes,
+      };
+      if (isTaskDependencyBlocked(mergedTaskData)) {
+        void emitDomainNotificationEvent({
+          eventType: "projects.dependency_blocked",
+          module: "projects",
+          priority: "high",
+          dedupeKey: `projects:dependency_blocked:${taskId}`,
+          entityId: taskId,
+          entityType: "project_task",
+          title: "Tarea bloqueada por dependencia",
+          body: `La tarea ${mergedTaskData.title || task.title} se encuentra bloqueada por dependencia.`,
+          metadata: {
+            taskId,
+            projectId,
+            title: mergedTaskData.title || task.title,
+            status: mergedTaskData.status || task.status,
+            priority: mergedTaskData.priority || task.priority,
+            notes: mergedTaskData.notes || "",
+            tags: mergedTaskData.tags || [],
+          },
+        });
+      }
 
       // Refresh tasks
       await get().fetchProjectTasks(projectId);

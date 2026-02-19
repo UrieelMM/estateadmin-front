@@ -16,6 +16,7 @@ import {
 } from "firebase/firestore";
 import { getDownloadURL, getStorage, ref, uploadBytes } from "firebase/storage";
 import { writeAuditLog } from "../services/auditService";
+import { emitDomainNotificationEvent } from "../services/notificationCenterService";
 
 type ReconciliationStatus = "pending" | "matched" | "manual_match" | "ignored";
 
@@ -1010,6 +1011,34 @@ export const usePaymentReconciliationStore = create<UsePaymentReconciliationStat
           activeSessionId: null,
           loading: false,
         });
+
+        const netDifference = Number(summary.unmatchedDifference || 0);
+        if (Math.abs(netDifference) >= 0.01) {
+          void emitDomainNotificationEvent({
+            eventType: "finance.reconciliation_net_difference",
+            module: "finance",
+            priority: Math.abs(netDifference) >= 1000 ? "high" : "medium",
+            dedupeKey: `finance:reconciliation:income:${savedId}:net_difference`,
+            entityId: savedId,
+            entityType: "payment_reconciliation",
+            title: "Conciliación de ingresos con diferencia neta",
+            body: `La conciliación ${sessionName} cerró con diferencia neta de $${netDifference.toLocaleString(
+              "en-US",
+              {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              }
+            )}.`,
+            metadata: {
+              reconciliationType: "income",
+              sessionId: savedId,
+              sessionName,
+              unmatchedDifference: netDifference,
+              bankCredits: summary.bankCredits,
+              internalMatched: summary.internalMatched,
+            },
+          });
+        }
       } catch (error: any) {
         console.error("Error saving reconciliation session:", error);
         set({
