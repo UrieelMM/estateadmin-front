@@ -14,9 +14,65 @@ import logo from "../../../assets/logo.png";
 import Footer from "./Footer";
 import { useLocalDarkMode } from "../../../hooks/useLocalDarkMode";
 import PublicBreadcrumb from "../../components/public/PublicBreadcrumb";
+import { getSeoExperimentCopy } from "../../seo/seoExperiments";
 
 const AIFeatures = () => {
   const { isDarkMode } = useLocalDarkMode();
+  const seoCopy = getSeoExperimentCopy("ai");
+  const pageUrl = "https://estate-admin.com/caracteristicas-inteligencia-artificial";
+  const pageTitle = seoCopy.title;
+  const pageDescription = seoCopy.description;
+  const pageKeywords = seoCopy.keywords;
+  const pageImage =
+    "https://res.cloudinary.com/dz5tntwl1/image/upload/v1771019555/darkmod_xsw29y.webp";
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Inicio",
+        item: "https://estate-admin.com",
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "Características de IA",
+        item: pageUrl,
+      },
+    ],
+  };
+  const faqSchema = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: [
+      {
+        "@type": "Question",
+        name: "¿Qué aporta la IA en EstateAdmin?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "Genera reportes financieros ejecutivos, recomendaciones accionables y asistencia de redacción para reducir carga operativa.",
+        },
+      },
+      {
+        "@type": "Question",
+        name: "¿La IA en EstateAdmin tiene control de costos?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "Sí. Se registra el consumo de tokens por funcionalidad y por condominio, con límites diarios configurables.",
+        },
+      },
+      {
+        "@type": "Question",
+        name: "¿La IA sustituye el control administrativo?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "No. La IA apoya al administrador con análisis y redacción, pero las decisiones y la trazabilidad siguen bajo control humano.",
+        },
+      },
+    ],
+  };
   const features = [
     {
       icon: DocumentChartBarIcon,
@@ -82,26 +138,36 @@ const AIFeatures = () => {
       }`}
     >
       <Helmet>
-        <title>
-          Inteligencia Artificial - EstateAdmin | El futuro de la gestión de
-          condominios
-        </title>
+        <title>{pageTitle}</title>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <meta
-          name="description"
-          content="Descubre cómo la inteligencia artificial transformará la administración de condominios en EstateAdmin: reportes avanzados, automatización inteligente y asistente virtual."
-        />
-        <meta
-          name="keywords"
-          content="IA condominios, inteligencia artificial, gestión automatizada, reportes predictivos, asistente virtual condominios"
-        />
+        <meta name="description" content={pageDescription} />
+        <meta name="keywords" content={pageKeywords} />
+        <meta name="author" content="EstateAdmin" />
         <meta name="robots" content="index, follow" />
         <meta name="language" content="es" />
-        <link
-          rel="canonical"
-          href="https://estate-admin.com/caracteristicas-inteligencia-artificial"
-        />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content={pageUrl} />
+        <meta property="og:title" content={pageTitle} />
+        <meta property="og:description" content={pageDescription} />
+        <meta property="og:image" content={pageImage} />
+        <meta property="og:image:alt" content={pageTitle} />
+        <meta property="og:site_name" content="EstateAdmin" />
+        <meta property="og:locale" content="es_MX" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:url" content={pageUrl} />
+        <meta name="twitter:title" content={pageTitle} />
+        <meta name="twitter:description" content={pageDescription} />
+        <meta name="twitter:image" content={pageImage} />
+        <meta name="twitter:site" content="@estateadmin" />
+        <meta name="twitter:creator" content="@estateadmin" />
+        <link rel="canonical" href={pageUrl} />
+        <script type="application/ld+json">
+          {JSON.stringify(breadcrumbSchema)}
+        </script>
+        <script type="application/ld+json">
+          {JSON.stringify(faqSchema)}
+        </script>
       </Helmet>
 
       <header className="bg-white shadow-sm dark:bg-gray-900 dark:border-b dark:border-gray-800">

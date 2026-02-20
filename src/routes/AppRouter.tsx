@@ -22,98 +22,101 @@ import DataDeletion from "../presentation/screens/presentation/DataDeletion";
 import PrivacyPolicy from "../presentation/screens/presentation/PrivacyPolicy";
 import AboutUs from "../presentation/screens/presentation/AboutUs";
 import AIFeatures from "../presentation/screens/presentation/AIFeatures";
+import FaqPage from "../presentation/screens/presentation/FaqPage";
+import ForWhoPage from "../presentation/screens/presentation/ForWhoPage";
 import {
   GuidesList,
   GuidePage,
 } from "../presentation/components/newsAndGuides";
-import { HelmetProvider } from "react-helmet-async";
 import NewCustomerInformationForm from "../presentation/screens/public/NewCustomerInformationForm";
 import FormSubmissionSuccess from "../presentation/screens/public/FormSubmissionSuccess";
 import AttendancePublic from "../presentation/screens/public/AttendancePublic";
+import FloatingWhatsAppButton from "../presentation/components/public/FloatingWhatsAppButton";
 
 export const AppRouterPage = () => {
   return (
-    <HelmetProvider>
-      <Router>
-        <Routes>
-          {/* Rutas públicas */}
-          <Route path="/" element={<Hero />} />
-          <Route path="/login" element={<LoginScreen />} />
-          <Route path="/reset-password" element={<ResetPasswordScreen />} />
-          <Route path="/presentation" element={<Hero />} />
-          <Route path="/contacto" element={<ContactForm />} />
-          <Route path="/privacidad" element={<PrivacyPolicy />} />
-          <Route path="/eliminar-datos" element={<DataDeletion />} />
-          <Route path="/sobre-nosotros" element={<AboutUs />} />
-          <Route
-            path="/caracteristicas-inteligencia-artificial"
-            element={<AIFeatures />}
-          />
-          <Route
-            path="/unidentified-payments/:qrId"
-            element={<UnidentifiedPaymentsPublic />}
-          />
-          <Route path="/attendance/:qrId" element={<AttendancePublic />} />
+    <Router>
+      <Routes>
+        {/* Rutas públicas */}
+        <Route path="/" element={<Hero />} />
+        <Route path="/login" element={<LoginScreen />} />
+        <Route path="/reset-password" element={<ResetPasswordScreen />} />
+        <Route path="/presentation" element={<Navigate to="/" replace />} />
+        <Route path="/contacto" element={<ContactForm />} />
+        <Route path="/privacidad" element={<PrivacyPolicy />} />
+        <Route path="/eliminar-datos" element={<DataDeletion />} />
+        <Route path="/sobre-nosotros" element={<AboutUs />} />
+        <Route path="/para-quien-es" element={<ForWhoPage />} />
+        <Route path="/preguntas-frecuentes" element={<FaqPage />} />
+        <Route
+          path="/caracteristicas-inteligencia-artificial"
+          element={<AIFeatures />}
+        />
+        <Route
+          path="/unidentified-payments/:qrId"
+          element={<UnidentifiedPaymentsPublic />}
+        />
+        <Route path="/attendance/:qrId" element={<AttendancePublic />} />
 
-          {/* Rutas para el formulario de nuevos clientes */}
-          <Route
-            path="/nuevo-cliente/:formId"
-            element={<NewCustomerInformationForm />}
-          />
-          <Route
-            path="/formulario-completado"
-            element={<FormSubmissionSuccess />}
-          />
+        {/* Rutas para el formulario de nuevos clientes */}
+        <Route
+          path="/nuevo-cliente/:formId"
+          element={<NewCustomerInformationForm />}
+        />
+        <Route
+          path="/formulario-completado"
+          element={<FormSubmissionSuccess />}
+        />
 
-          {/* Rutas para guías */}
-          <Route path="/guias" element={<GuidesList />} />
-          <Route path="/guias/:slug" element={<GuidePage />} />
+        {/* Rutas para guías */}
+        <Route path="/guias" element={<GuidesList />} />
+        <Route path="/guias/:slug" element={<GuidePage />} />
 
-          {/* Rutas protegidas para usuarios normales */}
-          <Route element={<ProtectedRoute />}>
-            <Route
-              path="/dashboard"
-              element={
-                <LayoutDashboard>
-                  <Outlet />
-                </LayoutDashboard>
-              }
-            >
-              {routesApp.map((route) => (
-                <Route
-                  key={route.to}
-                  path={route.to}
-                  element={route.component}
-                />
-              ))}
-              <Route index element={<Navigate to="/dashboard/home" />} />
-            </Route>
+        {/* Rutas protegidas para usuarios normales */}
+        <Route element={<ProtectedRoute />}>
+          <Route
+            path="/dashboard"
+            element={
+              <LayoutDashboard>
+                <Outlet />
+              </LayoutDashboard>
+            }
+          >
+            {routesApp.map((route) => (
+              <Route
+                key={route.to}
+                path={route.to}
+                element={route.component}
+              />
+            ))}
+            <Route index element={<Navigate to="/dashboard/home" />} />
           </Route>
+        </Route>
 
-          {/* Rutas protegidas para Super Admin */}
-          <Route element={<SuperAdminProtectedRoute />}>
-            <Route
-              path="/super-admin"
-              element={
-                <SuperAdminLayout>
-                  <Outlet />
-                </SuperAdminLayout>
-              }
-            >
-              {superAdminRoutes.map((route) => (
-                <Route
-                  key={route.to}
-                  path={route.to}
-                  element={<route.Component />}
-                />
-              ))}
-              <Route index element={<Navigate to={superAdminRoutes[0].to} />} />
-            </Route>
+        {/* Rutas protegidas para Super Admin */}
+        <Route element={<SuperAdminProtectedRoute />}>
+          <Route
+            path="/super-admin"
+            element={
+              <SuperAdminLayout>
+                <Outlet />
+              </SuperAdminLayout>
+            }
+          >
+            {superAdminRoutes.map((route) => (
+              <Route
+                key={route.to}
+                path={route.to}
+                element={<route.Component />}
+              />
+            ))}
+            <Route index element={<Navigate to={superAdminRoutes[0].to} />} />
           </Route>
+        </Route>
 
-          <Route path="*" element={<NotFoundPage />} />
-        </Routes>
-      </Router>
-    </HelmetProvider>
+        <Route path="*" element={<NotFoundPage />} />
+      </Routes>
+      <FloatingWhatsAppButton />
+    </Router>
   );
 };

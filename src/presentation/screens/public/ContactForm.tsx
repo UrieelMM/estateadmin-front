@@ -7,10 +7,50 @@ import { ArrowLeftIcon, SunIcon, MoonIcon } from "@heroicons/react/24/solid";
 import { Helmet } from "react-helmet-async";
 import { useLocalDarkMode } from "../../../hooks/useLocalDarkMode";
 import PublicBreadcrumb from "../../components/public/PublicBreadcrumb";
+import { getSeoExperimentCopy } from "../../seo/seoExperiments";
 
 const ContactForm = () => {
   const navigate = useNavigate();
   const { isDarkMode, toggleDarkMode } = useLocalDarkMode();
+  const seoCopy = getSeoExperimentCopy("contact");
+  const pageUrl = "https://estate-admin.com/contacto";
+  const pageTitle = seoCopy.title;
+  const pageDescription = seoCopy.description;
+  const pageKeywords = seoCopy.keywords;
+  const pageImage =
+    "https://res.cloudinary.com/dz5tntwl1/image/upload/v1771019512/ligh_mgf0tg.webp";
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Inicio",
+        item: "https://estate-admin.com",
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "Contacto",
+        item: pageUrl,
+      },
+    ],
+  };
+  const contactPageSchema = {
+    "@context": "https://schema.org",
+    "@type": "ContactPage",
+    name: pageTitle,
+    description: pageDescription,
+    url: pageUrl,
+    mainEntity: {
+      "@type": "Organization",
+      name: "EstateAdmin",
+      url: "https://estate-admin.com",
+      email: "info@estate-admin.com",
+      telephone: "+52-771-195-3837",
+    },
+  };
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -165,20 +205,36 @@ const ContactForm = () => {
       className="min-h-screen bg-white dark:bg-gray-900 transition-colors duration-300"
     >
       <Helmet>
-        <title>Contacta con EstateAdmin | Solicita información y soporte</title>
+        <title>{pageTitle}</title>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <meta
-          name="description"
-          content="Contacta con el equipo de EstateAdmin para obtener más información sobre nuestras soluciones de gestión de condominios. Estamos aquí para ayudarte."
-        />
-        <meta
-          name="keywords"
-          content="contacto estateadmin, soporte condominios, solicitar información, contactar administración condominios"
-        />
+        <meta name="description" content={pageDescription} />
+        <meta name="keywords" content={pageKeywords} />
+        <meta name="author" content="EstateAdmin" />
         <meta name="robots" content="index, follow" />
         <meta name="language" content="es" />
-        <link rel="canonical" href="https://estate-admin.com/contacto" />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content={pageUrl} />
+        <meta property="og:title" content={pageTitle} />
+        <meta property="og:description" content={pageDescription} />
+        <meta property="og:image" content={pageImage} />
+        <meta property="og:image:alt" content={pageTitle} />
+        <meta property="og:site_name" content="EstateAdmin" />
+        <meta property="og:locale" content="es_MX" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:url" content={pageUrl} />
+        <meta name="twitter:title" content={pageTitle} />
+        <meta name="twitter:description" content={pageDescription} />
+        <meta name="twitter:image" content={pageImage} />
+        <meta name="twitter:site" content="@estateadmin" />
+        <meta name="twitter:creator" content="@estateadmin" />
+        <link rel="canonical" href={pageUrl} />
+        <script type="application/ld+json">
+          {JSON.stringify(breadcrumbSchema)}
+        </script>
+        <script type="application/ld+json">
+          {JSON.stringify(contactPageSchema)}
+        </script>
       </Helmet>
 
       <PublicBreadcrumb
@@ -226,9 +282,9 @@ const ContactForm = () => {
               </button>
             </div>
             <div className="text-center lg:text-left">
-              <h2 className="text-3xl font-bold text-indigo-500 dark:text-indigo-400 sm:text-4xl font-pj">
+              <h1 className="text-3xl font-bold text-indigo-500 dark:text-indigo-400 sm:text-4xl font-pj">
                 Contáctanos
-              </h2>
+              </h1>
               <p className="mt-4 text-base leading-7 text-gray-600 dark:text-gray-300">
                 Déjanos tus datos y nos pondremos en contacto contigo lo antes
                 posible.

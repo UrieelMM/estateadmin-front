@@ -15,7 +15,7 @@ export const useLocalDarkMode = () => {
       return savedMode === "true";
     }
     // Si no hay valor guardado, usar preferencia del sistema
-    return window.matchMedia("(prefers-color-scheme: dark)").matches;
+    return window.matchMedia("(prefers-color-scheme: light)").matches;
   });
 
   useEffect(() => {

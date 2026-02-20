@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useLocation, useSearchParams } from "react-router-dom";
 import { useNewsAndGuidesStore } from "../../../../store/useNewsAndGuidesStore";
 import moment from "moment";
 import "moment/locale/es";
@@ -12,6 +12,7 @@ import LoadingApp from "../../shared/loaders/LoadingApp";
 // Componente principal de la lista de guías
 const GuidesList: React.FC = () => {
   const [searchParams] = useSearchParams();
+  const location = useLocation();
   const { items, loading, error, fetchNewsAndGuides } = useNewsAndGuidesStore();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -60,16 +61,39 @@ const GuidesList: React.FC = () => {
 
   // Preparar título y descripción para SEO
   const pageTitle = categoryFilter
-    ? `Guías sobre ${categoryFilter} | Guías y Tutoriales`
+    ? `Guías de Administración de Condominios sobre ${categoryFilter} | EstateAdmin`
     : tagFilter
-    ? `Guías con etiqueta #${tagFilter} | Guías y Tutoriales`
-    : "Guías y Tutoriales | Recursos y ayuda";
+    ? `Guías para Condominios con #${tagFilter} | EstateAdmin`
+    : "Guías de Administración de Condominios | EstateAdmin";
 
   const pageDescription = categoryFilter
-    ? `Explora nuestras guías y tutoriales sobre ${categoryFilter}. Recursos prácticos para ayudarte a gestionar tus propiedades.`
+    ? `Explora guías prácticas sobre ${categoryFilter} para mejorar la administración de condominios, cuotas de mantenimiento, cobranza y operación.`
     : tagFilter
-    ? `Encuentra guías y tutoriales relacionados con #${tagFilter}. Contenido especializado para propietarios e inquilinos.`
-    : "Encuentra guías y tutoriales prácticos para gestionar tus propiedades, resolver problemas comunes y maximizar tu inversión inmobiliaria.";
+    ? `Encuentra contenido de administración de condominios relacionado con #${tagFilter}: finanzas, mantenimiento, inventario y gestión operativa.`
+    : "Guías prácticas de administración de condominios: cobranza, cuotas de mantenimiento, egresos, mantenimiento, inventario y proyectos.";
+  const pageKeywords =
+    "guias administracion de condominios, tutoriales condominios, cuotas de mantenimiento, cobranza condominal, egresos de condominio, mantenimiento condominios, inventario condominio";
+
+  const siteUrl = "https://estate-admin.com";
+  const canonicalUrl = `${siteUrl}${location.pathname}`;
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Inicio",
+        item: siteUrl,
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "Guías",
+        item: canonicalUrl,
+      },
+    ],
+  };
 
   if (loading && items.length === 0) {
     return (
@@ -99,22 +123,27 @@ const GuidesList: React.FC = () => {
       <Helmet>
         <title>{pageTitle}</title>
         <meta name="description" content={pageDescription} />
+        <meta name="keywords" content={pageKeywords} />
         <meta name="robots" content="index, follow" />
-        <link rel="canonical" href={window.location.href} />
+        <link rel="canonical" href={canonicalUrl} />
 
         {/* Open Graph */}
         <meta property="og:title" content={pageTitle} />
         <meta property="og:description" content={pageDescription} />
         <meta property="og:type" content="website" />
-        <meta property="og:url" content={window.location.href} />
+        <meta property="og:url" content={canonicalUrl} />
+        <meta property="og:site_name" content="EstateAdmin" />
+        <meta property="og:locale" content="es_MX" />
         {items.length > 0 && items[0].imageUrl && (
           <meta property="og:image" content={items[0].imageUrl} />
         )}
 
         {/* Twitter */}
         <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:url" content={canonicalUrl} />
         <meta name="twitter:title" content={pageTitle} />
         <meta name="twitter:description" content={pageDescription} />
+        <meta name="twitter:site" content="@estateadmin" />
         {items.length > 0 && items[0].imageUrl && (
           <meta name="twitter:image" content={items[0].imageUrl} />
         )}
@@ -126,7 +155,7 @@ const GuidesList: React.FC = () => {
             "@type": "CollectionPage",
             headline: pageTitle,
             description: pageDescription,
-            url: window.location.href,
+            url: canonicalUrl,
             mainEntity: {
               "@type": "ItemList",
               itemListElement: filteredItems
@@ -134,11 +163,14 @@ const GuidesList: React.FC = () => {
                 .map((guide, index) => ({
                   "@type": "ListItem",
                   position: index + 1,
-                  url: `${window.location.origin}/guias/${guide.slug}`,
+                  url: `${siteUrl}/guias/${guide.slug}`,
                   name: guide.title,
                 })),
             },
           })}
+        </script>
+        <script type="application/ld+json">
+          {JSON.stringify(breadcrumbSchema)}
         </script>
       </Helmet>
 

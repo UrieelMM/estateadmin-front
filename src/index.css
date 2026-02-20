@@ -266,6 +266,37 @@ select[size] optgroup {
   }
 }
 
+/* Animación controlada para botón flotante de WhatsApp */
+@keyframes whatsapp-attention {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+    box-shadow: 0 10px 25px rgba(2, 132, 83, 0.25);
+  }
+  35% {
+    transform: translate3d(0, -2px, 0) scale(1.03);
+    box-shadow: 0 14px 28px rgba(2, 132, 83, 0.32);
+  }
+  70% {
+    transform: translate3d(0, 0, 0) scale(0.99);
+    box-shadow: 0 10px 25px rgba(2, 132, 83, 0.25);
+  }
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+    box-shadow: 0 10px 25px rgba(2, 132, 83, 0.25);
+  }
+}
+
+.whatsapp-float-attention {
+  will-change: transform;
+  animation: whatsapp-attention 1.2s ease-out 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .whatsapp-float-attention {
+    animation: none;
+  }
+}
+
 /* Efecto de resplandor */
 @keyframes glow {
   0%,

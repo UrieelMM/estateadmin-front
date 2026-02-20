@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { usePasswordResetStore } from "../../../store/usePasswordResetStore";
 import logo from "../../../assets/logo.png";
 import toast from "react-hot-toast";
+import { Helmet } from "react-helmet-async";
 
 const ResetPasswordScreen = () => {
   const [password, setPassword] = useState("");
@@ -73,6 +74,15 @@ const ResetPasswordScreen = () => {
 
   return (
     <div className="flex min-h-full h-screen flex-1 flex-col justify-center px-6 py-12 lg:px-8">
+      <Helmet>
+        <title>Restablecer Contraseña | EstateAdmin</title>
+        <meta
+          name="description"
+          content="Restablecimiento de contraseña para acceso a EstateAdmin."
+        />
+        <meta name="robots" content="noindex, nofollow" />
+        <link rel="canonical" href="https://estate-admin.com/reset-password" />
+      </Helmet>
       <div className="sm:mx-auto sm:w-full sm:max-w-sm">
         <img className="mx-auto h-10 w-auto" src={logo} alt="Your Company" />
         <h2 className="mt-10 text-center text-2xl font-bold leading-9 tracking-tight text-gray-900">

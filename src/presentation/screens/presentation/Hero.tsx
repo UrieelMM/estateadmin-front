@@ -21,9 +21,12 @@ import AreaReservation from "./AreaReservation";
 import DataControl from "./DataControl";
 import MaintenanceTickets from "./MaintenanceTickets";
 import FeatureDetails from "./FeatureDetails";
+import { getSeoExperimentCopy } from "../../seo/seoExperiments";
 
 const navigation = [
   { name: "Características", href: "#features" },
+  { name: "¿Para quién es?", href: "/para-quien-es" },
+  { name: "FAQ", href: "/preguntas-frecuentes" },
   { name: "Sobre nosotros", href: "/sobre-nosotros" },
   { name: "Contacto", href: "/contacto" },
 ];
@@ -31,6 +34,72 @@ const navigation = [
 const Hero = () => {
   const [ mobileMenuOpen, setMobileMenuOpen ] = useState( false );
   const { isDarkMode, toggleDarkMode } = useLocalDarkMode();
+  const seoCopy = getSeoExperimentCopy( "home" );
+  const seoUrl = "https://estate-admin.com";
+  const seoImage =
+    "https://res.cloudinary.com/dz5tntwl1/image/upload/v1771019512/ligh_mgf0tg.webp";
+  const seoTitle = seoCopy.title;
+  const seoDescription = seoCopy.description;
+  const seoKeywords = seoCopy.keywords;
+  const organizationSchema = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: "EstateAdmin",
+    url: seoUrl,
+    logo: seoImage,
+    contactPoint: {
+      "@type": "ContactPoint",
+      contactType: "customer support",
+      email: "info@estate-admin.com",
+      telephone: "+52-771-195-3837",
+      areaServed: "MX",
+      availableLanguage: [ "es" ],
+    },
+  };
+  const softwareSchema = {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    name: "EstateAdmin",
+    applicationCategory: "BusinessApplication",
+    operatingSystem: "Web",
+    url: seoUrl,
+    description: seoDescription,
+    offers: {
+      "@type": "Offer",
+      priceCurrency: "MXN",
+      availability: "https://schema.org/InStock",
+    },
+  };
+  const faqSchema = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: [
+      {
+        "@type": "Question",
+        name: "¿EstateAdmin sirve para condominios pequeños y grandes?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "Sí. EstateAdmin se adapta a distintos tamaños de condominio y permite controlar operación, finanzas y mantenimiento desde un solo panel.",
+        },
+      },
+      {
+        "@type": "Question",
+        name: "¿Qué módulos incluye EstateAdmin?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "Incluye ingresos, egresos, cobranza, mantenimiento, inventario, personal, publicaciones, reportes y herramientas con IA.",
+        },
+      },
+      {
+        "@type": "Question",
+        name: "¿EstateAdmin permite mejorar la cobranza?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "Sí. Permite llevar control de cargos, pagos, morosidad y reportes para una toma de decisiones financiera más rápida.",
+        },
+      },
+    ],
+  };
 
   const handleScroll = (
     e: React.MouseEvent<HTMLAnchorElement>,
@@ -71,17 +140,11 @@ const Hero = () => {
       </div>
 
       <Helmet>
-        <title>EstateAdmin - Sistema de Gestión de Condominios</title>
+        <title>{ seoTitle }</title>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <meta
-          name="description"
-          content="EstateAdmin es una plataforma integral para la gestión de condominios. Administra pagos, mantenimiento, comunicación y más de manera eficiente."
-        />
-        <meta
-          name="keywords"
-          content="gestión de condominios, administración de condominios, sistema de pagos, mantenimiento de edificios, comunicación vecinal, software de administración, gestión de propiedades, administración de edificios"
-        />
+        <meta name="description" content={ seoDescription } />
+        <meta name="keywords" content={ seoKeywords } />
         <meta name="author" content="EstateAdmin" />
         <meta name="robots" content="index, follow" />
         <meta name="language" content="es" />
@@ -90,31 +153,21 @@ const Hero = () => {
 
         {/* Open Graph / Facebook */ }
         <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://estate-admin.com" />
-        <meta
-          property="og:title"
-          content="EstateAdmin - Sistema de Gestión de Condominios"
-        />
-        <meta
-          property="og:description"
-          content="Plataforma integral para la gestión eficiente de condominios. Administra pagos, mantenimiento y comunicación."
-        />
-        <meta property="og:image" content={ logo } />
+        <meta property="og:url" content={ seoUrl } />
+        <meta property="og:title" content={ seoTitle } />
+        <meta property="og:description" content={ seoDescription } />
+        <meta property="og:image" content={ seoImage } />
+        <meta property="og:image:alt" content={ seoTitle } />
         <meta property="og:site_name" content="EstateAdmin" />
         <meta property="og:locale" content="es_MX" />
 
         {/* Twitter */ }
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:url" content="https://estate-admin.com" />
-        <meta
-          name="twitter:title"
-          content="EstateAdmin - Sistema de Gestión de Condominios"
-        />
-        <meta
-          name="twitter:description"
-          content="Plataforma integral para la gestión eficiente de condominios."
-        />
-        <meta name="twitter:image" content={ logo } />
+        <meta name="twitter:url" content={ seoUrl } />
+        <meta name="twitter:title" content={ seoTitle } />
+        <meta name="twitter:description" content={ seoDescription } />
+        <meta name="twitter:image" content={ seoImage } />
+        <meta name="twitter:site" content="@estateadmin" />
         <meta name="twitter:creator" content="@estateadmin" />
 
         {/* WhatsApp Business */ }
@@ -129,7 +182,7 @@ const Hero = () => {
         <meta property="business:contact_data:phone" content="+527711953837" />
         <meta
           property="business:contact_data:website"
-          content="https://estate-admin.com"
+          content={ seoUrl }
         />
         <meta
           property="business:contact_data:category"
@@ -145,7 +198,16 @@ const Hero = () => {
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 
         {/* Canonical URL */ }
-        <link rel="canonical" href="https://estate-admin.com" />
+        <link rel="canonical" href={ seoUrl } />
+        <script type="application/ld+json">
+          { JSON.stringify( organizationSchema ) }
+        </script>
+        <script type="application/ld+json">
+          { JSON.stringify( softwareSchema ) }
+        </script>
+        <script type="application/ld+json">
+          { JSON.stringify( faqSchema ) }
+        </script>
       </Helmet>
 
       <header className="absolute inset-x-0 top-0 z-50">
@@ -197,15 +259,15 @@ const Hero = () => {
                 {/* Sol icon */ }
                 <SunIcon
                   className={ `absolute inset-0 w-5 h-5 text-yellow-500 transition-all duration-500 transform ${ !isDarkMode
-                      ? "opacity-100 rotate-0 scale-100"
-                      : "opacity-0 rotate-180 scale-75"
+                    ? "opacity-100 rotate-0 scale-100"
+                    : "opacity-0 rotate-180 scale-75"
                     }` }
                 />
                 {/* Luna icon */ }
                 <MoonIcon
                   className={ `absolute inset-0 w-5 h-5 text-indigo-400 transition-all duration-500 transform ${ isDarkMode
-                      ? "opacity-100 rotate-0 scale-100"
-                      : "opacity-0 -rotate-180 scale-75"
+                    ? "opacity-100 rotate-0 scale-100"
+                    : "opacity-0 -rotate-180 scale-75"
                     }` }
                 />
               </div>
@@ -268,14 +330,14 @@ const Hero = () => {
                     <div className="relative w-5 h-5">
                       <SunIcon
                         className={ `absolute inset-0 w-5 h-5 text-yellow-500 transition-all duration-500 transform ${ !isDarkMode
-                            ? "opacity-100 rotate-0 scale-100"
-                            : "opacity-0 rotate-180 scale-75"
+                          ? "opacity-100 rotate-0 scale-100"
+                          : "opacity-0 rotate-180 scale-75"
                           }` }
                       />
                       <MoonIcon
                         className={ `absolute inset-0 w-5 h-5 text-indigo-400 transition-all duration-500 transform ${ isDarkMode
-                            ? "opacity-100 rotate-0 scale-100"
-                            : "opacity-0 -rotate-180 scale-75"
+                          ? "opacity-100 rotate-0 scale-100"
+                          : "opacity-0 -rotate-180 scale-75"
                           }` }
                       />
                     </div>

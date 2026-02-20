@@ -7,15 +7,64 @@ import PublicBreadcrumb from "../../components/public/PublicBreadcrumb";
 
 const DataDeletion = () => {
   const { isDarkMode, toggleDarkMode } = useLocalDarkMode();
+  const pageUrl = "https://estate-admin.com/eliminar-datos";
+  const pageTitle = "Eliminación de Datos Personales | EstateAdmin";
+  const pageDescription =
+    "Guía oficial para solicitar la eliminación de datos personales en EstateAdmin, plataforma de administración de condominios.";
+  const pageKeywords =
+    "eliminacion de datos personales, borrar cuenta condominio, privacidad estateadmin, derecho de cancelacion datos";
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Inicio",
+        item: "https://estate-admin.com",
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "Eliminación de Datos",
+        item: pageUrl,
+      },
+    ],
+  };
+  const deletionSchema = {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    name: pageTitle,
+    description: pageDescription,
+    url: pageUrl,
+  };
 
   return (
     <div className="bg-white dark:bg-gray-900 min-h-screen transition-colors duration-300">
       <Helmet>
-        <title>Guía para Eliminación de Datos - EstateAdmin</title>
-        <meta
-          name="description"
-          content="Guía para solicitar la eliminación de datos personales en EstateAdmin"
-        />
+        <title>{pageTitle}</title>
+        <meta name="description" content={pageDescription} />
+        <meta name="keywords" content={pageKeywords} />
+        <meta name="robots" content="index, follow" />
+        <meta name="language" content="es" />
+        <meta property="og:type" content="article" />
+        <meta property="og:url" content={pageUrl} />
+        <meta property="og:title" content={pageTitle} />
+        <meta property="og:description" content={pageDescription} />
+        <meta property="og:site_name" content="EstateAdmin" />
+        <meta property="og:locale" content="es_MX" />
+        <meta name="twitter:card" content="summary" />
+        <meta name="twitter:url" content={pageUrl} />
+        <meta name="twitter:title" content={pageTitle} />
+        <meta name="twitter:description" content={pageDescription} />
+        <meta name="twitter:site" content="@estateadmin" />
+        <link rel="canonical" href={pageUrl} />
+        <script type="application/ld+json">
+          {JSON.stringify(breadcrumbSchema)}
+        </script>
+        <script type="application/ld+json">
+          {JSON.stringify(deletionSchema)}
+        </script>
       </Helmet>
 
       <header className="bg-white dark:bg-gray-800 shadow-sm transition-colors duration-300">

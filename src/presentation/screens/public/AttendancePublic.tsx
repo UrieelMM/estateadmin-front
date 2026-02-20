@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
+import { Helmet } from "react-helmet-async";
 import {
   ClockIcon,
   UserIcon,
@@ -51,6 +52,17 @@ const AttendancePublic: React.FC = () => {
     pin: "",
     type: "check-in" as "check-in" | "check-out",
   });
+  const seoHead = (
+    <Helmet>
+      <title>Registro de Asistencia | EstateAdmin</title>
+      <meta
+        name="description"
+        content="Registro público de asistencia mediante código QR."
+      />
+      <meta name="robots" content="noindex, nofollow" />
+      <link rel="canonical" href={`https://estate-admin.com/attendance/${qrId || ""}`} />
+    </Helmet>
+  );
 
   useEffect(() => {
     const validateQR = async () => {
@@ -192,40 +204,48 @@ const AttendancePublic: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-        <LoadingApp />
-      </div>
+      <>
+        {seoHead}
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+          <LoadingApp />
+        </div>
+      </>
     );
   }
 
   if (error && !qrValid) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-red-50 to-red-100 flex items-center justify-center p-4">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="bg-white rounded-xl shadow-xl p-8 max-w-md w-full text-center"
-        >
-          <XCircleIcon className="h-16 w-16 text-red-500 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">
-            Código QR No Válido
-          </h1>
-          <p className="text-gray-600 mb-6">{error}</p>
-          <p className="text-sm text-gray-500">
-            Contacte a la administración para obtener un código QR válido.
-          </p>
-        </motion.div>
-      </div>
+      <>
+        {seoHead}
+        <div className="min-h-screen bg-gradient-to-br from-red-50 to-red-100 flex items-center justify-center p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white rounded-xl shadow-xl p-8 max-w-md w-full text-center"
+          >
+            <XCircleIcon className="h-16 w-16 text-red-500 mx-auto mb-4" />
+            <h1 className="text-2xl font-bold text-gray-900 mb-4">
+              Código QR No Válido
+            </h1>
+            <p className="text-gray-600 mb-6">{error}</p>
+            <p className="text-sm text-gray-500">
+              Contacte a la administración para obtener un código QR válido.
+            </p>
+          </motion.div>
+        </div>
+      </>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-white rounded-xl shadow-xl p-8 max-w-md w-full"
-      >
+    <>
+      {seoHead}
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white rounded-xl shadow-xl p-8 max-w-md w-full"
+        >
         {/* Header */}
         <div className="text-center mb-8">
           <div className="bg-indigo-100 rounded-full p-3 w-16 h-16 mx-auto mb-4 flex items-center justify-center">
@@ -390,8 +410,9 @@ const AttendancePublic: React.FC = () => {
             })}
           </p>
         </div>
-      </motion.div>
-    </div>
+        </motion.div>
+      </div>
+    </>
   );
 };
 

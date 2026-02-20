@@ -24,6 +24,7 @@ import {
   HashtagIcon,
   ShieldCheckIcon,
 } from "@heroicons/react/24/outline";
+import { Helmet } from "react-helmet-async";
 import useNewCustomerFormStore, {
   NewCustomerInfo,
 } from "../../../store/superAdmin/useNewCustomerFormStore";
@@ -889,6 +890,17 @@ const NewCustomerInformationForm = () => {
   const [isFormExpired, setIsFormExpired] = useState(false);
   const [isCheckingExpiration, setIsCheckingExpiration] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const seoHead = (
+    <Helmet>
+      <title>Alta de Cliente | EstateAdmin</title>
+      <meta
+        name="description"
+        content="Formulario de alta comercial para nuevos clientes."
+      />
+      <meta name="robots" content="noindex, nofollow" />
+      <link rel="canonical" href={`https://estate-admin.com/nuevo-cliente/${formId || ""}`} />
+    </Helmet>
+  );
 
   // Comprobar la expiración del formulario al cargar
   useEffect(() => {
@@ -1261,39 +1273,45 @@ const NewCustomerInformationForm = () => {
   // Renderizar contenido según el estado
   if (isCheckingExpiration) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <div className="text-center">
-          <ArrowPathIcon className="h-12 w-12 mx-auto animate-spin text-indigo-600 dark:text-indigo-400" />
-          <h2 className="mt-4 text-lg font-semibold text-gray-900 dark:text-white">
-            Verificando estado del formulario...
-          </h2>
+      <>
+        {seoHead}
+        <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+          <div className="text-center">
+            <ArrowPathIcon className="h-12 w-12 mx-auto animate-spin text-indigo-600 dark:text-indigo-400" />
+            <h2 className="mt-4 text-lg font-semibold text-gray-900 dark:text-white">
+              Verificando estado del formulario...
+            </h2>
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
   if (isFormExpired) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
-        <div className="max-w-md w-full bg-white dark:bg-gray-800 shadow-lg rounded-lg p-8 text-center">
-          <ExclamationTriangleIcon className="h-16 w-16 mx-auto text-amber-500" />
-          <h2 className="mt-4 text-2xl font-bold text-gray-900 dark:text-white">
-            Formulario Expirado
-          </h2>
-          <p className="mt-2 text-gray-600 dark:text-gray-400">
-            Este enlace de formulario ha expirado o no es válido. Por favor,
-            solicite un nuevo enlace a su representante de EstateAdmin.
-          </p>
-          <div className="mt-6">
-            <a
-              href="/"
-              className="inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-            >
-              Volver al Inicio
-            </a>
+      <>
+        {seoHead}
+        <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
+          <div className="max-w-md w-full bg-white dark:bg-gray-800 shadow-lg rounded-lg p-8 text-center">
+            <ExclamationTriangleIcon className="h-16 w-16 mx-auto text-amber-500" />
+            <h2 className="mt-4 text-2xl font-bold text-gray-900 dark:text-white">
+              Formulario Expirado
+            </h2>
+            <p className="mt-2 text-gray-600 dark:text-gray-400">
+              Este enlace de formulario ha expirado o no es válido. Por favor,
+              solicite un nuevo enlace a su representante de EstateAdmin.
+            </p>
+            <div className="mt-6">
+              <a
+                href="/"
+                className="inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              >
+                Volver al Inicio
+              </a>
+            </div>
           </div>
         </div>
-      </div>
+      </>
     );
   }
 
@@ -1303,10 +1321,12 @@ const NewCustomerInformationForm = () => {
   );
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_#e0e7ff_0%,_#ffffff_40%,_#f8fafc_100%)] dark:bg-[radial-gradient(circle_at_top,_#1f2937_0%,_#111827_60%,_#0b1220_100%)] py-10 px-4 sm:px-6 lg:px-8">
-      <div
-        className={`mx-auto ${currentStep === 5 ? "max-w-6xl" : "max-w-3xl"}`}
-      >
+    <>
+      {seoHead}
+      <div className="min-h-screen bg-[radial-gradient(circle_at_top,_#e0e7ff_0%,_#ffffff_40%,_#f8fafc_100%)] dark:bg-[radial-gradient(circle_at_top,_#1f2937_0%,_#111827_60%,_#0b1220_100%)] py-10 px-4 sm:px-6 lg:px-8">
+        <div
+          className={`mx-auto ${currentStep === 5 ? "max-w-6xl" : "max-w-3xl"}`}
+        >
         <div className="text-center mb-8">
           <h1 className="bg-gradient-to-r from-indigo-700 via-indigo-500 to-cyan-500 bg-clip-text text-transparent text-5xl font-extrabold mb-3">
             EstateAdmin
@@ -1516,8 +1536,9 @@ const NewCustomerInformationForm = () => {
             </div>
           </div>
         </div>
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 

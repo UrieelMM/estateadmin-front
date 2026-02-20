@@ -9,6 +9,46 @@ import PublicBreadcrumb from "../../components/public/PublicBreadcrumb";
 
 const AboutUs = () => {
   const { isDarkMode, toggleDarkMode } = useLocalDarkMode();
+  const pageUrl = "https://estate-admin.com/sobre-nosotros";
+  const pageTitle =
+    "Sobre EstateAdmin | Software Para Administración de Condominios";
+  const pageDescription =
+    "Conoce el equipo y la visión de EstateAdmin: plataforma para administración de condominios con enfoque en finanzas, mantenimiento y operación diaria.";
+  const pageKeywords =
+    "sobre estateadmin, software para administracion de condominios, plataforma para condominios, gestion condominal, tecnologia para administradores";
+  const pageImage =
+    "https://res.cloudinary.com/dz5tntwl1/image/upload/v1771019512/ligh_mgf0tg.webp";
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Inicio",
+        item: "https://estate-admin.com",
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "Sobre Nosotros",
+        item: pageUrl,
+      },
+    ],
+  };
+  const aboutPageSchema = {
+    "@context": "https://schema.org",
+    "@type": "AboutPage",
+    name: pageTitle,
+    description: pageDescription,
+    url: pageUrl,
+    publisher: {
+      "@type": "Organization",
+      name: "EstateAdmin",
+      url: "https://estate-admin.com",
+      logo: pageImage,
+    },
+  };
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -36,19 +76,11 @@ const AboutUs = () => {
   return (
     <div className="bg-white dark:bg-gray-900 min-h-screen transition-colors duration-300">
       <Helmet>
-        <title>
-          Sobre Nosotros - EstateAdmin | Gestión Inteligente de Condominios
-        </title>
+        <title>{pageTitle}</title>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <meta
-          name="description"
-          content="Conoce más sobre EstateAdmin, nuestra visión y objetivos como empresa líder en soluciones de gestión para condominios en México. Software especializado en administración de propiedades."
-        />
-        <meta
-          name="keywords"
-          content="estateadmin, software condominios, administración de propiedades, gestión de edificios, empresa tecnológica, software inmobiliario, administración inmobiliaria, gestión de condominios méxico"
-        />
+        <meta name="description" content={pageDescription} />
+        <meta name="keywords" content={pageKeywords} />
         <meta name="author" content="EstateAdmin" />
         <meta name="robots" content="index, follow" />
         <meta name="language" content="es" />
@@ -57,41 +89,31 @@ const AboutUs = () => {
 
         {/* Open Graph / Facebook */}
         <meta property="og:type" content="website" />
-        <meta
-          property="og:url"
-          content="https://estate-admin.com/sobre-nosotros"
-        />
-        <meta
-          property="og:title"
-          content="Sobre Nosotros - EstateAdmin | Gestión Inteligente de Condominios"
-        />
-        <meta
-          property="og:description"
-          content="Conoce más sobre EstateAdmin, nuestra visión y objetivos como empresa líder en soluciones de gestión para condominios en México."
-        />
-        <meta property="og:image" content={logo} />
+        <meta property="og:url" content={pageUrl} />
+        <meta property="og:title" content={pageTitle} />
+        <meta property="og:description" content={pageDescription} />
+        <meta property="og:image" content={pageImage} />
+        <meta property="og:image:alt" content={pageTitle} />
         <meta property="og:site_name" content="EstateAdmin" />
         <meta property="og:locale" content="es_MX" />
 
         {/* Twitter */}
         <meta name="twitter:card" content="summary_large_image" />
-        <meta
-          name="twitter:url"
-          content="https://estate-admin.com/sobre-nosotros"
-        />
-        <meta
-          name="twitter:title"
-          content="Sobre Nosotros - EstateAdmin | Gestión Inteligente de Condominios"
-        />
-        <meta
-          name="twitter:description"
-          content="Conoce más sobre EstateAdmin, nuestra visión y objetivos como empresa líder en soluciones de gestión para condominios en México."
-        />
-        <meta name="twitter:image" content={logo} />
+        <meta name="twitter:url" content={pageUrl} />
+        <meta name="twitter:title" content={pageTitle} />
+        <meta name="twitter:description" content={pageDescription} />
+        <meta name="twitter:image" content={pageImage} />
+        <meta name="twitter:site" content="@estateadmin" />
         <meta name="twitter:creator" content="@estateadmin" />
 
         {/* Canonical URL */}
-        <link rel="canonical" href="https://estate-admin.com/sobre-nosotros" />
+        <link rel="canonical" href={pageUrl} />
+        <script type="application/ld+json">
+          {JSON.stringify(breadcrumbSchema)}
+        </script>
+        <script type="application/ld+json">
+          {JSON.stringify(aboutPageSchema)}
+        </script>
       </Helmet>
 
       <header className="bg-white dark:bg-gray-800 shadow-sm transition-colors duration-300">

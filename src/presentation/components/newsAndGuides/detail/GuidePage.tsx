@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useLocation } from "react-router-dom";
 import { useNewsAndGuidesStore } from "../../../../store/useNewsAndGuidesStore";
 import moment from "moment";
 import "moment/locale/es";
@@ -22,6 +22,7 @@ import LoadingApp from "../../shared/loaders/LoadingApp";
 const GuidePage: React.FC = () => {
   // Obtener el slug de la URL
   const { slug } = useParams<{ slug: string }>();
+  const location = useLocation();
 
   // Obtener datos de la guía
   const {
@@ -148,46 +149,75 @@ const GuidePage: React.FC = () => {
 
   // Obtener el contenido adecuado
   const guideContent = getStaticContent();
+  const siteUrl = "https://estate-admin.com";
+  const canonicalUrl = `${siteUrl}${location.pathname}`;
+  const pageTitle = `${currentGuide.title} | Guía de Administración de Condominios`;
+  const pageDescription =
+    currentGuide.excerpt ||
+    currentGuide.subtitle ||
+    "Guía práctica para mejorar la administración y operación de condominios.";
+  const baseKeywords =
+    "administracion de condominios, cuotas de mantenimiento, cobranza condominal, egresos de condominio, mantenimiento condominios";
+  const pageKeywords = currentGuide.tags?.length
+    ? `${currentGuide.tags.join(", ")}, ${baseKeywords}`
+    : baseKeywords;
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Inicio",
+        item: siteUrl,
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "Guías",
+        item: `${siteUrl}/guias`,
+      },
+      {
+        "@type": "ListItem",
+        position: 3,
+        name: currentGuide.title,
+        item: canonicalUrl,
+      },
+    ],
+  };
 
   return (
     <>
       {/* SEO */}
       <Helmet>
-        <title>{currentGuide.title} | Guías y Tutoriales</title>
-        <meta
-          name="description"
-          content={currentGuide.excerpt || currentGuide.subtitle}
-        />
+        <title>{pageTitle}</title>
+        <meta name="description" content={pageDescription} />
+        <meta name="keywords" content={pageKeywords} />
         {/* Open Graph */}
-        <meta property="og:title" content={currentGuide.title} />
-        <meta
-          property="og:description"
-          content={currentGuide.excerpt || currentGuide.subtitle}
-        />
+        <meta property="og:title" content={pageTitle} />
+        <meta property="og:description" content={pageDescription} />
         <meta property="og:image" content={currentGuide.imageUrl} />
         <meta property="og:type" content="article" />
-        <meta property="og:url" content={window.location.href} />
+        <meta property="og:url" content={canonicalUrl} />
+        <meta property="og:site_name" content="EstateAdmin" />
+        <meta property="og:locale" content="es_MX" />
         {/* Twitter */}
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content={currentGuide.title} />
-        <meta
-          name="twitter:description"
-          content={currentGuide.excerpt || currentGuide.subtitle}
-        />
+        <meta name="twitter:url" content={canonicalUrl} />
+        <meta name="twitter:title" content={pageTitle} />
+        <meta name="twitter:description" content={pageDescription} />
         <meta name="twitter:image" content={currentGuide.imageUrl} />
+        <meta name="twitter:site" content="@estateadmin" />
         {/* Metadatos adicionales para SEO */}
         <meta name="robots" content="index, follow" />
-        <link rel="canonical" href={window.location.href} />
-        {currentGuide.tags && currentGuide.tags.length > 0 && (
-          <meta name="keywords" content={currentGuide.tags.join(", ")} />
-        )}
+        <link rel="canonical" href={canonicalUrl} />
         {/* Schema.org structured data para Article */}
         <script type="application/ld+json">
           {JSON.stringify({
             "@context": "https://schema.org",
             "@type": "Article",
-            headline: currentGuide.title,
-            description: currentGuide.excerpt || currentGuide.subtitle,
+            headline: pageTitle,
+            description: pageDescription,
             image: currentGuide.imageUrl,
             author: {
               "@type": "Person",
@@ -198,7 +228,7 @@ const GuidePage: React.FC = () => {
               name: "Estate Admin",
               logo: {
                 "@type": "ImageObject",
-                url: `${window.location.origin}/logo.png`,
+                url: `${siteUrl}/logo.png`,
               },
             },
             datePublished: currentGuide.createdAt
@@ -209,14 +239,17 @@ const GuidePage: React.FC = () => {
               : new Date().toISOString(),
             mainEntityOfPage: {
               "@type": "WebPage",
-              "@id": window.location.href,
+              "@id": canonicalUrl,
             },
             articleSection:
               currentGuide.categories && currentGuide.categories.length > 0
                 ? currentGuide.categories[0]
                 : "Guía",
-            keywords: currentGuide.tags ? currentGuide.tags.join(",") : "",
+            keywords: pageKeywords,
           })}
+        </script>
+        <script type="application/ld+json">
+          {JSON.stringify(breadcrumbSchema)}
         </script>
       </Helmet>
 
