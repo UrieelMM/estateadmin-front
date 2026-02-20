@@ -233,12 +233,9 @@ const DashboardOperationalHealth = () => {
   const paidMonth = currentPaymentStats?.paid ?? 0;
   const pendingMonth = currentPaymentStats?.pending ?? 0;
   const expectedMonth = paidMonth + pendingMonth;
-  const complianceRate =
-    currentPaymentStats?.complianceRate ??
-    (expectedMonth > 0 ? (paidMonth / expectedMonth) * 100 : 0);
-  const delinquencyRate =
-    currentPaymentStats?.delinquencyRate ??
-    (expectedMonth > 0 ? (pendingMonth / expectedMonth) * 100 : 0);
+  // Para mantener consistencia con el hint monetario, usamos porcentaje basado en monto pagado/esperado.
+  const complianceRate = expectedMonth > 0 ? (paidMonth / expectedMonth) * 100 : 0;
+  const delinquencyRate = expectedMonth > 0 ? (pendingMonth / expectedMonth) * 100 : 0;
 
   const topExpenseConcepts = useMemo(() => {
     const list = Object.entries(conceptRecords).map(([concept, records]) => {
