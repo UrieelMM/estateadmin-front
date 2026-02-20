@@ -1,16 +1,35 @@
 // src/components/paymentSummary/PaymentSummaryByAccount.tsx
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { usePaymentSummaryStore } from "../../../../../store/paymentSummaryStore";
 import { useFinancialAccountsStore } from "../../../../../store/useAccountsStore";
+import { usePettyCashStore } from "../../../../../store/pettyCashStore";
 import useUserStore from "../../../../../store/UserDataStore";
 import AccountSummaryCards from "../Summary/AccountSummaryCards";
 import AccountCharts from "../Summary/AccountCharts";
+import AccountLatestMovementsTable from "../Summary/AccountLatestMovementsTable";
 import SkeletonLoading from "../../../../components/shared/loaders/SkeletonLoading";
+import { getAuth, getIdTokenResult } from "firebase/auth";
+import { collection, getDocs, getFirestore } from "firebase/firestore";
+
+type AccountOperationalTotals = {
+  expenses: number;
+  internalInflow: number;
+  internalOutflow: number;
+};
+
+const centsToPesos = (value: any): number => {
+  const parsed = parseInt(String(value ?? 0), 10);
+  if (Number.isNaN(parsed)) return 0;
+  return parsed / 100;
+};
 
 const PaymentSummaryByAccount: React.FC = () => {
   // Estados locales para controlar la carga independiente
   const [ isInitialLoading, setIsInitialLoading ] = useState( true );
   const [ hasInitialized, setHasInitialized ] = useState( false );
+  const [ operationalLoading, setOperationalLoading ] = useState( false );
+  const [ operationalTotalsByAccount, setOperationalTotalsByAccount ] =
+    useState<Record<string, AccountOperationalTotals>>( {} );
 
   // Extrae datos del store de pagos
   const {
@@ -35,8 +54,115 @@ const PaymentSummaryByAccount: React.FC = () => {
   const { accounts } = useFinancialAccountsStore( ( state ) => ( {
     accounts: state.accounts,
   } ) );
+  const {
+    config: pettyCashConfig,
+    currentBalance: pettyCashCurrentBalance,
+    fetchConfig: fetchPettyCashConfig,
+  } = usePettyCashStore( ( state ) => ( {
+    config: state.config,
+    currentBalance: state.currentBalance,
+    fetchConfig: state.fetchConfig,
+  } ) );
   const fetchCondominiumsUsers = useUserStore(
     ( state ) => state.fetchCondominiumsUsers
+  );
+
+  const fetchOperationalTotalsByAccount = useCallback(
+    async (year: string, pettyCashAccountId?: string) => {
+      try {
+        setOperationalLoading( true );
+
+        const auth = getAuth();
+        const user = auth.currentUser;
+        if ( !user ) throw new Error( "Usuario no autenticado" );
+
+        const tokenResult = await getIdTokenResult( user );
+        const clientId = tokenResult.claims[ "clientId" ] as string;
+        const condominiumId = localStorage.getItem( "condominiumId" );
+
+        if ( !clientId || !condominiumId ) {
+          throw new Error( "Contexto de cliente/condominio inválido" );
+        }
+
+        const db = getFirestore();
+        const nextTotals: Record<string, AccountOperationalTotals> = {};
+
+        const ensureAccount = (accountId: string) => {
+          if ( !nextTotals[ accountId ] ) {
+            nextTotals[ accountId ] = {
+              expenses: 0,
+              internalInflow: 0,
+              internalOutflow: 0,
+            };
+          }
+          return nextTotals[ accountId ];
+        };
+
+        const expensesRef = collection(
+          db,
+          `clients/${clientId}/condominiums/${condominiumId}/expenses`
+        );
+        const expensesSnap = await getDocs( expensesRef );
+        expensesSnap.forEach( (docSnap) => {
+          const data = docSnap.data();
+          const accountId = data.financialAccountId as string | undefined;
+          const expenseDate = data.expenseDate as string | undefined;
+          if ( !accountId ) return;
+          if ( year && ( !expenseDate || !expenseDate.startsWith( year ) ) ) {
+            return;
+          }
+
+          ensureAccount( accountId ).expenses += centsToPesos( data.amount );
+        } );
+
+        const pettyTransactionsRef = collection(
+          db,
+          `clients/${clientId}/condominiums/${condominiumId}/pettyCashTransactions`
+        );
+        const pettyTransactionsSnap = await getDocs( pettyTransactionsRef );
+
+        pettyTransactionsSnap.forEach( (docSnap) => {
+          const data = docSnap.data();
+          const txType = data.type as string | undefined;
+          const expenseDate = data.expenseDate as string | undefined;
+          if ( year && ( !expenseDate || !expenseDate.startsWith( year ) ) ) {
+            return;
+          }
+
+          const amount = centsToPesos( data.amount );
+          const normalizedAmount = Math.abs( amount );
+
+          if ( txType === "replenishment" && normalizedAmount > 0 ) {
+            if ( data.sourceAccountId ) {
+              ensureAccount( data.sourceAccountId ).internalOutflow +=
+                normalizedAmount;
+            }
+            if ( pettyCashAccountId ) {
+              ensureAccount( pettyCashAccountId ).internalInflow +=
+                normalizedAmount;
+            }
+            return;
+          }
+
+          if ( txType === "adjustment" && pettyCashAccountId && amount !== 0 ) {
+            if ( amount > 0 ) {
+              ensureAccount( pettyCashAccountId ).internalInflow +=
+                normalizedAmount;
+            } else {
+              ensureAccount( pettyCashAccountId ).internalOutflow +=
+                normalizedAmount;
+            }
+          }
+        } );
+
+        setOperationalTotalsByAccount( nextTotals );
+      } catch ( error ) {
+        console.error( "Error cargando totales operativos por cuenta:", error );
+      } finally {
+        setOperationalLoading( false );
+      }
+    },
+    []
   );
 
   // Handler para cambio de año
@@ -61,6 +187,15 @@ const PaymentSummaryByAccount: React.FC = () => {
         // Cargar resumen de pagos para el año seleccionado
         await fetchSummary( selectedYear, true );
 
+        // Cargar configuración de caja chica para sincronizar saldo de su cuenta
+        await fetchPettyCashConfig();
+
+        // Cargar totales operativos para conciliación visual por cuenta
+        await fetchOperationalTotalsByAccount(
+          selectedYear,
+          usePettyCashStore.getState().config?.accountId
+        );
+
         setHasInitialized( true );
       } catch ( error ) {
         console.error( "Error cargando datos independientes:", error );
@@ -74,6 +209,8 @@ const PaymentSummaryByAccount: React.FC = () => {
     hasInitialized,
     fetchCondominiumsUsers,
     fetchAccounts,
+    fetchOperationalTotalsByAccount,
+    fetchPettyCashConfig,
     fetchSummary,
     selectedYear,
   ] );
@@ -84,6 +221,10 @@ const PaymentSummaryByAccount: React.FC = () => {
       const reloadForNewYear = async () => {
         try {
           await fetchSummary( selectedYear, true );
+          await fetchOperationalTotalsByAccount(
+            selectedYear,
+            pettyCashConfig?.accountId
+          );
         } catch ( error ) {
           console.error( "Error recargando datos para nuevo año:", error );
         }
@@ -91,7 +232,13 @@ const PaymentSummaryByAccount: React.FC = () => {
 
       reloadForNewYear();
     }
-  }, [ selectedYear, hasInitialized, fetchSummary ] );
+  }, [
+    selectedYear,
+    hasInitialized,
+    fetchSummary,
+    fetchOperationalTotalsByAccount,
+    pettyCashConfig?.accountId,
+  ] );
 
   // Mostrar loading mientras se cargan los datos iniciales
   if ( isInitialLoading ) {
@@ -150,7 +297,7 @@ const PaymentSummaryByAccount: React.FC = () => {
       </div>
 
       {/* Indicador de carga si el store está cargando nuevos datos */ }
-      { storeLoading && (
+      { ( storeLoading || operationalLoading ) && (
         <div className="bg-indigo-50 dark:bg-indigo-900 border border-indigo-200 dark:border-indigo-700 rounded-lg p-3 mb-4">
           <p className="text-sm text-indigo-700 dark:text-indigo-200 flex items-center">
             <svg
@@ -173,7 +320,7 @@ const PaymentSummaryByAccount: React.FC = () => {
                 d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
               ></path>
             </svg>
-            Actualizando datos...
+            Actualizando datos de ingresos y movimientos operativos...
           </p>
         </div>
       ) }
@@ -188,7 +335,27 @@ const PaymentSummaryByAccount: React.FC = () => {
           </h2>
 
           {/* Cards de resumen para esta cuenta */ }
-          <AccountSummaryCards payments={ payments } accountId={ accountId } />
+          <AccountSummaryCards
+            payments={ payments }
+            accountId={ accountId }
+            pettyCashAccountId={ pettyCashConfig?.accountId }
+            pettyCashCurrentBalance={ pettyCashCurrentBalance }
+            periodExpenseTotal={
+              operationalTotalsByAccount[ accountId ]?.expenses ?? 0
+            }
+            periodInternalInflow={
+              operationalTotalsByAccount[ accountId ]?.internalInflow ?? 0
+            }
+            periodInternalOutflow={
+              operationalTotalsByAccount[ accountId ]?.internalOutflow ?? 0
+            }
+          />
+
+          <AccountLatestMovementsTable
+            payments={ payments }
+            selectedYear={ selectedYear }
+            limit={ 8 }
+          />
 
           {/* Gráficas para esta cuenta */ }
           <AccountCharts payments={ payments } />

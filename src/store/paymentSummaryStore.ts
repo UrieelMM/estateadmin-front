@@ -271,6 +271,7 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>()(
         const totalCondominiums = users.length;
 
         const paymentRecords: PaymentRecord[] = [];
+        const accountMovementRecords: PaymentRecord[] = [];
         const chargeCount: Record<string, number> = {};
         const paidChargeCount: Record<string, number> = {};
         for (let i = 1; i <= 12; i++) {
@@ -330,6 +331,12 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>()(
 
                 paymentsSnapshot.forEach((paymentDoc) => {
                   const paymentData = paymentDoc.data();
+                  const paymentAmount = centsToPesos(paymentData.amountPaid) || 0;
+                  const paymentPending =
+                    centsToPesos(paymentData.amountPending) || 0;
+                  const paymentReferenceAmount =
+                    centsToPesos(chargeData.referenceAmount) || 0;
+
                   totalAmountPaid += centsToPesos(paymentData.amountPaid) || 0;
                   totalAmountPendingFromPayments +=
                     centsToPesos(paymentData.amountPending) || 0;
@@ -353,6 +360,60 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>()(
                         ? formatDate(d)
                         : paymentData.paymentDate;
                     }
+                  }
+
+                  // Registro por movimiento de pago para resumen por cuenta.
+                  // No altera la lógica global de cargos/pagos; sólo mejora precisión por cuenta.
+                  const movementAccountId = paymentData.financialAccountId || "";
+                  if (movementAccountId) {
+                    let movementMonth = monthCode;
+                    let movementDate = "";
+
+                    if (paymentData.paymentDate) {
+                      if (paymentData.paymentDate.toDate) {
+                        const d = paymentData.paymentDate.toDate();
+                        movementDate = formatDate(d);
+                        movementMonth = (d.getMonth() + 1)
+                          .toString()
+                          .padStart(2, "0");
+                      } else if (typeof paymentData.paymentDate === "string") {
+                        const d = new Date(paymentData.paymentDate);
+                        if (!isNaN(d.getTime())) {
+                          movementDate = formatDate(d);
+                          movementMonth = (d.getMonth() + 1)
+                            .toString()
+                            .padStart(2, "0");
+                        }
+                      }
+                    }
+
+                    accountMovementRecords.push({
+                      id: `${chargeDoc.id}-${paymentDoc.id}`,
+                      clientId,
+                      numberCondominium,
+                      month: movementMonth,
+                      amountPaid: parseFloat(paymentAmount.toFixed(2)),
+                      amountPending: parseFloat(paymentPending.toFixed(2)),
+                      concept: Array.isArray(chargeData.concept)
+                        ? chargeData.concept.join(", ")
+                        : chargeData.concept || "Desconocido",
+                      paymentType:
+                        paymentData.paymentType || chargeData.paymentType,
+                      // Evitamos sobrecontar saldos/créditos en vista por cuenta.
+                      creditBalance: 0,
+                      creditUsed: 0,
+                      paid: paymentPending <= 0,
+                      financialAccountId: movementAccountId,
+                      paymentDate: movementDate,
+                      attachmentPayment:
+                        paymentData.attachmentPayment ||
+                        chargeData.attachmentPayment,
+                      chargeId: chargeDoc.id,
+                      userId: userObj.id,
+                      referenceAmount: parseFloat(
+                        paymentReferenceAmount.toFixed(2)
+                      ),
+                    });
                   }
                 });
 
@@ -567,13 +628,59 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>()(
         });
 
         const byFinancialAccount: Record<string, PaymentRecord[]> = {};
-        paymentRecords.forEach((pr) => {
-          if (pr.financialAccountId === "N/A") return;
+        const usingMovementRecords = accountMovementRecords.length > 0;
+        const sourceForAccountGrouping = usingMovementRecords
+          ? accountMovementRecords
+          : paymentRecords;
+
+        sourceForAccountGrouping.forEach((pr) => {
+          if (!pr.financialAccountId || pr.financialAccountId === "N/A") return;
           if (!byFinancialAccount[pr.financialAccountId]) {
             byFinancialAccount[pr.financialAccountId] = [];
           }
           byFinancialAccount[pr.financialAccountId].push(pr);
         });
+
+        // Cuando agrupamos por movimientos individuales de pago, el saldo a favor
+        // (creditBalance/creditUsed) queda fuera. Lo reincorporamos una sola vez por cargo
+        // para mantener consistencia con el KPI global de "Ingresos del período".
+        if (usingMovementRecords) {
+          paymentRecords.forEach((pr) => {
+            if (!pr.financialAccountId || pr.financialAccountId === "N/A") return;
+
+            const hasCreditDelta =
+              (Number(pr.creditBalance) || 0) !== 0 ||
+              (Number(pr.creditUsed) || 0) !== 0;
+            if (!hasCreditDelta) return;
+
+            if (!byFinancialAccount[pr.financialAccountId]) {
+              byFinancialAccount[pr.financialAccountId] = [];
+            }
+
+            byFinancialAccount[pr.financialAccountId].push({
+              ...pr,
+              id: `${pr.id}-${pr.userId || "user"}-credit`,
+              amountPaid: 0,
+              amountPending: 0,
+              referenceAmount: 0,
+            });
+          });
+        }
+
+        // También incluir pagos no identificados por cuenta para trazabilidad contable.
+        paymentRecords
+          .filter(
+            (pr) =>
+              pr.concept === "Pago no identificado" &&
+              pr.financialAccountId &&
+              pr.financialAccountId !== "N/A"
+          )
+          .forEach((pr) => {
+            if (!byFinancialAccount[pr.financialAccountId]) {
+              byFinancialAccount[pr.financialAccountId] = [];
+            }
+            byFinancialAccount[pr.financialAccountId].push(pr);
+          });
 
         let financialAccountsMap: Record<string, FinancialAccountInfo> = {};
         const accountsRef = collection(

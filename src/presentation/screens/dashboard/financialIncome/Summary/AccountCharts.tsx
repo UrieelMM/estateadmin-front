@@ -43,7 +43,7 @@ const adjustColor = (colorHex: string, opacity: number): string => {
 const AccountCharts: React.FC<{ payments: PaymentRecord[] }> = ({
   payments,
 }) => {
-  const { financialAccountsMap, monthlyStats } = usePaymentSummaryStore();
+  const { financialAccountsMap } = usePaymentSummaryStore();
   const { isDarkMode } = useTheme();
 
   // Obtenemos la información de la cuenta correspondiente.
@@ -54,11 +54,6 @@ const AccountCharts: React.FC<{ payments: PaymentRecord[] }> = ({
       : null;
   const initialBalance = accountInfo ? accountInfo.initialBalance : 0;
   const creationMonth = accountInfo ? accountInfo.creationMonth : "01";
-
-  // Calculamos el saldo a favor de la misma manera que en SummaryCards
-  const accountMonthlyStats = monthlyStats.filter((stat) =>
-    payments.some((p) => p.month === stat.month)
-  );
 
   /**
    * Formateador de moneda
@@ -101,8 +96,8 @@ const AccountCharts: React.FC<{ payments: PaymentRecord[] }> = ({
     totals["Saldo inicial"] = initialBalance;
 
     // Agregar Saldo a favor disponible como categoría
-    const totalSaldo = accountMonthlyStats.reduce(
-      (acc, stat) => acc + stat.saldo,
+    const totalSaldo = payments.reduce(
+      (acc, p) => acc + Math.max(0, p.creditBalance - (p.creditUsed || 0)),
       0
     );
     if (totalSaldo > 0) {
@@ -110,7 +105,7 @@ const AccountCharts: React.FC<{ payments: PaymentRecord[] }> = ({
     }
 
     return totals;
-  }, [payments, initialBalance, accountMonthlyStats]);
+  }, [payments, initialBalance]);
 
   /**
    * 2. Datos para el gráfico de pastel.
