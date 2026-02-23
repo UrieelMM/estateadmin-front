@@ -33,14 +33,38 @@ const monthNames: Record<string, string> = {
   "12": "Diciembre",
 };
 
+const monthKeys = [
+  "01",
+  "02",
+  "03",
+  "04",
+  "05",
+  "06",
+  "07",
+  "08",
+  "09",
+  "10",
+  "11",
+  "12",
+];
+
 const ExcelReportGenerator: React.FC<ExcelReportGeneratorProps> = ({
   year,
   concept,
   renderButton,
 }) => {
   // Obtener datos del store
-  const { monthlyStats, detailed, conceptRecords, totalIncome, totalInitialBalance } = usePaymentSummaryStore(
+  const {
+    payments,
+    monthlyStats,
+    detailed,
+    conceptRecords,
+    totalInitialBalance,
+    byFinancialAccount,
+    financialAccountsMap,
+  } = usePaymentSummaryStore(
     (state) => ({
+      payments: state.payments,
       totalPending: state.totalPending,
       monthlyStats: state.monthlyStats,
       detailed: state.detailed,
@@ -48,8 +72,9 @@ const ExcelReportGenerator: React.FC<ExcelReportGeneratorProps> = ({
       adminPhone: state.adminPhone,
       adminEmail: state.adminEmail,
       conceptRecords: state.conceptRecords,
-      totalIncome: state.totalIncome,
       totalInitialBalance: state.totalInitialBalance,
+      byFinancialAccount: state.byFinancialAccount,
+      financialAccountsMap: state.financialAccountsMap,
     })
   );
 
@@ -75,6 +100,83 @@ const ExcelReportGenerator: React.FC<ExcelReportGeneratorProps> = ({
 
   const generateExcel = async () => {
     const workbook = new ExcelJS.Workbook();
+    const allRecords = Object.values(detailed).flat();
+
+    // Métricas canónicas alineadas con PaymentSummary (monto abonado con saldo a favor aplicado/generado)
+    const totalCharges = payments.reduce(
+      (acc, payment) => acc + payment.referenceAmount,
+      0
+    );
+    const totalPaid = payments.reduce((acc, payment) => acc + payment.amountPaid, 0);
+    const totalCreditUsed = payments.reduce(
+      (acc, payment) => acc + (payment.creditUsed || 0),
+      0
+    );
+    const totalCreditBalance = payments.reduce(
+      (acc, payment) => acc + payment.creditBalance,
+      0
+    );
+    const canonicalIncome =
+      totalPaid +
+      (totalCreditBalance > 0 ? totalCreditBalance : 0) -
+      totalCreditUsed;
+    const canonicalBalance = totalCharges - canonicalIncome;
+    const unidentifiedPaymentsTotal = monthlyStats.reduce(
+      (acc, stat) => acc + stat.unidentifiedPayments,
+      0
+    );
+
+    const monthlyIncomeByMonth = monthKeys.map((month) => {
+      const monthRecords = allRecords.filter((rec) => rec.month === month);
+      const monthPaid = monthRecords.reduce((sum, rec) => sum + rec.amountPaid, 0);
+      const monthCreditUsed = monthRecords.reduce(
+        (sum, rec) => sum + (rec.creditUsed || 0),
+        0
+      );
+      const monthCreditBalance = monthRecords.reduce(
+        (sum, rec) => sum + rec.creditBalance,
+        0
+      );
+      const income =
+        monthPaid +
+        (monthCreditBalance > 0 ? monthCreditBalance : 0) -
+        monthCreditUsed;
+      return {
+        month,
+        income,
+      };
+    });
+
+    const monthsWithIncome = monthlyIncomeByMonth.filter(
+      (monthData) => monthData.income > 0
+    );
+    const monthWithMostIncome = [...monthsWithIncome].sort(
+      (a, b) => b.income - a.income
+    )[0];
+    const monthWithLeastIncome = [...monthsWithIncome].sort(
+      (a, b) => a.income - b.income
+    )[0];
+
+    const currentMonth = String(new Date().getMonth() + 1).padStart(2, "0");
+    const previousMonth = String(
+      currentMonth === "01" ? 12 : Number(currentMonth) - 1
+    ).padStart(2, "0");
+    const currentMonthIncome =
+      monthlyIncomeByMonth.find((m) => m.month === currentMonth)?.income || 0;
+    const previousMonthIncome =
+      monthlyIncomeByMonth.find((m) => m.month === previousMonth)?.income || 0;
+    const incomeVariationAmount = currentMonthIncome - previousMonthIncome;
+    const incomeVariationPercent =
+      previousMonthIncome > 0
+        ? (incomeVariationAmount / previousMonthIncome) * 100
+        : currentMonthIncome > 0
+        ? 100
+        : 0;
+
+    const collectionRateByAmount =
+      totalCharges > 0 ? (canonicalIncome / totalCharges) * 100 : 0;
+    const delinquencyRateByAmount =
+      totalCharges > 0 ? (Math.max(canonicalBalance, 0) / totalCharges) * 100 : 0;
 
     // ========================
     // Definición de estilos (usando ExcelJS)
@@ -202,6 +304,76 @@ const ExcelReportGenerator: React.FC<ExcelReportGeneratorProps> = ({
       },
     };
 
+    const riskHighStyle = {
+      font: { bold: true, color: { argb: "FFB91C1C" } },
+      fill: {
+        type: "pattern" as const,
+        pattern: "solid" as const,
+        fgColor: { argb: "FFFEE2E2" },
+      },
+      alignment: { horizontal: "center", vertical: "middle" },
+      border: {
+        top: { style: "thin", color: { argb: "FFCCCCCC" } },
+        bottom: { style: "thin", color: { argb: "FFCCCCCC" } },
+        left: { style: "thin", color: { argb: "FFCCCCCC" } },
+        right: { style: "thin", color: { argb: "FFCCCCCC" } },
+      },
+    };
+
+    const riskMediumStyle = {
+      font: { bold: true, color: { argb: "FFB45309" } },
+      fill: {
+        type: "pattern" as const,
+        pattern: "solid" as const,
+        fgColor: { argb: "FFFEF3C7" },
+      },
+      alignment: { horizontal: "center", vertical: "middle" },
+      border: {
+        top: { style: "thin", color: { argb: "FFCCCCCC" } },
+        bottom: { style: "thin", color: { argb: "FFCCCCCC" } },
+        left: { style: "thin", color: { argb: "FFCCCCCC" } },
+        right: { style: "thin", color: { argb: "FFCCCCCC" } },
+      },
+    };
+
+    const riskLowStyle = {
+      font: { bold: true, color: { argb: "FF047857" } },
+      fill: {
+        type: "pattern" as const,
+        pattern: "solid" as const,
+        fgColor: { argb: "FFD1FAE5" },
+      },
+      alignment: { horizontal: "center", vertical: "middle" },
+      border: {
+        top: { style: "thin", color: { argb: "FFCCCCCC" } },
+        bottom: { style: "thin", color: { argb: "FFCCCCCC" } },
+        left: { style: "thin", color: { argb: "FFCCCCCC" } },
+        right: { style: "thin", color: { argb: "FFCCCCCC" } },
+      },
+    };
+
+    const labelStyle = {
+      font: { bold: true, size: 12, color: { argb: "FF000000" } },
+      alignment: { horizontal: "left", vertical: "middle" },
+      border: {
+        top: { style: "thin", color: { argb: "FFCCCCCC" } },
+        bottom: { style: "thin", color: { argb: "FFCCCCCC" } },
+        left: { style: "thin", color: { argb: "FFCCCCCC" } },
+        right: { style: "thin", color: { argb: "FFCCCCCC" } },
+      },
+    };
+
+    const valueStyle = {
+      font: { size: 12, color: { argb: "FF000000" } },
+      alignment: { horizontal: "left", vertical: "middle" },
+      border: {
+        top: { style: "thin", color: { argb: "FFCCCCCC" } },
+        bottom: { style: "thin", color: { argb: "FFCCCCCC" } },
+        left: { style: "thin", color: { argb: "FFCCCCCC" } },
+        right: { style: "thin", color: { argb: "FFCCCCCC" } },
+      },
+    };
+
     // ========================
     // Funciones auxiliares para aplicar estilos en un rango
     // ========================
@@ -295,6 +467,190 @@ const ExcelReportGenerator: React.FC<ExcelReportGeneratorProps> = ({
     }
 
     // ========================
+    // Hoja Resumen Ejecutivo (solo reporte general)
+    // ========================
+    if (!concept) {
+      const executiveSheet = workbook.addWorksheet("Resumen Ejecutivo");
+      executiveSheet.addRow(["Resumen Ejecutivo de Ingresos"]);
+      executiveSheet.addRow(["Fecha de generación", new Date().toLocaleString()]);
+      executiveSheet.addRow(["Año de referencia", year || "Todos los años"]);
+      executiveSheet.addRow([]);
+      executiveSheet.addRow([
+        "Indicador",
+        "Valor",
+        "Objetivo",
+        "Estado",
+        "Comentario",
+      ]);
+
+      const collectionStatus =
+        collectionRateByAmount >= 85
+          ? "Saludable"
+          : collectionRateByAmount >= 70
+          ? "En seguimiento"
+          : "Atención inmediata";
+      const delinquencyStatus =
+        delinquencyRateByAmount <= 15
+          ? "Saludable"
+          : delinquencyRateByAmount <= 25
+          ? "En seguimiento"
+          : "Atención inmediata";
+      const unidentifiedStatus =
+        unidentifiedPaymentsTotal === 0
+          ? "Saludable"
+          : unidentifiedPaymentsTotal < 1000
+          ? "En seguimiento"
+          : "Atención inmediata";
+      const variationStatus =
+        incomeVariationAmount >= 0 ? "Saludable" : "En seguimiento";
+
+      const execRows = [
+        {
+          metric: "Ingresos del período",
+          value: canonicalIncome,
+          valueType: "currency" as const,
+          target: "N/A",
+          status: "Saludable",
+          comment: "Monto abonado neto (incluye saldo a favor aplicado/generado).",
+        },
+        {
+          metric: "Cargos generados",
+          value: totalCharges,
+          valueType: "currency" as const,
+          target: "N/A",
+          status: "Saludable",
+          comment: "Suma de cargos del período según referencia.",
+        },
+        {
+          metric: "Saldo pendiente",
+          value: canonicalBalance,
+          valueType: "currency" as const,
+          target: "<= 15% de cargos",
+          status: delinquencyStatus,
+          comment: "Diferencia entre cargos y monto abonado neto.",
+        },
+        {
+          metric: "Cobranza por monto",
+          value: collectionRateByAmount / 100,
+          valueType: "percent" as const,
+          target: ">= 85%",
+          status: collectionStatus,
+          comment: "Ingresos del período dividido entre cargos generados.",
+        },
+        {
+          metric: "Morosidad por monto",
+          value: delinquencyRateByAmount / 100,
+          valueType: "percent" as const,
+          target: "<= 15%",
+          status: delinquencyStatus,
+          comment: "Saldo pendiente entre cargos generados.",
+        },
+        {
+          metric: "Pagos no identificados",
+          value: unidentifiedPaymentsTotal,
+          valueType: "currency" as const,
+          target: "0.00",
+          status: unidentifiedStatus,
+          comment: "Pagos pendientes de aplicar a un condómino/cargo.",
+        },
+        {
+          metric: "Variación vs mes anterior",
+          value: incomeVariationAmount,
+          valueType: "currency" as const,
+          target: "Tendencia >= 0",
+          status: variationStatus,
+          comment: `${incomeVariationPercent.toFixed(2)}% vs ${monthNames[previousMonth]}`,
+        },
+      ];
+
+      execRows.forEach((row) => {
+        const newRow = executiveSheet.addRow([
+          row.metric,
+          row.value,
+          row.target,
+          row.status,
+          row.comment,
+        ]);
+
+        const valueCell = newRow.getCell(2);
+        if (row.valueType === "currency") {
+          valueCell.numFmt = '"$"#,##0.00';
+          valueCell.alignment = { horizontal: "right", vertical: "middle" };
+        } else {
+          valueCell.numFmt = "0.00%";
+          valueCell.alignment = { horizontal: "right", vertical: "middle" };
+        }
+      });
+
+      const alerts: string[] = [];
+      if (collectionRateByAmount < 85) {
+        alerts.push(
+          `Cobranza por monto en ${collectionRateByAmount.toFixed(
+            2
+          )}%. Revisar cuentas con mayor adeudo.`
+        );
+      }
+      if (delinquencyRateByAmount > 15) {
+        alerts.push(
+          `Morosidad por monto en ${delinquencyRateByAmount.toFixed(
+            2
+          )}%. Activar plan de cobranza.`
+        );
+      }
+      if (unidentifiedPaymentsTotal > 0) {
+        alerts.push(
+          `Existen pagos no identificados por ${formatCurrency(
+            unidentifiedPaymentsTotal
+          )}. Conciliar para no subestimar cobranza.`
+        );
+      }
+      if (alerts.length === 0) {
+        alerts.push("Sin alertas críticas en el período analizado.");
+      }
+
+      executiveSheet.addRow([]);
+      executiveSheet.addRow(["Alertas accionables"]);
+      alerts.forEach((alert) => {
+        const alertRow = executiveSheet.addRow([alert]);
+        executiveSheet.mergeCells(`A${alertRow.number}:E${alertRow.number}`);
+      });
+
+      executiveSheet.mergeCells("A1:E1");
+      applyStyles(executiveSheet, "A1:E1", titleStyle);
+      applyStyles(executiveSheet, "A5:E5", headerStyle);
+      applyAlternatingRowStyles(executiveSheet, 6, 12, "ABCDE");
+      applyStyles(executiveSheet, "A2:A3", labelStyle);
+      applyStyles(executiveSheet, "B2:B3", valueStyle);
+
+      for (let row = 6; row <= 12; row++) {
+        const statusValue = String(executiveSheet.getCell(`D${row}`).value || "");
+        if (statusValue === "Atención inmediata") {
+          applyStyles(executiveSheet, `D${row}:D${row}`, riskHighStyle);
+        } else if (statusValue === "En seguimiento") {
+          applyStyles(executiveSheet, `D${row}:D${row}`, riskMediumStyle);
+        } else {
+          applyStyles(executiveSheet, `D${row}:D${row}`, riskLowStyle);
+        }
+      }
+
+      const alertsStartRow = 14;
+      applyStyles(executiveSheet, `A${alertsStartRow}:E${alertsStartRow}`, headerStyle);
+      for (let row = alertsStartRow + 1; row <= alertsStartRow + alerts.length; row++) {
+        applyStyles(executiveSheet, `A${row}:E${row}`, valueStyle);
+      }
+
+      executiveSheet.columns = [
+        { width: 30 },
+        { width: 20 },
+        { width: 22 },
+        { width: 20 },
+        { width: 60 },
+      ];
+      executiveSheet.getRow(1).height = 35;
+      executiveSheet.getRow(5).height = 30;
+    }
+
+    // ========================
     // Hoja de Información General
     // ========================
     const generalInfo = [
@@ -304,7 +660,7 @@ const ExcelReportGenerator: React.FC<ExcelReportGeneratorProps> = ({
     ];
 
     if (!concept) {
-      const ingresosPeriodo = totalIncome;
+      const ingresosPeriodo = canonicalIncome;
       const saldoInicial = totalInitialBalance;
       const disponibleBruto = ingresosPeriodo + saldoInicial;
 
@@ -339,14 +695,18 @@ const ExcelReportGenerator: React.FC<ExcelReportGeneratorProps> = ({
         ["Ingresos del período", formatCurrency(ingresosPeriodo)],
         ["Saldo inicial", formatCurrency(saldoInicial)],
         ["Disponible total (bruto)", formatCurrency(disponibleBruto)],
-        ["Saldo", formatCurrency(totalBalance)],
+        ["Saldo", formatCurrency(canonicalBalance)],
         [
           "Mes con mayor ingresos",
-          ingresosPeriodo ? monthNames[monthlyStats[0].month] : "",
+          monthWithMostIncome && monthWithMostIncome.income > 0
+            ? monthNames[monthWithMostIncome.month] || monthWithMostIncome.month
+            : "",
         ],
         [
           "Mes con menor ingresos",
-          ingresosPeriodo ? monthNames[monthlyStats[0].month] : "",
+          monthWithLeastIncome && monthWithLeastIncome.income > 0
+            ? monthNames[monthWithLeastIncome.month] || monthWithLeastIncome.month
+            : "",
         ]
       );
     }
@@ -359,35 +719,12 @@ const ExcelReportGenerator: React.FC<ExcelReportGeneratorProps> = ({
 
     applyStyles(generalSheet, "A1:B1", titleStyle);
 
-    // Crear estilo para etiquetas y valores en negro (no indigo)
-    const labelStyle = {
-      font: { bold: true, size: 12, color: { argb: "FF000000" } }, // Color negro
-      alignment: { horizontal: "left", vertical: "middle" },
-      border: {
-        top: { style: "thin", color: { argb: "FFCCCCCC" } },
-        bottom: { style: "thin", color: { argb: "FFCCCCCC" } },
-        left: { style: "thin", color: { argb: "FFCCCCCC" } },
-        right: { style: "thin", color: { argb: "FFCCCCCC" } },
-      },
-    };
-
-    const valueStyle = {
-      font: { size: 12, color: { argb: "FF000000" } }, // Color negro
-      alignment: { horizontal: "left", vertical: "middle" },
-      border: {
-        top: { style: "thin", color: { argb: "FFCCCCCC" } },
-        bottom: { style: "thin", color: { argb: "FFCCCCCC" } },
-        left: { style: "thin", color: { argb: "FFCCCCCC" } },
-        right: { style: "thin", color: { argb: "FFCCCCCC" } },
-      },
-    };
-
-    applyStyles(generalSheet, "A2:A5", labelStyle);
-    applyStyles(generalSheet, "B2:B5", valueStyle);
+    applyStyles(generalSheet, `A2:A${generalInfo.length}`, labelStyle);
+    applyStyles(generalSheet, `B2:B${generalInfo.length}`, valueStyle);
     if (!concept) {
       applyStyles(
         generalSheet,
-        "B4:B5",
+        "B4:B7",
         Object.assign({}, valueStyle, { numFmt: '"$"#,##0.00' })
       );
     }
@@ -677,8 +1014,7 @@ const ExcelReportGenerator: React.FC<ExcelReportGeneratorProps> = ({
       // Reporte General (cuando no se pasa concepto)
       // ========================
       const compRows = monthlyStats.map((stat) => {
-        const monthRecords = Object.values(detailed)
-          .flat()
+        const monthRecords = allRecords
           .filter((rec) => rec.month === stat.month);
 
         const totalCharges = stat.charges;
@@ -698,6 +1034,12 @@ const ExcelReportGenerator: React.FC<ExcelReportGeneratorProps> = ({
         const totalPaidWithCredit =
           totalPaid + (totalCredit > 0 ? totalCredit : 0) - totalCreditUsed;
         const balance = totalCharges - totalPaidWithCredit;
+        const monthPaidInFull = monthRecords
+          .filter((rec) => rec.amountPending === 0)
+          .reduce((sum, rec) => sum + rec.referenceAmount, 0);
+        const monthComplianceRate =
+          totalCharges > 0 ? (monthPaidInFull / totalCharges) * 100 : 0;
+        const monthDelinquencyRate = 100 - monthComplianceRate;
 
         return [
           monthNames[stat.month] || stat.month,
@@ -705,8 +1047,8 @@ const ExcelReportGenerator: React.FC<ExcelReportGeneratorProps> = ({
           formatCurrency(totalCharges),
           formatCurrency(balance),
           formatCurrency(stat.unidentifiedPayments),
-          stat.complianceRate.toFixed(2) + "%",
-          stat.delinquencyRate.toFixed(2) + "%",
+          monthComplianceRate.toFixed(2) + "%",
+          monthDelinquencyRate.toFixed(2) + "%",
         ];
       });
 
@@ -717,8 +1059,7 @@ const ExcelReportGenerator: React.FC<ExcelReportGeneratorProps> = ({
 
       monthlyStats.forEach((stat) => {
         const totalCharges = stat.charges;
-        const monthRecords = Object.values(detailed)
-          .flat()
+        const monthRecords = allRecords
           .filter((rec) => rec.month === stat.month);
         const totalPaid = monthRecords.reduce(
           (sum, rec) => sum + rec.amountPaid,
@@ -743,16 +1084,14 @@ const ExcelReportGenerator: React.FC<ExcelReportGeneratorProps> = ({
         totalUnidentifiedGlobal += stat.unidentifiedPayments;
       });
 
+      const globalPaidInFull = allRecords
+        .filter((rec) => rec.amountPending === 0)
+        .reduce((sum, rec) => sum + rec.referenceAmount, 0);
       const avgCompliance =
-        monthlyStats.length > 0
-          ? monthlyStats.reduce((sum, stat) => sum + stat.complianceRate, 0) /
-            monthlyStats.length
+        totalChargesGlobal > 0
+          ? (globalPaidInFull / totalChargesGlobal) * 100
           : 0;
-      const avgDelinquency =
-        monthlyStats.length > 0
-          ? monthlyStats.reduce((sum, stat) => sum + stat.delinquencyRate, 0) /
-            monthlyStats.length
-          : 0;
+      const avgDelinquency = 100 - avgCompliance;
 
       compRows.push([
         "Total",
@@ -843,6 +1182,355 @@ const ExcelReportGenerator: React.FC<ExcelReportGeneratorProps> = ({
       ];
       generalReportSheet.getRow(1).height = 35;
       generalReportSheet.getRow(2).height = 30;
+
+      // ========================
+      // Bloque 2: Hojas operativas
+      // ========================
+
+      // 1) Cartera por antigüedad (aproximada por mes de cargo)
+      const now = new Date();
+      const reportYear = Number(year) || now.getFullYear();
+      const pendingChargeRecords = allRecords.filter(
+        (record) =>
+          record.amountPending > 0 && record.concept !== "Pago no identificado"
+      );
+
+      const agingBuckets = [
+        { name: "0-30 días", min: 0, max: 30, total: 0 },
+        { name: "31-60 días", min: 31, max: 60, total: 0 },
+        { name: "61-90 días", min: 61, max: 90, total: 0 },
+        { name: "90+ días", min: 91, max: Infinity, total: 0 },
+      ];
+
+      pendingChargeRecords.forEach((record) => {
+        const monthNumber = Number(record.month || "0");
+        if (!monthNumber || monthNumber < 1 || monthNumber > 12) return;
+
+        const dueDate = new Date(reportYear, monthNumber, 0);
+        const diffMs = now.getTime() - dueDate.getTime();
+        const daysOverdue = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
+
+        const targetBucket = agingBuckets.find(
+          (bucket) => daysOverdue >= bucket.min && daysOverdue <= bucket.max
+        );
+        if (targetBucket) {
+          targetBucket.total += record.amountPending;
+        }
+      });
+
+      const agingSheet = workbook.addWorksheet("Cartera Antigüedad");
+      agingSheet.addRow(["Cartera por Antigüedad"]);
+      agingSheet.addRow(["Rango", "Monto pendiente"]);
+      agingBuckets.forEach((bucket) => {
+        agingSheet.addRow([bucket.name, bucket.total]);
+      });
+      agingSheet.addRow([
+        "Total",
+        agingBuckets.reduce((sum, bucket) => sum + bucket.total, 0),
+      ]);
+
+      applyStyles(agingSheet, "A1:B1", titleStyle);
+      agingSheet.mergeCells("A1:B1");
+      applyStyles(agingSheet, "A2:B2", headerStyle);
+      applyStyles(
+        agingSheet,
+        `A${agingBuckets.length + 3}:B${agingBuckets.length + 3}`,
+        totalRowStyle
+      );
+      applyAlternatingRowStyles(agingSheet, 3, agingBuckets.length + 2, "AB");
+      applyStyles(agingSheet, `B3:B${agingBuckets.length + 3}`, currencyStyle);
+      agingSheet.columns = [{ width: 24 }, { width: 22 }];
+      agingSheet.getRow(1).height = 35;
+      agingSheet.getRow(2).height = 30;
+
+      // 2) Top 20 adeudos y cumplimiento por cargo
+      const chargeProgressRows = allRecords
+        .filter(
+          (record) =>
+            record.referenceAmount > 0 && record.concept !== "Pago no identificado"
+        )
+        .map((record) => {
+          const paidAmount = Math.max(0, record.referenceAmount - record.amountPending);
+          const complianceRate =
+            record.referenceAmount > 0
+              ? Math.min(100, Math.max(0, (paidAmount / record.referenceAmount) * 100))
+              : 0;
+          return {
+            numberCondominium: record.numberCondominium || "N/A",
+            concept: record.concept || "Sin concepto",
+            month: monthNames[record.month] || record.month || "N/A",
+            charges: record.referenceAmount,
+            paidAmount,
+            pendingAmount: record.amountPending,
+            complianceRate,
+          };
+        });
+
+      const topDebtRows = [...chargeProgressRows]
+        .sort((a, b) => b.pendingAmount - a.pendingAmount)
+        .slice(0, 20);
+      const topComplianceRows = [...chargeProgressRows]
+        .sort((a, b) => b.complianceRate - a.complianceRate)
+        .slice(0, 20);
+
+      const topDebtSheet = workbook.addWorksheet("Top 20 Adeudos");
+      topDebtSheet.addRow(["Top 20 adeudos por cargo"]);
+      topDebtSheet.addRow([
+        "#",
+        "Condómino",
+        "Concepto",
+        "Mes",
+        "Cargos",
+        "Abonado",
+        "Pendiente",
+        "% Cumplimiento",
+      ]);
+      topDebtRows.forEach((row, index) => {
+        topDebtSheet.addRow([
+          index + 1,
+          row.numberCondominium,
+          row.concept,
+          row.month,
+          row.charges,
+          row.paidAmount,
+          row.pendingAmount,
+          row.complianceRate / 100,
+        ]);
+      });
+
+      applyStyles(topDebtSheet, "A1:H1", titleStyle);
+      topDebtSheet.mergeCells("A1:H1");
+      applyStyles(topDebtSheet, "A2:H2", headerStyle);
+      if (topDebtRows.length > 0) {
+        applyAlternatingRowStyles(topDebtSheet, 3, topDebtRows.length + 2, "A-H");
+        applyStyles(topDebtSheet, `E3:G${topDebtRows.length + 2}`, currencyStyle);
+        applyStyles(topDebtSheet, `H3:H${topDebtRows.length + 2}`, percentageStyle);
+      }
+      topDebtSheet.columns = [
+        { width: 8 },
+        { width: 14 },
+        { width: 34 },
+        { width: 12 },
+        { width: 18 },
+        { width: 18 },
+        { width: 18 },
+        { width: 16 },
+      ];
+      topDebtSheet.getRow(1).height = 35;
+      topDebtSheet.getRow(2).height = 30;
+
+      const topComplianceSheet = workbook.addWorksheet("Top 20 Cumplimiento");
+      topComplianceSheet.addRow(["Top 20 cumplimiento por cargo"]);
+      topComplianceSheet.addRow([
+        "#",
+        "Condómino",
+        "Concepto",
+        "Mes",
+        "Cargos",
+        "Abonado",
+        "Pendiente",
+        "% Cumplimiento",
+      ]);
+      topComplianceRows.forEach((row, index) => {
+        topComplianceSheet.addRow([
+          index + 1,
+          row.numberCondominium,
+          row.concept,
+          row.month,
+          row.charges,
+          row.paidAmount,
+          row.pendingAmount,
+          row.complianceRate / 100,
+        ]);
+      });
+
+      applyStyles(topComplianceSheet, "A1:H1", titleStyle);
+      topComplianceSheet.mergeCells("A1:H1");
+      applyStyles(topComplianceSheet, "A2:H2", headerStyle);
+      if (topComplianceRows.length > 0) {
+        applyAlternatingRowStyles(
+          topComplianceSheet,
+          3,
+          topComplianceRows.length + 2,
+          "A-H"
+        );
+        applyStyles(
+          topComplianceSheet,
+          `E3:G${topComplianceRows.length + 2}`,
+          currencyStyle
+        );
+        applyStyles(
+          topComplianceSheet,
+          `H3:H${topComplianceRows.length + 2}`,
+          percentageStyle
+        );
+      }
+      topComplianceSheet.columns = [
+        { width: 8 },
+        { width: 14 },
+        { width: 34 },
+        { width: 12 },
+        { width: 18 },
+        { width: 18 },
+        { width: 18 },
+        { width: 16 },
+      ];
+      topComplianceSheet.getRow(1).height = 35;
+      topComplianceSheet.getRow(2).height = 30;
+
+      // 3) Ingresos por cuenta (incluye saldo a favor generado/usado)
+      const accountRows = Object.entries(byFinancialAccount).map(
+        ([accountId, accountRecords]) => {
+          const paidAmount = accountRecords.reduce(
+            (sum, record) => sum + record.amountPaid,
+            0
+          );
+          const creditGenerated = accountRecords.reduce(
+            (sum, record) => sum + Math.max(0, record.creditBalance || 0),
+            0
+          );
+          const creditUsed = accountRecords.reduce(
+            (sum, record) => sum + (record.creditUsed || 0),
+            0
+          );
+          const netIncome = paidAmount + creditGenerated - creditUsed;
+          const initialBalance = financialAccountsMap[accountId]?.initialBalance || 0;
+
+          return {
+            accountName: financialAccountsMap[accountId]?.name || "Cuenta sin nombre",
+            paidAmount,
+            creditGenerated,
+            creditUsed,
+            netIncome,
+            initialBalance,
+            analyticalTotal: initialBalance + netIncome,
+          };
+        }
+      );
+
+      const accountSheet = workbook.addWorksheet("Ingresos por Cuenta");
+      accountSheet.addRow(["Ingresos por cuenta"]);
+      accountSheet.addRow([
+        "Cuenta",
+        "Ingresos directos",
+        "Saldo a favor generado",
+        "Saldo a favor aplicado",
+        "Ingreso neto",
+        "Saldo inicial",
+        "Total analítico",
+      ]);
+      accountRows
+        .sort((a, b) => b.netIncome - a.netIncome)
+        .forEach((row) => {
+          accountSheet.addRow([
+            row.accountName,
+            row.paidAmount,
+            row.creditGenerated,
+            row.creditUsed,
+            row.netIncome,
+            row.initialBalance,
+            row.analyticalTotal,
+          ]);
+        });
+      accountSheet.addRow([
+        "Total",
+        accountRows.reduce((sum, row) => sum + row.paidAmount, 0),
+        accountRows.reduce((sum, row) => sum + row.creditGenerated, 0),
+        accountRows.reduce((sum, row) => sum + row.creditUsed, 0),
+        accountRows.reduce((sum, row) => sum + row.netIncome, 0),
+        accountRows.reduce((sum, row) => sum + row.initialBalance, 0),
+        accountRows.reduce((sum, row) => sum + row.analyticalTotal, 0),
+      ]);
+
+      applyStyles(accountSheet, "A1:G1", titleStyle);
+      accountSheet.mergeCells("A1:G1");
+      applyStyles(accountSheet, "A2:G2", headerStyle);
+      if (accountRows.length > 0) {
+        applyAlternatingRowStyles(accountSheet, 3, accountRows.length + 2, "A-G");
+        applyStyles(accountSheet, `B3:G${accountRows.length + 2}`, currencyStyle);
+      }
+      applyStyles(
+        accountSheet,
+        `A${accountRows.length + 3}:G${accountRows.length + 3}`,
+        totalRowStyle
+      );
+      applyStyles(accountSheet, `B${accountRows.length + 3}:G${accountRows.length + 3}`, currencyStyle);
+      accountSheet.columns = [
+        { width: 30 },
+        { width: 18 },
+        { width: 22 },
+        { width: 22 },
+        { width: 18 },
+        { width: 16 },
+        { width: 18 },
+      ];
+      accountSheet.getRow(1).height = 35;
+      accountSheet.getRow(2).height = 30;
+
+      // 4) Conciliación (resumen de identificados vs no identificados)
+      const unidentifiedRecords = allRecords.filter(
+        (record) => record.concept === "Pago no identificado"
+      );
+      const identifiedRecords = allRecords.filter(
+        (record) => record.concept !== "Pago no identificado"
+      );
+      const identifiedAmount = identifiedRecords.reduce(
+        (sum, record) => sum + record.amountPaid,
+        0
+      );
+      const unidentifiedAmount = unidentifiedRecords.reduce(
+        (sum, record) => sum + record.amountPaid,
+        0
+      );
+      const totalMovementsAmount = identifiedAmount + unidentifiedAmount;
+      const identifiedRate =
+        totalMovementsAmount > 0 ? identifiedAmount / totalMovementsAmount : 0;
+      const pendingApplyRate =
+        totalMovementsAmount > 0 ? unidentifiedAmount / totalMovementsAmount : 0;
+
+      const reconciliationSheet = workbook.addWorksheet("Conciliación");
+      reconciliationSheet.addRow(["Resumen de conciliación"]);
+      reconciliationSheet.addRow(["Indicador", "Valor", "Detalle"]);
+      reconciliationSheet.addRow([
+        "Movimientos identificados",
+        identifiedAmount,
+        `${identifiedRecords.length} registros`,
+      ]);
+      reconciliationSheet.addRow([
+        "Movimientos no identificados",
+        unidentifiedAmount,
+        `${unidentifiedRecords.length} registros`,
+      ]);
+      reconciliationSheet.addRow([
+        "Tasa identificación",
+        identifiedRate,
+        "Monto identificado / total movimientos",
+      ]);
+      reconciliationSheet.addRow([
+        "Tasa pendiente de aplicar",
+        pendingApplyRate,
+        "Monto no identificado / total movimientos",
+      ]);
+      reconciliationSheet.addRow([
+        "Saldo pendiente global",
+        canonicalBalance,
+        "Diferencia entre cargos y monto abonado neto",
+      ]);
+
+      applyStyles(reconciliationSheet, "A1:C1", titleStyle);
+      reconciliationSheet.mergeCells("A1:C1");
+      applyStyles(reconciliationSheet, "A2:C2", headerStyle);
+      applyAlternatingRowStyles(reconciliationSheet, 3, 7, "A-C");
+      applyStyles(reconciliationSheet, "B3:B4", currencyStyle);
+      applyStyles(reconciliationSheet, "B5:B6", percentageStyle);
+      applyStyles(reconciliationSheet, "B7:B7", currencyStyle);
+      reconciliationSheet.columns = [
+        { width: 34 },
+        { width: 20 },
+        { width: 44 },
+      ];
+      reconciliationSheet.getRow(1).height = 35;
+      reconciliationSheet.getRow(2).height = 30;
 
       // ========================
       // Reportes por concepto (para cada entrada en conceptRecords)

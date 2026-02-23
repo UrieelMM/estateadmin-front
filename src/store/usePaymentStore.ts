@@ -514,11 +514,28 @@ export const usePaymentStore = create<MaintenancePaymentState>()(
 
         set({ loading: false, error: null });
       } catch (error: any) {
+        const backendMessage = error?.response?.data?.message;
+        const normalizedBackendMessage = Array.isArray(backendMessage)
+          ? backendMessage.join(" ")
+          : backendMessage;
+        const isNetworkError =
+          error?.code === "ERR_NETWORK" ||
+          error?.message === "Network Error" ||
+          (!error?.response && !!error?.request);
+        const finalMessage =
+          isNetworkError
+            ? "No se pudo conectar con el servidor. Intenta nuevamente más tarde."
+            : normalizedBackendMessage ||
+              error?.response?.data?.error ||
+              error?.message ||
+              "Error al registrar el pago/cargo";
+
         Sentry.captureException(error);
         set({
           loading: false,
-          error: error.message || "Error al registrar el pago/cargo",
+          error: finalMessage,
         });
+        throw new Error(finalMessage);
       }
     },
 

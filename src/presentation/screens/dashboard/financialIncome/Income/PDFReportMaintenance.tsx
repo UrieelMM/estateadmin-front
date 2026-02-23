@@ -3,14 +3,6 @@ import React, { useEffect, useState } from "react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import {
-  collectionGroup,
-  getDocs,
-  getFirestore,
-  query,
-  where,
-} from "firebase/firestore";
-import { getAuth, getIdTokenResult } from "firebase/auth";
-import {
   PaymentRecord,
   usePaymentSummaryStore,
 } from "../../../../../store/paymentSummaryStore";
@@ -110,6 +102,8 @@ const PDFReportGeneratorMaintenance: React.FC<PDFReportGeneratorProps> = ( {
     adminCompany,
     adminPhone,
     adminEmail,
+    fetchPaymentHistory,
+    resetPaymentsState,
   } = usePaymentSummaryStore( ( state ) => ( {
     detailed: state.detailed,
     logoBase64: state.logoBase64,
@@ -117,6 +111,8 @@ const PDFReportGeneratorMaintenance: React.FC<PDFReportGeneratorProps> = ( {
     adminCompany: state.adminCompany,
     adminPhone: state.adminPhone,
     adminEmail: state.adminEmail,
+    fetchPaymentHistory: state.fetchPaymentHistory,
+    resetPaymentsState: state.resetPaymentsState,
     conceptRecords: state.conceptRecords,
   } ) );
 
@@ -143,13 +139,6 @@ const PDFReportGeneratorMaintenance: React.FC<PDFReportGeneratorProps> = ( {
     return String( value || "" ).toLowerCase().trim();
   };
 
-  const formatDate = ( date: Date ): string => {
-    const day = String( date.getDate() ).padStart( 2, "0" );
-    const month = String( date.getMonth() + 1 ).padStart( 2, "0" );
-    const fullYear = date.getFullYear();
-    return `${ day }/${ month }/${ fullYear }`;
-  };
-
   const formatCompactDate = ( date: Date ): string => {
     const day = String( date.getDate() ).padStart( 2, "0" );
     const month = String( date.getMonth() + 1 ).padStart( 2, "0" );
@@ -158,12 +147,6 @@ const PDFReportGeneratorMaintenance: React.FC<PDFReportGeneratorProps> = ( {
     }
     const shortYear = String( date.getFullYear() ).slice( -2 );
     return `${ day }/${ month }/${ shortYear }`;
-  };
-
-  const parseAmountPaid = ( rawValue: unknown ): number => {
-    const numeric = Number( rawValue );
-    if ( !Number.isFinite( numeric ) ) return 0;
-    return numeric / 100;
   };
 
   const parsePaymentDate = ( rawValue: unknown ): Date | null => {
@@ -201,54 +184,55 @@ const PDFReportGeneratorMaintenance: React.FC<PDFReportGeneratorProps> = ( {
 
     const fetchPaymentLinesByMonth = async () => {
       try {
-        const auth = getAuth();
-        const user = auth.currentUser;
-        if ( !user ) return;
-
-        const tokenResult = await getIdTokenResult( user );
-        const clientId = tokenResult.claims[ "clientId" ] as string;
-        const condominiumId = localStorage.getItem( "condominiumId" );
-        if ( !clientId || !condominiumId ) return;
-
-        const db = getFirestore();
-        const paymentsQuery = query(
-          collectionGroup( db, "payments" ),
-          where( "clientId", "==", clientId ),
-          where( "condominiumId", "==", condominiumId )
-        );
-        const snapshot = await getDocs( paymentsQuery );
-
+        resetPaymentsState();
         const groupedLines = new Map<
           string,
           Array<{ date: string; amount: number; chargeId: string; concept: string; }>
         >();
 
-        snapshot.forEach( ( docSnap ) => {
-          const data = docSnap.data() as Record<string, unknown>;
-          const paymentDate = parsePaymentDate( data.paymentDate );
-          if ( !paymentDate ) return;
+        const pageSize = 300;
+        let startAfterDoc: any = null;
+        let hasMore = true;
 
-          const paymentYear = String( paymentDate.getFullYear() );
-          if ( year && year !== paymentYear ) return;
-
-          const month =
-            typeof data.month === "string" && data.month
-              ? data.month.padStart( 2, "0" )
-              : String( paymentDate.getMonth() + 1 ).padStart( 2, "0" );
-          const numberCondominium = normalizeCondoNumber( data.numberCondominium );
-          if ( !numberCondominium ) return;
-
-          const key = getCondoMonthKey( numberCondominium, month );
-          if ( !groupedLines.has( key ) ) {
-            groupedLines.set( key, [] );
-          }
-          groupedLines.get( key )!.push( {
-            date: formatDate( paymentDate ),
-            amount: parseAmountPaid( data.amountPaid ),
-            chargeId: String( data.chargeId || "" ),
-            concept: normalizeConcept( data.concept ),
+        while ( hasMore ) {
+          const count = await fetchPaymentHistory( pageSize, startAfterDoc, {
+            month: "",
+            year: isSpecificYear ? year : "",
           } );
-        } );
+
+          const pageRecords = usePaymentSummaryStore.getState().completedPayments;
+          pageRecords.forEach( ( record ) => {
+            if ( record.concept === "Pago no identificado" ) return;
+
+            const month =
+              typeof record.month === "string" && record.month
+                ? record.month.padStart( 2, "0" )
+                : "";
+            const numberCondominium = normalizeCondoNumber( record.numberCondominium );
+            if ( !numberCondominium || !month ) return;
+
+            const key = getCondoMonthKey( numberCondominium, month );
+            if ( !groupedLines.has( key ) ) {
+              groupedLines.set( key, [] );
+            }
+
+            const netAmount =
+              Number( record.amountPaid || 0 ) +
+              Math.max( 0, Number( record.creditBalance || 0 ) ) -
+              Math.max( 0, Number( record.creditUsed || 0 ) );
+
+            groupedLines.get( key )!.push( {
+              date: String( record.paymentDate || "" ),
+              amount: netAmount,
+              chargeId: String( record.chargeId || "" ),
+              concept: normalizeConcept( record.concept ),
+            } );
+          } );
+
+          const lastDoc = usePaymentSummaryStore.getState().lastPaymentDoc;
+          hasMore = count === pageSize && !!lastDoc;
+          startAfterDoc = lastDoc;
+        }
 
         const linesByCondoMonth: Record<
           string,
@@ -270,6 +254,8 @@ const PDFReportGeneratorMaintenance: React.FC<PDFReportGeneratorProps> = ( {
         }
       } catch ( error ) {
         console.error( "Error obteniendo detalle de pagos para PDF:", error );
+      } finally {
+        resetPaymentsState();
       }
     };
 
@@ -326,6 +312,28 @@ const PDFReportGeneratorMaintenance: React.FC<PDFReportGeneratorProps> = ( {
   };
   let totalPendingGlobal = 0;
 
+  const getRelevantMappedLines = (
+    monthRecords: PaymentRecord[],
+    condominiumNumber: string,
+    monthKey: string
+  ) => {
+    const mappedLines =
+      paymentLinesByCondoMonth[ getCondoMonthKey( condominiumNumber, monthKey ) ] || [];
+    const chargeIds = new Set(
+      monthRecords.map( ( record ) => String( record.id || "" ) ).filter( Boolean )
+    );
+    const normalizedReportConcept = normalizeConcept( reportConcept );
+    return mappedLines.filter( ( line ) => {
+      if ( line.chargeId && chargeIds.size > 0 ) {
+        return chargeIds.has( line.chargeId );
+      }
+      if ( !line.concept ) {
+        return true;
+      }
+      return line.concept.includes( normalizedReportConcept );
+    } );
+  };
+
   allCondominiums.forEach( ( cond ) => {
     // Se obtienen los registros de pago del condómino (clave: número)
     const condoRecords: PaymentRecord[] = detailed[ cond.number ] || [];
@@ -340,16 +348,34 @@ const PDFReportGeneratorMaintenance: React.FC<PDFReportGeneratorProps> = ( {
       styles: { fontStyle: "bold" },
     } );
     let totalPendingForCondo = 0;
-    // Para cada mes, se suma el monto abonado (amountPaid + creditBalance) y se acumula el pendiente
+    // Para cada mes, se suma el monto abonado neto (incluye saldo a favor generado/usado)
+    // y se acumula el pendiente.
     for ( let m = 1; m <= 12; m++ ) {
       const monthKey = m.toString().padStart( 2, "0" );
       const monthRecords = filteredRecords.filter(
         ( rec ) => rec.month === monthKey
       );
-      const paidSum = monthRecords.reduce(
-        ( sum, rec ) => sum + rec.amountPaid + ( rec.creditBalance || 0 ),
+      const relevantMappedLines = getRelevantMappedLines(
+        monthRecords,
+        cond.number,
+        monthKey
+      );
+      const paidFromLines = relevantMappedLines.reduce(
+        ( sum, line ) => sum + line.amount,
         0
       );
+      const monthPaid = monthRecords.reduce( ( sum, rec ) => sum + rec.amountPaid, 0 );
+      const monthCreditGenerated = monthRecords.reduce(
+        ( sum, rec ) => sum + Math.max( 0, rec.creditBalance || 0 ),
+        0
+      );
+      const monthCreditUsed = monthRecords.reduce(
+        ( sum, rec ) => sum + ( rec.creditUsed || 0 ),
+        0
+      );
+      const paidFromChargeSummary = monthPaid + monthCreditGenerated - monthCreditUsed;
+      const paidSum =
+        relevantMappedLines.length > 0 ? paidFromLines : paidFromChargeSummary;
       const pendingSum = monthRecords.reduce(
         ( sum, rec ) => sum + rec.amountPending,
         0
@@ -371,21 +397,11 @@ const PDFReportGeneratorMaintenance: React.FC<PDFReportGeneratorProps> = ( {
       const monthRecords = filteredRecords.filter(
         ( rec ) => rec.month === monthKey
       );
-      const mappedLines =
-        paymentLinesByCondoMonth[ getCondoMonthKey( cond.number, monthKey ) ] || [];
-      const chargeIds = new Set(
-        monthRecords.map( ( record ) => String( record.id || "" ) ).filter( Boolean )
+      const relevantMappedLines = getRelevantMappedLines(
+        monthRecords,
+        cond.number,
+        monthKey
       );
-      const normalizedReportConcept = normalizeConcept( reportConcept );
-      const relevantMappedLines = mappedLines.filter( ( line ) => {
-        if ( line.chargeId && chargeIds.size > 0 ) {
-          return chargeIds.has( line.chargeId );
-        }
-        if ( !line.concept ) {
-          return true;
-        }
-        return line.concept.includes( normalizedReportConcept );
-      } );
       const compactLinesMap = new Map<string, number>();
       relevantMappedLines.forEach( ( line ) => {
         compactLinesMap.set(
@@ -393,13 +409,13 @@ const PDFReportGeneratorMaintenance: React.FC<PDFReportGeneratorProps> = ( {
           ( compactLinesMap.get( line.date ) || 0 ) + line.amount
         );
       } );
+
       const compactLines = Array.from( compactLinesMap.entries() ).map(
         ( [ lineDate, amount ] ) => {
-          const [ day, month, fullYear ] = lineDate.split( "/" );
-          const parsedDate = new Date( `${ fullYear }-${ month }-${ day }` );
-          const visualDate = Number.isNaN( parsedDate.getTime() )
+          const parsedLineDate = parsePaymentDate( lineDate );
+          const visualDate = !parsedLineDate
             ? lineDate
-            : formatCompactDate( parsedDate );
+            : formatCompactDate( parsedLineDate );
           return `${ visualDate } · ${ formatCurrency( amount ) }`;
         }
       );

@@ -193,6 +193,7 @@ const PaymentSummary: React.FC = () => {
   };
 
   const showSpinner = loading && ( !monthlyStats || monthlyStats.length === 0 );
+  const showKpiSkeleton = loading;
 
   const toAIPayment = ( payment: any ) => ( {
     numberCondominium: payment.numberCondominium,
@@ -559,56 +560,101 @@ const PaymentSummary: React.FC = () => {
           <p className="text-xs text-gray-500 dark:text-gray-400">
             Saldo inicial histórico
           </p>
-          <p className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-            { canonicalSummaryLabel.saldoInicialHistorico }
-          </p>
-          <p className="mt-1 text-[11px] text-gray-500 dark:text-gray-400">
-            Base de arranque de cuentas activas.
-          </p>
+          { showKpiSkeleton ? (
+            <>
+              <div className="mt-1 h-7 w-32 rounded-md bg-slate-200 dark:bg-slate-700 animate-pulse" />
+              <div className="mt-2 h-3 w-44 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
+            </>
+          ) : (
+            <>
+              <p className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+                { canonicalSummaryLabel.saldoInicialHistorico }
+              </p>
+              <p className="mt-1 text-[11px] text-gray-500 dark:text-gray-400">
+                Base de arranque de cuentas activas.
+              </p>
+            </>
+          ) }
         </div>
         <div className="rounded-xl border border-emerald-200/70 dark:border-emerald-900/50 bg-white dark:bg-gray-900 p-3">
           <p className="text-xs text-gray-500 dark:text-gray-400">
             Ingresos del período
           </p>
-          <p className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-            { canonicalSummaryLabel.montoAbonado }
-          </p>
-          <p className="mt-1 text-[11px] text-gray-500 dark:text-gray-400">
-            Monto neto abonado del periodo seleccionado.
-          </p>
+          { showKpiSkeleton ? (
+            <>
+              <div className="mt-1 h-7 w-32 rounded-md bg-slate-200 dark:bg-slate-700 animate-pulse" />
+              <div className="mt-2 h-3 w-44 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
+            </>
+          ) : (
+            <>
+              <p className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+                { canonicalSummaryLabel.montoAbonado }
+              </p>
+              <p className="mt-1 text-[11px] text-gray-500 dark:text-gray-400">
+                Monto neto abonado del periodo seleccionado.
+              </p>
+            </>
+          ) }
         </div>
         <div className="rounded-xl border border-amber-200/70 dark:border-amber-900/50 bg-white dark:bg-gray-900 p-3">
           <p className="text-xs text-gray-500 dark:text-gray-400">
             Egresos del período
           </p>
-          <p className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-            { canonicalSummaryLabel.totalEgresosPeriodo }
-          </p>
-          <p className="mt-1 text-[11px] text-gray-500 dark:text-gray-400">
-            Salidas registradas en el mismo periodo.
-          </p>
+          { showKpiSkeleton ? (
+            <>
+              <div className="mt-1 h-7 w-32 rounded-md bg-slate-200 dark:bg-slate-700 animate-pulse" />
+              <div className="mt-2 h-3 w-44 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
+            </>
+          ) : (
+            <>
+              <p className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+                { canonicalSummaryLabel.totalEgresosPeriodo }
+              </p>
+              <p className="mt-1 text-[11px] text-gray-500 dark:text-gray-400">
+                Salidas registradas en el mismo periodo.
+              </p>
+            </>
+          ) }
         </div>
         <div className="rounded-xl border border-indigo-200/70 dark:border-indigo-900/50 bg-white dark:bg-gray-900 p-3">
           <p className="text-xs text-gray-500 dark:text-gray-400">
             Flujo neto del período
           </p>
-          <p className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-            { canonicalSummaryLabel.flujoNetoPeriodo }
-          </p>
-          <p className="mt-1 text-[11px] text-gray-500 dark:text-gray-400">
-            Ingresos del período menos egresos del período.
-          </p>
+          { showKpiSkeleton ? (
+            <>
+              <div className="mt-1 h-7 w-32 rounded-md bg-slate-200 dark:bg-slate-700 animate-pulse" />
+              <div className="mt-2 h-3 w-44 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
+            </>
+          ) : (
+            <>
+              <p className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+                { canonicalSummaryLabel.flujoNetoPeriodo }
+              </p>
+              <p className="mt-1 text-[11px] text-gray-500 dark:text-gray-400">
+                Ingresos del período menos egresos del período.
+              </p>
+            </>
+          ) }
         </div>
         <div className="rounded-xl border border-rose-200/70 dark:border-rose-900/50 bg-white dark:bg-gray-900 p-3">
           <p className="text-xs text-gray-500 dark:text-gray-400">
             Saldo actual consolidado
           </p>
-          <p className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-            { canonicalSummaryLabel.saldoActualConsolidado }
-          </p>
-          <p className="mt-1 text-[11px] text-gray-500 dark:text-gray-400">
-            Saldo inicial histórico + flujo neto del período.
-          </p>
+          { showKpiSkeleton ? (
+            <>
+              <div className="mt-1 h-7 w-32 rounded-md bg-slate-200 dark:bg-slate-700 animate-pulse" />
+              <div className="mt-2 h-3 w-44 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
+            </>
+          ) : (
+            <>
+              <p className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+                { canonicalSummaryLabel.saldoActualConsolidado }
+              </p>
+              <p className="mt-1 text-[11px] text-gray-500 dark:text-gray-400">
+                Saldo inicial histórico + flujo neto del período.
+              </p>
+            </>
+          ) }
         </div>
       </div>
 

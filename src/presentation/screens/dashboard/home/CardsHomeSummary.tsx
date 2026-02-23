@@ -43,13 +43,11 @@ const Tooltip: React.FC<{ text: string }> = ({ text }) => {
 };
 
 const CardsHomeSummary: React.FC = () => {
-  const { monthlyStats, fetchSummary, shouldFetchData, selectedYear, loading } =
+  const { monthlyStats, fetchSummary, loading } =
     usePaymentSummaryStore(
       (state) => ({
         monthlyStats: state.monthlyStats,
         fetchSummary: state.fetchSummary,
-        shouldFetchData: state.shouldFetchData,
-        selectedYear: state.selectedYear,
         loading: state.loading,
       }),
       shallow
@@ -58,12 +56,10 @@ const CardsHomeSummary: React.FC = () => {
   const {
     monthlyStats: expenseMonthlyStats,
     fetchSummary: fetchExpenseSummary,
-    shouldFetchData: shouldFetchExpenseData,
   } = useExpenseSummaryStore(
     (state) => ({
       monthlyStats: state.monthlyStats,
       fetchSummary: state.fetchSummary,
-      shouldFetchData: state.shouldFetchData,
     }),
     shallow
   );
@@ -97,6 +93,7 @@ const CardsHomeSummary: React.FC = () => {
   const selectedCondominium = useCondominiumStore(
     (state) => state.selectedCondominium
   );
+  const dashboardYear = new Date().getFullYear().toString();
 
   // Verificar si tenemos condominiumId
   useEffect(() => {
@@ -132,17 +129,13 @@ const CardsHomeSummary: React.FC = () => {
 
       try {
         // Si no se ha intentado cargar datos, o si es necesario actualizar
-        if (
-          !dataFetchAttempted ||
-          shouldFetchData(selectedYear) ||
-          shouldFetchExpenseData(selectedYear)
-        ) {
+        if (!dataFetchAttempted) {
           setLocalLoading(true);
 
-          // Fetch both payment and expense data
+          // Home siempre carga su resumen con el año operativo actual para evitar filtros heredados.
           await Promise.all([
-            fetchSummary(selectedYear),
-            fetchExpenseSummary(selectedYear),
+            fetchSummary(dashboardYear, true),
+            fetchExpenseSummary(dashboardYear, true),
             fetchCondominiumsUsers(),
             fetchAdminUsers(),
           ]);
@@ -162,12 +155,16 @@ const CardsHomeSummary: React.FC = () => {
     fetchExpenseSummary,
     fetchCondominiumsUsers,
     fetchAdminUsers,
-    shouldFetchData,
-    shouldFetchExpenseData,
-    selectedYear,
+    dashboardYear,
     hasCondominiumId,
     dataFetchAttempted,
   ]);
+
+  useEffect(() => {
+    if (hasCondominiumId) {
+      setDataFetchAttempted(false);
+    }
+  }, [selectedCondominium?.id, hasCondominiumId]);
 
   // Actualizar contadores de usuarios
   useEffect(() => {

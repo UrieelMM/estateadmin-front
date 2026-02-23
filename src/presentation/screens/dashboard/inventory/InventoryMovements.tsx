@@ -6,6 +6,8 @@ import moment from "moment";
 import "moment/locale/es";
 import { Link, useLocation } from "react-router-dom";
 
+const MOVEMENTS_PAGE_SIZE = 10;
+
 const InventoryMovements: React.FC = () => {
   const { movements, items, loading, fetchMovements, fetchItems, stockAlerts } =
     useInventoryStore();
@@ -22,6 +24,9 @@ const InventoryMovements: React.FC = () => {
     startDate: "",
     endDate: "",
   } );
+  const [ visibleMovementsCount, setVisibleMovementsCount ] = useState(
+    MOVEMENTS_PAGE_SIZE
+  );
 
   // Cargar datos al montar el componente
   useEffect( () => {
@@ -72,6 +77,17 @@ const InventoryMovements: React.FC = () => {
 
     return true;
   } );
+  const visibleMovements = filteredMovements.slice( 0, visibleMovementsCount );
+
+  useEffect( () => {
+    setVisibleMovementsCount( MOVEMENTS_PAGE_SIZE );
+  }, [
+    searchTerm,
+    selectedItemId,
+    movementTypeFilter,
+    dateRangeFilter.startDate,
+    dateRangeFilter.endDate,
+  ] );
 
   // Función para obtener el color del badge según el tipo de movimiento
   const getMovementTypeStyle = ( type: MovementType ) => {
@@ -156,6 +172,7 @@ const InventoryMovements: React.FC = () => {
     setSelectedItemId( "" );
     setMovementTypeFilter( "" );
     setDateRangeFilter( { startDate: "", endDate: "" } );
+    setVisibleMovementsCount( MOVEMENTS_PAGE_SIZE );
   };
 
   return (
@@ -341,7 +358,7 @@ const InventoryMovements: React.FC = () => {
         ) : filteredMovements.length > 0 ? (
           <div className="p-6">
             <ol className="relative border-l border-gray-300 dark:border-gray-700">
-              { filteredMovements.map( ( movement ) => (
+              { visibleMovements.map( ( movement ) => (
                 <li key={ movement.id } className="mb-10 ml-6">
                   <span
                     className={ `absolute flex items-center justify-center w-8 h-8 rounded-full -left-4 ring-4 ring-white dark:ring-gray-800 ${ getMovementTypeStyle(
@@ -463,6 +480,25 @@ const InventoryMovements: React.FC = () => {
                 </li>
               ) ) }
             </ol>
+
+            <div className="flex flex-col items-center gap-3 pt-2">
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Mostrando { visibleMovements.length } de{" "}
+                { filteredMovements.length } movimientos
+              </p>
+              { filteredMovements.length > visibleMovementsCount && (
+                <button
+                  onClick={ () =>
+                    setVisibleMovementsCount(
+                      ( prev ) => prev + MOVEMENTS_PAGE_SIZE
+                    )
+                  }
+                  className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors"
+                >
+                  Mostrar más (10)
+                </button>
+              ) }
+            </div>
           </div>
         ) : (
           <div className="text-center py-8">

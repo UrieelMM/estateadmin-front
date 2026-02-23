@@ -16,6 +16,20 @@ import { usePaymentSummaryStore } from "../../../../../store/paymentSummaryStore
 import { toast } from "react-hot-toast";
 import { commonConcepts } from "../../../../../utils/commonConcepts";
 
+const getCurrentMonthDateRange = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth();
+
+  const startAt = `${year}-${String(month + 1).padStart(2, "0")}-01`;
+  const lastDay = new Date(year, month + 1, 0).getDate();
+  const dueDate = `${year}-${String(month + 1).padStart(2, "0")}-${String(
+    lastDay
+  ).padStart(2, "0")}`;
+
+  return { startAt, dueDate };
+};
+
 const ChargeForm = () => {
   const { createChargeForOne, createChargeForAll, loading, error } =
     useChargeStore();
@@ -40,8 +54,12 @@ const ChargeForm = () => {
     const dd = String(now.getDate()).padStart(2, "0");
     return `${year}-${mm}-${dd}`;
   });
-  const [startAt, setStartAt] = useState<string>("2025-02-01");
-  const [dueDate, setDueDate] = useState<string>("2025-02-28");
+  const [startAt, setStartAt] = useState<string>(
+    () => getCurrentMonthDateRange().startAt
+  );
+  const [dueDate, setDueDate] = useState<string>(
+    () => getCurrentMonthDateRange().dueDate
+  );
   const [paid, setPaid] = useState<boolean>(false);
 
   useEffect(() => {
@@ -122,11 +140,12 @@ const ChargeForm = () => {
       await fetchSummary();
 
       // Resetear el formulario
+      const currentMonthRange = getCurrentMonthDateRange();
       setConcept("Cuota de mantenimiento");
       setAmount(0);
       setAmountDisplay("");
-      setStartAt("2025-02-01");
-      setDueDate("2025-02-28");
+      setStartAt(currentMonthRange.startAt);
+      setDueDate(currentMonthRange.dueDate);
       setPaid(false);
       setSelectedUser("");
     } catch (err) {

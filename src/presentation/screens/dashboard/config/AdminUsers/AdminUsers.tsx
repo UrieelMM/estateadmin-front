@@ -23,6 +23,8 @@ import {
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
 import { useFileCompression } from "../../../../../hooks/useFileCompression";
 
+const MAX_ADMIN_USERS = 3;
+
 // Agregamos las interfaces necesarias
 interface Condominium {
   id: string;
@@ -654,6 +656,12 @@ const AdminUsers = () => {
   const handleSubmit = async ( e: React.FormEvent ) => {
     e.preventDefault();
     if ( !selectedCondominium ) return;
+    if ( users.length >= MAX_ADMIN_USERS ) {
+      toast.error(
+        `Este condominio ya tiene el máximo de ${MAX_ADMIN_USERS} administradores.`
+      );
+      return;
+    }
 
     let uploadedPhotoURL = "";
     if ( profilePhotoFile ) {
@@ -730,7 +738,7 @@ const AdminUsers = () => {
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
           Usuarios Administrativos
         </h2>
-        { selectedCondominium && users.length < 2 && (
+        { selectedCondominium && users.length < MAX_ADMIN_USERS && (
           <button
             onClick={ () => setShowCreateForm( true ) }
             className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition-colors"
@@ -739,6 +747,11 @@ const AdminUsers = () => {
           </button>
         ) }
       </div>
+      { selectedCondominium && (
+        <p className="text-xs text-gray-500 dark:text-gray-400">
+          Administradores registrados: {users.length}/{MAX_ADMIN_USERS}
+        </p>
+      ) }
 
       <div className="w-full md:w-1/2">
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">

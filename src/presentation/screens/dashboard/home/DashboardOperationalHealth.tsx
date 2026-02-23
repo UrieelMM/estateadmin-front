@@ -136,13 +136,11 @@ const StatCard = ({
 };
 
 const DashboardOperationalHealth = () => {
-  const { monthlyStats, selectedYear, fetchSummary, shouldFetchData } =
+  const { monthlyStats, fetchSummary } =
     usePaymentSummaryStore(
       (state) => ({
         monthlyStats: state.monthlyStats,
-        selectedYear: state.selectedYear,
         fetchSummary: state.fetchSummary,
-        shouldFetchData: state.shouldFetchData,
       }),
       shallow
     );
@@ -151,13 +149,11 @@ const DashboardOperationalHealth = () => {
     monthlyStats: expenseMonthlyStats,
     conceptRecords,
     fetchSummary: fetchExpenseSummary,
-    shouldFetchData: shouldFetchExpenseData,
   } = useExpenseSummaryStore(
     (state) => ({
       monthlyStats: state.monthlyStats,
       conceptRecords: state.conceptRecords,
       fetchSummary: state.fetchSummary,
-      shouldFetchData: state.shouldFetchData,
     }),
     shallow
   );
@@ -197,6 +193,7 @@ const DashboardOperationalHealth = () => {
     }),
     shallow
   );
+  const dashboardYear = dayjs().format("YYYY");
 
   useEffect(() => {
     const condominiumId = localStorage.getItem("condominiumId");
@@ -204,12 +201,9 @@ const DashboardOperationalHealth = () => {
       return;
     }
 
-    if (shouldFetchData(selectedYear)) {
-      fetchSummary(selectedYear);
-    }
-    if (shouldFetchExpenseData(selectedYear)) {
-      fetchExpenseSummary(selectedYear);
-    }
+    // Home debe refrescar con su propio contexto anual operativo para evitar filtros heredados.
+    fetchSummary(dashboardYear, true);
+    fetchExpenseSummary(dashboardYear, true);
     fetchConfig();
     fetchPayments(50);
     fetchContracts();
@@ -221,9 +215,7 @@ const DashboardOperationalHealth = () => {
     fetchPayments,
     fetchSummary,
     fetchTickets,
-    selectedYear,
-    shouldFetchData,
-    shouldFetchExpenseData,
+    dashboardYear,
   ]);
 
   const currentMonth = dayjs().format("MM");

@@ -330,11 +330,14 @@ const ConfigForm = () => {
                       <input
                         type="email"
                         value={ email }
-                        onChange={ ( e ) => setEmail( e.target.value ) }
-                        className="w-full pl-12 pr-4 py-4 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-300 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
+                        readOnly
+                        className="w-full pl-12 pr-4 py-4 bg-gray-100 dark:bg-gray-700/40 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 cursor-not-allowed"
                         placeholder="empresa@ejemplo.com"
                       />
                     </div>
+                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                      Por favor, si deseas cambiar el correo electrónico, contacta al soporte técnico.
+                    </p>
                   </div>
 
                   {/* Teléfono */ }
@@ -660,14 +663,14 @@ const ConfigForm = () => {
                       <div className="flex items-center gap-3">
                         <div
                           className={ `p-2 rounded-lg transition-all duration-300 ${ !isDarkMode
-                              ? "bg-yellow-100 dark:bg-yellow-900/30"
-                              : "bg-gray-100 dark:bg-gray-700"
+                            ? "bg-yellow-100 dark:bg-yellow-900/30"
+                            : "bg-gray-100 dark:bg-gray-700"
                             }` }
                         >
                           <SunIcon
                             className={ `h-5 w-5 transition-all duration-300 ${ !isDarkMode
-                                ? "text-yellow-600 dark:text-yellow-400"
-                                : "text-gray-400"
+                              ? "text-yellow-600 dark:text-yellow-400"
+                              : "text-gray-400"
                               }` }
                           />
                         </div>
@@ -689,22 +692,22 @@ const ConfigForm = () => {
                         />
                         <div
                           className={ `w-14 h-7 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all dark:border-gray-600 transition-transform duration-200 ${ isDarkMode
-                              ? "bg-indigo-700 peer-focus:ring-indigo-800"
-                              : "bg-indigo-500 peer-focus:ring-indigo-300"
+                            ? "bg-indigo-700 peer-focus:ring-indigo-800"
+                            : "bg-indigo-500 peer-focus:ring-indigo-300"
                             } peer-focus:outline-none peer-focus:ring-4` }
                         ></div>
                       </label>
 
                       <div
                         className={ `p-2 rounded-lg transition-all duration-300 ${ isDarkMode
-                            ? "bg-indigo-100 dark:bg-indigo-900/30"
-                            : "bg-gray-100 dark:bg-gray-700"
+                          ? "bg-indigo-100 dark:bg-indigo-900/30"
+                          : "bg-gray-100 dark:bg-gray-700"
                           }` }
                       >
                         <MoonIcon
                           className={ `h-5 w-5 transition-all duration-300 ${ isDarkMode
-                              ? "text-indigo-600 dark:text-indigo-400"
-                              : "text-gray-400"
+                            ? "text-indigo-600 dark:text-indigo-400"
+                            : "text-gray-400"
                             }` }
                         />
                       </div>

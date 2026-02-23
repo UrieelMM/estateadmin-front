@@ -13,7 +13,7 @@ import {
   orderBy,
   limit,
 } from "firebase/firestore";
-import { getAuth, getIdTokenResult } from "firebase/auth";
+import { getAuth, getIdTokenResult, onAuthStateChanged, type User } from "firebase/auth";
 
 /**
  * Función auxiliar para convertir una URL de imagen a base64
@@ -38,6 +38,52 @@ function centsToPesos(value: any): number {
   const intVal = parseInt(value, 10);
   if (isNaN(intVal)) return 0;
   return intVal / 100;
+}
+
+async function getAuthenticatedUserWithRetry(timeoutMs = 5000): Promise<User | null> {
+  const auth = getAuth();
+  if (auth.currentUser) return auth.currentUser;
+
+  return await new Promise((resolve) => {
+    let settled = false;
+    const timer = setTimeout(() => {
+      if (!settled) {
+        settled = true;
+        unsubscribe();
+        resolve(auth.currentUser);
+      }
+    }, timeoutMs);
+
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      unsubscribe();
+      resolve(user);
+    });
+  });
+}
+
+async function getCondominiumIdWithRetry(timeoutMs = 5000): Promise<string | null> {
+  const immediate = localStorage.getItem("condominiumId");
+  if (immediate) return immediate;
+
+  return await new Promise((resolve) => {
+    const startedAt = Date.now();
+    const interval = setInterval(() => {
+      const value = localStorage.getItem("condominiumId");
+      if (value) {
+        clearInterval(interval);
+        resolve(value);
+        return;
+      }
+
+      if (Date.now() - startedAt >= timeoutMs) {
+        clearInterval(interval);
+        resolve(null);
+      }
+    }, 250);
+  });
 }
 
 export interface ExpenseRecord {
@@ -247,13 +293,12 @@ export const useExpenseSummaryStore = create<ExpenseSummaryState>()(
         set({ loading: true, error: null });
         try {
           const db = getFirestore();
-          const auth = getAuth();
-          const user = auth.currentUser;
+          const user = await getAuthenticatedUserWithRetry();
           if (!user) throw new Error("Usuario no autenticado");
 
           const tokenResult = await getIdTokenResult(user);
           const clientId = tokenResult.claims["clientId"] as string;
-          const condominiumId = localStorage.getItem("condominiumId");
+          const condominiumId = await getCondominiumIdWithRetry();
           if (!condominiumId) throw new Error("Condominio no seleccionado");
 
           const expensesRef = collection(
