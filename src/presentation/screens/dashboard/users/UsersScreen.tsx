@@ -32,19 +32,17 @@ const UsersScreen = () => {
     field: string;
     direction: "asc" | "desc";
   } | null>(null);
+  const [towerFilter, setTowerFilter] = useState<string>("");
   const [visibleColumns, setVisibleColumns] = useState({
     name: true,
     phone: true,
     email: true,
     role: true,
     department: true,
+    tower: true,
     actions: true,
   });
   const [columnSettingsOpen, setColumnSettingsOpen] = useState(false);
-  const [activeFilters, _setActiveFilters] = useState({
-    role: null as string | null,
-    status: null as string | null,
-  });
 
   const currentCondominiumId = useCondominiumStore(
     (state) => state.selectedCondominium?.id
@@ -148,11 +146,28 @@ const UsersScreen = () => {
     }
   }, [currentCondominiumId]);
 
-  // Memo for sorted users data
-  const sortedUsers = useMemo(() => {
-    if (!sortConfig) return users;
+  const towerOptions = useMemo(() => {
+    return Array.from(
+      new Set(
+        users
+          .map((user) => (user.tower || "").trim())
+          .filter((tower) => tower.length > 0)
+      )
+    ).sort((a, b) => a.localeCompare(b, "es", { numeric: true }));
+  }, [users]);
 
-    return [...users].sort((a, b) => {
+  // Memo for filtered + sorted users data
+  const filteredAndSortedUsers = useMemo(() => {
+    const normalizedTower = towerFilter.trim().toLowerCase();
+    const filteredUsers = normalizedTower
+      ? users.filter(
+          (user) => (user.tower || "").trim().toLowerCase() === normalizedTower
+        )
+      : users;
+
+    if (!sortConfig) return filteredUsers;
+
+    return [...filteredUsers].sort((a, b) => {
       let aValue: string | number = "";
       let bValue: string | number = "";
 
@@ -177,6 +192,10 @@ const UsersScreen = () => {
           aValue = a.number || "";
           bValue = b.number || "";
           break;
+        case "tower":
+          aValue = a.tower || "";
+          bValue = b.tower || "";
+          break;
         default:
           return 0;
       }
@@ -189,7 +208,7 @@ const UsersScreen = () => {
       }
       return 0;
     });
-  }, [users, sortConfig]);
+  }, [users, sortConfig, towerFilter]);
 
   return (
     <>
@@ -232,6 +251,8 @@ const UsersScreen = () => {
                 >
                   {key === "department"
                     ? "Número"
+                    : key === "tower"
+                    ? "Torre"
                     : key === "name"
                     ? "Nombre"
                     : key === "phone"
@@ -275,26 +296,18 @@ const UsersScreen = () => {
             </div>
 
             <div className="flex gap-2">
-              <div className="relative">
-                {activeFilters.role && (
-                  <div
-                    id="role-filter-dropdown"
-                    className="absolute z-10 mt-1 w-48 bg-white dark:bg-gray-800 shadow-lg rounded-md overflow-hidden border border-gray-200 dark:border-gray-700"
-                  >
-                    <div className="p-2">
-                      <div className="py-1 px-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded cursor-pointer">
-                        Todos
-                      </div>
-                      <div className="py-1 px-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded cursor-pointer">
-                        Administrador
-                      </div>
-                      <div className="py-1 px-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded cursor-pointer">
-                        Usuario
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
+              <select
+                value={towerFilter}
+                onChange={(e) => setTowerFilter(e.target.value)}
+                className="min-w-[180px] rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
+              >
+                <option value="">Todas las torres</option>
+                {towerOptions.map((tower) => (
+                  <option key={tower} value={tower}>
+                    Torre {tower}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
         </div>
@@ -314,7 +327,7 @@ const UsersScreen = () => {
                 Reintentar
               </button>
             </div>
-          ) : users.length === 0 ? (
+          ) : filteredAndSortedUsers.length === 0 ? (
             <div className="text-center py-20 text-gray-500 dark:text-gray-400">
               <p className="text-xl">No se encontraron usuarios</p>
               <p className="mt-2">
@@ -410,6 +423,23 @@ const UsersScreen = () => {
                     </th>
                   )}
 
+                  {visibleColumns.tower && (
+                    <th
+                      onClick={() => handleSort("tower")}
+                      className="px-4 py-3.5 text-left text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
+                    >
+                      <div className="flex items-center">
+                        <span>Torre</span>
+                        {sortConfig?.field === "tower" &&
+                          (sortConfig.direction === "asc" ? (
+                            <ChevronUpIcon className="ml-1 w-4 h-4" />
+                          ) : (
+                            <ChevronDownIcon className="ml-1 w-4 h-4" />
+                          ))}
+                      </div>
+                    </th>
+                  )}
+
                   {visibleColumns.actions && (
                     <th className="px-4 py-3.5 text-left text-sm font-medium text-gray-700 dark:text-gray-300">
                       Acciones
@@ -418,7 +448,7 @@ const UsersScreen = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-900">
-                {(sortedUsers || []).map((user) => (
+                {(filteredAndSortedUsers || []).map((user) => (
                   <tr
                     key={user.uid}
                     className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-150"
@@ -482,6 +512,12 @@ const UsersScreen = () => {
                     {visibleColumns.department && (
                       <td className="px-4 py-3.5 text-sm text-gray-700 dark:text-gray-300">
                         {user.number}
+                      </td>
+                    )}
+
+                    {visibleColumns.tower && (
+                      <td className="px-4 py-3.5 text-sm text-gray-700 dark:text-gray-300">
+                        {user.tower || "-"}
                       </td>
                     )}
 

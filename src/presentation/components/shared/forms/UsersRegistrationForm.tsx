@@ -96,24 +96,136 @@ const animationStyles = `
 `;
 
 const UsersRegistrationForm = () => {
-  const [file, setFile] = useState<File | null>(null);
-  const [fileName, setFileName] = useState("");
-  const [fileSize, setFileSize] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [currentStep, setCurrentStep] = useState(1);
-  const [isDragActive, setIsDragActive] = useState(false);
-  const [validationResult, setValidationResult] = useState<{
+  const [ file, setFile ] = useState<File | null>( null );
+  const [ fileName, setFileName ] = useState( "" );
+  const [ fileSize, setFileSize ] = useState( "" );
+  const [ loading, setLoading ] = useState( false );
+  const [ uploadProgress, setUploadProgress ] = useState( 0 );
+  const [ currentStep, setCurrentStep ] = useState( 1 );
+  const [ isDragActive, setIsDragActive ] = useState( false );
+  const [ validationResult, setValidationResult ] = useState<{
     isValid: boolean;
     message?: string;
     excelUserCount?: number;
-  } | null>(null);
-  const [limitInfo, setLimitInfo] = useState<{
+  } | null>( null );
+  const [ isColumnsGuideOpen, setIsColumnsGuideOpen ] = useState( false );
+  const [ limitInfo, setLimitInfo ] = useState<{
     condominiumLimit: number;
     currentUserCount: number;
-  }>({ condominiumLimit: 0, currentUserCount: 0 });
+  }>( { condominiumLimit: 0, currentUserCount: 0 } );
 
-  const sendExcel = useCondominiumStore((state) => state.sendExcel);
+  const excelColumnsGuide = [
+    {
+      column: "name",
+      description: "Nombre del condómino.",
+      required: true,
+      example: "Juan",
+    },
+    {
+      column: "lastName",
+      description: "Apellido del condómino.",
+      required: false,
+      example: "Pérez",
+    },
+    {
+      column: "email",
+      description: "Correo electrónico del condómino.",
+      required: false,
+      example: "juan@correo.com",
+    },
+    {
+      column: "role",
+      description: "Rol del usuario en el sistema.",
+      required: false,
+      example: "condomino",
+    },
+    {
+      column: "CP",
+      description: "Código postal.",
+      required: false,
+      example: "43816",
+    },
+    {
+      column: "address",
+      description: "Dirección del condómino.",
+      required: false,
+      example: "Av. Principal 123",
+    },
+    {
+      column: "country",
+      description: "País.",
+      required: false,
+      example: "México",
+    },
+    {
+      column: "city",
+      description: "Ciudad.",
+      required: false,
+      example: "Ciudad de México",
+    },
+    {
+      column: "state",
+      description: "Estado.",
+      required: false,
+      example: "Ciudad de México",
+    },
+    {
+      column: "number",
+      description: "Número de casa/departamento.",
+      required: false,
+      example: "A-101",
+    },
+    {
+      column: "tower",
+      description: "Torre o bloque al que pertenece.",
+      required: false,
+      example: "B",
+    },
+    {
+      column: "busisnessName",
+      description: "Razón social (si aplica para facturación).",
+      required: false,
+      example: "Servicios ABC SA de CV",
+    },
+    {
+      column: "taxResidence",
+      description: "Dirección fiscal.",
+      required: false,
+      example: "Calle Fiscal 456",
+    },
+    {
+      column: "taxRegime",
+      description: "Régimen fiscal.",
+      required: false,
+      example: "601",
+    },
+    {
+      column: "departament",
+      description: "Departamento (texto libre).",
+      required: false,
+      example: "Depto 4",
+    },
+    {
+      column: "photoURL",
+      description: "URL pública de foto de perfil.",
+      required: false,
+      example: "https://...",
+    },
+    {
+      column: "RFC",
+      description: "RFC para facturación.",
+      required: false,
+      example: "PEPJ8001019Q8",
+    },
+    {
+      column: "phone",
+      description: "Teléfono de contacto.",
+      required: false,
+      example: "5512345678",
+    },
+  ];
+
+  const sendExcel = useCondominiumStore( ( state ) => state.sendExcel );
   const {
     getCondominiumLimit,
     getCurrentUserCount,
@@ -122,204 +234,204 @@ const UsersRegistrationForm = () => {
   } = useCondominiumLimitsStore();
 
   // Insertar estilos CSS de animación
-  useEffect(() => {
-    const styleElement = document.createElement("style");
+  useEffect( () => {
+    const styleElement = document.createElement( "style" );
     styleElement.innerHTML = animationStyles;
-    document.head.appendChild(styleElement);
+    document.head.appendChild( styleElement );
 
     return () => {
-      document.head.removeChild(styleElement);
+      document.head.removeChild( styleElement );
     };
-  }, []);
+  }, [] );
 
   // Cargar límites al montar el componente
-  useEffect(() => {
+  useEffect( () => {
     const loadLimits = async () => {
       try {
         const limit = await getCondominiumLimit();
         const currentCount = await getCurrentUserCount();
-        setLimitInfo({
+        setLimitInfo( {
           condominiumLimit: limit,
           currentUserCount: currentCount,
-        });
-      } catch (error) {
-        toast.error("Error al cargar la información de límites");
+        } );
+      } catch ( error ) {
+        toast.error( "Error al cargar la información de límites" );
       }
     };
 
     loadLimits();
-  }, [getCondominiumLimit, getCurrentUserCount]);
+  }, [ getCondominiumLimit, getCurrentUserCount ] );
 
   // Formatear tamaño del archivo
-  const formatFileSize = (size: number): string => {
-    if (size < 1024) return `${size} bytes`;
-    if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
-    return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+  const formatFileSize = ( size: number ): string => {
+    if ( size < 1024 ) return `${ size } bytes`;
+    if ( size < 1024 * 1024 ) return `${ ( size / 1024 ).toFixed( 1 ) } KB`;
+    return `${ ( size / ( 1024 * 1024 ) ).toFixed( 1 ) } MB`;
   };
 
   // Simular progreso de carga
-  useEffect(() => {
+  useEffect( () => {
     let interval: NodeJS.Timeout;
-    if (file && uploadProgress < 100) {
-      interval = setInterval(() => {
-        setUploadProgress((prev) => {
-          if (prev >= 90) {
-            clearInterval(interval);
+    if ( file && uploadProgress < 100 ) {
+      interval = setInterval( () => {
+        setUploadProgress( ( prev ) => {
+          if ( prev >= 90 ) {
+            clearInterval( interval );
             return 100;
           }
           return prev + 10;
-        });
-      }, 200);
+        } );
+      }, 200 );
 
       // Cuando la carga llegue al 100%, habilitar el botón y mostrar resumen
-      if (uploadProgress === 100 && file) {
+      if ( uploadProgress === 100 && file ) {
         // Crear resumen con los límites actuales
         const excelUserCount = 1; // Asumimos al menos 1 usuario
 
-        setValidationResult({
+        setValidationResult( {
           isValid: true,
-          message: `Se procesará el archivo y se importarán ${excelUserCount} registros.`,
+          message: `Se procesará el archivo y se importarán ${ excelUserCount } registros.`,
           excelUserCount,
-        });
+        } );
 
         toast.success(
-          `Archivo listo para importar: ${excelUserCount} usuarios`
+          `Archivo listo para importar: ${ excelUserCount } usuarios`
         );
-        setCurrentStep(2);
+        setCurrentStep( 2 );
       }
     }
 
-    return () => clearInterval(interval);
-  }, [file, uploadProgress]);
+    return () => clearInterval( interval );
+  }, [ file, uploadProgress ] );
 
   // Mostrar paso 2 con más detalles sobre los límites
-  useEffect(() => {
-    if (currentStep === 2 && validationResult?.isValid) {
+  useEffect( () => {
+    if ( currentStep === 2 && validationResult?.isValid ) {
       const loadDetails = async () => {
         try {
           const limit = await getCondominiumLimit();
           const currentCount = await getCurrentUserCount();
 
-          setLimitInfo({
+          setLimitInfo( {
             condominiumLimit: limit,
             currentUserCount: currentCount,
-          });
-        } catch (error) {
-          console.error("Error al cargar detalles:", error);
+          } );
+        } catch ( error ) {
+          console.error( "Error al cargar detalles:", error );
         }
       };
 
       loadDetails();
     }
-  }, [currentStep, validationResult, getCondominiumLimit, getCurrentUserCount]);
+  }, [ currentStep, validationResult, getCondominiumLimit, getCurrentUserCount ] );
 
-  const handleRegisterCondominiums = async (event: React.FormEvent) => {
+  const handleRegisterCondominiums = async ( event: React.FormEvent ) => {
     event.preventDefault();
-    setLoading(true);
+    setLoading( true );
 
-    if (!file) {
+    if ( !file ) {
       toast.error(
         "Por favor, selecciona un archivo para registrar los usuarios"
       );
-      setLoading(false);
+      setLoading( false );
       return;
     }
 
     // Verificar si el resultado de validación existe y es válido
-    if (!validationResult || validationResult.isValid === false) {
+    if ( !validationResult || validationResult.isValid === false ) {
       toast.error(
         validationResult?.message || "El archivo no es válido para importar"
       );
-      setLoading(false);
+      setLoading( false );
       return;
     }
 
     try {
-      const condominiumId = localStorage.getItem("condominiumId");
-      if (!condominiumId) {
-        toast.error("No se encontró el ID del condominio");
+      const condominiumId = localStorage.getItem( "condominiumId" );
+      if ( !condominiumId ) {
+        toast.error( "No se encontró el ID del condominio" );
         return;
       }
-      await sendExcel(file);
-      toast.success("Usuarios registrados correctamente");
-      setFile(null);
-      setFileName("");
-      setFileSize("");
-      setUploadProgress(0);
-      setCurrentStep(1);
-      setValidationResult(null);
+      await sendExcel( file );
+      toast.success( "Usuarios registrados correctamente" );
+      setFile( null );
+      setFileName( "" );
+      setFileSize( "" );
+      setUploadProgress( 0 );
+      setCurrentStep( 1 );
+      setValidationResult( null );
 
       // Actualizar contador de usuarios tras registro exitoso
       const currentCount = await getCurrentUserCount();
-      setLimitInfo((prev) => ({ ...prev, currentUserCount: currentCount }));
-    } catch (error) {
-      toast.error("Error al registrar los usuarios");
+      setLimitInfo( ( prev ) => ( { ...prev, currentUserCount: currentCount } ) );
+    } catch ( error ) {
+      toast.error( "Error al registrar los usuarios" );
     } finally {
-      setLoading(false);
+      setLoading( false );
     }
   };
 
   const dropzoneOptions = {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     accept: {
-      "application/vnd.ms-excel": [".xls"],
+      "application/vnd.ms-excel": [ ".xls" ],
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [
         ".xlsx",
       ],
     } as any,
     maxSize: 10 * 1024 * 1024, // 10MB
     multiple: false,
-    onDrop: async (acceptedFiles: File[]) => {
-      if (acceptedFiles.length > 0) {
-        const selectedFile = acceptedFiles[0];
-        setFile(selectedFile);
-        setFileName(selectedFile.name);
-        setFileSize(formatFileSize(selectedFile.size));
-        setUploadProgress(10); // Iniciar la simulación de progreso
-        setCurrentStep(1);
-        setValidationResult(null);
+    onDrop: async ( acceptedFiles: File[] ) => {
+      if ( acceptedFiles.length > 0 ) {
+        const selectedFile = acceptedFiles[ 0 ];
+        setFile( selectedFile );
+        setFileName( selectedFile.name );
+        setFileSize( formatFileSize( selectedFile.size ) );
+        setUploadProgress( 10 ); // Iniciar la simulación de progreso
+        setCurrentStep( 1 );
+        setValidationResult( null );
 
         // Validar el archivo después de cargarlo
         try {
-          const result = await validateExcelUsers(selectedFile);
+          const result = await validateExcelUsers( selectedFile );
 
           // Si el archivo no es válido (excede límites), mostrar mensaje y detener proceso
-          if (!result.isValid) {
+          if ( !result.isValid ) {
             toast.error(
               result.message || "El archivo excede los límites permitidos"
             );
-            setValidationResult(result);
-            setUploadProgress(100); // Completar el progreso para mostrar el mensaje de error
-            setCurrentStep(2);
+            setValidationResult( result );
+            setUploadProgress( 100 ); // Completar el progreso para mostrar el mensaje de error
+            setCurrentStep( 2 );
             return;
           }
 
           // Si es válido, continuar con el proceso normal
-          setValidationResult(result);
-        } catch (error) {
-          toast.error("Error al validar el archivo Excel");
-          setFile(null);
-          setFileName("");
-          setFileSize("");
-          setUploadProgress(0);
+          setValidationResult( result );
+        } catch ( error ) {
+          toast.error( "Error al validar el archivo Excel" );
+          setFile( null );
+          setFileName( "" );
+          setFileSize( "" );
+          setUploadProgress( 0 );
         }
       }
     },
-    onDropRejected: (fileRejections: any[]) => {
-      const error = fileRejections[0]?.errors[0];
-      if (error?.code === "file-too-large") {
-        toast.error("El archivo excede el límite de 10MB");
-      } else if (error?.code === "file-invalid-type") {
-        toast.error("Solo se aceptan archivos Excel (.xls, .xlsx)");
+    onDropRejected: ( fileRejections: any[] ) => {
+      const error = fileRejections[ 0 ]?.errors[ 0 ];
+      if ( error?.code === "file-too-large" ) {
+        toast.error( "El archivo excede el límite de 10MB" );
+      } else if ( error?.code === "file-invalid-type" ) {
+        toast.error( "Solo se aceptan archivos Excel (.xls, .xlsx)" );
       } else {
-        toast.error("Error al cargar el archivo");
+        toast.error( "Error al cargar el archivo" );
       }
     },
     onDragEnter: () => {
-      setIsDragActive(true);
+      setIsDragActive( true );
     },
     onDragLeave: () => {
-      setIsDragActive(false);
+      setIsDragActive( false );
     },
   };
 
@@ -328,19 +440,19 @@ const UsersRegistrationForm = () => {
     getInputProps,
     isDragActive: internalIsDragActive,
     open, // Añadir esta función explícitamente para abrir el selector de archivos
-  } = useDropzone(dropzoneOptions);
+  } = useDropzone( dropzoneOptions );
 
   // Sincronizar el estado interno del dropzone con nuestro estado
-  useEffect(() => {
-    setIsDragActive(internalIsDragActive);
-  }, [internalIsDragActive]);
+  useEffect( () => {
+    setIsDragActive( internalIsDragActive );
+  }, [ internalIsDragActive ] );
 
   return (
     <div className="divide-gray-900/10 w-full shadow-md rounded-md px-8 py-6 dark:bg-gray-800 dark:text-gray-100 dark:shadow-2xl">
-      {(loading || isValidating) && <LoadingRegister />}
+      { ( loading || isValidating ) && <LoadingRegister /> }
       <form
         className="bg-white shadow-sm ring-1 w-full flex-col justify-center mx-auto ring-gray-900/5 sm:rounded-xl overflow-hidden dark:bg-gray-800"
-        onSubmit={handleRegisterCondominiums}
+        onSubmit={ handleRegisterCondominiums }
       >
         <div className="px-6 py-5 border-b border-gray-200 dark:border-gray-700">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
@@ -351,18 +463,18 @@ const UsersRegistrationForm = () => {
             Excel
           </p>
 
-          {/* Información de límites */}
+          {/* Información de límites */ }
           <div className="mt-3 flex items-center text-sm">
             <InformationCircleIcon className="w-4 h-4 text-indigo-500 mr-1" />
             <span className="text-indigo-700 dark:text-indigo-300">
-              {limitInfo.currentUserCount} de {limitInfo.condominiumLimit}{" "}
+              { limitInfo.currentUserCount } de { limitInfo.condominiumLimit }{ " " }
               usuarios permitidos registrados
             </span>
           </div>
         </div>
 
         <div className="px-6 py-5 space-y-6 dark:bg-gray-800 dark:text-gray-100">
-          {/* Paso 1: Selección/Carga de archivo */}
+          {/* Paso 1: Selección/Carga de archivo */ }
           <div className="mb-6">
             <div className="flex items-center mb-4">
               <h4 className="text-md font-semibold">
@@ -370,97 +482,94 @@ const UsersRegistrationForm = () => {
               </h4>
             </div>
 
-            {/* Área de carga de archivo mejorada con animaciones */}
+            {/* Área de carga de archivo mejorada con animaciones */ }
             <div
-              {...getRootProps()}
-              className={`
+              { ...getRootProps() }
+              className={ `
                 relative transition-all duration-500 overflow-hidden
                 p-8 border-2 border-dashed rounded-2xl 
                 flex flex-col items-center justify-center min-h-[280px]
                 cursor-pointer group
-                ${
-                  isDragActive
-                    ? "border-indigo-500 bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 dark:from-indigo-900/30 dark:via-purple-900/20 dark:to-pink-900/20 scale-105 shadow-2xl"
-                    : "border-gray-300 dark:border-gray-600 hover:border-indigo-400 dark:hover:border-indigo-500"
+                ${ isDragActive
+                  ? "border-indigo-500 bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 dark:from-indigo-900/30 dark:via-purple-900/20 dark:to-pink-900/20 scale-105 shadow-2xl"
+                  : "border-gray-300 dark:border-gray-600 hover:border-indigo-400 dark:hover:border-indigo-500"
                 }
-                ${
-                  file
-                    ? "bg-gradient-to-br from-indigo-50 via-blue-50 to-cyan-50 dark:from-indigo-900/30 dark:via-blue-900/20 dark:to-cyan-900/20 border-indigo-400 shadow-xl"
-                    : "hover:shadow-lg"
+                ${ file
+                  ? "bg-gradient-to-br from-indigo-50 via-blue-50 to-cyan-50 dark:from-indigo-900/30 dark:via-blue-900/20 dark:to-cyan-900/20 border-indigo-400 shadow-xl"
+                  : "hover:shadow-lg"
                 }
               `}
             >
-              <input {...getInputProps()} />
+              <input { ...getInputProps() } />
 
-              {/* Iconos orbitales - solo cuando NO hay archivo */}
-              {!file && (
+              {/* Iconos orbitales - solo cuando NO hay archivo */ }
+              { !file && (
                 <div className="absolute inset-0 pointer-events-none">
-                  {/* Centro de órbita */}
+                  {/* Centro de órbita */ }
                   <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-                    {/* Órbita 1 */}
+                    {/* Órbita 1 */ }
                     <div className="animate-orbit">
                       <TableCellsIcon className="w-6 h-6 text-indigo-400 dark:text-indigo-500 opacity-60" />
                     </div>
-                    {/* Órbita 2 */}
+                    {/* Órbita 2 */ }
                     <div
                       className="animate-orbit"
-                      style={{ animationDelay: "-5s" }}
+                      style={ { animationDelay: "-5s" } }
                     >
                       <DocumentCheckIcon className="w-5 h-5 text-purple-400 dark:text-purple-500 opacity-50" />
                     </div>
-                    {/* Órbita 3 */}
+                    {/* Órbita 3 */ }
                     <div
                       className="animate-orbit"
-                      style={{ animationDelay: "-10s" }}
+                      style={ { animationDelay: "-10s" } }
                     >
                       <ArrowUpTrayIcon className="w-5 h-5 text-pink-400 dark:text-pink-500 opacity-50" />
                     </div>
-                    {/* Órbita 4 */}
+                    {/* Órbita 4 */ }
                     <div
                       className="animate-orbit"
-                      style={{ animationDelay: "-15s" }}
+                      style={ { animationDelay: "-15s" } }
                     >
                       <CheckCircleIcon className="w-4 h-4 text-cyan-400 dark:text-cyan-500 opacity-40" />
                     </div>
 
-                    {/* Órbita inversa 1 */}
+                    {/* Órbita inversa 1 */ }
                     <div className="animate-orbit-reverse">
                       <DocumentPlusIcon className="w-6 h-6 text-blue-400 dark:text-blue-500 opacity-50" />
                     </div>
-                    {/* Órbita inversa 2 */}
+                    {/* Órbita inversa 2 */ }
                     <div
                       className="animate-orbit-reverse"
-                      style={{ animationDelay: "-8s" }}
+                      style={ { animationDelay: "-8s" } }
                     >
                       <TableCellsIcon className="w-5 h-5 text-indigo-300 dark:text-indigo-600 opacity-40" />
                     </div>
-                    {/* Órbita inversa 3 */}
+                    {/* Órbita inversa 3 */ }
                     <div
                       className="animate-orbit-reverse"
-                      style={{ animationDelay: "-16s" }}
+                      style={ { animationDelay: "-16s" } }
                     >
                       <DocumentCheckIcon className="w-4 h-4 text-purple-300 dark:text-purple-600 opacity-35" />
                     </div>
                   </div>
                 </div>
-              )}
+              ) }
 
-              {!file ? (
+              { !file ? (
                 <>
-                  {/* Icono central con animación flotante */}
+                  {/* Icono central con animación flotante */ }
                   <div className="relative z-10 animate-float">
                     <div className="relative">
-                      {/* Glow effect */}
+                      {/* Glow effect */ }
                       <div className="absolute inset-0 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-full blur-2xl opacity-20 animate-pulse-glow"></div>
 
                       <DocumentPlusIcon
-                        className={`
+                        className={ `
                         relative w-20 h-20 mb-4 transition-all duration-500
-                        ${
-                          isDragActive
+                        ${ isDragActive
                             ? "text-indigo-600 dark:text-indigo-400 scale-110"
                             : "text-indigo-400 dark:text-indigo-500 group-hover:text-indigo-500 dark:group-hover:text-indigo-400 group-hover:scale-105"
-                        }
+                          }
                       `}
                       />
                     </div>
@@ -468,9 +577,9 @@ const UsersRegistrationForm = () => {
 
                   <div className="text-center space-y-3 relative z-10">
                     <p className="text-lg font-semibold bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent dark:from-indigo-400 dark:via-purple-400 dark:to-pink-400">
-                      {isDragActive
+                      { isDragActive
                         ? "¡Suelta el archivo aquí!"
-                        : "Arrastra tu archivo Excel aquí"}
+                        : "Arrastra tu archivo Excel aquí" }
                     </p>
                     <p className="text-sm text-gray-600 dark:text-gray-400">
                       o haz clic para seleccionar
@@ -494,10 +603,10 @@ const UsersRegistrationForm = () => {
                               flex items-center shadow-lg hover:shadow-xl
                               transform transition-all duration-300
                               group/btn z-10"
-                    onClick={(e) => {
+                    onClick={ ( e ) => {
                       e.stopPropagation();
                       open();
-                    }}
+                    } }
                   >
                     <div className="absolute inset-0 shimmer-effect-slow"></div>
                     <ArrowUpTrayIcon className="w-5 h-5 mr-2 relative z-10" />
@@ -514,24 +623,24 @@ const UsersRegistrationForm = () => {
                       </div>
                       <div>
                         <p className="font-semibold text-gray-800 dark:text-gray-200">
-                          {fileName}
+                          { fileName }
                         </p>
                         <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
                           <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
-                          {fileSize}
+                          { fileSize }
                         </p>
                       </div>
                     </div>
                     <button
-                      onClick={(e) => {
+                      onClick={ ( e ) => {
                         e.stopPropagation();
-                        setFile(null);
-                        setFileName("");
-                        setFileSize("");
-                        setUploadProgress(0);
-                        setCurrentStep(1);
-                        setValidationResult(null);
-                      }}
+                        setFile( null );
+                        setFileName( "" );
+                        setFileSize( "" );
+                        setUploadProgress( 0 );
+                        setCurrentStep( 1 );
+                        setValidationResult( null );
+                      } }
                       className="text-gray-400 hover:text-red-500 transition-all duration-300 hover:scale-110 hover:rotate-90"
                       type="button"
                     >
@@ -539,12 +648,12 @@ const UsersRegistrationForm = () => {
                     </button>
                   </div>
 
-                  {uploadProgress < 100 ? (
+                  { uploadProgress < 100 ? (
                     <div className="w-full space-y-2">
                       <div className="relative w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 overflow-hidden">
                         <div
                           className="absolute inset-0 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-full transition-all duration-300"
-                          style={{ width: `${uploadProgress}%` }}
+                          style={ { width: `${ uploadProgress }%` } }
                         >
                           <div className="absolute inset-0 shimmer-effect"></div>
                         </div>
@@ -574,7 +683,7 @@ const UsersRegistrationForm = () => {
                           Procesando archivo...
                         </span>
                         <span className="font-semibold text-indigo-600 dark:text-indigo-400">
-                          {uploadProgress}%
+                          { uploadProgress }%
                         </span>
                       </div>
                     </div>
@@ -585,12 +694,12 @@ const UsersRegistrationForm = () => {
                         Archivo listo para importar
                       </span>
                     </div>
-                  )}
+                  ) }
                 </div>
-              )}
+              ) }
             </div>
 
-            {/* Información y ayuda con diseño mejorado */}
+            {/* Información y ayuda con diseño mejorado */ }
             <div className="mt-6 p-4 bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-200 rounded-xl flex items-start dark:from-amber-900/20 dark:to-orange-900/20 dark:border-amber-800 shadow-md hover:shadow-lg transition-shadow duration-300">
               <div className="relative">
                 <ExclamationCircleIcon className="w-6 h-6 text-amber-600 dark:text-amber-400 mr-3 flex-shrink-0 mt-0.5" />
@@ -603,8 +712,21 @@ const UsersRegistrationForm = () => {
                   Es importante que utilices la plantilla de ejemplo para
                   importar los usuarios.
                 </p>
+                <p className="text-xs text-gray-500 mb-4 dark:text-gray-400">
+                  <strong>Importante:</strong> para el registro masivo, únicamente la columna
+                  <strong> name / nombre</strong> es obligatoria. El resto de
+                  campos son opcionales.
+                </p>
+                <button
+                  type="button"
+                  onClick={ () => setIsColumnsGuideOpen( true ) }
+                  className="mb-4 inline-flex items-center gap-2 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-700 transition-colors hover:bg-indigo-100 dark:border-indigo-800 mr-2 dark:bg-indigo-900/20 dark:text-indigo-300 dark:hover:bg-indigo-900/30"
+                >
+                  <InformationCircleIcon className="h-4 w-4" />
+                  ¿Cómo funciona cada columna del Excel?
+                </button>
                 <a
-                  href="https://res.cloudinary.com/dz5tntwl1/raw/upload/v1710883105/template-registro-de-usuarios_yw3tih.xlsx"
+                  href="https://res.cloudinary.com/dz5tntwl1/raw/upload/v1772080563/OmniPixel/plantilla_ejemplo_g7mtmu.xlsx"
                   className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-xs font-semibold rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-105"
                 >
                   <TableCellsIcon className="w-4 h-4 mr-2" />
@@ -614,28 +736,28 @@ const UsersRegistrationForm = () => {
             </div>
           </div>
 
-          {/* Paso 2: Confirmación (solo se muestra cuando se ha cargado un archivo y procesado) */}
-          {currentStep === 2 && file && uploadProgress === 100 && (
+          {/* Paso 2: Confirmación (solo se muestra cuando se ha cargado un archivo y procesado) */ }
+          { currentStep === 2 && file && uploadProgress === 100 && (
             <div className="mb-6 animate-fadeIn border-t border-gray-200 pt-6 dark:border-gray-700">
               <div className="flex items-center mb-4">
                 <span className="bg-indigo-600 text-white rounded-full w-6 h-6 flex items-center justify-center mr-2 text-sm font-semibold">
                   2
                 </span>
                 <h4 className="text-md font-semibold">
-                  {validationResult?.isValid
+                  { validationResult?.isValid
                     ? "Confirmar importación"
-                    : "Error de validación"}
+                    : "Error de validación" }
                 </h4>
               </div>
 
-              {validationResult?.isValid ? (
+              { validationResult?.isValid ? (
                 <div className="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700">
                   <div className="flex justify-between py-2 border-b dark:border-gray-700">
                     <span className="text-sm text-gray-600 dark:text-gray-400">
                       Archivo seleccionado:
                     </span>
                     <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
-                      {fileName}
+                      { fileName }
                     </span>
                   </div>
                   <div className="flex justify-between py-2 border-b dark:border-gray-700">
@@ -643,7 +765,7 @@ const UsersRegistrationForm = () => {
                       Tamaño del archivo:
                     </span>
                     <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
-                      {fileSize}
+                      { fileSize }
                     </span>
                   </div>
                   <div className="flex justify-between py-2 border-b dark:border-gray-700">
@@ -651,7 +773,7 @@ const UsersRegistrationForm = () => {
                       Usuarios a importar:
                     </span>
                     <span className="text-sm font-medium text-indigo-600 dark:text-indigo-400">
-                      {validationResult.excelUserCount} usuarios
+                      { validationResult.excelUserCount } usuarios
                     </span>
                   </div>
                   <div className="flex justify-between py-2 border-b dark:border-gray-700">
@@ -659,7 +781,7 @@ const UsersRegistrationForm = () => {
                       Usuarios actuales:
                     </span>
                     <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
-                      {limitInfo.currentUserCount} usuarios
+                      { limitInfo.currentUserCount } usuarios
                     </span>
                   </div>
                   <div className="flex justify-between py-2 border-b dark:border-gray-700">
@@ -667,7 +789,7 @@ const UsersRegistrationForm = () => {
                       Límite del plan:
                     </span>
                     <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
-                      {limitInfo.condominiumLimit} usuarios
+                      { limitInfo.condominiumLimit } usuarios
                     </span>
                   </div>
                   <div className="flex justify-between py-2">
@@ -676,9 +798,9 @@ const UsersRegistrationForm = () => {
                     </span>
                     <span className="text-sm font-medium text-green-600 dark:text-green-400 flex items-center">
                       <CheckCircleIcon className="w-4 h-4 mr-1" />
-                      {limitInfo.currentUserCount +
-                        (validationResult?.excelUserCount || 0)}{" "}
-                      de {limitInfo.condominiumLimit} usuarios
+                      { limitInfo.currentUserCount +
+                        ( validationResult?.excelUserCount || 0 ) }{ " " }
+                      de { limitInfo.condominiumLimit } usuarios
                     </span>
                   </div>
                 </div>
@@ -691,8 +813,8 @@ const UsersRegistrationForm = () => {
                         No se puede importar este archivo
                       </p>
                       <p className="text-sm text-red-700 dark:text-red-300 mt-1">
-                        {validationResult?.message ||
-                          "El archivo excede los límites de usuarios permitidos."}
+                        { validationResult?.message ||
+                          "El archivo excede los límites de usuarios permitidos." }
                       </p>
 
                       <div className="mt-3 space-y-2">
@@ -701,7 +823,7 @@ const UsersRegistrationForm = () => {
                             Usuarios a importar:
                           </span>
                           <span className="text-sm font-medium text-red-800 dark:text-red-200">
-                            {validationResult?.excelUserCount} usuarios
+                            { validationResult?.excelUserCount } usuarios
                           </span>
                         </div>
                         <div className="flex justify-between py-2 border-b border-red-200 dark:border-red-700">
@@ -709,7 +831,7 @@ const UsersRegistrationForm = () => {
                             Usuarios actuales:
                           </span>
                           <span className="text-sm font-medium text-red-800 dark:text-red-200">
-                            {limitInfo.currentUserCount} usuarios
+                            { limitInfo.currentUserCount } usuarios
                           </span>
                         </div>
                         <div className="flex justify-between py-2 border-b border-red-200 dark:border-red-700">
@@ -717,7 +839,7 @@ const UsersRegistrationForm = () => {
                             Límite del plan:
                           </span>
                           <span className="text-sm font-medium text-red-800 dark:text-red-200">
-                            {limitInfo.condominiumLimit} usuarios
+                            { limitInfo.condominiumLimit } usuarios
                           </span>
                         </div>
                         <div className="flex justify-between py-2">
@@ -726,18 +848,18 @@ const UsersRegistrationForm = () => {
                           </span>
                           <span className="text-sm font-medium text-red-800 dark:text-red-200 flex items-center">
                             <XCircleIcon className="w-4 h-4 mr-1" />
-                            {limitInfo.currentUserCount +
-                              (validationResult?.excelUserCount || 0)}{" "}
-                            de {limitInfo.condominiumLimit} usuarios
+                            { limitInfo.currentUserCount +
+                              ( validationResult?.excelUserCount || 0 ) }{ " " }
+                            de { limitInfo.condominiumLimit } usuarios
                           </span>
                         </div>
                       </div>
                     </div>
                   </div>
                 </div>
-              )}
+              ) }
 
-              {validationResult?.isValid && (
+              { validationResult?.isValid && (
                 <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md mb-4">
                   <p className="text-sm text-blue-800 dark:text-blue-200 flex items-start">
                     <ExclamationCircleIcon className="w-5 h-5 mr-2 flex-shrink-0" />
@@ -745,24 +867,24 @@ const UsersRegistrationForm = () => {
                     acción no se puede deshacer.
                   </p>
                 </div>
-              )}
+              ) }
             </div>
-          )}
+          ) }
         </div>
 
-        {/* Botones de acción */}
+        {/* Botones de acción */ }
         <div className="flex items-center justify-end gap-x-6 border-t border-gray-200 px-6 py-4 bg-gray-50 dark:bg-gray-800 dark:border-gray-700">
           <button
             type="button"
             className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-500 dark:text-gray-300 dark:hover:text-gray-100 transition-colors"
-            onClick={() => {
-              setFile(null);
-              setFileName("");
-              setFileSize("");
-              setUploadProgress(0);
-              setCurrentStep(1);
-              setValidationResult(null);
-            }}
+            onClick={ () => {
+              setFile( null );
+              setFileName( "" );
+              setFileSize( "" );
+              setUploadProgress( 0 );
+              setCurrentStep( 1 );
+              setValidationResult( null );
+            } }
           >
             Cancelar
           </button>
@@ -773,11 +895,11 @@ const UsersRegistrationForm = () => {
             disabled={
               !file ||
               uploadProgress < 100 ||
-              (validationResult !== null && validationResult.isValid === false)
+              ( validationResult !== null && validationResult.isValid === false )
             }
           >
             <div className="absolute inset-0 shimmer-effect opacity-0 group-hover:opacity-100 transition-opacity"></div>
-            {file && uploadProgress < 100 ? (
+            { file && uploadProgress < 100 ? (
               <>
                 <svg
                   className="animate-spin -ml-1 mr-2 h-5 w-5 text-white relative z-10"
@@ -806,10 +928,92 @@ const UsersRegistrationForm = () => {
                 <ArrowUpTrayIcon className="w-5 h-5 mr-2 relative z-10 group-hover:animate-bounce" />
                 <span className="relative z-10">Importar usuarios</span>
               </>
-            )}
+            ) }
           </button>
         </div>
       </form>
+
+      { isColumnsGuideOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 py-6">
+          <div className="w-full max-w-4xl overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-gray-900">
+            <div className="flex items-start justify-between gap-3 border-b border-gray-200 bg-gradient-to-r from-indigo-600 to-purple-600 px-5 py-4 text-white dark:border-gray-700">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-indigo-100">
+                  Como Funciona
+                </p>
+                <h4 className="text-lg font-bold">
+                  Guía de columnas para importación masiva
+                </h4>
+                <p className="mt-1 text-sm text-indigo-100">
+                  Para un registro correcto, solo <strong>name</strong> es obligatorio.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={ () => setIsColumnsGuideOpen( false ) }
+                className="rounded-lg bg-white/10 p-1.5 hover:bg-white/20"
+                aria-label="Cerrar guía"
+              >
+                <XCircleIcon className="h-6 w-6" />
+              </button>
+            </div>
+
+            <div className="max-h-[70vh] overflow-auto px-5 py-4">
+              <div className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800 dark:border-emerald-900/40 dark:bg-emerald-900/20 dark:text-emerald-300">
+                Recomendación: usa la plantilla oficial y no cambies los nombres
+                de los encabezados.
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                  <thead className="bg-gray-50 dark:bg-gray-800">
+                    <tr>
+                      <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                        Columna
+                      </th>
+                      <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                        ¿Qué dato va?
+                      </th>
+                      <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                        Ejemplo
+                      </th>
+                      <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                        Requerido
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                    { excelColumnsGuide.map( ( item ) => (
+                      <tr key={ item.column }>
+                        <td className="px-3 py-2 text-sm font-semibold text-indigo-700 dark:text-indigo-300">
+                          { item.column }
+                        </td>
+                        <td className="px-3 py-2 text-sm text-gray-700 dark:text-gray-200">
+                          { item.description }
+                        </td>
+                        <td className="px-3 py-2 text-sm text-gray-600 dark:text-gray-300">
+                          { item.example }
+                        </td>
+                        <td className="px-3 py-2 text-sm">
+                          { item.required ? (
+                            <span className="inline-flex rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
+                              Sí
+                            </span>
+                          ) : (
+                            <span className="inline-flex rounded-full bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-600 dark:bg-gray-800 dark:text-gray-300">
+                              No
+                            </span>
+                          ) }
+                        </td>
+                      </tr>
+                    ) ) }
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) }
     </div>
   );
 };

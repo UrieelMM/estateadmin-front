@@ -26,6 +26,7 @@ import {
   MoonIcon,
   ArrowDownTrayIcon,
   TableCellsIcon,
+  InformationCircleIcon,
 } from "@heroicons/react/24/solid";
 import { motion, AnimatePresence } from "framer-motion";
 import logo from "../../../../assets/logo.png";
@@ -43,10 +44,37 @@ import {
 } from "firebase/firestore";
 import { getAuth, getIdTokenResult } from "firebase/auth";
 
+const InfoTooltip = ( { text }: { text: string; } ) => {
+  const [ open, setOpen ] = useState( false );
+
+  return (
+    <div className="relative inline-flex">
+      <button
+        type="button"
+        onMouseEnter={ () => setOpen( true ) }
+        onMouseLeave={ () => setOpen( false ) }
+        onFocus={ () => setOpen( true ) }
+        onBlur={ () => setOpen( false ) }
+        onClick={ () => setOpen( ( prev ) => !prev ) }
+        className="inline-flex cursor-help text-gray-400 hover:text-indigo-500"
+        aria-label="Mostrar ayuda"
+      >
+        <InformationCircleIcon className="h-4 w-4" />
+      </button>
+
+      { open && (
+        <div className="absolute left-0 top-full mt-2 z-40 w-64 max-w-[calc(100vw-4rem)] rounded-md border border-gray-200 bg-white p-2 text-xs text-gray-700 shadow-lg dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200">
+          { text }
+        </div>
+      ) }
+    </div>
+  );
+};
+
 const InitialSetupSteps = () => {
   const TOTAL_STEPS = 6;
   const USERS_IMPORT_TEMPLATE_URL =
-    "https://res.cloudinary.com/dz5tntwl1/raw/upload/v1710883105/template-registro-de-usuarios_yw3tih.xlsx";
+    "https://res.cloudinary.com/dz5tntwl1/raw/upload/v1772080563/OmniPixel/plantilla_ejemplo_g7mtmu.xlsx";
   const [ currentStep, setCurrentStep ] = useState( 1 );
   const { isDarkMode, toggleDarkMode } = useTheme();
   const { fetchCondominiums } = useCondominiumStore();
@@ -141,8 +169,8 @@ const InitialSetupSteps = () => {
         return;
       }
     } else if ( currentStep === 3 ) {
-      if ( !logoReportsFile || !signReportsFile ) {
-        toast.error( "Debes cargar tus imágenes." );
+      if ( !signReportsFile ) {
+        toast.error( "La firma para reportes es obligatoria." );
         return;
       }
     } else if ( currentStep === 4 ) {
@@ -379,10 +407,10 @@ const InitialSetupSteps = () => {
               animate={ { scale: isActive ? 1.2 : 1 } }
               transition={ { type: "spring", stiffness: 300, damping: 20 } }
               className={ `flex items-center justify-center w-10 h-10 rounded-full border-2 font-bold text-lg transition-colors duration-300 ${ isCompleted
-                  ? "bg-indigo-400 text-white border-indigo-400"
-                  : isActive
-                    ? "bg-indigo-100 text-indigo-500 border-indigo-500"
-                    : "bg-white text-gray-600 border-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600"
+                ? "bg-indigo-400 text-white border-indigo-400"
+                : isActive
+                  ? "bg-indigo-100 text-indigo-500 border-indigo-500"
+                  : "bg-white text-gray-600 border-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600"
                 }` }
             >
               { isCompleted ? <CheckIcon className="h-5 w-5" /> : stepNumber }
@@ -410,10 +438,10 @@ const InitialSetupSteps = () => {
               animate={ { scale: isActive ? 1.2 : 1 } }
               transition={ { type: "spring", stiffness: 300, damping: 20 } }
               className={ `flex items-center justify-center w-10 h-10 rounded-full border-2 font-bold text-lg transition-colors duration-300 ${ isCompleted
-                  ? "bg-indigo-400 text-white border-indigo-400"
-                  : isActive
-                    ? "bg-indigo-100 text-indigo-500 border-indigo-500"
-                    : "bg-white text-gray-600 border-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600"
+                ? "bg-indigo-400 text-white border-indigo-400"
+                : isActive
+                  ? "bg-indigo-100 text-indigo-500 border-indigo-500"
+                  : "bg-white text-gray-600 border-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600"
                 }` }
             >
               { isCompleted ? <CheckIcon className="h-5 w-5" /> : stepNumber }
@@ -520,9 +548,12 @@ const InitialSetupSteps = () => {
         return (
           <div className="space-y-4 text-center md:text-left">
             <div>
-              <label className="block text-gray-700 dark:text-gray-300 mb-1 font-medium">
-                Logo Corporativo
-              </label>
+              <div className="mb-1 flex items-center gap-1">
+                <label className="block text-gray-700 dark:text-gray-300 font-medium">
+                  Logo Corporativo
+                </label>
+                <InfoTooltip text="Se muestra en el sistema (barra superior y elementos de identidad visual del condominio/cliente)." />
+              </div>
               <label className="inline-flex items-center space-x-2 cursor-pointer bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-md transition-colors">
                 { logoFile ? (
                   <CheckIcon className="h-5 w-5" />
@@ -546,9 +577,12 @@ const InitialSetupSteps = () => {
               ) }
             </div>
             <div>
-              <label className="block text-gray-700 dark:text-gray-300 mb-1 font-medium">
-                Logo para Reportes
-              </label>
+              <div className="mb-1 flex items-center gap-1">
+                <label className="block text-gray-700 dark:text-gray-300 font-medium">
+                  Logo para Reportes <span className="text-xs text-gray-500">(Opcional)</span>
+                </label>
+                <InfoTooltip text="Se usa en encabezados de PDF/Excel. Si no se carga, se utiliza el estilo por defecto del sistema." />
+              </div>
               <label className="inline-flex items-center space-x-2 cursor-pointer bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-md transition-colors">
                 { logoReportsFile ? (
                   <CheckIcon className="h-5 w-5" />
@@ -572,9 +606,12 @@ const InitialSetupSteps = () => {
               ) }
             </div>
             <div>
-              <label className="block text-gray-700 dark:text-gray-300 mb-1 font-medium">
-                Firma para Reportes
-              </label>
+              <div className="mb-1 flex items-center gap-1">
+                <label className="block text-gray-700 dark:text-gray-300 font-medium">
+                  Firma para Reportes
+                </label>
+                <InfoTooltip text="Firma que se imprime en reportes del sistema para validar su emisión." />
+              </div>
               <label className="inline-flex items-center space-x-2 cursor-pointer bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-md transition-colors">
                 { signReportsFile ? (
                   <CheckIcon className="h-5 w-5" />
@@ -685,6 +722,10 @@ const InitialSetupSteps = () => {
           <div className="space-y-4 text-start">
             <p className="text-gray-700 dark:text-gray-300">
               Elige si deseas Modo Día o Modo Noche
+              <br />
+              <span className="text-xs text-gray-500 dark:text-gray-400">
+                Puedes cambiarlo en cualquier momento en la sección de Configuración.
+              </span>
             </p>
             <div className="flex items-center justify-start space-x-4">
               <SunIcon
@@ -729,6 +770,11 @@ const InitialSetupSteps = () => {
                   <p className="text-sm text-gray-600 dark:text-gray-300">
                     Usa este archivo para cargar usuarios de forma masiva en
                     <strong> Registro de Condóminos</strong>.
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Importante: para el registro masivo, únicamente la columna
+                    <strong> name / nombre</strong> es obligatoria. El resto de
+                    campos son opcionales.
                   </p>
                   <a
                     href={ USERS_IMPORT_TEMPLATE_URL }

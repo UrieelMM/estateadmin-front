@@ -9,6 +9,7 @@ export interface UserData {
   state?: string;
   country?: string;
   number?: string;
+  tower?: string;
   phone?: string;
   businessName?: string;
   taxResidence?: string;
