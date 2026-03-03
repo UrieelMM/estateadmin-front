@@ -131,6 +131,9 @@ const UsersScreen = () => {
     fetchUsers(currentPage); // Recargar la página actual
   };
 
+  const normalizeTower = (value: unknown): string =>
+    String(value ?? "").trim();
+
   useEffect(() => {
     fetchUsers(currentPage);
   }, [currentPage]);
@@ -150,7 +153,7 @@ const UsersScreen = () => {
     return Array.from(
       new Set(
         users
-          .map((user) => (user.tower || "").trim())
+          .map((user) => normalizeTower(user.tower))
           .filter((tower) => tower.length > 0)
       )
     ).sort((a, b) => a.localeCompare(b, "es", { numeric: true }));
@@ -161,7 +164,8 @@ const UsersScreen = () => {
     const normalizedTower = towerFilter.trim().toLowerCase();
     const filteredUsers = normalizedTower
       ? users.filter(
-          (user) => (user.tower || "").trim().toLowerCase() === normalizedTower
+          (user) =>
+            normalizeTower(user.tower).toLowerCase() === normalizedTower
         )
       : users;
 
@@ -193,8 +197,8 @@ const UsersScreen = () => {
           bValue = b.number || "";
           break;
         case "tower":
-          aValue = a.tower || "";
-          bValue = b.tower || "";
+          aValue = normalizeTower(a.tower);
+          bValue = normalizeTower(b.tower);
           break;
         default:
           return 0;
@@ -517,7 +521,7 @@ const UsersScreen = () => {
 
                     {visibleColumns.tower && (
                       <td className="px-4 py-3.5 text-sm text-gray-700 dark:text-gray-300">
-                        {user.tower || "-"}
+                        {normalizeTower(user.tower) || "-"}
                       </td>
                     )}
 
