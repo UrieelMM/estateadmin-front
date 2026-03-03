@@ -4,7 +4,60 @@ import { create } from "./createStore";
 import { getAuth, getIdTokenResult } from "firebase/auth";
 
 interface CondominiumState {
-  sendExcel: (file: File) => Promise<void>;
+  sendExcel: (file: File) => Promise<boolean>;
+  dryRunMassUpsert: (
+    file: File,
+    mode?: "upsert" | "update_only" | "create_only",
+    options?: {
+      skipEmptyUpdates?: boolean;
+      matchBy?: "auto" | "email" | "number_tower";
+      allowRoleUpdate?: boolean;
+      allowEmailUpdate?: boolean;
+      allowNumberUpdate?: boolean;
+    }
+  ) => Promise<{
+    ok: boolean;
+    operationId: string;
+    expiresAt: string;
+    mode: string;
+    options: Record<string, unknown>;
+    fileHash?: string;
+    summary: {
+      totalRows: number;
+      validRows: number;
+      errorRows: number;
+      willCreate: number;
+      willUpdate: number;
+      willSkip: number;
+    };
+    rows: Array<{
+      rowNumber: number;
+      action: "create" | "update" | "skip" | "error";
+      matchStrategy?: string;
+      reasons?: string[];
+      normalizedPayload?: Record<string, unknown>;
+      matchedUserId?: string;
+    }>;
+  }>;
+  commitMassUpsert: (
+    file: File,
+    operationId: string
+  ) => Promise<{
+    ok: boolean;
+    operationId: string;
+    summary: {
+      createdCount: number;
+      updatedCount: number;
+      skippedCount: number;
+      errorCount: number;
+    };
+    errors?: Array<{ rowNumber: number; reason: string }>;
+    resultFile?: {
+      fileName: string;
+      mimeType: string;
+      base64: string;
+    };
+  }>;
   isProcessing: boolean;
 }
 
@@ -15,6 +68,128 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 export const useCondominiumStore = create<CondominiumState>()((set, _get) => ({
   isProcessing: false,
 
+  dryRunMassUpsert: async (file, mode = "upsert", options = {}) => {
+    if (!ALLOWED_EXTENSIONS_REGEX.test(file.name)) {
+      throw new Error("El archivo debe ser un Excel (.xls, .xlsx)");
+    }
+    if (file.size > MAX_FILE_SIZE) {
+      throw new Error("El archivo no debe pesar más de 10MB");
+    }
+
+    const auth = getAuth();
+    const user = auth.currentUser;
+    if (!user) {
+      throw new Error("Usuario no autenticado");
+    }
+
+    const tokenResult = await getIdTokenResult(user);
+    const clientId = String(tokenResult.claims["clientId"] || "");
+    if (!clientId) {
+      throw new Error("ClientId no disponible");
+    }
+
+    const condominiumId = localStorage.getItem("condominiumId");
+    if (!condominiumId) {
+      throw new Error("No se encontró el ID del condominio");
+    }
+
+    const idToken = await user.getIdToken();
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("clientId", clientId);
+    formData.append("condominiumId", condominiumId);
+    formData.append("mode", mode);
+    formData.append("options", JSON.stringify(options));
+
+    const response = await fetch(
+      `${import.meta.env.VITE_URL_SERVER}/users-auth/upsert-condominiums/dry-run`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: formData,
+      }
+    );
+
+    if (!response.ok) {
+      let errorMessage = "Error al ejecutar la prevalidación";
+      try {
+        const errorData = await response.json();
+        errorMessage = Array.isArray(errorData?.message)
+          ? errorData.message.join(" ")
+          : errorData?.message || errorData?.error || errorMessage;
+      } catch {
+        errorMessage = await response.text();
+      }
+      throw new Error(errorMessage);
+    }
+
+    return response.json();
+  },
+
+  commitMassUpsert: async (file, operationId) => {
+    if (!operationId) {
+      throw new Error("operationId requerido");
+    }
+    if (!ALLOWED_EXTENSIONS_REGEX.test(file.name)) {
+      throw new Error("El archivo debe ser un Excel (.xls, .xlsx)");
+    }
+    if (file.size > MAX_FILE_SIZE) {
+      throw new Error("El archivo no debe pesar más de 10MB");
+    }
+
+    const auth = getAuth();
+    const user = auth.currentUser;
+    if (!user) {
+      throw new Error("Usuario no autenticado");
+    }
+
+    const tokenResult = await getIdTokenResult(user);
+    const clientId = String(tokenResult.claims["clientId"] || "");
+    if (!clientId) {
+      throw new Error("ClientId no disponible");
+    }
+
+    const condominiumId = localStorage.getItem("condominiumId");
+    if (!condominiumId) {
+      throw new Error("No se encontró el ID del condominio");
+    }
+
+    const idToken = await user.getIdToken();
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("clientId", clientId);
+    formData.append("condominiumId", condominiumId);
+    formData.append("operationId", operationId);
+
+    const response = await fetch(
+      `${import.meta.env.VITE_URL_SERVER}/users-auth/upsert-condominiums/commit`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: formData,
+      }
+    );
+
+    if (!response.ok) {
+      let errorMessage = "Error al confirmar la importación";
+      try {
+        const errorData = await response.json();
+        errorMessage = Array.isArray(errorData?.message)
+          ? errorData.message.join(" ")
+          : errorData?.message || errorData?.error || errorMessage;
+      } catch {
+        errorMessage = await response.text();
+      }
+      throw new Error(errorMessage);
+    }
+
+    return response.json();
+  },
+
   sendExcel: async (file: File) => {
     try {
       set({ isProcessing: true });
@@ -22,18 +197,18 @@ export const useCondominiumStore = create<CondominiumState>()((set, _get) => ({
       // Validación del archivo: extensión y tamaño
       if (!ALLOWED_EXTENSIONS_REGEX.test(file.name)) {
         toast.error("El archivo debe ser un Excel (.xls, .xlsx)");
-        return;
+        return false;
       }
       if (file.size > MAX_FILE_SIZE) {
         alert("El archivo no debe pesar más de 10MB");
-        return;
+        return false;
       }
 
       const auth = getAuth();
       const user = auth.currentUser;
       if (!user) {
         toast.error("Usuario no autenticado");
-        return;
+        return false;
       }
 
       // Obtener el token y extraer el clientId de los claims
@@ -43,19 +218,19 @@ export const useCondominiumStore = create<CondominiumState>()((set, _get) => ({
       } catch (error) {
         console.error("Error al obtener token:", error);
         toast.error("Error al obtener token de autenticación");
-        return;
+        return false;
       }
 
       const clientId = tokenResult.claims["clientId"];
       if (!clientId) {
         toast.error("ClientId no disponible");
-        return;
+        return false;
       }
 
       const condominiumId = localStorage.getItem("condominiumId");
       if (!condominiumId) {
         toast.error("No se encontró el ID del condominio");
-        return;
+        return false;
       }
 
       // Preparar los datos a enviar en el FormData
@@ -114,15 +289,18 @@ export const useCondominiumStore = create<CondominiumState>()((set, _get) => ({
         toast.success(
           "Proceso completado, se ha descargado un archivo con los resultados del registro."
         );
+        return true;
       } else {
         toast.error(
           "Proceso completado, pero no se recibió el archivo de resultados esperado."
         );
+        return false;
       }
     } catch (error) {
       toast.error(
         `Ha ocurrido un error desconocido, por favor vuelve a intentarlo}`
       );
+      return false;
     } finally {
       set({ isProcessing: false });
     }

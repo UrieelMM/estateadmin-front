@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useDropzone } from "react-dropzone";
 import { useCondominiumStore } from "../../../../store/useRegisterUserStore";
 import { useCondominiumLimitsStore } from "../../../../store/useCondominiumLimitsStore";
@@ -96,6 +96,8 @@ const animationStyles = `
 `;
 
 const UsersRegistrationForm = () => {
+  const formContainerRef = useRef<HTMLDivElement | null>( null );
+  const [ activeTab, setActiveTab ] = useState<"initial" | "upsert">( "initial" );
   const [ file, setFile ] = useState<File | null>( null );
   const [ fileName, setFileName ] = useState( "" );
   const [ fileSize, setFileSize ] = useState( "" );
@@ -107,6 +109,24 @@ const UsersRegistrationForm = () => {
     isValid: boolean;
     message?: string;
     excelUserCount?: number;
+  } | null>( null );
+  const [ dryRunResult, setDryRunResult ] = useState<{
+    ok: boolean;
+    operationId: string;
+    expiresAt: string;
+    summary: {
+      totalRows: number;
+      validRows: number;
+      errorRows: number;
+      willCreate: number;
+      willUpdate: number;
+      willSkip: number;
+    };
+    rows: Array<{
+      rowNumber: number;
+      action: "create" | "update" | "skip" | "error";
+      reasons?: string[];
+    }>;
   } | null>( null );
   const [ isColumnsGuideOpen, setIsColumnsGuideOpen ] = useState( false );
   const [ limitInfo, setLimitInfo ] = useState<{
@@ -135,9 +155,10 @@ const UsersRegistrationForm = () => {
     },
     {
       column: "role",
-      description: "Rol del usuario en el sistema.",
+      description:
+        "Tipo de usuario: propietario o inquilino. Si se omite o viene vacío, se asigna propietario por defecto.",
       required: false,
-      example: "condomino",
+      example: "propietario",
     },
     {
       column: "CP",
@@ -225,7 +246,15 @@ const UsersRegistrationForm = () => {
     },
   ];
 
-  const sendExcel = useCondominiumStore( ( state ) => state.sendExcel );
+  const {
+    sendExcel,
+    dryRunMassUpsert,
+    commitMassUpsert,
+  } = useCondominiumStore( ( state ) => ( {
+    sendExcel: state.sendExcel,
+    dryRunMassUpsert: state.dryRunMassUpsert,
+    commitMassUpsert: state.commitMassUpsert,
+  } ) );
   const {
     getCondominiumLimit,
     getCurrentUserCount,
@@ -282,23 +311,6 @@ const UsersRegistrationForm = () => {
           return prev + 10;
         } );
       }, 200 );
-
-      // Cuando la carga llegue al 100%, habilitar el botón y mostrar resumen
-      if ( uploadProgress === 100 && file ) {
-        // Crear resumen con los límites actuales
-        const excelUserCount = 1; // Asumimos al menos 1 usuario
-
-        setValidationResult( {
-          isValid: true,
-          message: `Se procesará el archivo y se importarán ${ excelUserCount } registros.`,
-          excelUserCount,
-        } );
-
-        toast.success(
-          `Archivo listo para importar: ${ excelUserCount } usuarios`
-        );
-        setCurrentStep( 2 );
-      }
     }
 
     return () => clearInterval( interval );
@@ -325,8 +337,28 @@ const UsersRegistrationForm = () => {
     }
   }, [ currentStep, validationResult, getCondominiumLimit, getCurrentUserCount ] );
 
+  const resetImportFlow = () => {
+    setFile( null );
+    setFileName( "" );
+    setFileSize( "" );
+    setUploadProgress( 0 );
+    setCurrentStep( 1 );
+    setValidationResult( null );
+    setDryRunResult( null );
+  };
+
+  const handleTabChange = ( tab: "initial" | "upsert" ) => {
+    if ( tab === activeTab ) return;
+    setActiveTab( tab );
+    resetImportFlow();
+  };
+
   const handleRegisterCondominiums = async ( event: React.FormEvent ) => {
     event.preventDefault();
+    formContainerRef.current?.scrollIntoView( {
+      behavior: "smooth",
+      block: "center",
+    } );
     setLoading( true );
 
     if ( !file ) {
@@ -337,7 +369,7 @@ const UsersRegistrationForm = () => {
       return;
     }
 
-    // Verificar si el resultado de validación existe y es válido
+    // Verificar validación local
     if ( !validationResult || validationResult.isValid === false ) {
       toast.error(
         validationResult?.message || "El archivo no es válido para importar"
@@ -347,25 +379,64 @@ const UsersRegistrationForm = () => {
     }
 
     try {
-      const condominiumId = localStorage.getItem( "condominiumId" );
-      if ( !condominiumId ) {
-        toast.error( "No se encontró el ID del condominio" );
-        return;
+      if ( activeTab === "initial" ) {
+        const importResult = await sendExcel( file );
+        if ( !importResult ) {
+          return;
+        }
+      } else {
+        if ( !dryRunResult?.operationId ) {
+          toast.error(
+            "Primero debes ejecutar la prevalidación del archivo."
+          );
+          return;
+        }
+
+        const commitResponse = await commitMassUpsert(
+          file,
+          dryRunResult.operationId
+        );
+
+        if ( commitResponse?.resultFile?.base64 ) {
+          const binary = atob( commitResponse.resultFile.base64 );
+          const bytes = new Uint8Array( binary.length );
+          for ( let i = 0; i < binary.length; i += 1 ) {
+            bytes[ i ] = binary.charCodeAt( i );
+          }
+          const blob = new Blob( [ bytes ], {
+            type:
+              commitResponse.resultFile.mimeType ||
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          } );
+          const url = window.URL.createObjectURL( blob );
+          const link = document.createElement( "a" );
+          link.href = url;
+          link.setAttribute(
+            "download",
+            commitResponse.resultFile.fileName || "resultado-upsert-usuarios.xlsx"
+          );
+          document.body.appendChild( link );
+          link.click();
+          link.parentNode?.removeChild( link );
+          window.URL.revokeObjectURL( url );
+        }
+
+        toast.success(
+          `Importación completada. Creados: ${ commitResponse.summary.createdCount }, actualizados: ${ commitResponse.summary.updatedCount }.`
+        );
       }
-      await sendExcel( file );
-      toast.success( "Usuarios registrados correctamente" );
-      setFile( null );
-      setFileName( "" );
-      setFileSize( "" );
-      setUploadProgress( 0 );
-      setCurrentStep( 1 );
-      setValidationResult( null );
+
+      resetImportFlow();
 
       // Actualizar contador de usuarios tras registro exitoso
       const currentCount = await getCurrentUserCount();
       setLimitInfo( ( prev ) => ( { ...prev, currentUserCount: currentCount } ) );
     } catch ( error ) {
-      toast.error( "Error al registrar los usuarios" );
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Error al registrar los usuarios";
+      toast.error( errorMessage );
     } finally {
       setLoading( false );
     }
@@ -390,9 +461,11 @@ const UsersRegistrationForm = () => {
         setUploadProgress( 10 ); // Iniciar la simulación de progreso
         setCurrentStep( 1 );
         setValidationResult( null );
+        setDryRunResult( null );
 
         // Validar el archivo después de cargarlo
         try {
+          setLoading( true );
           const result = await validateExcelUsers( selectedFile );
 
           // Si el archivo no es válido (excede límites), mostrar mensaje y detener proceso
@@ -406,14 +479,53 @@ const UsersRegistrationForm = () => {
             return;
           }
 
-          // Si es válido, continuar con el proceso normal
-          setValidationResult( result );
+          if ( activeTab === "initial" ) {
+            setValidationResult( {
+              isValid: true,
+              message: "Archivo válido para importación inicial.",
+              excelUserCount: result.excelUserCount,
+            } );
+            toast.success( "Archivo validado correctamente." );
+          } else {
+            // Ejecutar dry-run seguro en backend antes de permitir commit
+            const dryRunResponse = await dryRunMassUpsert( selectedFile, "upsert", {
+              skipEmptyUpdates: true,
+              matchBy: "auto",
+              allowRoleUpdate: false,
+              allowEmailUpdate: false,
+              allowNumberUpdate: true,
+            } );
+
+            setDryRunResult( {
+              ok: dryRunResponse.ok,
+              operationId: dryRunResponse.operationId,
+              expiresAt: dryRunResponse.expiresAt,
+              summary: dryRunResponse.summary,
+              rows: dryRunResponse.rows || [],
+            } );
+
+            setValidationResult( {
+              isValid: dryRunResponse.ok,
+              message: `Prevalidación lista: crear ${ dryRunResponse.summary.willCreate }, actualizar ${ dryRunResponse.summary.willUpdate }, omitir ${ dryRunResponse.summary.willSkip }.`,
+              excelUserCount: dryRunResponse.summary.totalRows,
+            } );
+
+            toast.success(
+              `Prevalidación completada: ${ dryRunResponse.summary.validRows } filas válidas.`
+            );
+          }
+
+          setUploadProgress( 100 );
+          setCurrentStep( 2 );
         } catch ( error ) {
-          toast.error( "Error al validar el archivo Excel" );
-          setFile( null );
-          setFileName( "" );
-          setFileSize( "" );
-          setUploadProgress( 0 );
+          const errorMessage =
+            error instanceof Error
+              ? error.message
+              : "Error al validar el archivo Excel";
+          toast.error( errorMessage );
+          resetImportFlow();
+        } finally {
+          setLoading( false );
         }
       }
     },
@@ -448,7 +560,10 @@ const UsersRegistrationForm = () => {
   }, [ internalIsDragActive ] );
 
   return (
-    <div className="divide-gray-900/10 w-full shadow-md rounded-md px-8 py-6 dark:bg-gray-800 dark:text-gray-100 dark:shadow-2xl">
+    <div
+      ref={ formContainerRef }
+      className="divide-gray-900/10 w-full shadow-md rounded-md px-8 py-6 dark:bg-gray-800 dark:text-gray-100 dark:shadow-2xl"
+    >
       { ( loading || isValidating ) && <LoadingRegister /> }
       <form
         className="bg-white shadow-sm ring-1 w-full flex-col justify-center mx-auto ring-gray-900/5 sm:rounded-xl overflow-hidden dark:bg-gray-800"
@@ -456,12 +571,43 @@ const UsersRegistrationForm = () => {
       >
         <div className="px-6 py-5 border-b border-gray-200 dark:border-gray-700">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-            Registro de Condóminos
+            { activeTab === "initial"
+              ? "Registro Inicial de Condóminos"
+              : "Edición Masiva de Condóminos" }
           </h3>
           <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-            Importa la lista de usuarios del condominio mediante un archivo
-            Excel
+            { activeTab === "initial"
+              ? "Importa nuevos usuarios del condominio mediante archivo Excel."
+              : "Actualiza usuarios existentes mediante archivo Excel con una prevalidación antes de aplicar cambios." }
           </p>
+          { activeTab === "upsert" && (
+            <p className="mt-2 text-xs text-amber-700 dark:text-amber-300">
+              Por seguridad, la edición masiva no permite cambiar <strong>correo</strong> ni <strong>rol</strong>.
+            </p>
+          ) }
+
+          <div className="mt-4 inline-flex rounded-lg bg-gray-100 p-1 dark:bg-gray-900">
+            <button
+              type="button"
+              onClick={ () => handleTabChange( "initial" ) }
+              className={ `rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${ activeTab === "initial"
+                ? "bg-white text-indigo-700 shadow-sm dark:bg-gray-800 dark:text-indigo-300"
+                : "text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
+                }` }
+            >
+              Registro inicial
+            </button>
+            <button
+              type="button"
+              onClick={ () => handleTabChange( "upsert" ) }
+              className={ `rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${ activeTab === "upsert"
+                ? "bg-white text-indigo-700 shadow-sm dark:bg-gray-800 dark:text-indigo-300"
+                : "text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
+                }` }
+            >
+              Edición masiva
+            </button>
+          </div>
 
           {/* Información de límites */ }
           <div className="mt-3 flex items-center text-sm">
@@ -634,12 +780,7 @@ const UsersRegistrationForm = () => {
                     <button
                       onClick={ ( e ) => {
                         e.stopPropagation();
-                        setFile( null );
-                        setFileName( "" );
-                        setFileSize( "" );
-                        setUploadProgress( 0 );
-                        setCurrentStep( 1 );
-                        setValidationResult( null );
+                        resetImportFlow();
                       } }
                       className="text-gray-400 hover:text-red-500 transition-all duration-300 hover:scale-110 hover:rotate-90"
                       type="button"
@@ -776,6 +917,62 @@ const UsersRegistrationForm = () => {
                       { validationResult.excelUserCount } usuarios
                     </span>
                   </div>
+                  { dryRunResult && (
+                    <>
+                      <div className="flex justify-between py-2 border-b dark:border-gray-700">
+                        <span className="text-sm text-gray-600 dark:text-gray-400">
+                          Prevalidación (crear):
+                        </span>
+                        <span className="text-sm font-medium text-emerald-600 dark:text-emerald-400">
+                          { dryRunResult.summary.willCreate }
+                        </span>
+                      </div>
+                      <div className="flex justify-between py-2 border-b dark:border-gray-700">
+                        <span className="text-sm text-gray-600 dark:text-gray-400">
+                          Prevalidación (actualizar):
+                        </span>
+                        <span className="text-sm font-medium text-indigo-600 dark:text-indigo-400">
+                          { dryRunResult.summary.willUpdate }
+                        </span>
+                      </div>
+                      <div className="flex justify-between py-2 border-b dark:border-gray-700">
+                        <span className="text-sm text-gray-600 dark:text-gray-400">
+                          Prevalidación (errores):
+                        </span>
+                        <span className="text-sm font-medium text-red-600 dark:text-red-400">
+                          { dryRunResult.summary.errorRows }
+                        </span>
+                      </div>
+                      <div className="flex justify-between py-2 border-b dark:border-gray-700">
+                        <span className="text-sm text-gray-600 dark:text-gray-400">
+                          Expira prevalidación:
+                        </span>
+                        <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                          { new Date( dryRunResult.expiresAt ).toLocaleString( "es-MX" ) }
+                        </span>
+                      </div>
+                      { dryRunResult.summary.errorRows > 0 && (
+                        <div className="py-3 border-b dark:border-gray-700">
+                          <p className="text-xs font-semibold text-red-700 dark:text-red-300 mb-2">
+                            Detalle de errores detectados (primeros 5):
+                          </p>
+                          <div className="space-y-1">
+                            { dryRunResult.rows
+                              .filter( ( row ) => row.action === "error" )
+                              .slice( 0, 5 )
+                              .map( ( row ) => (
+                                <p
+                                  key={ `dry-run-error-${ row.rowNumber }` }
+                                  className="text-xs text-red-700 dark:text-red-300"
+                                >
+                                  Fila { row.rowNumber }: { row.reasons?.join( " | " ) || "Error de validación" }
+                                </p>
+                              ) ) }
+                          </div>
+                        </div>
+                      ) }
+                    </>
+                  ) }
                   <div className="flex justify-between py-2 border-b dark:border-gray-700">
                     <span className="text-sm text-gray-600 dark:text-gray-400">
                       Usuarios actuales:
@@ -799,7 +996,9 @@ const UsersRegistrationForm = () => {
                     <span className="text-sm font-medium text-green-600 dark:text-green-400 flex items-center">
                       <CheckCircleIcon className="w-4 h-4 mr-1" />
                       { limitInfo.currentUserCount +
-                        ( validationResult?.excelUserCount || 0 ) }{ " " }
+                        ( activeTab === "upsert"
+                          ? ( dryRunResult?.summary.willCreate || 0 )
+                          : ( validationResult?.excelUserCount || 0 ) ) }{ " " }
                       de { limitInfo.condominiumLimit } usuarios
                     </span>
                   </div>
@@ -859,12 +1058,13 @@ const UsersRegistrationForm = () => {
                 </div>
               ) }
 
-              { validationResult?.isValid && (
+              { validationResult?.isValid && activeTab === "upsert" && (
                 <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md mb-4">
                   <p className="text-sm text-blue-800 dark:text-blue-200 flex items-start">
                     <ExclamationCircleIcon className="w-5 h-5 mr-2 flex-shrink-0" />
-                    Al importar, los usuarios serán agregados al sistema. Esta
-                    acción no se puede deshacer.
+                    La edición final hará exactamente lo validado en la prevalidación.
+                    Si el archivo cambia o expira la operación, deberás ejecutar
+                    una nueva prevalidación.
                   </p>
                 </div>
               ) }
@@ -877,14 +1077,7 @@ const UsersRegistrationForm = () => {
           <button
             type="button"
             className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-500 dark:text-gray-300 dark:hover:text-gray-100 transition-colors"
-            onClick={ () => {
-              setFile( null );
-              setFileName( "" );
-              setFileSize( "" );
-              setUploadProgress( 0 );
-              setCurrentStep( 1 );
-              setValidationResult( null );
-            } }
+            onClick={ resetImportFlow }
           >
             Cancelar
           </button>
@@ -895,6 +1088,7 @@ const UsersRegistrationForm = () => {
             disabled={
               !file ||
               uploadProgress < 100 ||
+              ( activeTab === "upsert" && !dryRunResult?.operationId ) ||
               ( validationResult !== null && validationResult.isValid === false )
             }
           >
@@ -926,7 +1120,11 @@ const UsersRegistrationForm = () => {
             ) : (
               <>
                 <ArrowUpTrayIcon className="w-5 h-5 mr-2 relative z-10 group-hover:animate-bounce" />
-                <span className="relative z-10">Importar usuarios</span>
+                <span className="relative z-10">
+                  { activeTab === "initial"
+                    ? "Importar usuarios"
+                    : "Confirmar cambios" }
+                </span>
               </>
             ) }
           </button>
@@ -962,6 +1160,13 @@ const UsersRegistrationForm = () => {
               <div className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800 dark:border-emerald-900/40 dark:bg-emerald-900/20 dark:text-emerald-300">
                 Recomendación: usa la plantilla oficial y no cambies los nombres
                 de los encabezados.
+              </div>
+              <div className="mb-4 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-sm text-indigo-800 dark:border-indigo-900/40 dark:bg-indigo-900/20 dark:text-indigo-300">
+                Valores válidos para <strong>role</strong>: propietario o inquilino.
+                Si la celda viene vacía, se asigna <strong>propietario</strong>.
+              </div>
+              <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-900/40 dark:bg-amber-900/20 dark:text-amber-300">
+                En edición masiva, por seguridad, no se aplican cambios a <strong>email</strong> ni <strong>role</strong>.
               </div>
 
               <div className="overflow-x-auto">

@@ -2,8 +2,8 @@ import { ThreeCircles } from "react-loader-spinner";
 
 const LoadingRegister = () => {
   return (
-    <div className="w-full absolute overlay-forms z-50 right-0 left-0 top-0 bottom-0 h-screen flex items-center justify-center">
-      <div className="bg-white w-96 lg:w-[620px] rounded-md shadow-md py-8 px-2 flex-col justify-center items-center dark:bg-gray-900">
+    <div className="fixed inset-0 z-[80] flex min-h-[100dvh] items-center justify-center bg-black/40 px-4 py-6">
+      <div className="flex w-full max-w-[620px] flex-col items-center justify-center rounded-md bg-white px-3 py-8 shadow-md dark:bg-gray-900">
         <div className="mx-auto flex w-full justify-center">
           <ThreeCircles
             visible={true}
