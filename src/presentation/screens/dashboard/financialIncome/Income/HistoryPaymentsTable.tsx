@@ -391,6 +391,20 @@ const HistoryPaymentsTable: React.FC = () => {
                           </div>
                         </div>
                       </th>
+                      <th
+                        scope="col"
+                        className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white"
+                      >
+                        <div className="flex items-center gap-1">
+                          Recibo
+                          <div className="group relative cursor-pointer">
+                            <InformationCircleIcon className="h-4 w-4 text-gray-400" />
+                            <div className="absolute top-full left-[-36px] transform -translate-x-1/2 mt-2 hidden group-hover:block w-64 p-2 bg-gray-900 text-white text-xs rounded shadow-lg z-10">
+                              Recibo generado automáticamente por el sistema
+                            </div>
+                          </div>
+                        </div>
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-900">
@@ -441,9 +455,25 @@ const HistoryPaymentsTable: React.FC = () => {
                               target="_blank"
                               rel="noopener noreferrer"
                               onClick={(e) => e.stopPropagation()}
-                              className="flex w-16 items-center bg-indigo-600 dark:bg-indigo-500 text-white px-3 py-1 rounded-md hover:bg-indigo-700 dark:hover:bg-indigo-600"
+                              className="inline-flex w-fit items-center bg-indigo-600 dark:bg-indigo-500 text-white px-3 py-1 rounded-md hover:bg-indigo-700 dark:hover:bg-indigo-600"
                             >
-                              <EyeIcon className="h-5 w-5 mr-1 bg-indigo-500 hover:bg-indigo-600 rounded-full" />
+                              <EyeIcon className="h-4 w-4 mr-1" />
+                              Ver
+                            </a>
+                          ) : (
+                            <EyeSlashIcon className="h-5 w-5 text-gray-400 dark:text-gray-500" />
+                          )}
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 dark:text-gray-200">
+                          {payment.receiptUrl ? (
+                            <a
+                              href={payment.receiptUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="inline-flex w-fit items-center border border-indigo-300 bg-indigo-50 px-3 py-1 rounded-md text-indigo-700 hover:bg-indigo-100 dark:border-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-200 dark:hover:bg-indigo-900/50"
+                            >
+                              <EyeIcon className="h-4 w-4 mr-1" />
                               Ver
                             </a>
                           ) : (
@@ -627,16 +657,30 @@ const HistoryPaymentsTable: React.FC = () => {
                   </div>
                 </div>
 
-                {selectedPayment.attachmentPayment && (
+                {(selectedPayment.attachmentPayment || selectedPayment.receiptUrl) && (
                   <div className="mt-4">
-                    <a
-                      href={selectedPayment.attachmentPayment}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
-                    >
-                      Ver comprobante
-                    </a>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedPayment.attachmentPayment && (
+                        <a
+                          href={selectedPayment.attachmentPayment}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
+                        >
+                          Ver comprobante
+                        </a>
+                      )}
+                      {selectedPayment.receiptUrl && (
+                        <a
+                          href={selectedPayment.receiptUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center rounded-md border border-indigo-300 bg-indigo-50 px-3 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-100 dark:border-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-200 dark:hover:bg-indigo-900/50"
+                        >
+                          Ver recibo
+                        </a>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
@@ -721,6 +765,12 @@ const HistoryPaymentsTable: React.FC = () => {
                                   >
                                     Comprobante
                                   </th>
+                                  <th
+                                    scope="col"
+                                    className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white"
+                                  >
+                                    Recibo
+                                  </th>
                                 </tr>
                               </thead>
                               <tbody className="divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-900">
@@ -779,9 +829,25 @@ const HistoryPaymentsTable: React.FC = () => {
                                           target="_blank"
                                           rel="noopener noreferrer"
                                           onClick={(e) => e.stopPropagation()}
-                                          className="flex w-16 items-center bg-indigo-600 dark:bg-indigo-500 text-white px-3 py-1 rounded-md hover:bg-indigo-700 dark:hover:bg-indigo-600"
+                                          className="inline-flex w-fit items-center bg-indigo-600 dark:bg-indigo-500 text-white px-3 py-1 rounded-md hover:bg-indigo-700 dark:hover:bg-indigo-600"
                                         >
-                                          <EyeIcon className="h-5 w-5 mr-1" />
+                                          <EyeIcon className="h-4 w-4 mr-1" />
+                                          Ver
+                                        </a>
+                                      ) : (
+                                        <EyeSlashIcon className="h-5 w-5 text-gray-400 dark:text-gray-500" />
+                                      )}
+                                    </td>
+                                    <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 dark:text-gray-200">
+                                      {payment.receiptUrl ? (
+                                        <a
+                                          href={payment.receiptUrl}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          onClick={(e) => e.stopPropagation()}
+                                          className="inline-flex w-fit items-center border border-indigo-300 bg-indigo-50 px-3 py-1 rounded-md text-indigo-700 hover:bg-indigo-100 dark:border-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-200 dark:hover:bg-indigo-900/50"
+                                        >
+                                          <EyeIcon className="h-4 w-4 mr-1" />
                                           Ver
                                         </a>
                                       ) : (

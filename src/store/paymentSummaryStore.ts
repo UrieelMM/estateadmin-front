@@ -113,6 +113,8 @@ export interface PaymentRecord {
   financialAccountId: string;
   paymentDate?: string;
   attachmentPayment?: string; // URL del comprobante de pago
+  receiptUrl?: string; // URL del recibo generado por el sistema
+  paymentGroupId?: string; // ID de grupo para trazabilidad del recibo
   chargeId?: string; // ID del cargo asociado
   userId?: string; // ID del usuario asociado
   referenceAmount: number; // en pesos
@@ -453,6 +455,8 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>()(
                       attachmentPayment:
                         paymentData.attachmentPayment ||
                         chargeData.attachmentPayment,
+                      receiptUrl: paymentData.receiptUrl || chargeData.receiptUrl,
+                      paymentGroupId: paymentData.paymentGroupId || "",
                       chargeId: chargeDoc.id,
                       userId: userObj.id,
                       referenceAmount: parseFloat(
@@ -490,6 +494,8 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>()(
                   financialAccountId: accountId || "N/A",
                   paymentDate: formattedDate,
                   attachmentPayment: chargeData.attachmentPayment,
+                  receiptUrl: chargeData.receiptUrl,
+                  paymentGroupId: chargeData.paymentGroupId || "",
                   chargeId: chargeDoc.id,
                   userId: userObj.id,
                   referenceAmount: parseFloat(referenceAmount.toFixed(2)),
@@ -564,6 +570,8 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>()(
             financialAccountId: data.financialAccountId || "N/A",
             paymentDate: formattedDate,
             attachmentPayment: data.attachmentPayment,
+            receiptUrl: data.receiptUrl,
+            paymentGroupId: data.paymentGroupId || "",
             chargeId: docSnap.id,
             userId: docSnap.id,
             referenceAmount: parseFloat(
@@ -1024,6 +1032,8 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>()(
                 financialAccountId: paymentData.financialAccountId || "N/A",
                 paymentDate: formattedDate,
                 attachmentPayment: paymentData.attachmentPayment,
+                receiptUrl: paymentData.receiptUrl,
+                paymentGroupId: paymentData.paymentGroupId || "",
                 chargeId: chargeDoc.id,
                 userId: userDoc.id,
                 referenceAmount: parseFloat(
@@ -1083,6 +1093,8 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>()(
               financialAccountId: data.financialAccountId || "N/A",
               paymentDate: formattedDate,
               attachmentPayment: data.attachmentPayment,
+              receiptUrl: data.receiptUrl,
+              paymentGroupId: data.paymentGroupId || "",
               chargeId: docSnap.id,
               userId: docSnap.id,
               referenceAmount: parseFloat(
@@ -1211,6 +1223,8 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>()(
             financialAccountId: data.financialAccountId || "N/A",
             paymentDate: formattedDate,
             attachmentPayment: data.attachmentPayment,
+            receiptUrl: data.receiptUrl,
+            paymentGroupId: data.paymentGroupId || "",
             chargeId: data.chargeId || "",
             userId: data.userId || "",
             referenceAmount: parseFloat(centsToPesos(data.amount).toFixed(2)),
@@ -1268,6 +1282,8 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>()(
               financialAccountId: data.financialAccountId || "N/A",
               paymentDate: formattedDate,
               attachmentPayment: data.attachmentPayment,
+              receiptUrl: data.receiptUrl,
+              paymentGroupId: data.paymentGroupId || "",
               chargeId: docSnap.id,
               userId: docSnap.id,
               referenceAmount: parseFloat(centsToPesos(data.amount).toFixed(2)),
@@ -1387,6 +1403,8 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>()(
             financialAccountId: data.financialAccountId || "N/A",
             paymentDate: formattedDate,
             attachmentPayment: data.attachmentPayment,
+            receiptUrl: data.receiptUrl,
+            paymentGroupId: data.paymentGroupId || "",
             chargeId: data.chargeId || "",
             userId: data.userId || "",
             referenceAmount: parseFloat(centsToPesos(data.amount).toFixed(2)),
@@ -1427,6 +1445,8 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>()(
             financialAccountId: data.financialAccountId || "N/A",
             paymentDate: formattedDate,
             attachmentPayment: data.attachmentPayment,
+            receiptUrl: data.receiptUrl,
+            paymentGroupId: data.paymentGroupId || "",
             chargeId: docSnap.id,
             userId: docSnap.id,
             referenceAmount: parseFloat(
