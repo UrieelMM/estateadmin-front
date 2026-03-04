@@ -22,7 +22,7 @@ import { useFileCompression } from "../../../../hooks/useFileCompression";
 
 interface FormParcelReceptionProps {
   open: boolean;
-  setOpen: (open: boolean) => void;
+  setOpen: ( open: boolean ) => void;
 }
 
 interface SelectedCharge {
@@ -30,62 +30,63 @@ interface SelectedCharge {
   amount: number;
 }
 
-const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
+const PaymentForm = ( { open, setOpen }: FormParcelReceptionProps ) => {
   // Estados generales
-  const [users, setUsers] = useState<UserData[]>([]);
-  const [loading, setLoading] = useState<boolean>(false);
+  const [ users, setUsers ] = useState<UserData[]>( [] );
+  const [ loading, setLoading ] = useState<boolean>( false );
   const currentCondominiumId = useCondominiumStore(
-    (state) => state.selectedCondominium?.id
+    ( state ) => state.selectedCondominium?.id
   );
 
   // Campos del formulario
-  const [email, setEmail] = useState<string>("");
-  const [numberCondominium, setNumberCondominium] = useState<string>("");
-  const [recipientSearch, setRecipientSearch] = useState<string>("");
-  const recipientComboboxButtonRef = useRef<HTMLButtonElement | null>(null);
+  const [ email, setEmail ] = useState<string>( "" );
+  const [ numberCondominium, setNumberCondominium ] = useState<string>( "" );
+  const [ recipientSearch, setRecipientSearch ] = useState<string>( "" );
+  const recipientComboboxButtonRef = useRef<HTMLButtonElement | null>( null );
 
   // Monto abonado: valor raw y su versión visual formateada
-  const [amountPaid, setAmountPaid] = useState<string>("");
-  const [amountPaidDisplay, setAmountPaidDisplay] = useState<string>("");
+  const [ amountPaid, setAmountPaid ] = useState<string>( "" );
+  const [ amountPaidDisplay, setAmountPaidDisplay ] = useState<string>( "" );
 
   // Monto pendiente: ahora se calcula automáticamente basado en los cargos seleccionados
-  const [amountPending, setAmountPending] = useState<string>("");
-  const [amountPendingDisplay, setAmountPendingDisplay] = useState<string>("");
+  const [ amountPending, setAmountPending ] = useState<string>( "" );
+  const [ amountPendingDisplay, setAmountPendingDisplay ] = useState<string>( "" );
 
-  const [comments, setComments] = useState<string>("");
-  const [paymentType, setPaymentType] = useState<string>("");
-  const [paymentReference, setPaymentReference] = useState<string>("");
+  const [ comments, setComments ] = useState<string>( "" );
+  const [ paymentType, setPaymentType ] = useState<string>( "" );
+  const [ paymentReference, setPaymentReference ] = useState<string>( "" );
+  // const [ autoDownloadReceipt, setAutoDownloadReceipt ] = useState<boolean>( false );
 
   // Fecha y hora de pago (se almacena como Date)
-  const [paymentDate, setPaymentDate] = useState<Date | null>(null);
+  const [ paymentDate, setPaymentDate ] = useState<Date | null>( null );
 
   // ID de la cuenta financiera
-  const [financialAccountId, setFinancialAccountId] = useState<string>("");
+  const [ financialAccountId, setFinancialAccountId ] = useState<string>( "" );
 
   // Estado para pago NO identificado
-  const [isUnidentifiedPayment, setIsUnidentifiedPayment] =
-    useState<boolean>(false);
+  const [ isUnidentifiedPayment, setIsUnidentifiedPayment ] =
+    useState<boolean>( false );
 
   // Archivo adjunto
-  const [file, setFile] = useState<File | File[] | null>(null);
-  const [fileName, setFileName] = useState("");
+  const [ file, setFile ] = useState<File | File[] | null>( null );
+  const [ fileName, setFileName ] = useState( "" );
 
   // Usuario seleccionado y uso de saldo a favor
-  const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
-  const [useCreditBalance, setUseCreditBalance] = useState<boolean>(false);
+  const [ selectedUser, setSelectedUser ] = useState<UserData | null>( null );
+  const [ useCreditBalance, setUseCreditBalance ] = useState<boolean>( false );
 
   // Estado para cargos seleccionados
-  const [selectedCharges, setSelectedCharges] = useState<SelectedCharge[]>([]);
+  const [ selectedCharges, setSelectedCharges ] = useState<SelectedCharge[]>( [] );
   // Estado para almacenar los valores visuales de cada cargo (por su id)
-  const [chargeDisplayValues, setChargeDisplayValues] = useState<{
-    [key: string]: string;
-  }>({});
+  const [ chargeDisplayValues, setChargeDisplayValues ] = useState<{
+    [ key: string ]: string;
+  }>( {} );
 
   // Stores
   const fetchCondominiumsUsers = useUserStore(
-    (state) => state.fetchCondominiumsUsers
+    ( state ) => state.fetchCondominiumsUsers
   );
-  const condominiumsUsers = useUserStore((state) => state.condominiumsUsers);
+  const condominiumsUsers = useUserStore( ( state ) => state.condominiumsUsers );
 
   const {
     charges,
@@ -94,180 +95,188 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
     financialAccounts,
     fetchFinancialAccounts,
     userCreditBalance,
-  } = usePaymentStore((state) => ({
+  } = usePaymentStore( ( state ) => ( {
     charges: state.charges,
     addMaintenancePayment: state.addMaintenancePayment,
     fetchUserCharges: state.fetchUserCharges,
     financialAccounts: state.financialAccounts,
     fetchFinancialAccounts: state.fetchFinancialAccounts,
     userCreditBalance: state.userCreditBalance,
-  }));
+  } ) );
 
   const { fetchSummary, selectedYear, setupRealtimeListeners } =
-    usePaymentSummaryStore((state) => ({
+    usePaymentSummaryStore( ( state ) => ( {
       fetchSummary: state.fetchSummary,
       selectedYear: state.selectedYear,
       setupRealtimeListeners: state.setupRealtimeListeners,
-    }));
+    } ) );
 
   const { fetchPayments } = useUnidentifiedPaymentsStore();
 
   const { compressFile, isCompressing } = useFileCompression();
 
-  useEffect(() => {
-    if (open) {
+  useEffect( () => {
+    if ( open ) {
       fetchCondominiumsUsers();
       fetchFinancialAccounts();
-      setRecipientSearch("");
+      setRecipientSearch( "" );
     }
   }, [
     fetchCondominiumsUsers,
     fetchFinancialAccounts,
     open,
     currentCondominiumId,
-  ]);
+  ] );
 
   // Efecto para mantener actualizado el selectedUser
-  useEffect(() => {
-    if (selectedUser) {
+  useEffect( () => {
+    if ( selectedUser ) {
       const updatedUser = condominiumsUsers.find(
-        (u) => u.uid === selectedUser.uid
+        ( u ) => u.uid === selectedUser.uid
       );
-      if (updatedUser) {
-        setSelectedUser(updatedUser);
+      if ( updatedUser ) {
+        setSelectedUser( updatedUser );
       } else {
         // Resetear el usuario seleccionado si ya no está disponible en el nuevo condominio
-        setSelectedUser(null);
-        setEmail("");
-        setNumberCondominium("");
+        setSelectedUser( null );
+        setEmail( "" );
+        setNumberCondominium( "" );
       }
     }
 
     // Actualizar la lista de usuarios cuando cambie condominiumsUsers
-    setUsers(condominiumsUsers);
-  }, [condominiumsUsers, selectedUser?.uid]);
+    setUsers( condominiumsUsers );
+  }, [ condominiumsUsers, selectedUser?.uid ] );
 
   // Helper para formatear a pesos mexicanos
-  const formatCurrency = (value: number) =>
-    new Intl.NumberFormat("es-MX", {
+  const formatCurrency = ( value: number ) =>
+    new Intl.NumberFormat( "es-MX", {
       style: "currency",
       currency: "MXN",
-    }).format(value);
+    } ).format( value );
+
+
+  // Descarga automática de recibo deshabilitada temporalmente en PaymentForm.
+  // Se conserva como referencia para reactivación futura cuando se habilite UX.
+  // const PAYMENT_RECEIPT_ENDPOINT = "https://us-central1-administracioncondominio-93419.cloudfunctions.net/getPaymentReceipt";
+  // const wait = ( ms: number ) => new Promise( ( resolve ) => window.setTimeout( resolve, ms ) );
+  // const resolveReceiptUrlFromBackend = async (paymentGroupId: string, attempts = 4): Promise<string | null> => { ... };
+  // const downloadReceiptByUrl = async (url: string) => { ... };
 
   const availableUsers = useMemo(
     () =>
       users.filter(
-        (user) =>
+        ( user ) =>
           user.role !== "admin" &&
           user.role !== "super-admin" &&
           user.role !== "security"
       ),
-    [users]
+    [ users ]
   );
 
-  const filteredUsers = useMemo(() => {
+  const filteredUsers = useMemo( () => {
     const term = recipientSearch.trim().toLowerCase();
-    if (!term) return availableUsers;
+    if ( !term ) return availableUsers;
 
-    return availableUsers.filter((user) => {
-      const number = (user.number || "").toLowerCase();
-      const name = (user.name || "").toLowerCase();
-      return number.includes(term) || name.includes(term);
-    });
-  }, [availableUsers, recipientSearch]);
+    return availableUsers.filter( ( user ) => {
+      const number = ( user.number || "" ).toLowerCase();
+      const name = ( user.name || "" ).toLowerCase();
+      return number.includes( term ) || name.includes( term );
+    } );
+  }, [ availableUsers, recipientSearch ] );
 
-  const selectableFinancialAccounts = useMemo(() => {
-    const normalize = (value: string) =>
+  const selectableFinancialAccounts = useMemo( () => {
+    const normalize = ( value: string ) =>
       value
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
+        .normalize( "NFD" )
+        .replace( /[\u0300-\u036f]/g, "" )
         .toLowerCase()
-        .replace(/[^a-z0-9]/g, "")
+        .replace( /[^a-z0-9]/g, "" )
         .trim();
-    return financialAccounts.filter((acc) => {
-      const accountName = normalize(acc.name || "");
+    return financialAccounts.filter( ( acc ) => {
+      const accountName = normalize( acc.name || "" );
       return accountName !== "cajachica";
-    });
-  }, [financialAccounts]);
+    } );
+  }, [ financialAccounts ] );
 
-  const handleRecipientSelection = async (uid: string) => {
-    const user = users.find((u) => u.uid === uid);
-    if (user) {
-      setEmail(user.email);
-      setNumberCondominium(user.number || "");
-      setSelectedUser(user);
-      if (user.number) {
+  const handleRecipientSelection = async ( uid: string ) => {
+    const user = users.find( ( u ) => u.uid === uid );
+    if ( user ) {
+      setEmail( user.email );
+      setNumberCondominium( user.number || "" );
+      setSelectedUser( user );
+      if ( user.number ) {
         try {
           // Actualizar cargos y datos del usuario en paralelo
-          await Promise.all([
-            fetchUserCharges(user.number),
+          await Promise.all( [
+            fetchUserCharges( user.number ),
             fetchCondominiumsUsers(),
-          ]);
+          ] );
           // Obtener el usuario actualizado del store
-          const updatedUser = condominiumsUsers.find((u) => u.uid === uid);
-          if (updatedUser) {
-            setSelectedUser(updatedUser);
+          const updatedUser = condominiumsUsers.find( ( u ) => u.uid === uid );
+          if ( updatedUser ) {
+            setSelectedUser( updatedUser );
           }
-        } catch (err) {
-          console.error("Error actualizando datos del usuario:", err);
-          toast.error("Error al cargar los datos del usuario");
+        } catch ( err ) {
+          console.error( "Error actualizando datos del usuario:", err );
+          toast.error( "Error al cargar los datos del usuario" );
         }
       }
-      setSelectedCharges([]);
+      setSelectedCharges( [] );
     }
   };
 
   const selectedRecipientUid =
     selectedUser?.uid ||
-    users.find((u) => u.number === numberCondominium)?.uid ||
+    users.find( ( u ) => u.number === numberCondominium )?.uid ||
     "";
 
-  const getRecipientLabel = (uid: string) => {
-    const user = availableUsers.find((u) => u.uid === uid);
-    return user ? `${user.number} ${user.name}` : "";
+  const getRecipientLabel = ( uid: string ) => {
+    const user = availableUsers.find( ( u ) => u.uid === uid );
+    return user ? `${ user.number } ${ user.name }` : "";
   };
 
-  const handleToggleCharge = (chargeId: string, checked: boolean) => {
-    if (checked) {
-      setSelectedCharges((prev) => [...prev, { chargeId, amount: 0 }]);
+  const handleToggleCharge = ( chargeId: string, checked: boolean ) => {
+    if ( checked ) {
+      setSelectedCharges( ( prev ) => [ ...prev, { chargeId, amount: 0 } ] );
     } else {
-      setSelectedCharges((prev) =>
-        prev.filter((sc) => sc.chargeId !== chargeId)
+      setSelectedCharges( ( prev ) =>
+        prev.filter( ( sc ) => sc.chargeId !== chargeId )
       );
     }
   };
 
-  const handleAmountChange = (chargeId: string, newAmount: number) => {
-    setSelectedCharges((prev) =>
-      prev.map((sc) =>
+  const handleAmountChange = ( chargeId: string, newAmount: number ) => {
+    setSelectedCharges( ( prev ) =>
+      prev.map( ( sc ) =>
         sc.chargeId === chargeId ? { ...sc, amount: newAmount } : sc
       )
     );
   };
 
   // Sumar montos asignados
-  const totalAssigned = selectedCharges.reduce((sum, sc) => sum + sc.amount, 0);
+  const totalAssigned = selectedCharges.reduce( ( sum, sc ) => sum + sc.amount, 0 );
 
   // Calcular el total pendiente sumando todos los cargos seleccionados
   // Este es el monto total original de los cargos seleccionados
   // Los montos en charges están en centavos, debemos convertirlos a pesos
-  const totalPendingOriginal = selectedCharges.reduce((sum, sc) => {
-    const charge = charges.find((c) => c.id === sc.chargeId);
+  const totalPendingOriginal = selectedCharges.reduce( ( sum, sc ) => {
+    const charge = charges.find( ( c ) => c.id === sc.chargeId );
     // Convertir de centavos a pesos (dividir por 100)
-    return sum + (charge ? charge.amount / 100 : 0);
-  }, 0);
+    return sum + ( charge ? charge.amount / 100 : 0 );
+  }, 0 );
 
   // Actualizar el monto pendiente cuando cambian los cargos seleccionados
-  useEffect(() => {
+  useEffect( () => {
     // Solo actualizar si hay cargos seleccionados y no es un pago no identificado
-    if (selectedCharges.length > 0 && !isUnidentifiedPayment) {
+    if ( selectedCharges.length > 0 && !isUnidentifiedPayment ) {
       // El monto pendiente es la suma de los montos originales de los cargos menos lo que pagamos ahora
       const pending = totalPendingOriginal - totalAssigned;
-      setAmountPending(pending.toString());
-      setAmountPendingDisplay(formatCurrency(pending));
-    } else if (selectedCharges.length === 0) {
-      setAmountPending("");
-      setAmountPendingDisplay("");
+      setAmountPending( pending.toString() );
+      setAmountPendingDisplay( formatCurrency( pending ) );
+    } else if ( selectedCharges.length === 0 ) {
+      setAmountPending( "" );
+      setAmountPendingDisplay( "" );
     }
   }, [
     selectedCharges,
@@ -275,46 +284,46 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
     totalPendingOriginal,
     isUnidentifiedPayment,
     charges,
-  ]);
+  ] );
 
   // Convertir el saldo a favor del usuario (que viene en centavos) a pesos
   const userCreditInPesos = userCreditBalance
-    ? Number(userCreditBalance) / 100
+    ? Number( userCreditBalance ) / 100
     : 0;
 
   // Si se usa crédito, sumar el saldo convertido
   const effectiveTotal = useCreditBalance
-    ? Number(amountPaid) + userCreditInPesos
-    : Number(amountPaid);
+    ? Number( amountPaid ) + userCreditInPesos
+    : Number( amountPaid );
 
   // Calcular el crédito usado
   const creditUsed = useCreditBalance ? userCreditInPesos : 0;
 
   const remainingEffective = effectiveTotal - totalAssigned;
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async ( event: React.FormEvent<HTMLFormElement> ) => {
     event.preventDefault();
-    setLoading(true);
+    setLoading( true );
 
     try {
       // Validaciones iniciales
-      if (!paymentDate) {
-        throw new Error("La fecha de pago es obligatoria.");
+      if ( !paymentDate ) {
+        throw new Error( "La fecha de pago es obligatoria." );
       }
-      if (!financialAccountId) {
-        throw new Error("La cuenta es obligatoria.");
+      if ( !financialAccountId ) {
+        throw new Error( "La cuenta es obligatoria." );
       }
-      if (!amountPaid && !useCreditBalance) {
-        throw new Error("El campo 'monto abonado' es obligatorio.");
+      if ( !amountPaid && !useCreditBalance ) {
+        throw new Error( "El campo 'monto abonado' es obligatorio." );
       }
-      if (!paymentType) {
-        throw new Error("El campo 'tipo de pago' es obligatorio.");
+      if ( !paymentType ) {
+        throw new Error( "El campo 'tipo de pago' es obligatorio." );
       }
       const normalizedPaymentReference = paymentReference
         .trim()
         .toUpperCase();
       if (
-        ["Transferencia", "Depósito"].includes(paymentType) &&
+        [ "Transferencia", "Depósito" ].includes( paymentType ) &&
         !normalizedPaymentReference
       ) {
         throw new Error(
@@ -323,16 +332,16 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
       }
 
       // Validaciones para pago identificado
-      if (!isUnidentifiedPayment) {
-        if (selectedCharges.length === 0) {
+      if ( !isUnidentifiedPayment ) {
+        if ( selectedCharges.length === 0 ) {
           throw new Error(
             "Debes seleccionar al menos un cargo para aplicar el pago."
           );
         }
-        if (useCreditBalance) {
+        if ( useCreditBalance ) {
           if (
-            Number(effectiveTotal).toFixed(2) !==
-            Number(totalAssigned).toFixed(2)
+            Number( effectiveTotal ).toFixed( 2 ) !==
+            Number( totalAssigned ).toFixed( 2 )
           ) {
             throw new Error(
               "En pago con saldo a favor, la suma de montos asignados debe ser igual a (monto abonado + crédito disponible)."
@@ -340,7 +349,7 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
           }
         } else {
           if (
-            Number(amountPaid).toFixed(2) !== Number(totalAssigned).toFixed(2)
+            Number( amountPaid ).toFixed( 2 ) !== Number( totalAssigned ).toFixed( 2 )
           ) {
             throw new Error(
               "El monto abonado debe coincidir exactamente con la suma de los cargos asignados."
@@ -349,29 +358,32 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
         }
         if (
           useCreditBalance &&
-          (!userCreditBalance || Number(userCreditBalance) / 100 <= 0)
+          ( !userCreditBalance || Number( userCreditBalance ) / 100 <= 0 )
         ) {
-          throw new Error("No tienes saldo a favor disponible.");
+          throw new Error( "No tienes saldo a favor disponible." );
         }
       }
 
       // Extraer los conceptos y el campo startAt de los cargos seleccionados
-      const concepts = selectedCharges.map((sc) => {
-        const foundCharge = charges.find((c) => c.id === sc.chargeId);
+      const concepts = selectedCharges.map( ( sc ) => {
+        const foundCharge = charges.find( ( c ) => c.id === sc.chargeId );
         return foundCharge ? foundCharge.concept : "";
-      });
+      } );
       const startAts = selectedCharges
-        .map((sc) => {
-          const foundCharge = charges.find((c) => c.id === sc.chargeId);
+        .map( ( sc ) => {
+          const foundCharge = charges.find( ( c ) => c.id === sc.chargeId );
           return foundCharge ? foundCharge.startAt : "";
-        })
-        .filter((startAt): startAt is string => startAt !== undefined);
+        } )
+        .filter( ( startAt ): startAt is string => startAt !== undefined );
+      const paymentGroupId = `${ Date.now() }-${ Math.random()
+        .toString( 36 )
+        .substring( 2, 15 ) }`;
 
       const paymentObj = {
         email,
         numberCondominium,
-        amountPaid: Number(amountPaid),
-        amountPending: Number(amountPending),
+        amountPaid: Number( amountPaid ),
+        amountPending: Number( amountPending ),
         comments,
         file,
         selectedCharges,
@@ -384,113 +396,117 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
         paymentReference: normalizedPaymentReference,
         concepts, // Se envía el concepto del cargo
         startAts, // Ahora es string[]
-        ...(isUnidentifiedPayment && { appliedToUser: false }),
+        paymentGroupId,
+        ...( isUnidentifiedPayment && { appliedToUser: false } ),
       };
 
       // Intentar registrar el pago
-      await addMaintenancePayment(paymentObj);
+      await addMaintenancePayment( paymentObj );
 
       // Actualizar datos en paralelo
       await Promise.all(
         [
-          setupRealtimeListeners(selectedYear),
-          fetchSummary(selectedYear),
-          fetchUserCharges(numberCondominium),
+          setupRealtimeListeners( selectedYear ),
+          fetchSummary( selectedYear ),
+          fetchUserCharges( numberCondominium ),
           fetchCondominiumsUsers(),
           isUnidentifiedPayment && fetchPayments(),
-        ].filter(Boolean)
+        ].filter( Boolean )
       );
+
+      // Descarga automática de recibo deshabilitada temporalmente.
 
       // Resetear el formulario y notificar
       resetForm();
-      toast.success("Pago registrado correctamente");
-      setOpen(false);
-    } catch (error: any) {
-      console.error("Error en el proceso de pago:", error);
+      toast.success( "Pago registrado correctamente" );
+      setOpen( false );
+    } catch ( error: any ) {
+      console.error( "Error en el proceso de pago:", error );
       toast.error(
         error.message ||
-          "Error al procesar el pago. Por favor, intenta nuevamente."
+        "Error al procesar el pago. Por favor, intenta nuevamente."
       );
     } finally {
-      setLoading(false);
+      setLoading( false );
     }
   };
 
   // Función para resetear el formulario
   const resetForm = () => {
-    setEmail("");
-    setNumberCondominium("");
-    setAmountPaid("");
-    setAmountPaidDisplay("");
+    setEmail( "" );
+    setNumberCondominium( "" );
+    setAmountPaid( "" );
+    setAmountPaidDisplay( "" );
     // El saldo pendiente ahora se calcula automáticamente basado en los cargos seleccionados
-    setComments("");
-    setPaymentType("");
-    setPaymentReference("");
-    setFile(null);
-    setFileName("");
-    setSelectedCharges([]);
-    setChargeDisplayValues({});
-    setSelectedUser(null);
-    setUseCreditBalance(false);
-    setPaymentDate(null);
-    setFinancialAccountId("");
-    setIsUnidentifiedPayment(false);
-    setRecipientSearch("");
+    setComments( "" );
+    setPaymentType( "" );
+    setPaymentReference( "" );
+    setFile( null );
+    setFileName( "" );
+    setSelectedCharges( [] );
+    setChargeDisplayValues( {} );
+    setSelectedUser( null );
+    setUseCreditBalance( false );
+    setPaymentDate( null );
+    setFinancialAccountId( "" );
+    setIsUnidentifiedPayment( false );
+    setRecipientSearch( "" );
+    // setAutoDownloadReceipt( false );
   };
 
   const dropzoneOptions = {
     accept: {
-      "application/vnd.ms-excel": [".xls"],
+      "application/vnd.ms-excel": [ ".xls" ],
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [
         ".xlsx",
       ],
-      "image/*": [".png", ".jpg", ".jpeg"],
-      "application/pdf": [".pdf"],
+      "image/*": [ ".png", ".jpg", ".jpeg" ],
+      "application/pdf": [ ".pdf" ],
     },
-    onDrop: async (acceptedFiles: File[]) => {
-      const originalFile = acceptedFiles[0];
-      if (originalFile) {
+    onDrop: async ( acceptedFiles: File[] ) => {
+      const originalFile = acceptedFiles[ 0 ];
+      if ( originalFile ) {
         try {
-          const processedFile = await compressFile(originalFile);
-          setFile(processedFile);
-          setFileName(processedFile.name);
-          toast.success("Archivo procesado correctamente");
-        } catch (error) {
-          console.error("Error processing file:", error);
-          setFile(originalFile);
-          setFileName(originalFile.name);
-          toast.error("Error al procesar el archivo, se usará el original");
+          const processedFile = await compressFile( originalFile );
+          setFile( processedFile );
+          setFileName( processedFile.name );
+          toast.success( "Archivo procesado correctamente" );
+        } catch ( error ) {
+          console.error( "Error processing file:", error );
+          setFile( originalFile );
+          setFileName( originalFile.name );
+          toast.error( "Error al procesar el archivo, se usará el original" );
         }
       }
     },
   };
   const { getRootProps, getInputProps, isDragActive } =
-    useDropzone(dropzoneOptions);
+    useDropzone( dropzoneOptions );
 
-  const handlePaymentTypeChange = (isUnidentified: boolean) => {
-    setIsUnidentifiedPayment(isUnidentified);
+  const handlePaymentTypeChange = ( isUnidentified: boolean ) => {
+    setIsUnidentifiedPayment( isUnidentified );
 
-    if (isUnidentified) {
+    if ( isUnidentified ) {
       // Resetear campos cuando se cambia a pago no identificado
-      setEmail("");
-      setNumberCondominium("");
-      setSelectedUser(null);
-      setSelectedCharges([]);
-      setAmountPending("");
-      setAmountPendingDisplay("");
-      setUseCreditBalance(false);
+      setEmail( "" );
+      setNumberCondominium( "" );
+      setSelectedUser( null );
+      setSelectedCharges( [] );
+      setAmountPending( "" );
+      setAmountPendingDisplay( "" );
+      setUseCreditBalance( false );
     }
   };
 
   return (
-    <Transition.Root show={open} as={Fragment}>
-      <Dialog as="div" className="relative z-10" onClose={setOpen}>
+    <Transition.Root show={ open } as={ Fragment }>
+      <Dialog as="div" className="relative z-10" onClose={ setOpen }>
         <div className="fixed inset-0" />
         <div className="fixed inset-0 overflow-hidden">
           <div className="overlay-forms absolute inset-0 overflow-hidden">
             <div className="pointer-events-none fixed inset-y-0 right-0 flex max-w-full pl-10 sm:pl-16">
               <Transition.Child
-                as={Fragment}
+                as={ Fragment }
                 enter="transform transition ease-in-out duration-500 sm:duration-700"
                 enterFrom="translate-x-full"
                 enterTo="translate-x-0"
@@ -500,7 +516,7 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
               >
                 <Dialog.Panel className="pointer-events-auto w-screen max-w-3xl">
                   <form
-                    onSubmit={handleSubmit}
+                    onSubmit={ handleSubmit }
                     className="flex h-full flex-col divide-y divide-gray-200 bg-white shadow-xl"
                   >
                     <div className="h-0 flex-1 overflow-y-auto dark:bg-gray-900">
@@ -513,7 +529,7 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                             <button
                               type="button"
                               className="relative rounded-md bg-indigo-700 text-indigo-200 hover:text-white focus:outline-none focus:ring-2 focus:ring-white"
-                              onClick={() => setOpen(false)}
+                              onClick={ () => setOpen( false ) }
                             >
                               <span className="absolute -inset-2.5" />
                               <XMarkIcon
@@ -538,8 +554,8 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                                 type="radio"
                                 name="paymentIdentification"
                                 value="identified"
-                                checked={!isUnidentifiedPayment}
-                                onChange={() => handlePaymentTypeChange(false)}
+                                checked={ !isUnidentifiedPayment }
+                                onChange={ () => handlePaymentTypeChange( false ) }
                                 className="mr-2"
                               />
                               Pago identificado
@@ -549,8 +565,8 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                                 type="radio"
                                 name="paymentIdentification"
                                 value="unidentified"
-                                checked={isUnidentifiedPayment}
-                                onChange={() => handlePaymentTypeChange(true)}
+                                checked={ isUnidentifiedPayment }
+                                onChange={ () => handlePaymentTypeChange( true ) }
                                 className="mr-2"
                               />
                               Pago no identificado
@@ -561,7 +577,7 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                       <div className="flex flex-1 flex-col justify-between">
                         <div className="divide-y divide-gray-200 px-4 sm:px-6">
                           <div className="space-y-6 pb-5 pt-6">
-                            {/* Seleccionar condómino */}
+                            {/* Seleccionar condómino */ }
                             <div>
                               <label
                                 htmlFor="nameRecipient"
@@ -571,19 +587,19 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                               </label>
                               <div className="mt-2 relative">
                                 <Combobox
-                                  value={selectedRecipientUid}
-                                  onChange={(uid: string) => {
-                                    if (!uid) {
-                                      setSelectedUser(null);
-                                      setEmail("");
-                                      setNumberCondominium("");
-                                      setSelectedCharges([]);
+                                  value={ selectedRecipientUid }
+                                  onChange={ ( uid: string ) => {
+                                    if ( !uid ) {
+                                      setSelectedUser( null );
+                                      setEmail( "" );
+                                      setNumberCondominium( "" );
+                                      setSelectedCharges( [] );
                                       return;
                                     }
-                                    setRecipientSearch("");
-                                    handleRecipientSelection(uid);
-                                  }}
-                                  disabled={isUnidentifiedPayment}
+                                    setRecipientSearch( "" );
+                                    handleRecipientSelection( uid );
+                                  } }
+                                  disabled={ isUnidentifiedPayment }
                                 >
                                   <div className="relative">
                                     <div className="absolute left-2 top-1/2 flex items-center transform -translate-y-1/2 z-10">
@@ -593,19 +609,19 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                                       id="nameRecipient"
                                       name="nameRecipient"
                                       className="px-8 pr-10 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
-                                      displayValue={(uid: string) =>
-                                        getRecipientLabel(uid)
+                                      displayValue={ ( uid: string ) =>
+                                        getRecipientLabel( uid )
                                       }
-                                      onChange={(event) =>
-                                        setRecipientSearch(event.target.value)
+                                      onChange={ ( event ) =>
+                                        setRecipientSearch( event.target.value )
                                       }
-                                      onFocus={() =>
+                                      onFocus={ () =>
                                         recipientComboboxButtonRef.current?.click()
                                       }
                                       placeholder="Buscar por nombre o número de casa/departamento"
                                     />
                                     <Combobox.Button
-                                      ref={recipientComboboxButtonRef}
+                                      ref={ recipientComboboxButtonRef }
                                       className="absolute inset-y-0 right-0 flex items-center pr-2"
                                     >
                                       <ChevronUpDownIcon className="h-5 w-5 text-gray-400" />
@@ -615,68 +631,64 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                                   <Combobox.Options className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white dark:bg-gray-800 py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
                                     <Combobox.Option
                                       value=""
-                                      className={({ active }) =>
-                                        `relative cursor-default select-none py-2 pl-8 pr-4 ${
-                                          active
-                                            ? "bg-indigo-600 text-white"
-                                            : "text-gray-900 dark:text-gray-100"
+                                      className={ ( { active } ) =>
+                                        `relative cursor-default select-none py-2 pl-8 pr-4 ${ active
+                                          ? "bg-indigo-600 text-white"
+                                          : "text-gray-900 dark:text-gray-100"
                                         }`
                                       }
                                     >
                                       -- Selecciona un condómino --
                                     </Combobox.Option>
 
-                                    {filteredUsers.length === 0 ? (
+                                    { filteredUsers.length === 0 ? (
                                       <div className="relative cursor-default select-none py-2 px-4 text-gray-700 dark:text-gray-300">
                                         Sin resultados
                                       </div>
                                     ) : (
-                                      filteredUsers.map((user) => (
+                                      filteredUsers.map( ( user ) => (
                                         <Combobox.Option
-                                          key={user.uid}
-                                          value={user.uid}
-                                          className={({ active }) =>
-                                            `relative cursor-default select-none py-2 pl-8 pr-4 ${
-                                              active
-                                                ? "bg-indigo-600 text-white"
-                                                : "text-gray-900 dark:text-gray-100"
+                                          key={ user.uid }
+                                          value={ user.uid }
+                                          className={ ( { active } ) =>
+                                            `relative cursor-default select-none py-2 pl-8 pr-4 ${ active
+                                              ? "bg-indigo-600 text-white"
+                                              : "text-gray-900 dark:text-gray-100"
                                             }`
                                           }
                                         >
-                                          {({ active }) => (
+                                          { ( { active } ) => (
                                             <>
                                               <span
-                                                className={`block truncate ${
-                                                  selectedRecipientUid ===
+                                                className={ `block truncate ${ selectedRecipientUid ===
                                                   user.uid
-                                                    ? "font-medium"
-                                                    : "font-normal"
-                                                }`}
+                                                  ? "font-medium"
+                                                  : "font-normal"
+                                                  }` }
                                               >
-                                                {user.number} {user.name}
+                                                { user.number } { user.name }
                                               </span>
-                                              {selectedRecipientUid ===
+                                              { selectedRecipientUid ===
                                                 user.uid && (
-                                                <span
-                                                  className={`absolute inset-y-0 left-0 flex items-center pl-2 ${
-                                                    active
+                                                  <span
+                                                    className={ `absolute inset-y-0 left-0 flex items-center pl-2 ${ active
                                                       ? "text-white"
                                                       : "text-indigo-600"
-                                                  }`}
-                                                >
-                                                  <CheckIcon className="h-4 w-4" />
-                                                </span>
-                                              )}
+                                                      }` }
+                                                  >
+                                                    <CheckIcon className="h-4 w-4" />
+                                                  </span>
+                                                ) }
                                             </>
-                                          )}
+                                          ) }
                                         </Combobox.Option>
-                                      ))
-                                    )}
+                                      ) )
+                                    ) }
                                   </Combobox.Options>
                                 </Combobox>
                               </div>
                             </div>
-                            {/* Fecha y hora de pago */}
+                            {/* Fecha y hora de pago */ }
                             <div>
                               <label
                                 htmlFor="paymentDate"
@@ -689,25 +701,25 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                                   <CalendarIcon className="h-5 w-5 text-gray-400" />
                                 </div>
                                 <input
-                                  onChange={(e) => {
+                                  onChange={ ( e ) => {
                                     const selectedDate = new Date(
                                       e.target.value + "T00:00:00"
                                     );
-                                    setPaymentDate(selectedDate);
-                                  }}
+                                    setPaymentDate( selectedDate );
+                                  } }
                                   type="date"
                                   name="paymentDate"
                                   id="paymentDate"
                                   className="px-8 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-50"
                                   value={
-                                    paymentDate && !isNaN(paymentDate.getTime())
-                                      ? paymentDate.toISOString().split("T")[0]
+                                    paymentDate && !isNaN( paymentDate.getTime() )
+                                      ? paymentDate.toISOString().split( "T" )[ 0 ]
                                       : ""
                                   }
                                 />
                               </div>
                             </div>
-                            {/* Monto abonado */}
+                            {/* Monto abonado */ }
                             <div>
                               <label
                                 htmlFor="amountPaid"
@@ -725,24 +737,24 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                                   id="amountPaid"
                                   placeholder="$100.00"
                                   className="px-8 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-50"
-                                  value={amountPaidDisplay}
-                                  onChange={(e) => {
-                                    setAmountPaid(e.target.value);
-                                    setAmountPaidDisplay(e.target.value);
-                                  }}
-                                  onFocus={() =>
-                                    setAmountPaidDisplay(amountPaid)
+                                  value={ amountPaidDisplay }
+                                  onChange={ ( e ) => {
+                                    setAmountPaid( e.target.value );
+                                    setAmountPaidDisplay( e.target.value );
+                                  } }
+                                  onFocus={ () =>
+                                    setAmountPaidDisplay( amountPaid )
                                   }
-                                  onBlur={() => {
-                                    const num = parseFloat(amountPaid);
-                                    if (!isNaN(num)) {
-                                      setAmountPaidDisplay(formatCurrency(num));
+                                  onBlur={ () => {
+                                    const num = parseFloat( amountPaid );
+                                    if ( !isNaN( num ) ) {
+                                      setAmountPaidDisplay( formatCurrency( num ) );
                                     }
-                                  }}
+                                  } }
                                 />
                               </div>
                             </div>
-                            {/* Tipo de pago */}
+                            {/* Tipo de pago */ }
                             <div>
                               <label
                                 htmlFor="paymentType"
@@ -755,13 +767,13 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                                   <CreditCardIcon className="h-5 w-5 text-gray-400" />
                                 </div>
                                 <select
-                                  onChange={(e) =>
-                                    setPaymentType(e.target.value)
+                                  onChange={ ( e ) =>
+                                    setPaymentType( e.target.value )
                                   }
                                   name="paymentType"
                                   id="paymentType"
                                   className="px-8 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-50"
-                                  value={paymentType}
+                                  value={ paymentType }
                                 >
                                   <option value="">
                                     Selecciona un tipo de pago
@@ -775,7 +787,7 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                                 </select>
                               </div>
                             </div>
-                            {/* Referencia de pago */}
+                            {/* Referencia de pago */ }
                             <div>
                               <label
                                 htmlFor="paymentReference"
@@ -791,9 +803,9 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                                   type="text"
                                   id="paymentReference"
                                   name="paymentReference"
-                                  value={paymentReference}
-                                  onChange={(e) =>
-                                    setPaymentReference(e.target.value)
+                                  value={ paymentReference }
+                                  onChange={ ( e ) =>
+                                    setPaymentReference( e.target.value )
                                   }
                                   placeholder="Ej. SPEI1234567890"
                                   className="px-8 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-50"
@@ -803,7 +815,7 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                                 Obligatoria para Transferencia y Depósito.
                               </p>
                             </div>
-                            {/* Selección de la cuenta */}
+                            {/* Selección de la cuenta */ }
                             <div>
                               <label
                                 htmlFor="financialAccountId"
@@ -813,26 +825,26 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                               </label>
                               <div className="mt-2 relative">
                                 <select
-                                  onChange={(e) =>
-                                    setFinancialAccountId(e.target.value)
+                                  onChange={ ( e ) =>
+                                    setFinancialAccountId( e.target.value )
                                   }
                                   name="financialAccountId"
                                   id="financialAccountId"
                                   className="px-2 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-50"
-                                  value={financialAccountId}
+                                  value={ financialAccountId }
                                 >
                                   <option value="">
                                     Selecciona una cuenta
                                   </option>
-                                  {selectableFinancialAccounts.map((acc) => (
-                                    <option key={acc.id} value={acc.id}>
-                                      {acc.name}
+                                  { selectableFinancialAccounts.map( ( acc ) => (
+                                    <option key={ acc.id } value={ acc.id }>
+                                      { acc.name }
                                     </option>
-                                  ))}
+                                  ) ) }
                                 </select>
                               </div>
                             </div>
-                            {/* Monto pendiente - Ahora calculado automáticamente */}
+                            {/* Monto pendiente - Ahora calculado automáticamente */ }
                             <div>
                               <label
                                 htmlFor="amountPending"
@@ -849,20 +861,20 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                                   name="amountPending"
                                   id="amountPending"
                                   readOnly
-                                  disabled={isUnidentifiedPayment}
+                                  disabled={ isUnidentifiedPayment }
                                   className="px-8 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm ring-gray-300 placeholder:text-gray-400 bg-gray-50 sm:text-sm sm:leading-6 dark:bg-gray-700 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none"
-                                  value={amountPendingDisplay}
+                                  value={ amountPendingDisplay }
                                 />
                               </div>
                             </div>
-                            {/* Saldo a favor */}
-                            {!isUnidentifiedPayment &&
+                            {/* Saldo a favor */ }
+                            { !isUnidentifiedPayment &&
                               userCreditBalance !== null &&
                               userCreditBalance > 0 && (
                                 <div>
                                   <label className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100">
-                                    Saldo a favor disponible:{" "}
-                                    {formatCurrency(userCreditInPesos)}
+                                    Saldo a favor disponible:{ " " }
+                                    { formatCurrency( userCreditInPesos ) }
                                   </label>
                                   <div className="mt-2 flex items-center space-x-4">
                                     <label className="flex items-center dark:text-gray-100">
@@ -870,9 +882,9 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                                         type="radio"
                                         name="useCreditBalance"
                                         value="false"
-                                        checked={!useCreditBalance}
-                                        onChange={() =>
-                                          setUseCreditBalance(false)
+                                        checked={ !useCreditBalance }
+                                        onChange={ () =>
+                                          setUseCreditBalance( false )
                                         }
                                         className="mr-2"
                                       />
@@ -883,9 +895,9 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                                         type="radio"
                                         name="useCreditBalance"
                                         value="true"
-                                        checked={useCreditBalance}
-                                        onChange={() =>
-                                          setUseCreditBalance(true)
+                                        checked={ useCreditBalance }
+                                        onChange={ () =>
+                                          setUseCreditBalance( true )
                                         }
                                         className="mr-2"
                                       />
@@ -893,9 +905,9 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                                     </label>
                                   </div>
                                 </div>
-                              )}
-                            {/* Lista de cargos pendientes */}
-                            {numberCondominium &&
+                              ) }
+                            {/* Lista de cargos pendientes */ }
+                            { numberCondominium &&
                               charges.length > 0 &&
                               !isUnidentifiedPayment && (
                                 <div>
@@ -903,20 +915,20 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                                     Selecciona cargos a pagar
                                   </label>
                                   <div className="mt-2 space-y-2">
-                                    {charges.map((charge) => {
+                                    { charges.map( ( charge ) => {
                                       const isChecked = selectedCharges.some(
-                                        (sc) => sc.chargeId === charge.id
+                                        ( sc ) => sc.chargeId === charge.id
                                       );
                                       return (
                                         <div
-                                          key={charge.id}
+                                          key={ charge.id }
                                           className="flex items-center space-x-2"
                                         >
                                           <input
                                             type="checkbox"
-                                            disabled={isUnidentifiedPayment}
-                                            checked={isChecked}
-                                            onChange={(e) =>
+                                            disabled={ isUnidentifiedPayment }
+                                            checked={ isChecked }
+                                            onChange={ ( e ) =>
                                               handleToggleCharge(
                                                 charge.id,
                                                 e.target.checked
@@ -924,13 +936,12 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                                             }
                                           />
                                           <span className="flex-1 dark:text-gray-100">
-                                            {`${charge.concept} | Mes: ${
-                                              charge.month || "Sin mes"
-                                            } | Monto: ${formatCurrency(
-                                              charge.amount / 100
-                                            )}`}
+                                            { `${ charge.concept } | Mes: ${ charge.month || "Sin mes"
+                                              } | Monto: ${ formatCurrency(
+                                                charge.amount / 100
+                                              ) }` }
                                           </span>
-                                          {isChecked && (
+                                          { isChecked && (
                                             <div className="relative">
                                               <input
                                                 type="text"
@@ -940,10 +951,10 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                                                 placeholder="$100.00"
                                                 value={
                                                   chargeDisplayValues[
-                                                    charge.id
+                                                  charge.id
                                                   ] || ""
                                                 }
-                                                onChange={(e) => {
+                                                onChange={ ( e ) => {
                                                   const rawValue =
                                                     e.target.value;
                                                   const newNumber =
@@ -958,24 +969,24 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                                                     newNumber
                                                   );
                                                   setChargeDisplayValues(
-                                                    (prev) => ({
+                                                    ( prev ) => ( {
                                                       ...prev,
-                                                      [charge.id]: rawValue,
-                                                    })
+                                                      [ charge.id ]: rawValue,
+                                                    } )
                                                   );
-                                                }}
-                                                onFocus={() => {
+                                                } }
+                                                onFocus={ () => {
                                                   setChargeDisplayValues(
-                                                    (prev) => ({
+                                                    ( prev ) => ( {
                                                       ...prev,
-                                                      [charge.id]: "",
-                                                    })
+                                                      [ charge.id ]: "",
+                                                    } )
                                                   );
-                                                }}
-                                                onBlur={() => {
+                                                } }
+                                                onBlur={ () => {
                                                   const selected =
                                                     selectedCharges.find(
-                                                      (sc) =>
+                                                      ( sc ) =>
                                                         sc.chargeId ===
                                                         charge.id
                                                     );
@@ -984,67 +995,68 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                                                     selected.amount > 0
                                                   ) {
                                                     setChargeDisplayValues(
-                                                      (prev) => ({
+                                                      ( prev ) => ( {
                                                         ...prev,
-                                                        [charge.id]:
+                                                        [ charge.id ]:
                                                           formatCurrency(
                                                             selected.amount
                                                           ),
-                                                      })
+                                                      } )
                                                     );
                                                   } else {
                                                     setChargeDisplayValues(
-                                                      (prev) => ({
+                                                      ( prev ) => ( {
                                                         ...prev,
-                                                        [charge.id]: "",
-                                                      })
+                                                        [ charge.id ]: "",
+                                                      } )
                                                     );
                                                   }
-                                                }}
+                                                } }
                                               />
                                             </div>
-                                          )}
+                                          ) }
                                         </div>
                                       );
-                                    })}
+                                    } ) }
                                   </div>
                                   <div className="mt-2">
                                     <span className="text-sm font-bold dark:text-gray-100">
-                                      Saldo restante a aplicar:{" "}
-                                      {formatCurrency(remainingEffective)}
+                                      Saldo restante a aplicar:{ " " }
+                                      { formatCurrency( remainingEffective ) }
                                     </span>
                                   </div>
                                 </div>
-                              )}
-                            {/* Dropzone */}
+                              ) }
+                            {/* Dropzone */ }
                             <div
-                              {...getRootProps()}
+                              { ...getRootProps() }
                               className="mt-12 h-auto flex items-center justify-center rounded-lg border border-dashed border-gray-900/25 px-6 py-4 dark:border-indigo-900"
                             >
-                              <input {...getInputProps()} />
+                              <input { ...getInputProps() } />
                               <div className="text-center">
                                 <PhotoIcon
                                   className="mx-auto h-12 w-12 text-gray-300"
                                   aria-hidden="true"
                                 />
-                                {fileName ? (
+                                { fileName ? (
                                   <p className="mt-4 text-sm leading-6 text-gray-600">
-                                    {fileName}
+                                    { fileName }
                                   </p>
                                 ) : (
                                   <p className="mt-4 text-sm leading-6 font-medium text-indigo-600">
-                                    {isDragActive
+                                    { isDragActive
                                       ? "Suelta el archivo aquí..."
                                       : isCompressing
-                                      ? "Procesando archivo..."
-                                      : "Arrastra y suelta el comprobante (PDF o Imagen) aquí o haz click"}
+                                        ? "Procesando archivo..."
+                                        : "Arrastra y suelta el comprobante (PDF o Imagen) aquí o haz click" }
                                   </p>
-                                )}
+                                ) }
                                 <p className="text-xs leading-5 text-gray-600">
                                   Hasta 10MB
                                 </p>
                               </div>
                             </div>
+                            {/* Descarga automática de recibo deshabilitada temporalmente en PaymentForm. */}
                             {/* Comentarios */}
                             <div>
                               <label
@@ -1055,12 +1067,12 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                               </label>
                               <div className="mt-2">
                                 <textarea
-                                  onChange={(e) => setComments(e.target.value)}
+                                  onChange={ ( e ) => setComments( e.target.value ) }
                                   id="comments"
                                   name="comments"
-                                  rows={4}
+                                  rows={ 4 }
                                   className="block w-full rounded-md py-1.5 border border-gray-300 text-gray-900 shadow-sm ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
-                                  value={comments}
+                                  value={ comments }
                                 />
                               </div>
                             </div>
@@ -1068,12 +1080,12 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                         </div>
                       </div>
                     </div>
-                    {/* Botones de acción */}
+                    {/* Botones de acción */ }
                     <div className="flex flex-shrink-0 justify-end px-4 py-4 dark:bg-gray-900">
                       <button
                         type="button"
                         className="rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
-                        onClick={() => setOpen(false)}
+                        onClick={ () => setOpen( false ) }
                       >
                         Cancelar
                       </button>
@@ -1081,7 +1093,7 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                         type="submit"
                         className="ml-4 inline-flex justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
                       >
-                        {loading ? (
+                        { loading ? (
                           <svg
                             className="animate-spin h-5 w-5 mr-3 border-t-2 border-b-2 border-indigo-100 rounded-full"
                             viewBox="0 0 24 24"
@@ -1090,7 +1102,7 @@ const PaymentForm = ({ open, setOpen }: FormParcelReceptionProps) => {
                           "Procesando..."
                         ) : (
                           "Guardar"
-                        )}
+                        ) }
                       </button>
                     </div>
                   </form>

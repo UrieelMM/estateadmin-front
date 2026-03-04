@@ -4,9 +4,11 @@ import { useReceiptStore } from "../../../../../store/receiptsStore";
 import toast from "react-hot-toast";
 
 const DownloadReceipts = () => {
-  const [year, setYear] = useState("2024");
+  const [year, setYear] = useState(new Date().getFullYear().toString());
   const [month, setMonth] = useState("01");
-  const [docType, setDocType] = useState("comprobantes"); // Valor por defecto
+  const [docType, setDocType] = useState<"recibos" | "comprobantes">(
+    "comprobantes"
+  ); // Valor por defecto
   const { sendReceipts, loading } = useReceiptStore();
 
   const handleSendReceipts = async () => {
@@ -80,7 +82,9 @@ const DownloadReceipts = () => {
         </label>
         <select
           value={docType}
-          onChange={(e) => setDocType(e.target.value)}
+          onChange={(e) =>
+            setDocType(e.target.value as "recibos" | "comprobantes")
+          }
           className="mt-1 w-full pl-2 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
         >
           <option value="comprobantes">Comprobantes</option>

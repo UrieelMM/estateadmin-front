@@ -6,14 +6,18 @@ import toast from "react-hot-toast";
 type ReceiptStoreState = {
   loading: boolean;
   error: string | null;
-  sendReceipts: (year: string, month: string, docType: string) => Promise<void>;
+  sendReceipts: (
+    year: string,
+    month: string,
+    docType: "recibos" | "comprobantes"
+  ) => Promise<void>;
 };
 
 export const useReceiptStore = create<ReceiptStoreState>()((set) => ({
   loading: false,
   error: null,
 
-  sendReceipts: async (year: string, month: string, docType: string) => {
+  sendReceipts: async (year, month, docType) => {
     set({ loading: true, error: null });
     try {
       const auth = getAuth();
@@ -23,34 +27,18 @@ export const useReceiptStore = create<ReceiptStoreState>()((set) => ({
       }
       const tokenResult = await getIdTokenResult(user);
       const clientId = tokenResult.claims["clientId"] as string;
+      const idToken = await user.getIdToken();
 
       const condominiumId = localStorage.getItem("condominiumId");
       if (!condominiumId) {
         throw new Error("ID del condominio no encontrado");
       }
 
-      // Obtener el email (aquí se usa un email de prueba; descomenta y ajusta según corresponda)
-      const dataUserActiveStr = localStorage.getItem("dataUserActive");
-      if (!dataUserActiveStr) {
-        throw new Error("dataUserActive no encontrada en localStorage");
-      }
-      let email = "";
-      try {
-        // const dataUserActive = JSON.parse(dataUserActiveStr);
-        // email = dataUserActive.email;
-        email = "urieel.mm@gmail.com";
-      } catch (error) {
-        throw new Error("Error al parsear dataUserActive");
-      }
-      if (!email) {
-        throw new Error("Email no encontrado en dataUserActive");
-      }
-
       // Asegurar que el mes esté en formato de dos dígitos (ej: "03")
       const monthFormatted = month.toString().padStart(2, "0");
 
       // Definir la URL base del endpoint
-      const endpoint = `https://sendreceiptsbyemail-aannml376a-uc.a.run.app`;
+      const endpoint = "https://us-central1-administracioncondominio-93419.cloudfunctions.net/sendReceiptsByEmail";
 
       // Preparar los datos para enviar como JSON
       const requestData = {
@@ -58,19 +46,18 @@ export const useReceiptStore = create<ReceiptStoreState>()((set) => ({
         month: monthFormatted,
         clientId,
         condominiumId,
-        email,
         docType,
+        targetUserId: user.uid,
       };
 
       // Usar fetch con método POST
       const response = await fetch(endpoint, {
         method: "POST",
         headers: {
+          Authorization: `Bearer ${idToken}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify(requestData),
-        mode: "cors",
-        credentials: "omit", // No incluir credenciales para evitar problemas de CORS
       });
 
       if (!response.ok) {
@@ -86,8 +73,10 @@ export const useReceiptStore = create<ReceiptStoreState>()((set) => ({
         );
       }
 
-      const data = await response.text();
-      toast.success(data);
+      const data = await response.json();
+      const sentTo = data?.data?.sentTo ? ` a ${data.data.sentTo}` : "";
+      const totalFiles = data?.data?.totalFiles ?? 0;
+      toast.success(`Correo enviado${sentTo}. Archivos: ${totalFiles}.`);
     } catch (error: any) {
       console.error("Error al enviar recibos:", error);
       set({ error: error.message });

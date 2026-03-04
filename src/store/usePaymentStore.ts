@@ -78,6 +78,13 @@ type FinancialAccount = {
   active?: boolean;
 };
 
+type PaymentCreationResult = {
+  paymentGroupId: string;
+  consolidatedPaymentId?: string;
+  receiptUrl?: string;
+  attachmentPayment?: string;
+};
+
 type MaintenancePaymentState = {
   charges: Charge[];
   loading: boolean;
@@ -88,7 +95,9 @@ type MaintenancePaymentState = {
   fetchFinancialAccounts: () => Promise<void>;
 
   fetchUserCharges: (numberCondominium: string) => Promise<void>;
-  addMaintenancePayment: (payment: MaintenancePayment) => Promise<void>;
+  addMaintenancePayment: (
+    payment: MaintenancePayment
+  ) => Promise<PaymentCreationResult>;
   updateUnidentifiedPayment: (
     payment: MaintenancePayment,
     paymentId: string
@@ -343,9 +352,9 @@ export const usePaymentStore = create<MaintenancePaymentState>()(
         formData.append("amountPaid", String(amountPaidCents));
         formData.append("amountPending", String(amountPendingCents));
 
-        const paymentGroupId = `${Date.now()}-${Math.random()
-          .toString(36)
-          .substring(2, 15)}`;
+        const paymentGroupId =
+          payment.paymentGroupId ||
+          `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
         formData.append("paymentGroupId", paymentGroupId);
 
         formData.append(
@@ -407,7 +416,7 @@ export const usePaymentStore = create<MaintenancePaymentState>()(
           }
 
           // POST al endpoint de pagos NO identificados
-          await axios.post(
+          const unidentifiedResponse = await axios.post(
             `${
               import.meta.env.VITE_URL_SERVER
             }/maintenance-fees/create-unidentified`,
@@ -415,8 +424,18 @@ export const usePaymentStore = create<MaintenancePaymentState>()(
             { headers: { "Content-Type": "multipart/form-data" } }
           );
 
+          const unidentifiedData = unidentifiedResponse?.data || {};
           set({ loading: false, error: null });
-          return;
+          return {
+            paymentGroupId: unidentifiedData.paymentGroupId || paymentGroupId,
+            consolidatedPaymentId: unidentifiedData.consolidatedPaymentId,
+            receiptUrl:
+              unidentifiedData.receiptUrl ||
+              unidentifiedData?.data?.receiptUrl ||
+              unidentifiedData.attachmentPayment ||
+              unidentifiedData.url,
+            attachmentPayment: unidentifiedData.attachmentPayment,
+          };
         }
 
         // -----------------------------------------
@@ -498,7 +517,7 @@ export const usePaymentStore = create<MaintenancePaymentState>()(
         }
 
         // POST al endpoint de pagos identificados
-        await axios.post(
+        const createResponse = await axios.post(
           `${import.meta.env.VITE_URL_SERVER}/maintenance-fees/create`,
           formData,
           { headers: { "Content-Type": "multipart/form-data" } }
@@ -512,7 +531,20 @@ export const usePaymentStore = create<MaintenancePaymentState>()(
         // Recargar cargos asociados al usuario
         await get().fetchUserCharges(payment.numberCondominium);
 
+        const createData = createResponse?.data || {};
         set({ loading: false, error: null });
+        return {
+          paymentGroupId: createData.paymentGroupId || paymentGroupId,
+          consolidatedPaymentId:
+            createData.consolidatedPaymentId ||
+            createData?.data?.consolidatedPaymentId,
+          receiptUrl:
+            createData.receiptUrl ||
+            createData?.data?.receiptUrl ||
+            createData.attachmentPayment ||
+            createData.url,
+          attachmentPayment: createData.attachmentPayment,
+        };
       } catch (error: any) {
         const backendMessage = error?.response?.data?.message;
         const normalizedBackendMessage = Array.isArray(backendMessage)
