@@ -1,4 +1,4 @@
-import { useState, useEffect, useLayoutEffect } from "react";
+import { useState, useEffect, useLayoutEffect, useMemo } from "react";
 import PaymentForm from "../../../../components/shared/forms/PaymentForm";
 import PaymentHistory from "./PaymentHistory";
 import PaymentSummary from "./PaymentSummary";
@@ -7,20 +7,42 @@ import PaymentSummaryByAccount from "./PaymentSummaryByAccount";
 import UnidentifiedPaymentsTable from "./UnidentifiedPaymentsTable";
 import HistoryPaymentsTable from "./HistoryPaymentsTable";
 import { usePaymentSummaryStore } from "../../../../../store/paymentSummaryStore";
+import useUserStore from "../../../../../store/UserDataStore";
+import TowerIncomeSummary from "./TowerIncomeSummary";
 
 const Income = () => {
   const [ open, setOpen ] = useState( false );
   // Ahora el estado puede ser: "summary", "accountSummary", "history" o "morosidad"
   const [ activeTab, setActiveTab ] = useState( "summary" );
-  const { fetchSummary, cleanupListeners, selectedYear, setSelectedYear } =
+  const { fetchSummary, cleanupListeners, selectedYear, setSelectedYear, detailed } =
     usePaymentSummaryStore(
       ( state ) => ( {
         fetchSummary: state.fetchSummary,
         cleanupListeners: state.cleanupListeners,
         selectedYear: state.selectedYear,
         setSelectedYear: state.setSelectedYear,
+        detailed: state.detailed,
       } )
     );
+  const { fetchCondominiumsUsers, condominiumsUsers } = useUserStore(
+    ( state ) => ( {
+      fetchCondominiumsUsers: state.fetchCondominiumsUsers,
+      condominiumsUsers: state.condominiumsUsers,
+    } )
+  );
+  const hasTowersByProfile = condominiumsUsers.some(
+    ( user ) => String( user.tower || "" ).trim().length > 0
+  );
+  const hasTowersBySnapshot = useMemo(
+    () =>
+      Object.values( detailed ).some( ( records ) =>
+        records.some(
+          ( record ) => String( record.towerSnapshot || "" ).trim().length > 0
+        )
+      ),
+    [ detailed ]
+  );
+  const hasTowers = hasTowersByProfile || hasTowersBySnapshot;
 
   useLayoutEffect( () => {
     // Income debe abrir por defecto en vista global ("Todos los años").
@@ -48,9 +70,15 @@ const Income = () => {
     };
   }, [ fetchSummary, cleanupListeners, selectedYear ] );
 
+  useEffect( () => {
+    fetchCondominiumsUsers().catch( ( error ) => {
+      console.error( "Error loading condominium users for towers tab:", error );
+    } );
+  }, [ fetchCondominiumsUsers ] );
+
   const handleTabChange = ( tab: string ) => {
     setActiveTab( tab );
-    if ( [ "summary", "accountSummary" ].includes( tab ) ) {
+    if ( [ "summary", "accountSummary", "towers" ].includes( tab ) ) {
       fetchSummary( selectedYear ).catch( ( error ) => {
         console.error( "Error refreshing summary:", error );
       } );
@@ -106,6 +134,25 @@ const Income = () => {
                 <div className="absolute inset-0 rounded-xl bg-white/20 animate-pulse" />
               ) }
             </button>
+
+            { hasTowers && (
+              <button
+                className={ `
+                group relative flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm
+                transition-all duration-300 ease-out
+                ${ activeTab === "towers"
+                    ? "bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 dark:from-indigo-800 dark:via-purple-700 dark:to-indigo-800 text-white shadow-lg shadow-indigo-500/25"
+                    : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700/50"
+                  }
+              `}
+                onClick={ () => handleTabChange( "towers" ) }
+              >
+                <span className="whitespace-nowrap">Detalle por torres</span>
+                { activeTab === "towers" && (
+                  <div className="absolute inset-0 rounded-xl bg-white/20 animate-pulse" />
+                ) }
+              </button>
+            ) }
 
             <button
               className={ `
@@ -203,6 +250,14 @@ const Income = () => {
             </div>
           ) }
           { activeTab === "morosidad" && <MorosidadView /> }
+          { activeTab === "towers" && (
+            <>
+              <h2 className="text-2xl font-bold text-indigo-600 mb-4 dark:text-indigo-500">
+                Torres
+              </h2>
+              <TowerIncomeSummary />
+            </>
+          ) }
           { activeTab === "unidentified" && <UnidentifiedPaymentsTable /> }
           { activeTab === "history" && <HistoryPaymentsTable /> }
         </div>

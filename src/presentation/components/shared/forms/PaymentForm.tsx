@@ -397,6 +397,10 @@ const PaymentForm = ( { open, setOpen }: FormParcelReceptionProps ) => {
         concepts, // Se envía el concepto del cargo
         startAts, // Ahora es string[]
         paymentGroupId,
+        ...( !isUnidentifiedPayment &&
+          String( selectedUser?.tower || "" ).trim().length > 0 && {
+          towerSnapshot: String( selectedUser?.tower || "" ).trim(),
+        } ),
         ...( isUnidentifiedPayment && { appliedToUser: false } ),
       };
 

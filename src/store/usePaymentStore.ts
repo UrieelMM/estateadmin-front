@@ -65,6 +65,7 @@ export type MaintenancePayment = {
   id?: string;
 
   paymentGroupId?: string;
+  towerSnapshot?: string;
 
   startAts?: string[];
   startAt?: string;
@@ -370,6 +371,9 @@ export const usePaymentStore = create<MaintenancePaymentState>()(
 
         formData.append("paymentDate", formattedPaymentDate || "");
         formData.append("financialAccountId", payment.financialAccountId || "");
+        if (payment.towerSnapshot && String(payment.towerSnapshot).trim().length > 0) {
+          formData.append("towerSnapshot", String(payment.towerSnapshot).trim());
+        }
 
         // --- OJO: Aquí quitamos la línea que siempre ponía la URL de attachmentPayment ---
         //    formData.append("attachmentPayment", payment.attachmentPayment || "");

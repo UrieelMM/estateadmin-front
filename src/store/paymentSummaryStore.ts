@@ -115,6 +115,7 @@ export interface PaymentRecord {
   attachmentPayment?: string; // URL del comprobante de pago
   receiptUrl?: string; // URL del recibo generado por el sistema
   paymentGroupId?: string; // ID de grupo para trazabilidad del recibo
+  towerSnapshot?: string; // Torre congelada al momento del movimiento
   chargeId?: string; // ID del cargo asociado
   userId?: string; // ID del usuario asociado
   referenceAmount: number; // en pesos
@@ -457,6 +458,8 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>()(
                         chargeData.attachmentPayment,
                       receiptUrl: paymentData.receiptUrl || chargeData.receiptUrl,
                       paymentGroupId: paymentData.paymentGroupId || "",
+                      towerSnapshot:
+                        paymentData.towerSnapshot || chargeData.towerSnapshot || "",
                       chargeId: chargeDoc.id,
                       userId: userObj.id,
                       referenceAmount: parseFloat(
@@ -496,6 +499,7 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>()(
                   attachmentPayment: chargeData.attachmentPayment,
                   receiptUrl: chargeData.receiptUrl,
                   paymentGroupId: chargeData.paymentGroupId || "",
+                  towerSnapshot: chargeData.towerSnapshot || "",
                   chargeId: chargeDoc.id,
                   userId: userObj.id,
                   referenceAmount: parseFloat(referenceAmount.toFixed(2)),
@@ -572,6 +576,7 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>()(
             attachmentPayment: data.attachmentPayment,
             receiptUrl: data.receiptUrl,
             paymentGroupId: data.paymentGroupId || "",
+            towerSnapshot: data.towerSnapshot || "",
             chargeId: docSnap.id,
             userId: docSnap.id,
             referenceAmount: parseFloat(
@@ -1034,6 +1039,8 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>()(
                 attachmentPayment: paymentData.attachmentPayment,
                 receiptUrl: paymentData.receiptUrl,
                 paymentGroupId: paymentData.paymentGroupId || "",
+                towerSnapshot:
+                  paymentData.towerSnapshot || chargeData.towerSnapshot || "",
                 chargeId: chargeDoc.id,
                 userId: userDoc.id,
                 referenceAmount: parseFloat(
@@ -1095,6 +1102,7 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>()(
               attachmentPayment: data.attachmentPayment,
               receiptUrl: data.receiptUrl,
               paymentGroupId: data.paymentGroupId || "",
+              towerSnapshot: data.towerSnapshot || "",
               chargeId: docSnap.id,
               userId: docSnap.id,
               referenceAmount: parseFloat(
@@ -1225,6 +1233,7 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>()(
             attachmentPayment: data.attachmentPayment,
             receiptUrl: data.receiptUrl,
             paymentGroupId: data.paymentGroupId || "",
+            towerSnapshot: data.towerSnapshot || "",
             chargeId: data.chargeId || "",
             userId: data.userId || "",
             referenceAmount: parseFloat(centsToPesos(data.amount).toFixed(2)),
@@ -1284,6 +1293,7 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>()(
               attachmentPayment: data.attachmentPayment,
               receiptUrl: data.receiptUrl,
               paymentGroupId: data.paymentGroupId || "",
+              towerSnapshot: data.towerSnapshot || "",
               chargeId: docSnap.id,
               userId: docSnap.id,
               referenceAmount: parseFloat(centsToPesos(data.amount).toFixed(2)),
@@ -1405,6 +1415,7 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>()(
             attachmentPayment: data.attachmentPayment,
             receiptUrl: data.receiptUrl,
             paymentGroupId: data.paymentGroupId || "",
+            towerSnapshot: data.towerSnapshot || "",
             chargeId: data.chargeId || "",
             userId: data.userId || "",
             referenceAmount: parseFloat(centsToPesos(data.amount).toFixed(2)),
@@ -1447,6 +1458,7 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>()(
             attachmentPayment: data.attachmentPayment,
             receiptUrl: data.receiptUrl,
             paymentGroupId: data.paymentGroupId || "",
+            towerSnapshot: data.towerSnapshot || "",
             chargeId: docSnap.id,
             userId: docSnap.id,
             referenceAmount: parseFloat(

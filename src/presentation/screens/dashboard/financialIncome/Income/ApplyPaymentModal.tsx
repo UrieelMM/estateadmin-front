@@ -303,6 +303,9 @@ const ApplyPaymentModal = ({
         creditUsed,
         attachmentPayment: finalAttachment,
         appliedToUser: "true",
+        ...(String(selectedUser?.tower || "").trim().length > 0 && {
+          towerSnapshot: String(selectedUser?.tower || "").trim(),
+        }),
       };
 
       // (1) Crear el pago identificado para el usuario
