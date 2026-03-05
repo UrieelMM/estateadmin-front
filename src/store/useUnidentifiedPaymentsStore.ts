@@ -18,15 +18,28 @@ import axios from "axios";
 export interface UnidentifiedPayment {
   id: string;
   condominiumNumber: string;
+  clientId?: string;
+  condominiumId?: string;
   amountPaid: number; // en pesos
   pendingAmount: number; // en pesos
   paymentAmountReference: number; // en pesos (nuevo campo)
+  creditBalance?: number;
+  creditUsed?: number;
   paymentType: string;
+  paymentReference?: string;
+  folio?: string;
+  comments?: string;
+  month?: string;
+  yearMonth?: string;
   paymentDate: Date;
   registrationDate: Date; // corresponde a dateRegistered en Firestore
   isUnidentifiedPayment: boolean;
   attachmentPayment?: string; // URL o referencia del archivo, si existe
   appliedToUser: boolean; // se maneja como booleano
+  appliedToCondomino?: string;
+  appliedToCondominoName?: string;
+  appliedAt?: Date | null;
+  accountNameSnapshot?: string;
   financialAccountId?: string;
   expiresAt?: {
     seconds: number;
@@ -168,6 +181,8 @@ export const useUnidentifiedPaymentsStore = create<UnidentifiedPaymentsState>()(
             return {
               id: docSnap.id,
               condominiumNumber: data.numberCondominium || "N/A",
+              clientId: data.clientId || "",
+              condominiumId: data.condominiumId || "",
               amountPaid: data.amountPaid ? Number(data.amountPaid) / 100 : 0,
               pendingAmount: data.amountPending
                 ? Number(data.amountPending) / 100
@@ -177,7 +192,16 @@ export const useUnidentifiedPaymentsStore = create<UnidentifiedPaymentsState>()(
                 : data.amountPaid
                 ? Number(data.amountPaid) / 100
                 : 0,
+              creditBalance: data.creditBalance
+                ? Number(data.creditBalance) / 100
+                : 0,
+              creditUsed: data.creditUsed ? Number(data.creditUsed) / 100 : 0,
               paymentType: data.paymentType || "",
+              paymentReference: data.paymentReference || "",
+              folio: data.folio || "",
+              comments: data.comments || "",
+              month: data.month || "",
+              yearMonth: data.yearMonth || "",
               paymentDate:
                 data.paymentDate && data.paymentDate.toDate
                   ? data.paymentDate.toDate()
@@ -190,6 +214,15 @@ export const useUnidentifiedPaymentsStore = create<UnidentifiedPaymentsState>()(
               attachmentPayment: data.attachmentPayment || null,
               appliedToUser:
                 data.appliedToUser === true || data.appliedToUser === "true",
+              appliedToCondomino: data.appliedToCondomino || "",
+              appliedToCondominoName: data.appliedToCondominoName || "",
+              appliedAt:
+                data.appliedAt && data.appliedAt.toDate
+                  ? data.appliedAt.toDate()
+                  : data.appliedAt
+                  ? new Date(data.appliedAt)
+                  : null,
+              accountNameSnapshot: data.accountNameSnapshot || "",
               financialAccountId: data.financialAccountId || "",
               expiresAt: data.expiresAt,
             } as UnidentifiedPayment;

@@ -16,6 +16,8 @@ import { UserData } from "../../../../../interfaces/UserData";
 import { usePaymentStore } from "../../../../../store/usePaymentStore";
 import { usePaymentSummaryStore } from "../../../../../store/paymentSummaryStore";
 import { useUnidentifiedPaymentsStore } from "../../../../../store/useUnidentifiedPaymentsStore";
+import { getAuth, getIdTokenResult } from "firebase/auth";
+import { doc, getFirestore, serverTimestamp, updateDoc } from "firebase/firestore";
 
 interface ApplyPaymentModalProps {
   open: boolean;
@@ -94,6 +96,7 @@ const ApplyPaymentModal = ({
     charges,
     addMaintenancePayment,
     fetchUserCharges,
+    financialAccounts,
     fetchFinancialAccounts,
     editUnidentifiedPayment, // <--- Función para editar pago no identificado
   } = usePaymentStore((state) => ({
@@ -314,6 +317,38 @@ const ApplyPaymentModal = ({
       // (2) Si existe paymentId (pago no identificado), lo editamos
       if (propPaymentId) {
         await editUnidentifiedPayment(propPaymentId);
+
+        // Guardar trazabilidad adicional para mostrar en detalle de pagos no identificados
+        try {
+          const auth = getAuth();
+          const currentUser = auth.currentUser;
+          if (currentUser) {
+            const tokenResult = await getIdTokenResult(currentUser);
+            const clientId = tokenResult.claims["clientId"] as string;
+            const condominiumId = localStorage.getItem("condominiumId");
+            const accountName =
+              financialAccounts.find((acc) => acc.id === propFinancialAccountId)?.name || "";
+
+            if (clientId && condominiumId) {
+              const db = getFirestore();
+              const unidentifiedRef = doc(
+                db,
+                `clients/${clientId}/condominiums/${condominiumId}/unidentifiedPayments/${propPaymentId}`
+              );
+              await updateDoc(unidentifiedRef, {
+                appliedToCondomino:
+                  selectedUser?.number || selectedUser?.uid || "",
+                appliedToCondominoName:
+                  `${selectedUser?.name || ""} ${selectedUser?.lastName || ""}`.trim(),
+                appliedAt: serverTimestamp(),
+                accountNameSnapshot: accountName || "",
+              });
+            }
+          }
+        } catch (traceabilityError) {
+          // No bloqueamos el flujo principal si falla esta metadata
+          console.error("No se pudo guardar trazabilidad del pago aplicado:", traceabilityError);
+        }
       }
 
       // Resetear formulario

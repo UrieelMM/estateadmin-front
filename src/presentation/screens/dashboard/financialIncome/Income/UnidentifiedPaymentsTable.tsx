@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   CheckCircleIcon,
   XCircleIcon,
@@ -6,9 +6,14 @@ import {
   EyeSlashIcon,
 } from "@heroicons/react/20/solid";
 import ApplyPaymentModal from "./ApplyPaymentModal"; // Asegúrate de tener este componente implementado
-import { useUnidentifiedPaymentsStore } from "../../../../../store/useUnidentifiedPaymentsStore";
+import {
+  UnidentifiedPayment,
+  useUnidentifiedPaymentsStore,
+} from "../../../../../store/useUnidentifiedPaymentsStore";
 import UnidentifiedPaymentsPDF from "./UnidentifiedPaymentsPDF";
 import UnidentifiedPaymentsQR from "./UnidentifiedPaymentsQR";
+import { usePaymentStore } from "../../../../../store/usePaymentStore";
+import Modal from "../../../../../components/Modal";
 
 const UnidentifiedPaymentsTable = () => {
   const {
@@ -19,6 +24,13 @@ const UnidentifiedPaymentsTable = () => {
     selectedPayment,
     closePaymentModal,
   } = useUnidentifiedPaymentsStore();
+  const { financialAccounts, fetchFinancialAccounts } = usePaymentStore(
+    (state) => ({
+      financialAccounts: state.financialAccounts,
+      fetchFinancialAccounts: state.fetchFinancialAccounts,
+    })
+  );
+  const [detailsPayment, setDetailsPayment] = useState<UnidentifiedPayment | null>(null);
 
   // Estados para filtros de mes, año y aplicado.
   // Se asigna por defecto el año actual para que el filtro de mes funcione desde el inicio.
@@ -63,6 +75,12 @@ const UnidentifiedPaymentsTable = () => {
     };
     loadInitialPayments();
   }, [fetchPayments, filterMonth, filterYear]);
+
+  useEffect(() => {
+    fetchFinancialAccounts().catch((error) => {
+      console.error("Error al obtener cuentas financieras:", error);
+    });
+  }, [fetchFinancialAccounts]);
 
   // Manejo de cambio de filtros: se reinicia la paginación
   const handleFilterChange = async (newMonth?: number, newYear?: number) => {
@@ -150,10 +168,27 @@ const UnidentifiedPaymentsTable = () => {
 
   const formatDate = (date: Date) => {
     const d = new Date(date);
+    if (Number.isNaN(d.getTime())) return "-";
     const day = d.getDate().toString().padStart(2, "0");
     const month = (d.getMonth() + 1).toString().padStart(2, "0");
     const year = d.getFullYear();
     return `${day}/${month}/${year}`;
+  };
+
+  const accountNameById = useMemo(() => {
+    const map = new Map<string, string>();
+    financialAccounts.forEach((account) => {
+      map.set(account.id, account.name || "Sin nombre");
+    });
+    return map;
+  }, [financialAccounts]);
+
+  const resolveAccountName = (payment: UnidentifiedPayment) => {
+    if (payment.accountNameSnapshot) return payment.accountNameSnapshot;
+    if (payment.financialAccountId) {
+      return accountNameById.get(payment.financialAccountId) || "Cuenta no encontrada";
+    }
+    return "No disponible";
   };
 
   const totalPages = localHasMore ? currentPage + 1 : currentPage;
@@ -246,7 +281,11 @@ const UnidentifiedPaymentsTable = () => {
           </thead>
           <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
             {filteredPayments.map((payment) => (
-              <tr key={payment.id} className="dark:text-gray-100">
+              <tr
+                key={payment.id}
+                className="dark:text-gray-100 cursor-pointer hover:bg-indigo-50/50 dark:hover:bg-indigo-900/20 transition-colors"
+                onClick={() => setDetailsPayment(payment)}
+              >
                 <td className="px-4 py-2 whitespace-nowrap text-center">
                   {formatDate(payment.paymentDate)}
                 </td>
@@ -266,6 +305,7 @@ const UnidentifiedPaymentsTable = () => {
                         href={payment.attachmentPayment}
                         target="_blank"
                         rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
                         className="flex items-center bg-indigo-600 dark:bg-indigo-500 text-white px-3 py-1 rounded-md hover:bg-indigo-700 dark:hover:bg-indigo-600"
                       >
                         <EyeIcon className="h-5 w-5 mr-1 bg-indigo-500 hover:bg-indigo-600 rounded-full" />
@@ -292,7 +332,10 @@ const UnidentifiedPaymentsTable = () => {
                   <div className="flex justify-center items-center w-full">
                     {!payment.appliedToUser && (
                       <button
-                        onClick={() => openPaymentModal(payment)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openPaymentModal(payment);
+                        }}
                         className="flex items-center bg-indigo-600 dark:bg-indigo-500 text-white px-3 py-1 rounded-md hover:bg-indigo-700 dark:hover:bg-indigo-600"
                       >
                         <CheckCircleIcon className="h-5 w-5 mr-1" />
@@ -385,6 +428,111 @@ const UnidentifiedPaymentsTable = () => {
           }}
         />
       )}
+
+      <Modal
+        title="Detalle del pago no identificado"
+        isOpen={!!detailsPayment}
+        onClose={() => setDetailsPayment(null)}
+        size="lg"
+      >
+        {detailsPayment && (
+          <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-700 dark:text-gray-200">
+            <div>
+              <p className="text-xs text-gray-500 dark:text-gray-400">ID</p>
+              <p className="font-medium break-all">{detailsPayment.id}</p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Estado</p>
+              <p className="font-medium">
+                {detailsPayment.appliedToUser ? "Aplicado" : "No aplicado"}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Fecha de pago</p>
+              <p className="font-medium">{formatDate(detailsPayment.paymentDate)}</p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Fecha de registro</p>
+              <p className="font-medium">{formatDate(detailsPayment.registrationDate)}</p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Monto de referencia</p>
+              <p className="font-medium">
+                {new Intl.NumberFormat("es-MX", {
+                  style: "currency",
+                  currency: "MXN",
+                }).format(detailsPayment.paymentAmountReference || 0)}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Monto pendiente</p>
+              <p className="font-medium">
+                {new Intl.NumberFormat("es-MX", {
+                  style: "currency",
+                  currency: "MXN",
+                }).format(detailsPayment.pendingAmount || 0)}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Tipo de pago</p>
+              <p className="font-medium">{detailsPayment.paymentType || "-"}</p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Referencia</p>
+              <p className="font-medium">{detailsPayment.paymentReference || "-"}</p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Cuenta financiera</p>
+              <p className="font-medium">{resolveAccountName(detailsPayment)}</p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-500 dark:text-gray-400">ID de cuenta</p>
+              <p className="font-medium break-all">
+                {detailsPayment.financialAccountId || "-"}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Aplicado a condómino</p>
+              <p className="font-medium">
+                {detailsPayment.appliedToCondominoName
+                  ? `${detailsPayment.appliedToCondominoName}${
+                      detailsPayment.appliedToCondomino
+                        ? ` (${detailsPayment.appliedToCondomino})`
+                        : ""
+                    }`
+                  : detailsPayment.appliedToCondomino || "-"}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Fecha de aplicación</p>
+              <p className="font-medium">
+                {detailsPayment.appliedAt ? formatDate(detailsPayment.appliedAt) : "-"}
+              </p>
+            </div>
+            <div className="md:col-span-2">
+              <p className="text-xs text-gray-500 dark:text-gray-400">Comentarios</p>
+              <p className="font-medium whitespace-pre-wrap">
+                {detailsPayment.comments || "-"}
+              </p>
+            </div>
+            <div className="md:col-span-2">
+              <p className="text-xs text-gray-500 dark:text-gray-400">Comprobante</p>
+              {detailsPayment.attachmentPayment ? (
+                <a
+                  href={detailsPayment.attachmentPayment}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center mt-1 bg-indigo-600 text-white px-3 py-1 rounded-md hover:bg-indigo-700"
+                >
+                  Ver comprobante
+                </a>
+              ) : (
+                <p className="font-medium">No disponible</p>
+              )}
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 };
