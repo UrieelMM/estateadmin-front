@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   UsersIcon,
   ClockIcon,
@@ -27,6 +28,39 @@ interface TabItem {
   icon: React.ComponentType<{ className?: string }>;
   component: React.ComponentType;
 }
+
+type PersonalTabId =
+  | "employees"
+  | "schedule"
+  | "tickets"
+  | "evaluations"
+  | "activity"
+  | "reports"
+  | "audit";
+
+const PERSONAL_TAB_PATHS: Record<PersonalTabId, string> = {
+  employees: "/dashboard/personal-administration/staff",
+  schedule: "/dashboard/personal-administration/attendance",
+  tickets: "/dashboard/personal-administration/tickets",
+  evaluations: "/dashboard/personal-administration/evaluations",
+  activity: "/dashboard/personal-administration/activity-log",
+  reports: "/dashboard/personal-administration/reports",
+  audit: "/dashboard/personal-administration/audit",
+};
+
+const PERSONAL_PATH_TO_TAB: Record<string, PersonalTabId> = {
+  staff: "employees",
+  attendance: "schedule",
+  tickets: "tickets",
+  evaluations: "evaluations",
+  "activity-log": "activity",
+  reports: "reports",
+  audit: "audit",
+  // Compatibilidad con enlaces previos
+  employees: "employees",
+  schedule: "schedule",
+  activity: "activity",
+};
 
 const tabs: TabItem[] = [
   {
@@ -74,7 +108,8 @@ const tabs: TabItem[] = [
 ];
 
 const PersonalDashboard: React.FC = () => {
-  const [activeTab, setActiveTab] = useState("employees");
+  const location = useLocation();
+  const navigate = useNavigate();
   const {
     employees,
     shifts,
@@ -85,6 +120,9 @@ const PersonalDashboard: React.FC = () => {
     fetchActivityLogs,
   } = usePersonalAdministrationStore();
   const { tickets } = useTicketsStore();
+  const pathSegments = location.pathname.split("/").filter(Boolean);
+  const tabSlug = pathSegments[2] || "";
+  const activeTab: PersonalTabId = PERSONAL_PATH_TO_TAB[tabSlug] || "employees";
 
   const [stats, setStats] = useState({
     totalEmployees: 0,
@@ -121,6 +159,13 @@ const PersonalDashboard: React.FC = () => {
       expiringDocuments: expiringDocs.length,
     });
   }, [employees, tickets, shifts, getExpiringDocuments]);
+
+  useEffect(() => {
+    const targetPath = PERSONAL_TAB_PATHS[activeTab];
+    if (location.pathname !== targetPath) {
+      navigate(targetPath, { replace: true, state: null });
+    }
+  }, [activeTab, location.pathname, navigate]);
 
   const ActiveComponent =
     tabs.find((tab) => tab.id === activeTab)?.component || EmployeeList;
@@ -227,7 +272,9 @@ const PersonalDashboard: React.FC = () => {
               return (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
+                  onClick={() =>
+                    navigate(PERSONAL_TAB_PATHS[tab.id as PersonalTabId])
+                  }
                   className={`
                     group relative flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm
                     transition-all duration-300 ease-out

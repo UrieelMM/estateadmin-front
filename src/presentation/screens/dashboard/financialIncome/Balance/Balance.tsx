@@ -1,11 +1,32 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import ExpenseForm from "../../../../components/shared/forms/ExpensesForm";
 import BalanceSummary from "./BalanceSummary";
 
+type BalanceTabId = "summary";
+
+const BALANCE_TAB_PATHS: Record<BalanceTabId, string> = {
+  summary: "/dashboard/balance/summary",
+};
+
+const BALANCE_PATH_TO_TAB: Record<string, BalanceTabId> = {
+  summary: "summary",
+};
+
 const Balance = () => {
   const [open, setOpen] = useState(false);
-  // Ahora el estado puede ser: "summary", "history" o "morosidad"
-  const [activeTab, setActiveTab] = useState("summary");
+  const location = useLocation();
+  const navigate = useNavigate();
+  const pathSegments = location.pathname.split("/").filter(Boolean);
+  const tabSlug = pathSegments[2] || "";
+  const activeTab: BalanceTabId = BALANCE_PATH_TO_TAB[tabSlug] || "summary";
+
+  useEffect(() => {
+    const targetPath = BALANCE_TAB_PATHS[activeTab];
+    if (location.pathname !== targetPath) {
+      navigate(targetPath, { replace: true, state: null });
+    }
+  }, [activeTab, location.pathname, navigate]);
 
   return (
     <>
@@ -27,7 +48,7 @@ const Balance = () => {
                     : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700/50"
                 }
               `}
-              onClick={() => setActiveTab("summary")}
+              onClick={() => navigate(BALANCE_TAB_PATHS.summary)}
             >
               <span className="whitespace-nowrap">Resumen General</span>
               {activeTab === "summary" && (

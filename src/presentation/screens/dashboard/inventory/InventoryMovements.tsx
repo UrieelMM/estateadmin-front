@@ -186,8 +186,8 @@ const InventoryMovements: React.FC = () => {
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 mb-6">
           <div className="flex flex-wrap gap-2">
             <Link
-              to="/dashboard/inventory"
-              className={ `px-4 py-2 rounded-md text-sm font-medium ${ location.pathname === "/dashboard/inventory"
+              to="/dashboard/inventory/items"
+              className={ `px-4 py-2 rounded-md text-sm font-medium ${ location.pathname === "/dashboard/inventory/items" || location.pathname === "/dashboard/inventory"
                   ? "bg-indigo-600 text-white"
                   : "bg-indigo-100 text-indigo-600 hover:bg-indigo-200 dark:bg-indigo-900 dark:text-indigo-300 dark:hover:bg-indigo-800"
                 }` }

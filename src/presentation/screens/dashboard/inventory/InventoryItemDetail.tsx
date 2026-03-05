@@ -57,7 +57,7 @@ const InventoryItemDetail: React.FC = () => {
         fetchMovements( id );
       } else {
         // Si no encontramos el ítem, volvemos a la lista
-        navigate( "/dashboard/inventory" );
+        navigate( "/dashboard/inventory/items" );
       }
     }
   }, [ id, items, setSelectedItem, fetchMovements, navigate ] );
@@ -104,7 +104,7 @@ const InventoryItemDetail: React.FC = () => {
     setSubmitLoading( false );
     if ( success ) {
       setIsDeleteModalOpen( false );
-      navigate( "/dashboard/inventory" );
+      navigate( "/dashboard/inventory/items" );
     }
   };
 
@@ -143,7 +143,7 @@ const InventoryItemDetail: React.FC = () => {
         <div>
           <div className="flex items-center mb-2">
             <button
-              onClick={ () => navigate( "/dashboard/inventory" ) }
+              onClick={ () => navigate( "/dashboard/inventory/items" ) }
               className="mr-3 text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white"
             >
               <i className="fas fa-arrow-left"></i>
@@ -201,8 +201,12 @@ const InventoryItemDetail: React.FC = () => {
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 mb-6">
         <div className="flex flex-wrap gap-2">
           <Link
-            to="/dashboard/inventory"
-            className={ `px-4 py-2 rounded-md text-sm font-medium ${ location.pathname.startsWith( "/dashboard/inventory" ) &&
+            to="/dashboard/inventory/items"
+            className={ `px-4 py-2 rounded-md text-sm font-medium ${ (
+                location.pathname === "/dashboard/inventory" ||
+                location.pathname === "/dashboard/inventory/items" ||
+                location.pathname.startsWith( "/dashboard/inventory/item/" )
+              ) &&
                 !location.pathname.includes( "categories" ) &&
                 !location.pathname.includes( "movements" ) &&
                 !location.pathname.includes( "alerts" )

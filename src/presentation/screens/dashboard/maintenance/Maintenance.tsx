@@ -22,6 +22,41 @@ import MaintenanceCosts from "./MaintenanceCosts";
 import MaintenanceAppReports from "./MaintenanceAppReports";
 import { useTicketsStore } from "./tickets/ticketsStore";
 import { useConfigStore } from "../../../../store/useConfigStore";
+import { useLocation, useNavigate } from "react-router-dom";
+
+type MaintenanceTabId =
+  | "dashboard"
+  | "reportes"
+  | "tickets"
+  | "citas"
+  | "contratos"
+  | "costos"
+  | "app";
+
+const MAINTENANCE_TAB_PATHS: Record<MaintenanceTabId, string> = {
+  dashboard: "/dashboard/maintenance-reports/dashboard",
+  reportes: "/dashboard/maintenance-reports/reports",
+  tickets: "/dashboard/maintenance-reports/tickets",
+  citas: "/dashboard/maintenance-reports/appointments",
+  contratos: "/dashboard/maintenance-reports/contracts",
+  costos: "/dashboard/maintenance-reports/costs",
+  app: "/dashboard/maintenance-reports/app",
+};
+
+const MAINTENANCE_PATH_TO_TAB: Record<string, MaintenanceTabId> = {
+  dashboard: "dashboard",
+  reports: "reportes",
+  tickets: "tickets",
+  appointments: "citas",
+  contracts: "contratos",
+  costs: "costos",
+  app: "app",
+  // Compatibilidad con enlaces previos
+  reportes: "reportes",
+  citas: "citas",
+  contratos: "contratos",
+  costos: "costos",
+};
 
 const Maintenance = () => {
   // Estado para controlar la apertura del formulario
@@ -33,6 +68,8 @@ const Maintenance = () => {
   const { fetchReports } = useMaintenanceReportStore();
   const { fetchTickets } = useTicketsStore();
   const { hasMaintenanceApp, checkMaintenanceAppAccess } = useConfigStore();
+  const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     // Cargar datos al iniciar el componente
@@ -53,15 +90,28 @@ const Maintenance = () => {
     setReportToEdit(null);
   };
 
-  const [tab, setTab] = useState<
-    | "dashboard"
-    | "reportes"
-    | "tickets"
-    | "citas"
-    | "contratos"
-    | "costos"
-    | "app"
-  >("dashboard");
+  const pathSegments = location.pathname.split("/").filter(Boolean);
+  const tabSlug = pathSegments[2] || "";
+  const tabFromPath = MAINTENANCE_PATH_TO_TAB[tabSlug];
+  const allowedTabs = new Set<MaintenanceTabId>([
+    "dashboard",
+    "reportes",
+    "tickets",
+    "citas",
+    "contratos",
+    "costos",
+    ...(hasMaintenanceApp ? (["app"] as MaintenanceTabId[]) : []),
+  ]);
+  const tab: MaintenanceTabId =
+    (tabFromPath && allowedTabs.has(tabFromPath) && tabFromPath) || "dashboard";
+
+  useEffect(() => {
+    const targetPath = MAINTENANCE_TAB_PATHS[tab];
+    if (location.pathname !== targetPath) {
+      navigate(targetPath, { replace: true, state: null });
+    }
+  }, [tab, location.pathname, navigate]);
+
   return (
     <div className="px-4 rounded-md sm:px-6 lg:px-8">
       <header className="bg-gray-50 font-medium shadow-lg flex w-full h-16 justify-between px-2 rounded-md items-center mb-6 dark:shadow-2xl dark:bg-gray-800 dark:text-gray-100">
@@ -86,7 +136,7 @@ const Maintenance = () => {
                   : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700/50"
               }
             `}
-            onClick={() => setTab("dashboard")}
+            onClick={() => navigate(MAINTENANCE_TAB_PATHS.dashboard)}
           >
             <DocumentChartBarIcon
               className={`h-5 w-5 transition-transform duration-300 ${
@@ -109,7 +159,7 @@ const Maintenance = () => {
                   : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700/50"
               }
             `}
-            onClick={() => setTab("reportes")}
+            onClick={() => navigate(MAINTENANCE_TAB_PATHS.reportes)}
           >
             <ClipboardDocumentCheckIcon
               className={`h-5 w-5 transition-transform duration-300 ${
@@ -132,7 +182,7 @@ const Maintenance = () => {
                   : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700/50"
               }
             `}
-            onClick={() => setTab("tickets")}
+            onClick={() => navigate(MAINTENANCE_TAB_PATHS.tickets)}
           >
             <WrenchScrewdriverIcon
               className={`h-5 w-5 transition-transform duration-300 ${
@@ -155,7 +205,7 @@ const Maintenance = () => {
                   : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700/50"
               }
             `}
-            onClick={() => setTab("citas")}
+            onClick={() => navigate(MAINTENANCE_TAB_PATHS.citas)}
           >
             <CalendarDaysIcon
               className={`h-5 w-5 transition-transform duration-300 ${
@@ -178,7 +228,7 @@ const Maintenance = () => {
                   : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700/50"
               }
             `}
-            onClick={() => setTab("contratos")}
+            onClick={() => navigate(MAINTENANCE_TAB_PATHS.contratos)}
           >
             <UserGroupIcon
               className={`h-5 w-5 transition-transform duration-300 ${
@@ -201,7 +251,7 @@ const Maintenance = () => {
                   : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700/50"
               }
             `}
-            onClick={() => setTab("costos")}
+            onClick={() => navigate(MAINTENANCE_TAB_PATHS.costos)}
           >
             <CurrencyDollarIcon
               className={`h-5 w-5 transition-transform duration-300 ${
@@ -225,7 +275,7 @@ const Maintenance = () => {
                     : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700/50"
                 }
               `}
-              onClick={() => setTab("app")}
+              onClick={() => navigate(MAINTENANCE_TAB_PATHS.app)}
             >
               <DevicePhoneMobileIcon
                 className={`h-5 w-5 transition-transform duration-300 ${

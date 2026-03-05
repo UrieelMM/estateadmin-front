@@ -366,7 +366,7 @@ const LayoutDashboard = ({ children }: Props) => {
               </li>
               <li>
                 <Link
-                  to="/dashboard/client-config"
+                  to="/dashboard/client-config/general"
                   id="nav-configuracion"
                   className={classNames(
                     "group flex items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md",
@@ -539,7 +539,7 @@ const LayoutDashboard = ({ children }: Props) => {
               </li>
               <li>
                 <Link
-                  to="/dashboard/client-config"
+                  to="/dashboard/client-config/general"
                   id="nav-configuracion"
                   onClick={() => setIsMobileMenuOpen(false)}
                   className="group flex items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md"

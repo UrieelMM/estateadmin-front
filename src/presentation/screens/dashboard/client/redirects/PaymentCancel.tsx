@@ -36,7 +36,7 @@ const PaymentCancel: React.FC = () => {
   }, [location.search, searchInvoiceByNumber]);
 
   const handleGoBack = () => {
-    navigate("/dashboard/client-config", { state: { activeTab: "payments" } });
+    navigate("/dashboard/client-config/payments-invoices");
   };
 
   return (

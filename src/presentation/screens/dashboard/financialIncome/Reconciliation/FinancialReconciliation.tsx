@@ -1,14 +1,41 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import PaymentReconciliation from "../Income/PaymentReconciliation";
 import ExpenseReconciliation from "./ExpenseReconciliation";
 import ReconciliationHistory from "./ReconciliationHistory";
 
+type ReconciliationTabId = "income" | "expenses" | "history";
+
+const RECONCILIATION_TAB_PATHS: Record<ReconciliationTabId, string> = {
+  income: "/dashboard/reconciliation/income",
+  expenses: "/dashboard/reconciliation/expenses",
+  history: "/dashboard/reconciliation/history",
+};
+
+const RECONCILIATION_PATH_TO_TAB: Record<string, ReconciliationTabId> = {
+  income: "income",
+  expenses: "expenses",
+  history: "history",
+};
+
 const FinancialReconciliation = () => {
-  const [ activeTab, setActiveTab ] = useState<"income" | "expenses" | "history">( "income" );
+  const location = useLocation();
+  const navigate = useNavigate();
   const [pendingResume, setPendingResume] = useState<{
     id: string;
     type: "income" | "expenses";
   } | null>(null);
+  const pathSegments = location.pathname.split("/").filter(Boolean);
+  const tabSlug = pathSegments[2] || "";
+  const activeTab: ReconciliationTabId =
+    RECONCILIATION_PATH_TO_TAB[tabSlug] || "income";
+
+  useEffect(() => {
+    const targetPath = RECONCILIATION_TAB_PATHS[activeTab];
+    if (location.pathname !== targetPath) {
+      navigate(targetPath, { replace: true, state: null });
+    }
+  }, [activeTab, location.pathname, navigate]);
 
   return (
     <div className="px-4 shadow-lg rounded-md sm:px-6 pb-4 lg:px-8">
@@ -35,7 +62,7 @@ const FinancialReconciliation = () => {
                 ? "bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 text-white shadow-lg shadow-indigo-500/25"
                 : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700/50"
               }` }
-            onClick={ () => setActiveTab( "income" ) }
+            onClick={ () => navigate(RECONCILIATION_TAB_PATHS.income) }
           >
             Conciliación de ingresos
           </button>
@@ -44,7 +71,7 @@ const FinancialReconciliation = () => {
                 ? "bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 text-white shadow-lg shadow-indigo-500/25"
                 : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700/50"
               }` }
-            onClick={ () => setActiveTab( "expenses" ) }
+            onClick={ () => navigate(RECONCILIATION_TAB_PATHS.expenses) }
           >
             Conciliación de egresos
           </button>
@@ -53,7 +80,7 @@ const FinancialReconciliation = () => {
                 ? "bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 text-white shadow-lg shadow-indigo-500/25"
                 : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700/50"
               }` }
-            onClick={ () => setActiveTab( "history" ) }
+            onClick={ () => navigate(RECONCILIATION_TAB_PATHS.history) }
           >
             Historial
           </button>
@@ -80,7 +107,7 @@ const FinancialReconciliation = () => {
         <ReconciliationHistory
           onResumeDraft={(session) => {
             setPendingResume(session);
-            setActiveTab(session.type);
+            navigate(RECONCILIATION_TAB_PATHS[session.type]);
           }}
         />
       )}

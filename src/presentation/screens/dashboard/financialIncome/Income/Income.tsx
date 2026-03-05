@@ -1,4 +1,5 @@
 import { useState, useEffect, useLayoutEffect, useMemo } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import PaymentForm from "../../../../components/shared/forms/PaymentForm";
 import PaymentHistory from "./PaymentHistory";
 import PaymentSummary from "./PaymentSummary";
@@ -10,10 +11,43 @@ import { usePaymentSummaryStore } from "../../../../../store/paymentSummaryStore
 import useUserStore from "../../../../../store/UserDataStore";
 import TowerIncomeSummary from "./TowerIncomeSummary";
 
+type IncomeTabId =
+  | "summary"
+  | "accountSummary"
+  | "towers"
+  | "history-by-condominium"
+  | "morosidad"
+  | "unidentified"
+  | "history";
+
+const INCOME_TAB_PATHS: Record<IncomeTabId, string> = {
+  summary: "/dashboard/income/summary",
+  accountSummary: "/dashboard/income/account-summary",
+  towers: "/dashboard/income/towers",
+  "history-by-condominium": "/dashboard/income/by-condominium",
+  morosidad: "/dashboard/income/delinquency",
+  unidentified: "/dashboard/income/unidentified",
+  history: "/dashboard/income/history",
+};
+
+const INCOME_PATH_TO_TAB: Record<string, IncomeTabId> = {
+  summary: "summary",
+  "account-summary": "accountSummary",
+  towers: "towers",
+  "by-condominium": "history-by-condominium",
+  delinquency: "morosidad",
+  unidentified: "unidentified",
+  history: "history",
+  // Compatibilidad con enlaces previos
+  "accountSummary": "accountSummary",
+  "history-by-condominium": "history-by-condominium",
+  morosidad: "morosidad",
+};
+
 const Income = () => {
   const [ open, setOpen ] = useState( false );
-  // Ahora el estado puede ser: "summary", "accountSummary", "history" o "morosidad"
-  const [ activeTab, setActiveTab ] = useState( "summary" );
+  const location = useLocation();
+  const navigate = useNavigate();
   const { fetchSummary, cleanupListeners, selectedYear, setSelectedYear, detailed } =
     usePaymentSummaryStore(
       ( state ) => ( {
@@ -43,6 +77,27 @@ const Income = () => {
     [ detailed ]
   );
   const hasTowers = hasTowersByProfile || hasTowersBySnapshot;
+  const allowedTabs = new Set<IncomeTabId>( [
+    "summary",
+    "accountSummary",
+    "history-by-condominium",
+    "morosidad",
+    "unidentified",
+    "history",
+    ...( hasTowers ? ( [ "towers" ] as IncomeTabId[] ) : [] ),
+  ] );
+  const pathSegments = location.pathname.split( "/" ).filter( Boolean );
+  const tabSlug = pathSegments[ 2 ] || "";
+  const tabFromPath = INCOME_PATH_TO_TAB[ tabSlug ];
+  const activeTab: IncomeTabId =
+    ( tabFromPath && allowedTabs.has( tabFromPath ) && tabFromPath ) || "summary";
+
+  useEffect( () => {
+    const targetPath = INCOME_TAB_PATHS[ activeTab ];
+    if ( location.pathname !== targetPath ) {
+      navigate( targetPath, { replace: true, state: null } );
+    }
+  }, [ activeTab, location.pathname, navigate ] );
 
   useLayoutEffect( () => {
     // Income debe abrir por defecto en vista global ("Todos los años").
@@ -76,13 +131,13 @@ const Income = () => {
     } );
   }, [ fetchCondominiumsUsers ] );
 
-  const handleTabChange = ( tab: string ) => {
-    setActiveTab( tab );
+  const handleTabChange = ( tab: IncomeTabId ) => {
     if ( [ "summary", "accountSummary", "towers" ].includes( tab ) ) {
       fetchSummary( selectedYear ).catch( ( error ) => {
         console.error( "Error refreshing summary:", error );
       } );
     }
+    navigate( INCOME_TAB_PATHS[ tab ] );
   };
 
   return (

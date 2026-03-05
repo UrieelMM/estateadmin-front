@@ -17,15 +17,6 @@ import PaymentSuccess from "../presentation/screens/dashboard/client/redirects/P
 import PaymentCancel from "../presentation/screens/dashboard/client/redirects/PaymentCancel";
 import ReceiptsAndInvoices from "../presentation/screens/dashboard/financialIncome/ReceiptsAndInvoices/ReceiptsAndInvoices";
 import PettyCash from "../presentation/screens/dashboard/financialIncome/PettyCash/PettyCash";
-import PettyCashDashboard from "../presentation/screens/dashboard/financialIncome/PettyCash/components/PettyCashDashboard";
-import PettyCashExpenseForm from "../presentation/screens/dashboard/financialIncome/PettyCash/components/PettyCashExpenseForm";
-import PettyCashAuditForm from "../presentation/screens/dashboard/financialIncome/PettyCash/components/PettyCashAuditForm";
-import PettyCashReplenishForm from "../presentation/screens/dashboard/financialIncome/PettyCash/components/PettyCashReplenishForm";
-import PettyCashSetupForm from "../presentation/screens/dashboard/financialIncome/PettyCash/components/PettyCashSetupForm";
-import PettyCashTransactions from "../presentation/screens/dashboard/financialIncome/PettyCash/components/PettyCashTransactions";
-import PettyCashAudits from "../presentation/screens/dashboard/financialIncome/PettyCash/components/PettyCashAudits";
-import PettyCashHistory from "../presentation/screens/dashboard/financialIncome/PettyCash/components/PettyCashHistory";
-import PettyCashFinalize from "../presentation/screens/dashboard/financialIncome/PettyCash/components/PettyCashFinalize";
 import InventoryCategories from "../presentation/screens/dashboard/inventory/InventoryCategories";
 import InventoryItemDetail from "../presentation/screens/dashboard/inventory/InventoryItemDetail";
 import InventoryList from "../presentation/screens/dashboard/inventory/InventoryList";
@@ -86,7 +77,7 @@ export const routesApp = [
     component: <Publications />,
   },
   {
-    to: "/dashboard/income",
+    to: "/dashboard/income/*",
     icon: "fa-solid fa-spell-check",
     title: "Cuotas",
     description: "Gestión de cuotas de mantenimiento",
@@ -100,28 +91,28 @@ export const routesApp = [
     component: <Charges />,
   },
   {
-    to: "/dashboard/client-config",
+    to: "/dashboard/client-config/*",
     icon: "fa-solid fa-spell-check",
     title: "Configuración",
     description: "Configuración del cliente",
     component: <ClientConfig />,
   },
   {
-    to: "/dashboard/maintenance-reports",
+    to: "/dashboard/maintenance-reports/*",
     icon: "fa-solid fa-spell-check",
     title: "Mantenimiento de condominio",
     description: "Gestión de reportes de mantenimiento",
     component: <Maintenance />,
   },
   {
-    to: "/dashboard/expenses",
+    to: "/dashboard/expenses/*",
     icon: "fa-solid fa-spell-check",
     title: "Registro de gastos",
     description: "Gestión de gastos",
     component: <Expenses />,
   },
   {
-    to: "/dashboard/reconciliation",
+    to: "/dashboard/reconciliation/*",
     icon: "fa-solid fa-scale-balanced",
     title: "Conciliación",
     description: "Conciliación bancaria de ingresos y egresos",
@@ -135,7 +126,7 @@ export const routesApp = [
     component: <AuditTrail />,
   },
   {
-    to: "/dashboard/balance",
+    to: "/dashboard/balance/*",
     icon: "fa-solid fa-spell-check",
     title: "Balance general",
     description: "Balance general de ingresos y egresos",
@@ -163,84 +154,28 @@ export const routesApp = [
     component: <Projects />,
   },
   {
-    to: "/dashboard/receipts-and-invoices",
+    to: "/dashboard/receipts-and-invoices/*",
     icon: "fa-solid fa-file-invoice",
     title: "Recibos y Comprobantes",
     description: "Gestión de recibos y comprobantes",
     component: <ReceiptsAndInvoices />,
   },
   {
-    to: "/dashboard/pettycash",
+    to: "/dashboard/pettycash/*",
     icon: "fa-solid fa-cash-register",
     title: "Caja chica",
     description: "Gestión de caja chica",
     component: <PettyCash />,
   },
   {
-    to: "/dashboard/pettycash/setup",
-    icon: "fa-solid fa-cog",
-    title: "Configuración de Caja Chica",
-    description: "Configuración inicial de caja chica",
-    component: <PettyCashSetupForm />,
-  },
-  {
-    to: "/dashboard/pettycash/expense",
-    icon: "fa-solid fa-receipt",
-    title: "Registrar Gasto",
-    description: "Registrar gasto de caja chica",
-    component: <PettyCashExpenseForm />,
-  },
-  {
-    to: "/dashboard/pettycash/audit",
-    icon: "fa-solid fa-clipboard-check",
-    title: "Cierre de Caja",
-    description: "Realizar Cierre de caja chica",
-    component: <PettyCashAuditForm />,
-  },
-  {
-    to: "/dashboard/pettycash/replenish",
-    icon: "fa-solid fa-money-bill",
-    title: "Reposición de Fondos",
-    description: "Reponer fondos de caja chica",
-    component: <PettyCashReplenishForm />,
-  },
-  {
-    to: "/dashboard/pettycash/audits",
-    icon: "fa-solid fa-clipboard-list",
-    title: "Administrar Cierres",
-    description: "Administrar Cierres de caja chica",
-    component: <PettyCashAudits />,
-  },
-  {
-    to: "/dashboard/pettycash/transactions",
-    icon: "fa-solid fa-list",
-    title: "Transacciones",
-    description: "Ver transacciones de caja chica",
-    component: <PettyCashTransactions />,
-  },
-  {
-    to: "/dashboard/pettycash/dashboard",
-    icon: "fa-solid fa-list",
-    title: "Dashboard",
-    description: "Dashboard de caja chica",
-    component: <PettyCashDashboard />,
-  },
-  {
-    to: "/dashboard/pettycash/history",
-    icon: "fa-solid fa-history",
-    title: "Historial de Cajas",
-    description: "Ver historial de cajas chica cerradas",
-    component: <PettyCashHistory />,
-  },
-  {
-    to: "/dashboard/pettycash/finalize",
-    icon: "fa-solid fa-flag-checkered",
-    title: "Finalizar Caja",
-    description: "Finalizar caja actual y crear nueva",
-    component: <PettyCashFinalize />,
-  },
-  {
     to: "/dashboard/inventory",
+    icon: "fa-solid fa-boxes-stacked",
+    title: "Inventario",
+    description: "Gestión de inventario del condominio",
+    component: <InventoryList />,
+  },
+  {
+    to: "/dashboard/inventory/items",
     icon: "fa-solid fa-boxes-stacked",
     title: "Inventario",
     description: "Gestión de inventario del condominio",
@@ -282,7 +217,7 @@ export const routesApp = [
     component: <CommonAreas />,
   },
   {
-    to: "/dashboard/personal-administration",
+    to: "/dashboard/personal-administration/*",
     icon: "fa-solid fa-user-gear",
     title: "Gestión de Personal",
     description: "Administración y control del personal del condominio",

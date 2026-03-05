@@ -1,13 +1,37 @@
-import { useState } from "react";
+import { useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import InvoicesByCondominiums from "./InvoicesByCondominiums";
 import DownloadReceiptsAndInvoices from "./DownloadReceiptsAndInvoices";
 
-const ReceiptsAndInvoices = () => {
-  const [activeTab, setActiveTab] = useState("invoicesByCondominiums");
+type ReceiptsTabId = "invoicesByCondominiums" | "downloadReceiptsAndInvoices";
 
-  const handleTabChange = (tab: string) => {
-    setActiveTab(tab);
-  };
+const RECEIPTS_TAB_PATHS: Record<ReceiptsTabId, string> = {
+  invoicesByCondominiums: "/dashboard/receipts-and-invoices/vouchers",
+  downloadReceiptsAndInvoices: "/dashboard/receipts-and-invoices/download",
+};
+
+const RECEIPTS_PATH_TO_TAB: Record<string, ReceiptsTabId> = {
+  vouchers: "invoicesByCondominiums",
+  download: "downloadReceiptsAndInvoices",
+  // Compatibilidad con enlaces previos
+  invoicesByCondominiums: "invoicesByCondominiums",
+  downloadReceiptsAndInvoices: "downloadReceiptsAndInvoices",
+};
+
+const ReceiptsAndInvoices = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const pathSegments = location.pathname.split("/").filter(Boolean);
+  const tabSlug = pathSegments[2] || "";
+  const activeTab: ReceiptsTabId =
+    RECEIPTS_PATH_TO_TAB[tabSlug] || "invoicesByCondominiums";
+
+  useEffect(() => {
+    const targetPath = RECEIPTS_TAB_PATHS[activeTab];
+    if (location.pathname !== targetPath) {
+      navigate(targetPath, { replace: true, state: null });
+    }
+  }, [activeTab, location.pathname, navigate]);
 
   return (
     <>
@@ -29,7 +53,9 @@ const ReceiptsAndInvoices = () => {
                     : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700/50"
                 }
               `}
-              onClick={() => handleTabChange("invoicesByCondominiums")}
+              onClick={() =>
+                navigate(RECEIPTS_TAB_PATHS.invoicesByCondominiums)
+              }
             >
               <span className="whitespace-nowrap">Comprobantes</span>
               {activeTab === "invoicesByCondominiums" && (
@@ -47,7 +73,9 @@ const ReceiptsAndInvoices = () => {
                     : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700/50"
                 }
               `}
-              onClick={() => handleTabChange("downloadReceiptsAndInvoices")}
+              onClick={() =>
+                navigate(RECEIPTS_TAB_PATHS.downloadReceiptsAndInvoices)
+              }
             >
               <span className="whitespace-nowrap">
                 Descargar Recibos y Comprobantes

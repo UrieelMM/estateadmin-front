@@ -17,7 +17,7 @@ import { formatCurrencyInventory } from "../../../../utils/curreyncy";
 import toast from "react-hot-toast";
 
 const navLinks = [
-  { to: "/dashboard/inventory", icon: "fa-boxes-stacked", label: "Inventario" },
+  { to: "/dashboard/inventory/items", icon: "fa-boxes-stacked", label: "Inventario" },
   { to: "/dashboard/inventory/categories", icon: "fa-tags", label: "Categorías" },
   { to: "/dashboard/inventory/movements", icon: "fa-arrows-rotate", label: "Movimientos" },
   { to: "/dashboard/inventory/alerts", icon: "fa-triangle-exclamation", label: "Alertas" },

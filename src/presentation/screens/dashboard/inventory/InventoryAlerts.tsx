@@ -53,7 +53,7 @@ const InventoryAlerts: React.FC = () => {
             Alertas de Stock
           </h1>
           <button
-            onClick={() => navigate("/dashboard/inventory")}
+            onClick={() => navigate("/dashboard/inventory/items")}
             className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg text-sm px-5 py-2.5 inline-flex items-center"
           >
             <i className="fas fa-arrow-left mr-2 text-white"></i>
@@ -65,8 +65,9 @@ const InventoryAlerts: React.FC = () => {
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 mb-6">
           <div className="flex flex-wrap gap-2">
             <Link
-              to="/dashboard/inventory"
+              to="/dashboard/inventory/items"
               className={`px-4 py-2 rounded-md text-sm font-medium ${
+                location.pathname === "/dashboard/inventory/items" ||
                 location.pathname === "/dashboard/inventory"
                   ? "bg-indigo-600 text-white"
                   : "bg-indigo-100 text-indigo-600 hover:bg-indigo-200 dark:bg-indigo-900 dark:text-indigo-300 dark:hover:bg-indigo-800"

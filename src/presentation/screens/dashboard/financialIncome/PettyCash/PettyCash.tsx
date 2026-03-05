@@ -52,10 +52,11 @@ const PettyCash: React.FC = () => {
   // Efecto para configurar navegación y cargar datos de caja chica
   useEffect(() => {
     // Determinar si mostrar la navegación secundaria
-    // Solo se muestra cuando no estamos en la ruta principal o index
+    // Solo se muestra cuando no estamos en el dashboard principal.
     const isPettyCashIndex =
       location.pathname === "/dashboard/pettycash" ||
-      location.pathname === "/dashboard/pettycash/";
+      location.pathname === "/dashboard/pettycash/" ||
+      location.pathname === "/dashboard/pettycash/dashboard";
     setShowSubNavigation(!isPettyCashIndex);
 
     // Cargar la configuración al inicio
@@ -93,7 +94,7 @@ const PettyCash: React.FC = () => {
             Volver
           </button>
           <button
-            onClick={() => navigateToSection("")}
+            onClick={() => navigateToSection("dashboard")}
             className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-gray-700 bg-gray-100 hover:bg-gray-200"
           >
             <HomeIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
@@ -113,13 +114,14 @@ const PettyCash: React.FC = () => {
       {/* Implementación de rutas anidadas para evitar recargas completas */}
       <Routes>
         {/* Ruta principal (dashboard de caja chica) */}
-        <Route index element={<PettyCashDashboard />} />
+        <Route index element={<Navigate to="dashboard" replace />} />
+        <Route path="dashboard" element={<PettyCashDashboard />} />
 
         {/* Configuración de caja chica */}
         <Route
           path="setup"
           element={
-            <PettyCashSetupForm onSuccess={() => navigateToSection("")} />
+            <PettyCashSetupForm onSuccess={() => navigateToSection("dashboard")} />
           }
         />
 
@@ -145,7 +147,7 @@ const PettyCash: React.FC = () => {
         <Route path="finalize" element={<PettyCashFinalize />} />
 
         {/* Redirección por defecto al dashboard */}
-        <Route path="*" element={<Navigate to="" replace />} />
+        <Route path="*" element={<Navigate to="dashboard" replace />} />
       </Routes>
     </div>
   );

@@ -34,13 +34,52 @@ import PaymentMessageEditor from "../PaymentMessageEditor/PaymentMessageEditor";
 import CommitteeManagement from "../committee/CommitteeManagement";
 import ClientInvoicesTable from "../../client/invoices/ClientInvoicesTable";
 import AuditTrail from "../../audit/AuditTrail";
+import { useLocation, useNavigate } from "react-router-dom";
+
+type ConfigTabId =
+  | "config"
+  | "payments"
+  | "cuentas"
+  | "mensaje-pago"
+  | "users"
+  | "audit"
+  | "committee";
+
+const CONFIG_TAB_PATHS: Record<ConfigTabId, string> = {
+  config: "/dashboard/client-config/general",
+  payments: "/dashboard/client-config/payments-invoices",
+  cuentas: "/dashboard/client-config/bank-accounts",
+  "mensaje-pago": "/dashboard/client-config/messages-documents",
+  users: "/dashboard/client-config/administrators",
+  audit: "/dashboard/client-config/audit-log",
+  committee: "/dashboard/client-config/committee-reports",
+};
+
+const CONFIG_PATH_TO_TAB: Record<string, ConfigTabId> = {
+  general: "config",
+  "payments-invoices": "payments",
+  "bank-accounts": "cuentas",
+  "messages-documents": "mensaje-pago",
+  administrators: "users",
+  "audit-log": "audit",
+  "committee-reports": "committee",
+  // Compatibilidad con enlaces previos
+  "pagos-facturas": "payments",
+  "cuentas-bancarias": "cuentas",
+  "mensajes-documentos": "mensaje-pago",
+  administradores: "users",
+  auditoria: "audit",
+  "comite-reportes": "committee",
+};
 
 const ConfigForm = () => {
   const { config, loading, error, fetchConfig, updateConfig, hasMaintenanceApp, checkMaintenanceAppAccess } =
     useConfigStore();
   const { compressFile, isCompressing: isCompressingFile } = useFileCompression();
   const { isDarkMode, toggleDarkMode } = useTheme(); // <-- Valor del ThemeContext (debe ser boolean)
-  const [ userRole, setUserRole ] = useState<string>( "" );
+  const [ userRole, setUserRole ] = useState<string | null>( null );
+  const location = useLocation();
+  const navigate = useNavigate();
 
   // Estados de la pestaña de configuración
   const [ companyName, setCompanyName ] = useState( "" );
@@ -61,9 +100,6 @@ const ConfigForm = () => {
   const [ logoReportsPreviewUrl, setLogoReportsPreviewUrl ] = useState<
     string | null
   >( null );
-
-  // Tab actual
-  const [ activeTab, setActiveTab ] = useState( "config" );
 
   // Estados para la pestaña de pagos y facturas
   // const [selectedInvoice, setSelectedInvoice] = useState("");
@@ -129,7 +165,7 @@ const ConfigForm = () => {
       if ( user ) {
         const token = await user.getIdTokenResult();
         const role = token.claims.role as string;
-        setUserRole( role );
+        setUserRole( role || "" );
       }
     };
     getCurrentUserRole();
@@ -207,6 +243,31 @@ const ConfigForm = () => {
       : [] ),
   ];
 
+  const allowedTabIds = new Set<ConfigTabId>( [
+    ...tabs.map( ( tab ) => tab.id as ConfigTabId ),
+    ...( userRole === "admin" ? ( [ "committee" ] as ConfigTabId[] ) : [] ),
+  ] );
+
+  const pathSegments = location.pathname.split( "/" ).filter( Boolean );
+  const tabSlug = pathSegments[ 2 ] || "";
+  const tabFromPath = CONFIG_PATH_TO_TAB[ tabSlug ];
+  const legacyState = ( location.state as { activeTab?: ConfigTabId; } | null )
+    ?.activeTab;
+  const fallbackTab: ConfigTabId = "config";
+  const requestedTab =
+    ( tabFromPath && allowedTabIds.has( tabFromPath ) && tabFromPath ) ||
+    ( legacyState && allowedTabIds.has( legacyState ) && legacyState ) ||
+    fallbackTab;
+  const activeTab = requestedTab;
+
+  useEffect( () => {
+    if ( userRole === null ) return;
+    const targetPath = CONFIG_TAB_PATHS[ activeTab ];
+    if ( location.pathname !== targetPath ) {
+      navigate( targetPath, { replace: true, state: null } );
+    }
+  }, [ activeTab, location.pathname, navigate, userRole ] );
+
   return (
     <div className="min-h-screen bg-white rounded-lg dark:bg-gray-900 p-4 md:px-2 md:py-4">
       { error && (
@@ -234,7 +295,9 @@ const ConfigForm = () => {
             return (
               <button
                 key={ tab.id }
-                onClick={ () => setActiveTab( tab.id ) }
+                onClick={ () =>
+                  navigate( CONFIG_TAB_PATHS[ tab.id as ConfigTabId ] )
+                }
                 className={ `
                   group relative flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm
                   transition-all duration-300 ease-out

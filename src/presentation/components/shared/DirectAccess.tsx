@@ -50,7 +50,7 @@ const items = [
     description: "Personaliza la configuración general del condominio.",
     icon: Cog6ToothIcon,
     background: "bg-purple-600 dark:bg-purple-500",
-    href: "/dashboard/client-config",
+    href: "/dashboard/client-config/general",
   },
 ];
 
