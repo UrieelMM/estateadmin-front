@@ -31,6 +31,8 @@ interface SelectedCharge {
 }
 
 const PaymentForm = ( { open, setOpen }: FormParcelReceptionProps ) => {
+  const RECIPIENT_LOCALSTORAGE_PREFIX = "paymentForm:selectedRecipientUid";
+  const RECIPIENT_SORT_LOCALSTORAGE_PREFIX = "paymentForm:recipientSortOrder";
   // Estados generales
   const [ users, setUsers ] = useState<UserData[]>( [] );
   const [ loading, setLoading ] = useState<boolean>( false );
@@ -42,6 +44,10 @@ const PaymentForm = ( { open, setOpen }: FormParcelReceptionProps ) => {
   const [ email, setEmail ] = useState<string>( "" );
   const [ numberCondominium, setNumberCondominium ] = useState<string>( "" );
   const [ recipientSearch, setRecipientSearch ] = useState<string>( "" );
+  const [ pendingRecipientRestoreUid, setPendingRecipientRestoreUid ] =
+    useState<string>( "" );
+  const [ recipientSortOrder, setRecipientSortOrder ] = useState<"" | "asc" | "desc">( "" );
+  const recipientComboboxInputRef = useRef<HTMLInputElement | null>( null );
   const recipientComboboxButtonRef = useRef<HTMLButtonElement | null>( null );
 
   // Monto abonado: valor raw y su versión visual formateada
@@ -114,18 +120,38 @@ const PaymentForm = ( { open, setOpen }: FormParcelReceptionProps ) => {
   const { fetchPayments } = useUnidentifiedPaymentsStore();
 
   const { compressFile, isCompressing } = useFileCompression();
+  const recipientStorageKey = useMemo(
+    () =>
+      `${ RECIPIENT_LOCALSTORAGE_PREFIX }:${ currentCondominiumId || "default" }`,
+    [ RECIPIENT_LOCALSTORAGE_PREFIX, currentCondominiumId ]
+  );
+  const recipientSortStorageKey = useMemo(
+    () =>
+      `${ RECIPIENT_SORT_LOCALSTORAGE_PREFIX }:${ currentCondominiumId || "default" }`,
+    [ RECIPIENT_SORT_LOCALSTORAGE_PREFIX, currentCondominiumId ]
+  );
 
   useEffect( () => {
     if ( open ) {
       fetchCondominiumsUsers();
       fetchFinancialAccounts();
       setRecipientSearch( "" );
+      const savedRecipientUid = localStorage.getItem( recipientStorageKey );
+      setPendingRecipientRestoreUid( savedRecipientUid || "" );
+      const savedSortOrder = localStorage.getItem( recipientSortStorageKey );
+      if ( savedSortOrder === "asc" || savedSortOrder === "desc" ) {
+        setRecipientSortOrder( savedSortOrder );
+      } else {
+        setRecipientSortOrder( "" );
+      }
     }
   }, [
     fetchCondominiumsUsers,
     fetchFinancialAccounts,
     open,
     currentCondominiumId,
+    recipientStorageKey,
+    recipientSortStorageKey,
   ] );
 
   // Efecto para mantener actualizado el selectedUser
@@ -174,6 +200,39 @@ const PaymentForm = ( { open, setOpen }: FormParcelReceptionProps ) => {
     [ users ]
   );
 
+  useEffect( () => {
+    if ( !open || !pendingRecipientRestoreUid ) return;
+
+    const userExists = availableUsers.some(
+      ( user ) => user.uid === pendingRecipientRestoreUid
+    );
+
+    if ( !userExists ) {
+      localStorage.removeItem( recipientStorageKey );
+      setPendingRecipientRestoreUid( "" );
+      return;
+    }
+
+    setPendingRecipientRestoreUid( "" );
+    handleRecipientSelection( pendingRecipientRestoreUid );
+  }, [ open, pendingRecipientRestoreUid, availableUsers, recipientStorageKey ] );
+
+  useEffect( () => {
+    if ( !open ) return;
+    if ( selectedUser?.uid ) {
+      localStorage.setItem( recipientStorageKey, selectedUser.uid );
+    }
+  }, [ open, recipientStorageKey, selectedUser?.uid ] );
+
+  useEffect( () => {
+    if ( !open ) return;
+    if ( recipientSortOrder ) {
+      localStorage.setItem( recipientSortStorageKey, recipientSortOrder );
+      return;
+    }
+    localStorage.removeItem( recipientSortStorageKey );
+  }, [ open, recipientSortOrder, recipientSortStorageKey ] );
+
   const filteredUsers = useMemo( () => {
     const normalizeSearchText = ( value: string ) =>
       String( value || "" )
@@ -192,36 +251,50 @@ const PaymentForm = ( { open, setOpen }: FormParcelReceptionProps ) => {
     const towerTerm = normalizeTowerValue( recipientSearch );
     const compactTowerTerm = compactSearchText( towerTerm );
 
-    if ( !term ) return availableUsers;
+    const usersFiltered = !term
+      ? availableUsers
+      : availableUsers.filter( ( user ) => {
+        const number = normalizeSearchText( user.number || "" );
+        const compactNumber = compactSearchText( user.number || "" );
+        const name = normalizeSearchText( user.name || "" );
+        const lastName = normalizeSearchText( user.lastName || "" );
+        const fullName = `${ name } ${ lastName }`.trim();
+        const compactName = compactSearchText( user.name || "" );
+        const compactLastName = compactSearchText( user.lastName || "" );
+        const compactFullName = `${ compactName }${ compactLastName }`;
+        const rawTower = String( user.tower || "" );
+        const tower = normalizeSearchText( rawTower );
+        const normalizedTower = normalizeTowerValue( rawTower );
+        const compactTower = compactSearchText( rawTower );
+        const compactNormalizedTower = compactSearchText( normalizedTower );
+        return (
+          number.includes( term ) ||
+          compactNumber.includes( compactTerm ) ||
+          name.includes( term ) ||
+          fullName.includes( term ) ||
+          compactName.includes( compactTerm ) ||
+          compactFullName.includes( compactTerm ) ||
+          tower.includes( term ) ||
+          normalizedTower.includes( towerTerm ) ||
+          compactTower.includes( compactTerm ) ||
+          compactNormalizedTower.includes( compactTowerTerm )
+        );
+      } );
 
-    return availableUsers.filter( ( user ) => {
-      const number = normalizeSearchText( user.number || "" );
-      const compactNumber = compactSearchText( user.number || "" );
-      const name = normalizeSearchText( user.name || "" );
-      const lastName = normalizeSearchText( user.lastName || "" );
-      const fullName = `${ name } ${ lastName }`.trim();
-      const compactName = compactSearchText( user.name || "" );
-      const compactLastName = compactSearchText( user.lastName || "" );
-      const compactFullName = `${ compactName }${ compactLastName }`;
-      const rawTower = String( user.tower || "" );
-      const tower = normalizeSearchText( rawTower );
-      const normalizedTower = normalizeTowerValue( rawTower );
-      const compactTower = compactSearchText( rawTower );
-      const compactNormalizedTower = compactSearchText( normalizedTower );
-      return (
-        number.includes( term ) ||
-        compactNumber.includes( compactTerm ) ||
-        name.includes( term ) ||
-        fullName.includes( term ) ||
-        compactName.includes( compactTerm ) ||
-        compactFullName.includes( compactTerm ) ||
-        tower.includes( term ) ||
-        normalizedTower.includes( towerTerm ) ||
-        compactTower.includes( compactTerm ) ||
-        compactNormalizedTower.includes( compactTowerTerm )
-      );
+    if ( recipientSortOrder === "" ) return usersFiltered;
+
+    const sortedUsers = [ ...usersFiltered ].sort( ( a, b ) => {
+      const numberA = String( a.number || "" );
+      const numberB = String( b.number || "" );
+      const comparison = numberA.localeCompare( numberB, "es", {
+        numeric: true,
+        sensitivity: "base",
+      } );
+      return recipientSortOrder === "asc" ? comparison : -comparison;
     } );
-  }, [ availableUsers, recipientSearch ] );
+
+    return sortedUsers;
+  }, [ availableUsers, recipientSearch, recipientSortOrder ] );
 
   const selectableFinancialAccounts = useMemo( () => {
     const normalize = ( value: string ) =>
@@ -268,6 +341,14 @@ const PaymentForm = ( { open, setOpen }: FormParcelReceptionProps ) => {
     selectedUser?.uid ||
     users.find( ( u ) => u.number === numberCondominium )?.uid ||
     "";
+
+  const handleRecipientSortOrderChange = ( value: "" | "asc" | "desc" ) => {
+    setRecipientSortOrder( value );
+    if ( isUnidentifiedPayment ) return;
+    requestAnimationFrame( () => {
+      recipientComboboxInputRef.current?.focus();
+    } );
+  };
 
   const getRecipientLabel = ( uid: string ) => {
     const user = availableUsers.find( ( u ) => u.uid === uid );
@@ -629,17 +710,43 @@ const PaymentForm = ( { open, setOpen }: FormParcelReceptionProps ) => {
                           <div className="space-y-6 pb-5 pt-6">
                             {/* Seleccionar condómino */ }
                             <div>
-                              <label
-                                htmlFor="nameRecipient"
-                                className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100"
-                              >
-                                Condómino
-                              </label>
+                              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                                <label
+                                  htmlFor="nameRecipient"
+                                  className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100"
+                                >
+                                  Condómino
+                                </label>
+                                <div className="flex items-center gap-2">
+                                  <label
+                                    htmlFor="recipientSortOrder"
+                                    className="text-xs text-gray-500 dark:text-gray-400"
+                                  >
+                                    Orden por
+                                  </label>
+                                  <select
+                                    id="recipientSortOrder"
+                                    value={ recipientSortOrder }
+                                    onChange={ ( e ) =>
+                                      handleRecipientSortOrderChange(
+                                        e.target.value as "" | "asc" | "desc"
+                                      )
+                                    }
+                                    disabled={ isUnidentifiedPayment }
+                                    className="rounded-md border border-gray-300 bg-white px-2 py-1 text-xs text-gray-700 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:cursor-not-allowed disabled:bg-gray-100 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:disabled:bg-gray-700"
+                                  >
+                                    <option value="">Sin orden</option>
+                                    <option value="asc">Ascendente</option>
+                                    <option value="desc">Descendente</option>
+                                  </select>
+                                </div>
+                              </div>
                               <div className="mt-2 relative">
                                 <Combobox
                                   value={ selectedRecipientUid }
                                   onChange={ ( uid: string ) => {
                                     if ( !uid ) {
+                                      localStorage.removeItem( recipientStorageKey );
                                       setSelectedUser( null );
                                       setEmail( "" );
                                       setNumberCondominium( "" );
@@ -656,6 +763,7 @@ const PaymentForm = ( { open, setOpen }: FormParcelReceptionProps ) => {
                                       <UserIcon className="h-5 w-5 text-gray-400" />
                                     </div>
                                     <Combobox.Input
+                                      ref={ recipientComboboxInputRef }
                                       id="nameRecipient"
                                       name="nameRecipient"
                                       className="px-8 pr-10 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
@@ -1118,8 +1226,8 @@ const PaymentForm = ( { open, setOpen }: FormParcelReceptionProps ) => {
                                 </p>
                               </div>
                             </div>
-                            {/* Descarga automática de recibo deshabilitada temporalmente en PaymentForm. */}
-                            {/* Comentarios */}
+                            {/* Descarga automática de recibo deshabilitada temporalmente en PaymentForm. */ }
+                            {/* Comentarios */ }
                             <div>
                               <label
                                 htmlFor="comments"
