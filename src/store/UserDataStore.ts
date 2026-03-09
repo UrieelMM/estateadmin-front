@@ -37,6 +37,12 @@ export interface UserState {
     pageSize: number,
     page: number
   ) => Promise<UserData[]>;
+  fetchPaginatedCondominiumsUsersByTower: (
+    pageSize: number,
+    page: number,
+    tower: string
+  ) => Promise<UserData[]>;
+  fetchCondominiumTowerOptions: () => Promise<string[]>;
   searchUsersByName: (
     name: string,
     pageSize: number,
@@ -361,6 +367,129 @@ const useUserStore = create<UserState>()((set, get) => ({
       console.error("No authenticated user found.");
       return [];
     }
+  },
+  fetchPaginatedCondominiumsUsersByTower: async (
+    pageSize: number,
+    page: number,
+    tower: string
+  ) => {
+    const userAuth = auth.currentUser;
+    if (userAuth) {
+      try {
+        const token = await getIdTokenResult(userAuth);
+        const clientId = token.claims.clientId;
+        const userRole = token.claims.role;
+
+        if (
+          !clientId ||
+          !(userRole === "admin" || userRole === "admin-assistant")
+        ) {
+          console.error(
+            "El usuario no tiene permisos para realizar esta acción."
+          );
+          return [];
+        }
+
+        const db = getFirestore();
+        const currentCondominiumId = useCondominiumStore
+          .getState()
+          .getCurrentCondominiumId();
+
+        if (!currentCondominiumId) {
+          console.error("No hay condominio seleccionado");
+          return [];
+        }
+
+        const usersRef = collection(
+          db,
+          `clients/${clientId}/condominiums/${currentCondominiumId}/users`
+        );
+        const q = query(
+          usersRef,
+          where("role", "not-in", ["admin", "admin-assistant"])
+        );
+        const querySnapshot = await getDocs(q);
+        const users = querySnapshot.docs.map(
+          (doc) => ({ ...doc.data(), id: doc.id } as unknown as UserData)
+        );
+
+        const normalizedTower = String(tower ?? "")
+          .trim()
+          .toLowerCase();
+        const filteredByTower = users.filter(
+          (user) =>
+            String(user.tower ?? "")
+              .trim()
+              .toLowerCase() === normalizedTower
+        );
+
+        const startIdx = (page - 1) * pageSize;
+        const endIdx = startIdx + pageSize;
+        return filteredByTower.slice(startIdx, endIdx);
+      } catch (error) {
+        console.error("Error al obtener usuarios por torre:", error);
+        return [];
+      }
+    }
+    console.error("No authenticated user found.");
+    return [];
+  },
+  fetchCondominiumTowerOptions: async () => {
+    const userAuth = auth.currentUser;
+    if (userAuth) {
+      try {
+        const token = await getIdTokenResult(userAuth);
+        const clientId = token.claims.clientId;
+        const userRole = token.claims.role;
+
+        if (
+          !clientId ||
+          !(userRole === "admin" || userRole === "admin-assistant")
+        ) {
+          console.error(
+            "El usuario no tiene permisos para realizar esta acción."
+          );
+          return [];
+        }
+
+        const db = getFirestore();
+        const currentCondominiumId = useCondominiumStore
+          .getState()
+          .getCurrentCondominiumId();
+
+        if (!currentCondominiumId) {
+          console.error("No hay condominio seleccionado");
+          return [];
+        }
+
+        const usersRef = collection(
+          db,
+          `clients/${clientId}/condominiums/${currentCondominiumId}/users`
+        );
+        const q = query(
+          usersRef,
+          where("role", "not-in", ["admin", "admin-assistant"])
+        );
+        const querySnapshot = await getDocs(q);
+        const uniqueTowers = new Set<string>();
+
+        querySnapshot.docs.forEach((userDoc) => {
+          const towerValue = String(userDoc.data()?.tower ?? "").trim();
+          if (towerValue.length > 0) {
+            uniqueTowers.add(towerValue);
+          }
+        });
+
+        return Array.from(uniqueTowers).sort((a, b) =>
+          a.localeCompare(b, "es", { numeric: true })
+        );
+      } catch (error) {
+        console.error("Error al obtener torres del condominio:", error);
+        return [];
+      }
+    }
+    console.error("No authenticated user found.");
+    return [];
   },
   searchUsersByName: async (
     searchTerm: string,

@@ -175,13 +175,51 @@ const PaymentForm = ( { open, setOpen }: FormParcelReceptionProps ) => {
   );
 
   const filteredUsers = useMemo( () => {
-    const term = recipientSearch.trim().toLowerCase();
+    const normalizeSearchText = ( value: string ) =>
+      String( value || "" )
+        .normalize( "NFD" )
+        .replace( /[\u0300-\u036f]/g, "" )
+        .toLowerCase()
+        .trim();
+    const compactSearchText = ( value: string ) =>
+      normalizeSearchText( value ).replace( /[^a-z0-9]/g, "" );
+    const normalizeTowerValue = ( value: string ) => {
+      const normalized = normalizeSearchText( value );
+      return normalized.replace( /^torre\s*/g, "" ).trim();
+    };
+    const term = normalizeSearchText( recipientSearch );
+    const compactTerm = compactSearchText( recipientSearch );
+    const towerTerm = normalizeTowerValue( recipientSearch );
+    const compactTowerTerm = compactSearchText( towerTerm );
+
     if ( !term ) return availableUsers;
 
     return availableUsers.filter( ( user ) => {
-      const number = ( user.number || "" ).toLowerCase();
-      const name = ( user.name || "" ).toLowerCase();
-      return number.includes( term ) || name.includes( term );
+      const number = normalizeSearchText( user.number || "" );
+      const compactNumber = compactSearchText( user.number || "" );
+      const name = normalizeSearchText( user.name || "" );
+      const lastName = normalizeSearchText( user.lastName || "" );
+      const fullName = `${ name } ${ lastName }`.trim();
+      const compactName = compactSearchText( user.name || "" );
+      const compactLastName = compactSearchText( user.lastName || "" );
+      const compactFullName = `${ compactName }${ compactLastName }`;
+      const rawTower = String( user.tower || "" );
+      const tower = normalizeSearchText( rawTower );
+      const normalizedTower = normalizeTowerValue( rawTower );
+      const compactTower = compactSearchText( rawTower );
+      const compactNormalizedTower = compactSearchText( normalizedTower );
+      return (
+        number.includes( term ) ||
+        compactNumber.includes( compactTerm ) ||
+        name.includes( term ) ||
+        fullName.includes( term ) ||
+        compactName.includes( compactTerm ) ||
+        compactFullName.includes( compactTerm ) ||
+        tower.includes( term ) ||
+        normalizedTower.includes( towerTerm ) ||
+        compactTower.includes( compactTerm ) ||
+        compactNormalizedTower.includes( compactTowerTerm )
+      );
     } );
   }, [ availableUsers, recipientSearch ] );
 
@@ -233,7 +271,15 @@ const PaymentForm = ( { open, setOpen }: FormParcelReceptionProps ) => {
 
   const getRecipientLabel = ( uid: string ) => {
     const user = availableUsers.find( ( u ) => u.uid === uid );
-    return user ? `${ user.number } ${ user.name }` : "";
+    if ( !user ) return "";
+    const towerValue = String( user.tower || "" ).trim();
+    const normalizedTowerLabel = towerValue
+      ? towerValue.replace( /^torre\s*/i, "" ).trim()
+      : "";
+    const towerLabel = normalizedTowerLabel
+      ? ` · Torre ${ normalizedTowerLabel }`
+      : "";
+    return `${ user.number || "-" } ${ user.name || "" }${ towerLabel }`.trim();
   };
 
   const handleToggleCharge = ( chargeId: string, checked: boolean ) => {
@@ -622,7 +668,7 @@ const PaymentForm = ( { open, setOpen }: FormParcelReceptionProps ) => {
                                       onFocus={ () =>
                                         recipientComboboxButtonRef.current?.click()
                                       }
-                                      placeholder="Buscar por nombre o número de casa/departamento"
+                                      placeholder="Buscar por nombre, número o torre"
                                     />
                                     <Combobox.Button
                                       ref={ recipientComboboxButtonRef }
@@ -670,7 +716,19 @@ const PaymentForm = ( { open, setOpen }: FormParcelReceptionProps ) => {
                                                   : "font-normal"
                                                   }` }
                                               >
-                                                { user.number } { user.name }
+                                                { user.number || "-" } { user.name }
+                                              </span>
+                                              <span
+                                                className={ `block truncate text-xs ${ active
+                                                  ? "text-indigo-100"
+                                                  : "text-gray-500 dark:text-gray-400"
+                                                  }` }
+                                              >
+                                                { String( user.tower || "" ).trim().length > 0
+                                                  ? `Torre ${ String( user.tower || "" )
+                                                    .replace( /^torre\s*/i, "" )
+                                                    .trim() }`
+                                                  : "Sin torre" }
                                               </span>
                                               { selectedRecipientUid ===
                                                 user.uid && (

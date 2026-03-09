@@ -24,6 +24,7 @@ const UsersScreen = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
   const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
+  const [towerOptions, setTowerOptions] = useState<string[]>([]);
 
   // New UI/UX enhancement states
   const [isLoading, setIsLoading] = useState(false);
@@ -54,6 +55,12 @@ const UsersScreen = () => {
   const fetchPaginatedCondominiumsUsers = useUserStore(
     (state) => state.fetchPaginatedCondominiumsUsers
   );
+  const fetchPaginatedCondominiumsUsersByTower = useUserStore(
+    (state) => state.fetchPaginatedCondominiumsUsersByTower
+  );
+  const fetchCondominiumTowerOptions = useUserStore(
+    (state) => state.fetchCondominiumTowerOptions
+  );
   const searchUsersByName = useUserStore((state) => state.searchUsersByName);
 
   const handleViewUser = async (userUid: string) => {
@@ -74,27 +81,38 @@ const UsersScreen = () => {
 
   const handleSearch = async (e: React.FormEvent<EventTarget>) => {
     e.preventDefault();
-    if (!searchTerm.trim()) return fetchUsers(1);
+    if (!searchTerm.trim()) return fetchUsers(1, towerFilter);
 
     setCurrentPage(1); // Resetear a la primera página después de la búsqueda
     if (searchTerm.trim() !== "") {
       // La función searchUsersByName ahora busca en todos los usuarios, no solo la página actual
       // y ahora también busca por número de departamento/casa
-      const filteredUsers = await searchUsersByName(searchTerm, pageSize, 1);
+      const fetchedUsers = await searchUsersByName(searchTerm, pageSize, 1);
+      const normalizedTowerFilter = normalizeTower(towerFilter).toLowerCase();
+      const filteredUsers = normalizedTowerFilter
+        ? fetchedUsers.filter(
+            (user) =>
+              normalizeTower(user.tower).toLowerCase() === normalizedTowerFilter
+          )
+        : fetchedUsers;
       setUsers(filteredUsers);
     } else {
-      fetchUsers(1); // Si la búsqueda está vacía, recuperar usuarios normales
+      fetchUsers(1, towerFilter); // Si la búsqueda está vacía, recuperar usuarios normales
     }
   };
 
-  const fetchUsers = async (page: number) => {
+  const fetchUsers = async (page: number, selectedTower = "") => {
     try {
       setIsLoading(true);
       setLoadingError(null);
-      const fetchedUsers = await fetchPaginatedCondominiumsUsers(
-        pageSize,
-        page
-      );
+      const normalizedTower = normalizeTower(selectedTower);
+      const fetchedUsers = normalizedTower
+        ? await fetchPaginatedCondominiumsUsersByTower(
+            pageSize,
+            page,
+            normalizedTower
+          )
+        : await fetchPaginatedCondominiumsUsers(pageSize, page);
       setUsers(fetchedUsers);
     } catch (error) {
       setLoadingError(
@@ -104,6 +122,11 @@ const UsersScreen = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const loadTowerOptions = async () => {
+    const options = await fetchCondominiumTowerOptions();
+    setTowerOptions(options);
   };
 
   // Table sorting function
@@ -128,15 +151,20 @@ const UsersScreen = () => {
   };
 
   const handleEditSuccess = () => {
-    fetchUsers(currentPage); // Recargar la página actual
+    fetchUsers(currentPage, towerFilter); // Recargar la página actual
+    loadTowerOptions();
   };
 
   const normalizeTower = (value: unknown): string =>
     String(value ?? "").trim();
 
   useEffect(() => {
-    fetchUsers(currentPage);
-  }, [currentPage]);
+    fetchUsers(currentPage, towerFilter);
+  }, [currentPage, towerFilter]);
+
+  useEffect(() => {
+    loadTowerOptions();
+  }, [currentCondominiumId]);
 
   // Efecto para detectar cambios en el condominio seleccionado
   useEffect(() => {
@@ -144,34 +172,16 @@ const UsersScreen = () => {
       // Limpiar la lista de usuarios actual
       setUsers([]);
       // Resetear a la primera página y volver a cargar los usuarios
+      setTowerFilter("");
       setCurrentPage(1);
-      fetchUsers(1);
     }
   }, [currentCondominiumId]);
 
-  const towerOptions = useMemo(() => {
-    return Array.from(
-      new Set(
-        users
-          .map((user) => normalizeTower(user.tower))
-          .filter((tower) => tower.length > 0)
-      )
-    ).sort((a, b) => a.localeCompare(b, "es", { numeric: true }));
-  }, [users]);
-
   // Memo for filtered + sorted users data
   const filteredAndSortedUsers = useMemo(() => {
-    const normalizedTower = towerFilter.trim().toLowerCase();
-    const filteredUsers = normalizedTower
-      ? users.filter(
-          (user) =>
-            normalizeTower(user.tower).toLowerCase() === normalizedTower
-        )
-      : users;
+    if (!sortConfig) return users;
 
-    if (!sortConfig) return filteredUsers;
-
-    return [...filteredUsers].sort((a, b) => {
+    return [...users].sort((a, b) => {
       let aValue: string | number = "";
       let bValue: string | number = "";
 
@@ -212,7 +222,7 @@ const UsersScreen = () => {
       }
       return 0;
     });
-  }, [users, sortConfig, towerFilter]);
+  }, [users, sortConfig]);
 
   return (
     <>
@@ -302,7 +312,10 @@ const UsersScreen = () => {
             <div className="flex gap-2">
               <select
                 value={towerFilter}
-                onChange={(e) => setTowerFilter(e.target.value)}
+                onChange={(e) => {
+                  setCurrentPage(1);
+                  setTowerFilter(e.target.value);
+                }}
                 className="min-w-[180px] rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
               >
                 <option value="">Todas las torres</option>
@@ -325,7 +338,7 @@ const UsersScreen = () => {
             <div className="text-center py-20">
               <div className="text-red-500 mb-4">{loadingError}</div>
               <button
-                onClick={() => fetchUsers(currentPage)}
+                onClick={() => fetchUsers(currentPage, towerFilter)}
                 className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
               >
                 Reintentar
