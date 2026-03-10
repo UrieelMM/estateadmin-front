@@ -442,6 +442,7 @@ service cloud.firestore {
       && (request.resource.data.phone is int || request.resource.data.phone is float)
       && request.resource.data.startAt is string
       && request.resource.data.userId is string
+      && request.resource.data.userId.size() > 0
       && request.resource.data.yearMonth is string;
     }
   }

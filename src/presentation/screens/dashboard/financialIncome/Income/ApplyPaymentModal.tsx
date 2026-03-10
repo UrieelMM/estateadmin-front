@@ -292,6 +292,7 @@ const ApplyPaymentModal = ({
 
       // Construir payload para aplicar el pago
       const paymentObj: any = {
+        userId: selectedUser?.uid || "",
         email,
         numberCondominium,
         amountPaid: Number(amountPaid),

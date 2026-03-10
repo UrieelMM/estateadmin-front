@@ -507,6 +507,7 @@ const PaymentForm = ( { open, setOpen }: FormParcelReceptionProps ) => {
         .substring( 2, 15 ) }`;
 
       const paymentObj = {
+        userId: selectedUser?.uid || selectedRecipientUid || "",
         email,
         numberCondominium,
         amountPaid: Number( amountPaid ),

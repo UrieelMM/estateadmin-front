@@ -1,11 +1,12 @@
 // src/components/PaymentHistory.tsx
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import {
   PaymentRecord,
   usePaymentHistoryStore,
 } from "../../../../../store/paymentHistoryStore";
 import useUserStore from "../../../../../store/UserDataStore";
+import { Combobox } from "@headlessui/react";
 import {
   LineChart,
   Line,
@@ -19,6 +20,8 @@ import {
 import LoadingApp from "../../../../components/shared/loaders/LoadingApp";
 import PDFReportGeneratorSingle from "./PDFReportGeneratorSingle";
 import Modal from "../../../../../components/Modal";
+import { CheckIcon, ChevronUpDownIcon } from "@heroicons/react/20/solid";
+import { UserIcon } from "@heroicons/react/16/solid";
 
 const chartColors = [ "#8093E8", "#74B9E7", "#A7CFE6", "#B79FE6", "#C2ABE6" ];
 
@@ -37,6 +40,10 @@ const formatCurrency = ( value: number ): string => {
 
 const PaymentHistory = () => {
   const [ selectedUserUid, setSelectedUserUid ] = useState<string>( "" );
+  const [ userSearch, setUserSearch ] = useState<string>( "" );
+  const [ userSortOrder, setUserSortOrder ] = useState<"" | "asc" | "desc">( "" );
+  const userComboboxInputRef = useRef<HTMLInputElement | null>( null );
+  const userComboboxButtonRef = useRef<HTMLButtonElement | null>( null );
   const [ selectedCondominiumNumber, setSelectedCondominiumNumber ] =
     useState<string>( "" );
   const [ detailMonthFilter, setDetailMonthFilter ] = useState<string>( "" );
@@ -75,14 +82,19 @@ const PaymentHistory = () => {
     fetchCondominiumsUsers();
   }, [ fetchCondominiumsUsers ] );
 
-  // Cuando el usuario selecciona un condómino, se actualiza el UID y el número
-  const handleUserChange = ( e: React.ChangeEvent<HTMLSelectElement> ) => {
-    const uid = e.target.value;
+  const handleUserSelection = ( uid: string ) => {
+    if ( !uid ) {
+      setSelectedUserUid( "" );
+      setSelectedCondominiumNumber( "" );
+      setSelectedChargeDetailId( null );
+      return;
+    }
     setSelectedUserUid( uid );
     const user = condominiumsUsers.find( ( u ) => u.uid === uid );
     if ( user ) {
       setSelectedCondominiumNumber( user.number ? String( user.number ) : "" );
     }
+    setSelectedChargeDetailId( null );
   };
 
   // Actualizar año y recargar datos
@@ -122,6 +134,89 @@ const PaymentHistory = () => {
       .normalize( "NFD" )
       .replace( /[\u0300-\u036f]/g, "" )
       .trim();
+
+  const availableUsers = useMemo(
+    () =>
+      condominiumsUsers.filter(
+        ( user ) =>
+          user.role !== "admin" &&
+          user.role !== "super-admin" &&
+          user.role !== "security"
+      ),
+    [ condominiumsUsers ]
+  );
+
+  const filteredUsers = useMemo( () => {
+    const compact = ( value: string ) =>
+      normalizeText( value ).replace( /[^a-z0-9]/g, "" );
+    const normalizeTowerValue = ( value: string ) =>
+      normalizeText( value ).replace( /^torre\s*/g, "" ).trim();
+
+    const term = normalizeText( userSearch );
+    const compactTerm = compact( userSearch );
+    const towerTerm = normalizeTowerValue( userSearch );
+    const compactTowerTerm = compact( towerTerm );
+
+    const result = !term
+      ? availableUsers
+      : availableUsers.filter( ( user ) => {
+        const number = normalizeText( String( user.number || "" ) );
+        const compactNumber = compact( String( user.number || "" ) );
+        const name = normalizeText( String( user.name || "" ) );
+        const lastName = normalizeText( String( user.lastName || "" ) );
+        const fullName = `${ name } ${ lastName }`.trim();
+        const compactName = compact( String( user.name || "" ) );
+        const compactLastName = compact( String( user.lastName || "" ) );
+        const compactFullName = `${ compactName }${ compactLastName }`;
+        const rawTower = String( user.tower || "" );
+        const tower = normalizeText( rawTower );
+        const normalizedTower = normalizeTowerValue( rawTower );
+        const compactTower = compact( rawTower );
+        const compactNormalizedTower = compact( normalizedTower );
+
+        return (
+          number.includes( term ) ||
+          compactNumber.includes( compactTerm ) ||
+          name.includes( term ) ||
+          fullName.includes( term ) ||
+          compactName.includes( compactTerm ) ||
+          compactFullName.includes( compactTerm ) ||
+          tower.includes( term ) ||
+          normalizedTower.includes( towerTerm ) ||
+          compactTower.includes( compactTerm ) ||
+          compactNormalizedTower.includes( compactTowerTerm )
+        );
+      } );
+
+    if ( userSortOrder === "" ) return result;
+
+    return [ ...result ].sort( ( a, b ) => {
+      const numberA = String( a.number || "" );
+      const numberB = String( b.number || "" );
+      const comparison = numberA.localeCompare( numberB, "es", {
+        numeric: true,
+        sensitivity: "base",
+      } );
+      return userSortOrder === "asc" ? comparison : -comparison;
+    } );
+  }, [ availableUsers, userSearch, userSortOrder ] );
+
+  const getUserLabel = ( uid: string ) => {
+    const user = availableUsers.find( ( u ) => u.uid === uid );
+    if ( !user ) return "";
+    const towerValue = String( user.tower || "" )
+      .replace( /^torre\s*/i, "" )
+      .trim();
+    const towerLabel = towerValue ? ` · Torre ${ towerValue }` : "";
+    return `${ user.number || "-" } ${ user.name || "" }${ towerLabel }`.trim();
+  };
+
+  const handleSortOrderChange = ( value: "" | "asc" | "desc" ) => {
+    setUserSortOrder( value );
+    requestAnimationFrame( () => {
+      userComboboxInputRef.current?.focus();
+    } );
+  };
 
   const getMonthCodeFromRecord = ( record: PaymentRecord ) => {
     if ( record.month ) {
@@ -475,28 +570,119 @@ const PaymentHistory = () => {
           <h2 className="text-xl font-bold mb-4">
             Resumen individual por condómino
           </h2>
-          <label className="block font-medium mb-1">
-            Selecciona un Condómino
-          </label>
-          <select
-            value={ selectedUserUid }
-            onChange={ handleUserChange }
-            className="w-full pl-2 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
-          >
-            <option value="">-- Selecciona un condómino --</option>
-            { condominiumsUsers
-              .filter(
-                ( user ) =>
-                  user.role !== "admin" &&
-                  user.role !== "super-admin" &&
-                  user.role !== "security"
-              )
-              .map( ( user ) => (
-                <option key={ user.uid } value={ user.uid }>
-                  { user.number } { user.name }
-                </option>
-              ) ) }
-          </select>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <label className="block font-medium">
+              Selecciona un Condómino
+            </label>
+            <div className="flex items-center gap-2">
+              <label
+                htmlFor="historyUserSortOrder"
+                className="text-xs text-gray-500 dark:text-gray-400"
+              >
+                Orden por
+              </label>
+              <select
+                id="historyUserSortOrder"
+                value={ userSortOrder }
+                onChange={ ( e ) =>
+                  handleSortOrderChange( e.target.value as "" | "asc" | "desc" )
+                }
+                className="rounded-md border border-gray-300 bg-white px-2 py-1 text-xs text-gray-700 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
+              >
+                <option value="">Sin orden</option>
+                <option value="asc">Ascendente</option>
+                <option value="desc">Descendente</option>
+              </select>
+            </div>
+          </div>
+          <div className="mt-2 relative">
+            <Combobox
+              value={ selectedUserUid }
+              onChange={ ( uid: string ) => {
+                setUserSearch( "" );
+                handleUserSelection( uid );
+              } }
+            >
+              <div className="relative">
+                <div className="absolute left-2 top-1/2 flex items-center transform -translate-y-1/2 z-10">
+                  <UserIcon className="h-5 w-5 text-gray-400" />
+                </div>
+                <Combobox.Input
+                  ref={ userComboboxInputRef }
+                  className="w-full pl-8 pr-10 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
+                  displayValue={ ( uid: string ) => getUserLabel( uid ) }
+                  onChange={ ( event ) => setUserSearch( event.target.value ) }
+                  onFocus={ () => userComboboxButtonRef.current?.click() }
+                  placeholder="Buscar por nombre, número o torre"
+                />
+                <Combobox.Button
+                  ref={ userComboboxButtonRef }
+                  className="absolute inset-y-0 right-0 flex items-center pr-2"
+                >
+                  <ChevronUpDownIcon className="h-5 w-5 text-gray-400" />
+                </Combobox.Button>
+              </div>
+
+              <Combobox.Options className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white dark:bg-gray-800 py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
+                <Combobox.Option
+                  value=""
+                  className={ ( { active } ) =>
+                    `relative cursor-default select-none py-2 pl-8 pr-4 ${ active
+                      ? "bg-indigo-600 text-white"
+                      : "text-gray-900 dark:text-gray-100"
+                    }`
+                  }
+                >
+                  -- Selecciona un condómino --
+                </Combobox.Option>
+                { filteredUsers.length === 0 ? (
+                  <div className="relative cursor-default select-none py-2 px-4 text-gray-700 dark:text-gray-300">
+                    Sin resultados
+                  </div>
+                ) : (
+                  filteredUsers.map( ( user ) => (
+                    <Combobox.Option
+                      key={ user.uid }
+                      value={ user.uid }
+                      className={ ( { active } ) =>
+                        `relative cursor-default select-none py-2 pl-8 pr-4 ${ active
+                          ? "bg-indigo-600 text-white"
+                          : "text-gray-900 dark:text-gray-100"
+                        }`
+                      }
+                    >
+                      { ( { active } ) => (
+                        <>
+                          <span
+                            className={ `block truncate ${ selectedUserUid === user.uid ? "font-medium" : "font-normal" }` }
+                          >
+                            { user.number || "-" } { user.name }
+                          </span>
+                          <span
+                            className={ `block truncate text-xs ${ active
+                              ? "text-indigo-100"
+                              : "text-gray-500 dark:text-gray-400"
+                              }` }
+                          >
+                            { String( user.tower || "" ).trim().length > 0
+                              ? `Torre ${ String( user.tower || "" ).replace( /^torre\s*/i, "" ).trim() }`
+                              : "Sin torre" }
+                          </span>
+                          { selectedUserUid === user.uid && (
+                            <span
+                              className={ `absolute inset-y-0 left-0 flex items-center pl-2 ${ active ? "text-white" : "text-indigo-600" }` }
+                            >
+                              <CheckIcon className="h-4 w-4" />
+                            </span>
+                          ) }
+                        </>
+                      ) }
+                    </Combobox.Option>
+                  ) )
+                ) }
+              </Combobox.Options>
+            </Combobox>
+          </div>
         </div>
         <div>
           <label className="block font-medium mb-1">Año</label>

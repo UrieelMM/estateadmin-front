@@ -30,6 +30,7 @@ export type Charge = {
  */
 export type MaintenancePayment = {
   email: string;
+  userId?: string;
   numberCondominium: string;
   comments?: string;
 
@@ -279,6 +280,7 @@ export const usePaymentStore = create<MaintenancePaymentState>()(
         const formData = new FormData();
         formData.append("paymentId", paymentId);
         formData.append("clientId", clientId);
+        formData.append("userId", payment.userId || "");
         formData.append("numberCondominium", payment.numberCondominium || "");
         formData.append("condominiumId", condominiumId);
         formData.append("isUnidentifiedPayment", JSON.stringify(true));
@@ -343,6 +345,7 @@ export const usePaymentStore = create<MaintenancePaymentState>()(
         const formData = new FormData();
         formData.append("clientId", clientId);
         formData.append("email", payment.email || "");
+        formData.append("userId", payment.userId || "");
         formData.append("numberCondominium", payment.numberCondominium || "");
         formData.append("condominiumId", condominiumId);
         formData.append("comments", payment.comments || "");

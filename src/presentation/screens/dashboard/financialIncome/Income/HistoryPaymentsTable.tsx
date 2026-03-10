@@ -10,6 +10,7 @@ import { PaymentRecord } from "../../../../../store/paymentSummaryStore";
 import { formatCurrency } from "../../../../../utils/curreyncy";
 import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/solid";
 import LoadingApp from "../../../../components/shared/loaders/LoadingApp";
+import useUserStore from "../../../../../store/UserDataStore";
 
 interface FilterState {
   month: string;
@@ -34,6 +35,26 @@ const MONTHS = [
   { value: "12", label: "Diciembre" },
 ];
 
+const normalizeTowerValue = (value: unknown): string =>
+  String(value ?? "")
+    .replace(/^torre\s*/i, "")
+    .trim();
+
+const formatMonthLabel = (monthValue?: string): string => {
+  const raw = String(monthValue || "").trim();
+  if (!raw) return "N/A";
+
+  let normalizedMonth = raw;
+  if (/^\d{4}-\d{2}$/.test(raw)) {
+    normalizedMonth = raw.slice(5, 7);
+  } else if (/^\d{1}$/.test(raw)) {
+    normalizedMonth = raw.padStart(2, "0");
+  }
+
+  const foundMonth = MONTHS.find((month) => month.value === normalizedMonth);
+  return foundMonth ? foundMonth.label : raw;
+};
+
 const HistoryPaymentsTable: React.FC = () => {
   // currentPage es 1-indexado.
   const [currentPage, setCurrentPage] = useState(1);
@@ -57,6 +78,10 @@ const HistoryPaymentsTable: React.FC = () => {
   const [selectedPayment, setSelectedPayment] = useState<PaymentRecord | null>(
     null
   );
+  const fetchCondominiumsUsers = useUserStore(
+    (state) => state.fetchCondominiumsUsers
+  );
+  const condominiumsUsers = useUserStore((state) => state.condominiumsUsers);
 
   const {
     completedPayments,
@@ -74,6 +99,61 @@ const HistoryPaymentsTable: React.FC = () => {
     searchPaymentByFolio: state.searchPaymentByFolio,
     loadingPayments: state.loadingPayments,
   }));
+
+  useEffect(() => {
+    fetchCondominiumsUsers();
+  }, [fetchCondominiumsUsers]);
+
+  const resolveCondominoMeta = (payment: PaymentRecord) => {
+    const byUserId = condominiumsUsers.find(
+      (user) => user.uid && user.uid === payment.userId
+    );
+    if (byUserId) {
+      return {
+        name: `${byUserId.name || ""} ${byUserId.lastName || ""}`.trim(),
+        tower: normalizeTowerValue(byUserId.tower),
+      };
+    }
+
+    const number = String(payment.numberCondominium || "").trim();
+    if (!number) return { name: "", tower: "" };
+
+    const candidates = condominiumsUsers.filter(
+      (user) => String(user.number || "").trim() === number
+    );
+
+    const towerSnapshot = normalizeTowerValue(payment.towerSnapshot);
+    if (towerSnapshot) {
+      const byTower = candidates.find(
+        (user) => normalizeTowerValue(user.tower) === towerSnapshot
+      );
+      if (byTower) {
+        return {
+          name: `${byTower.name || ""} ${byTower.lastName || ""}`.trim(),
+          tower: towerSnapshot,
+        };
+      }
+    }
+
+    if (candidates.length === 1) {
+      return {
+        name: `${candidates[0].name || ""} ${candidates[0].lastName || ""}`.trim(),
+        tower: normalizeTowerValue(candidates[0].tower),
+      };
+    }
+
+    return { name: "", tower: towerSnapshot };
+  };
+
+  const getTowerLabel = (payment: PaymentRecord) => {
+    const towerSnapshot = normalizeTowerValue(payment.towerSnapshot);
+    if (towerSnapshot) return `Torre ${towerSnapshot}`;
+    const fallbackTower = resolveCondominoMeta(payment).tower;
+    return fallbackTower ? `Torre ${fallbackTower}` : "-";
+  };
+
+  const getCondominoName = (payment: PaymentRecord) =>
+    resolveCondominoMeta(payment).name || "No identificado";
 
   // Cargar la primera página al montar
   useEffect(() => {
@@ -354,14 +434,20 @@ const HistoryPaymentsTable: React.FC = () => {
                         className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white"
                       >
                         <div className="flex items-center gap-1">
-                          Número de Condomino
+                          Número de Condómino
                           <div className="group relative cursor-pointer">
                             <InformationCircleIcon className="h-4 w-4 text-gray-400" />
                             <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 hidden group-hover:block w-64 p-2 bg-gray-900 text-white text-xs rounded shadow-lg z-10">
-                              Identificador único del condomino
+                              Identificador único del condómino
                             </div>
                           </div>
                         </div>
+                      </th>
+                      <th
+                        scope="col"
+                        className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white"
+                      >
+                        Torre
                       </th>
                       <th
                         scope="col"
@@ -444,6 +530,9 @@ const HistoryPaymentsTable: React.FC = () => {
                         </td>
                         <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 dark:text-gray-200">
                           {payment.numberCondominium || "No identificado"}
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 dark:text-gray-200">
+                          {getTowerLabel(payment)}
                         </td>
                         <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 dark:text-gray-200">
                           {payment.concept || "No identificado"}
@@ -632,9 +721,21 @@ const HistoryPaymentsTable: React.FC = () => {
                     </p>
                   </div>
                   <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-3">
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Condomino</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Número de condómino</p>
                     <p className="font-medium text-gray-900 dark:text-gray-100">
                       {selectedPayment.numberCondominium || "No identificado"}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-3">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Nombre del condómino</p>
+                    <p className="font-medium text-gray-900 dark:text-gray-100">
+                      {getCondominoName(selectedPayment)}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-3">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Torre</p>
+                    <p className="font-medium text-gray-900 dark:text-gray-100">
+                      {getTowerLabel(selectedPayment)}
                     </p>
                   </div>
                   <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-3">
@@ -646,7 +747,7 @@ const HistoryPaymentsTable: React.FC = () => {
                   <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-3">
                     <p className="text-xs text-gray-500 dark:text-gray-400">Mes</p>
                     <p className="font-medium text-gray-900 dark:text-gray-100">
-                      {selectedPayment.month || "N/A"}
+                      {formatMonthLabel(selectedPayment.month)}
                     </p>
                   </div>
                   <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-3">
@@ -751,7 +852,13 @@ const HistoryPaymentsTable: React.FC = () => {
                                     scope="col"
                                     className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white"
                                   >
-                                    Número de Condomino
+                                    Número de Condómino
+                                  </th>
+                                  <th
+                                    scope="col"
+                                    className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white"
+                                  >
+                                    Torre
                                   </th>
                                   <th
                                     scope="col"
@@ -818,6 +925,9 @@ const HistoryPaymentsTable: React.FC = () => {
                                     <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 dark:text-gray-200">
                                       {payment.numberCondominium ||
                                         "No identificado"}
+                                    </td>
+                                    <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 dark:text-gray-200">
+                                      {getTowerLabel(payment)}
                                     </td>
                                     <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 dark:text-gray-200">
                                       {payment.concept || "No identificado"}
