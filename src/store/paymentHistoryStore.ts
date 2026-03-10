@@ -79,7 +79,11 @@ type PaymentHistoryState = {
   currentCreditBalance: number;
   pendingAmount: number;
 
-  fetchPayments: (selectedNumber: string, year?: string) => Promise<void>;
+  fetchPayments: (
+    selectedNumber: string,
+    year?: string,
+    selectedUserId?: string
+  ) => Promise<void>;
   setSelectedYear: (year: string) => void;
 };
 
@@ -153,7 +157,11 @@ export const usePaymentHistoryStore = create<PaymentHistoryState>()((set) => ({
   currentCreditBalance: 0,
   pendingAmount: 0,
 
-  fetchPayments: async (selectedNumber: string, year?: string) => {
+  fetchPayments: async (
+    selectedNumber: string,
+    year?: string,
+    selectedUserId?: string
+  ) => {
     set({ loading: true, error: null });
     try {
       const auth = getAuth();
@@ -214,20 +222,52 @@ export const usePaymentHistoryStore = create<PaymentHistoryState>()((set) => ({
       }
 
       // 2. Buscar el usuario (condómino)
-      const usersRef = collection(
-        db,
-        `clients/${clientId}/condominiums/${condominiumId}/users`
-      );
-      const userQuery = query(usersRef, where("number", "==", selectedNumber));
-      const userSnapshot = await getDocs(userQuery);
+      let userId = String(selectedUserId || "").trim();
+      let userData: any | null = null;
 
-      if (userSnapshot.empty) {
-        set({ error: "Usuario no encontrado", loading: false });
+      if (userId) {
+        const userRef = doc(
+          db,
+          `clients/${clientId}/condominiums/${condominiumId}/users/${userId}`
+        );
+        const userSnap = await getDoc(userRef);
+        if (!userSnap.exists()) {
+          set({
+            error: "No se encontró el condómino seleccionado",
+            loading: false,
+          });
+          return;
+        }
+        userData = userSnap.data();
+      } else {
+        const usersRef = collection(
+          db,
+          `clients/${clientId}/condominiums/${condominiumId}/users`
+        );
+        const userQuery = query(usersRef, where("number", "==", selectedNumber));
+        const userSnapshot = await getDocs(userQuery);
+
+        if (userSnapshot.empty) {
+          set({ error: "Usuario no encontrado", loading: false });
+          return;
+        }
+        if (userSnapshot.docs.length > 1) {
+          set({
+            error:
+              "Número de condómino ambiguo. Selecciona el condómino específico para consultar su historial.",
+            loading: false,
+          });
+          return;
+        }
+        const userDoc = userSnapshot.docs[0];
+        userData = userDoc.data();
+        userId = userDoc.id;
+      }
+
+      if (!userId || !userData) {
+        set({ error: "No fue posible resolver el condómino", loading: false });
         return;
       }
-      const userDoc = userSnapshot.docs[0];
-      const userData = userDoc.data();
-      const userId = userDoc.id;
       // Se obtiene el saldo a favor actual directamente del usuario
       const currentCreditBalance = parseCreditBalanceToPesos(
         userData.totalCreditBalance

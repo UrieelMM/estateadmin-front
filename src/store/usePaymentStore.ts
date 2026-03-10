@@ -8,6 +8,8 @@ import {
   query,
   where,
   getDocs,
+  doc,
+  getDoc,
 } from "firebase/firestore";
 import axios from "axios";
 import * as Sentry from "@sentry/react";
@@ -96,7 +98,7 @@ type MaintenancePaymentState = {
   financialAccounts: FinancialAccount[];
   fetchFinancialAccounts: () => Promise<void>;
 
-  fetchUserCharges: (numberCondominium: string) => Promise<void>;
+  fetchUserCharges: (numberCondominium: string, userId?: string) => Promise<void>;
   addMaintenancePayment: (
     payment: MaintenancePayment
   ) => Promise<PaymentCreationResult>;
@@ -176,7 +178,7 @@ export const usePaymentStore = create<MaintenancePaymentState>()(
       }
     },
 
-    fetchUserCharges: async (numberCondominium) => {
+    fetchUserCharges: async (numberCondominium, userId) => {
       set({ loading: true, error: null });
       try {
         const auth = getAuth();
@@ -192,18 +194,40 @@ export const usePaymentStore = create<MaintenancePaymentState>()(
           db,
           `clients/${clientId}/condominiums/${condominiumId}/users`
         );
-        const userQuery = query(
-          usersRef,
-          where("number", "==", numberCondominium)
-        );
-        const userSnap = await getDocs(userQuery);
-        if (userSnap.empty) {
-          throw new Error(
-            `No se encontró un usuario con el número ${numberCondominium}`
+        let userDoc: any | null = null;
+        let userData: any | null = null;
+
+        if (userId) {
+          // Prioridad: usar userId para evitar ambigüedades cuando existe el mismo número en distintas torres.
+          const userRef = doc(
+            db,
+            `clients/${clientId}/condominiums/${condominiumId}/users/${userId}`
           );
+          const userSnap = await getDoc(userRef);
+          if (!userSnap.exists()) {
+            throw new Error("No se encontró el condómino seleccionado.");
+          }
+          userDoc = userSnap;
+          userData = userSnap.data();
+        } else {
+          const userQuery = query(
+            usersRef,
+            where("number", "==", numberCondominium)
+          );
+          const userSnap = await getDocs(userQuery);
+          if (userSnap.empty) {
+            throw new Error(
+              `No se encontró un usuario con el número ${numberCondominium}`
+            );
+          }
+          if (userSnap.docs.length > 1) {
+            throw new Error(
+              "Número de condómino ambiguo. Selecciona el condómino específico para continuar."
+            );
+          }
+          userDoc = userSnap.docs[0];
+          userData = userDoc.data();
         }
-        const userDoc = userSnap.docs[0];
-        const userData = userDoc.data();
 
         // Actualizar el saldo a favor
         set({ userCreditBalance: userData.totalCreditBalance || null });
@@ -536,7 +560,7 @@ export const usePaymentStore = create<MaintenancePaymentState>()(
         }
 
         // Recargar cargos asociados al usuario
-        await get().fetchUserCharges(payment.numberCondominium);
+        await get().fetchUserCharges(payment.numberCondominium, payment.userId);
 
         const createData = createResponse?.data || {};
         set({ loading: false, error: null });

@@ -74,9 +74,12 @@ async function getBase64FromUrl( url: string ): Promise<string> {
 }
 
 interface Condominium {
+  key: string;
   number: string;
   name?: string;
   tower?: string;
+  userId?: string;
+  userUid?: string;
 }
 
 export interface PDFReportMaintenanceByTowerProps {
@@ -121,80 +124,157 @@ const PDFReportMaintenanceByTower: React.FC<PDFReportMaintenanceByTowerProps> = 
 
   // Se obtienen los condóminos desde el store de usuarios
   const condominiumsUsers = useUserStore( ( state ) => state.condominiumsUsers );
-  const allCondominiums: Condominium[] = condominiumsUsers.map( ( user ) => ( {
-    number: String( user.number ),
-    name: user.name,
-    tower: String( user.tower || "" ).trim(),
-  } ) );
-  const towerByCondominiumNumber = new Map(
-    allCondominiums.map( ( cond ) => [
-      String( cond.number ).trim(),
-      String( cond.tower || "" ).trim(),
-    ] )
-  );
-
-  const normalizeTower = ( value?: string ) =>
-    String( value || "" ).trim().toLowerCase();
+  const normalizeTowerLabel = ( value?: string ) => String( value || "" ).trim();
+  const normalizeUserId = ( value: unknown ) => String( value || "" ).trim();
   const normalizeCondoNumber = ( value: unknown ): string =>
     String( value || "" ).trim();
+  const allCondominiums: Condominium[] = condominiumsUsers.map( ( user, index ) => {
+    const rawUser = user as unknown as { uid?: string; id?: string; };
+    const userDocId = normalizeUserId( rawUser.id );
+    const userUid = normalizeUserId( rawUser.uid );
+    const userId = userDocId || userUid;
+    const number = normalizeCondoNumber( user.number );
+    const tower = normalizeTowerLabel( user.tower );
+    return {
+      key: userId
+        ? `uid:${ userId }`
+        : `profile:${ number }|tower:${ tower || "sin_torre" }|idx:${ index }`,
+      userId,
+      userUid,
+      number,
+      name: user.name,
+      tower,
+    };
+  } );
+
+  const towerByUserId = new Map(
+    allCondominiums.flatMap( ( cond ) => {
+      const tower = normalizeTowerLabel( cond.tower );
+      const entries: [string, string][] = [];
+      const primaryUserId = normalizeUserId( cond.userId );
+      const authUserId = normalizeUserId( cond.userUid );
+      if ( primaryUserId ) entries.push( [ primaryUserId, tower ] );
+      if ( authUserId ) entries.push( [ authUserId, tower ] );
+      return entries;
+    } )
+  );
+  const towersByCondominiumNumber = new Map<string, Set<string>>();
+  allCondominiums.forEach( ( cond ) => {
+    const number = normalizeCondoNumber( cond.number );
+    if ( !number ) return;
+    if ( !towersByCondominiumNumber.has( number ) ) {
+      towersByCondominiumNumber.set( number, new Set<string>() );
+    }
+    towersByCondominiumNumber.get( number )!.add( normalizeTowerLabel( cond.tower ) );
+  } );
+
+  const normalizeTower = ( value?: string ) =>
+    normalizeTowerLabel( value ).toLowerCase();
   const resolveTowerByRecord = (
     record: PaymentRecord,
     fallbackNumber?: string
   ): string => {
-    const snapshot = String( record.towerSnapshot || "" ).trim();
+    const snapshot = normalizeTowerLabel( record.towerSnapshot );
     if ( snapshot.length > 0 ) return snapshot;
+    const userTower = towerByUserId.get( normalizeUserId( record.userId ) );
+    if ( userTower && userTower.length > 0 ) return userTower;
     const number = normalizeCondoNumber(
       record.numberCondominium || fallbackNumber || ""
     );
-    return String( towerByCondominiumNumber.get( number ) || "" ).trim();
+    const towers = towersByCondominiumNumber.get( number );
+    if ( towers && towers.size === 1 ) {
+      return Array.from( towers )[ 0 ];
+    }
+    return "";
+  };
+  const resolveCondominiumKey = (
+    record: PaymentRecord,
+    fallbackNumber?: string
+  ): string => {
+    const userId = normalizeUserId( record.userId );
+    if ( userId ) return `uid:${ userId }`;
+    const number = normalizeCondoNumber(
+      record.numberCondominium || fallbackNumber || ""
+    );
+    const resolvedTower = normalizeTowerLabel(
+      resolveTowerByRecord( record, fallbackNumber )
+    );
+    if ( number ) {
+      return `number:${ number }|tower:${ resolvedTower || "sin_torre" }`;
+    }
+    return `record:${ record.id }`;
   };
   const normalizedTowerFilter = normalizeTower( tower );
   const hasTowerFilter =
     normalizedTowerFilter.length > 0 &&
     normalizedTowerFilter !== "all" &&
     normalizedTowerFilter !== "todas";
-  const detailedForReport = hasTowerFilter
-    ? Object.fromEntries(
-      Object.entries( detailed )
-        .map( ( [ number, records ] ) => [
-          number,
-          records.filter(
-            ( record ) =>
-              normalizeTower( resolveTowerByRecord( record, number ) ) ===
-              normalizedTowerFilter
-          ),
-        ] )
-        .filter( ( [ , records ] ) => records.length > 0 )
+  const allDetailedRecords = Object.values( detailed ).flat();
+  const allDetailedRecordsForReport = hasTowerFilter
+    ? allDetailedRecords.filter(
+      ( record ) =>
+        normalizeTower(
+          resolveTowerByRecord( record, record.numberCondominium )
+        ) === normalizedTowerFilter
     )
-    : detailed;
-  const detailedNumbersForReport = new Set(
-    Object.keys( detailedForReport ).map( ( number ) => normalizeCondoNumber( number ) )
+    : allDetailedRecords;
+  const detailedForReport = allDetailedRecordsForReport.reduce(
+    ( acc, record ) => {
+      const key = resolveCondominiumKey( record, record.numberCondominium );
+      if ( !acc[ key ] ) {
+        acc[ key ] = [];
+      }
+      acc[ key ].push( record );
+      return acc;
+    },
+    {} as Record<string, PaymentRecord[]>
   );
-  const condominiumsByNumber = new Map(
-    allCondominiums.map( ( cond ) => [ normalizeCondoNumber( cond.number ), cond ] )
-  );
-  const baseCondominiums = hasTowerFilter
-    ? allCondominiums.filter(
-      ( cond ) => normalizeTower( cond.tower ) === normalizedTowerFilter
-    )
-    : allCondominiums;
-  const condList = new Map<string, Condominium>();
-  baseCondominiums.forEach( ( cond ) => {
-    condList.set( normalizeCondoNumber( cond.number ), cond );
-  } );
-  detailedNumbersForReport.forEach( ( number ) => {
-    if ( !number ) return;
-    if ( !condList.has( number ) ) {
-      condList.set( number, condominiumsByNumber.get( number ) || { number } );
-    }
-  } );
-  const condominiumsForReport = Array.from( condList.values() );
+  const condominiumsForReport = ( () => {
+    const mapped = new Map<string, Condominium>();
+    const baseCondominiums = hasTowerFilter
+      ? allCondominiums.filter(
+        ( cond ) => normalizeTower( cond.tower ) === normalizedTowerFilter
+      )
+      : allCondominiums;
+
+    baseCondominiums.forEach( ( cond ) => {
+      mapped.set( cond.key, cond );
+    } );
+
+    Object.entries( detailedForReport ).forEach( ( [ key, records ] ) => {
+      if ( mapped.has( key ) ) return;
+      const firstRecord = records[ 0 ];
+      const userId = normalizeUserId( firstRecord?.userId );
+      const profile = userId
+        ? allCondominiums.find(
+          ( cond ) => normalizeUserId( cond.userId ) === userId
+        )
+        : undefined;
+      const number =
+        normalizeCondoNumber( firstRecord?.numberCondominium ) ||
+        profile?.number ||
+        "-";
+      const towerValue = firstRecord
+        ? normalizeTowerLabel( resolveTowerByRecord( firstRecord, number ) )
+        : "";
+
+      mapped.set( key, {
+        key,
+        userId: userId || profile?.userId,
+        number,
+        name: profile?.name,
+        tower: profile?.tower || towerValue,
+      } );
+    } );
+
+    return Array.from( mapped.values() );
+  } )();
 
   const reportConcept = concept ? concept : "Cuota de mantenimiento";
   const isSpecificYear = /^\d{4}$/.test( year );
 
-  const getCondoMonthKey = ( numberCondominium: string, month: string ): string =>
-    `${ normalizeCondoNumber( numberCondominium ) }__${ month }`;
+  const getCondoMonthKey = ( condominiumKey: string, month: string ): string =>
+    `${ condominiumKey }__${ month }`;
 
   const normalizeConcept = ( value: unknown ): string => {
     if ( Array.isArray( value ) ) {
@@ -273,9 +353,13 @@ const PDFReportMaintenanceByTower: React.FC<PDFReportMaintenanceByTowerProps> = 
                 ? record.month.padStart( 2, "0" )
                 : "";
             const numberCondominium = normalizeCondoNumber( record.numberCondominium );
-            if ( !numberCondominium || !month ) return;
+            if ( !month ) return;
+            const condominiumKey = resolveCondominiumKey(
+              record,
+              numberCondominium
+            );
 
-            const key = getCondoMonthKey( numberCondominium, month );
+            const key = getCondoMonthKey( condominiumKey, month );
             if ( !groupedLines.has( key ) ) {
               groupedLines.set( key, [] );
             }
@@ -378,11 +462,11 @@ const PDFReportMaintenanceByTower: React.FC<PDFReportMaintenanceByTowerProps> = 
 
   const getRelevantMappedLines = (
     monthRecords: PaymentRecord[],
-    condominiumNumber: string,
+    condominiumKey: string,
     monthKey: string
   ) => {
     const mappedLines =
-      paymentLinesByCondoMonth[ getCondoMonthKey( condominiumNumber, monthKey ) ] || [];
+      paymentLinesByCondoMonth[ getCondoMonthKey( condominiumKey, monthKey ) ] || [];
     const chargeIds = new Set(
       monthRecords.map( ( record ) => String( record.id || "" ) ).filter( Boolean )
     );
@@ -399,8 +483,8 @@ const PDFReportMaintenanceByTower: React.FC<PDFReportMaintenanceByTowerProps> = 
   };
 
   condominiumsForReport.forEach( ( cond ) => {
-    // Se obtienen los registros de pago del condómino (clave: número)
-    const condoRecords: PaymentRecord[] = detailedForReport[ cond.number ] || [];
+    // Se obtienen los registros de pago del condómino (clave: uid o fallback seguro)
+    const condoRecords: PaymentRecord[] = detailedForReport[ cond.key ] || [];
     // Filtrar registros correspondientes al concepto indicado
     const filteredRecords = condoRecords.filter(
       ( rec ) => rec.concept.toLowerCase() === reportConcept.toLowerCase()
@@ -421,7 +505,7 @@ const PDFReportMaintenanceByTower: React.FC<PDFReportMaintenanceByTowerProps> = 
       );
       const relevantMappedLines = getRelevantMappedLines(
         monthRecords,
-        cond.number,
+        cond.key,
         monthKey
       );
       const paidFromLines = relevantMappedLines.reduce(
@@ -463,7 +547,7 @@ const PDFReportMaintenanceByTower: React.FC<PDFReportMaintenanceByTowerProps> = 
       );
       const relevantMappedLines = getRelevantMappedLines(
         monthRecords,
-        cond.number,
+        cond.key,
         monthKey
       );
       const compactLinesMap = new Map<string, number>();

@@ -11,9 +11,12 @@ import { useExpenseSummaryStore } from "../../../../../store/expenseSummaryStore
 import useUserStore from "../../../../../store/UserDataStore";
 
 interface Condominium {
+  key: string;
   number: string;
   name?: string;
   tower?: string;
+  userId?: string;
+  userUid?: string;
 }
 
 export interface PDFReportGeneratorByTowerProps {
@@ -140,71 +143,155 @@ const PDFReportGeneratorByTower: React.FC<PDFReportGeneratorByTowerProps> = ({
 
   // Obtener los condominios desde el store de usuarios
   const condominiumsUsers = useUserStore((state) => state.condominiumsUsers);
-  const allCondominiums: Condominium[] = condominiumsUsers.map((user) => ({
-    number: String(user.number),
-    name: user.name,
-    tower: String(user.tower || "").trim(),
-  }));
-  const towerByCondominiumNumber = new Map(
-    allCondominiums.map((condo) => [
-      String(condo.number).trim(),
-      String(condo.tower || "").trim(),
-    ])
-  );
-
+  const normalizeTowerLabel = (value?: string) => String(value || "").trim();
+  const normalizeCondoNumber = (value: unknown) => String(value || "").trim();
+  const normalizeUserId = (value: unknown) => String(value || "").trim();
   const normalizeTower = (value?: string) =>
-    String(value || "").trim().toLowerCase();
+    normalizeTowerLabel(value).toLowerCase();
+
+  const normalizedUsers: Condominium[] = condominiumsUsers.map((user, index) => {
+    const rawUser = user as unknown as { uid?: string; id?: string };
+    const userDocId = normalizeUserId(rawUser.id);
+    const userUid = normalizeUserId(rawUser.uid);
+    const userId = userDocId || userUid;
+    const number = normalizeCondoNumber(user.number);
+    const towerValue = normalizeTowerLabel(user.tower);
+    return {
+      key: userId
+        ? `uid:${userId}`
+        : `profile:${number}|tower:${towerValue || "sin_torre"}|idx:${index}`,
+      userId,
+      userUid,
+      number,
+      name: user.name,
+      tower: towerValue,
+    };
+  });
+
+  const allCondominiums: Condominium[] = normalizedUsers;
+  const towerByUserId = new Map(
+    normalizedUsers.flatMap((condo) => {
+      const tower = normalizeTowerLabel(condo.tower);
+      const entries: [string, string][] = [];
+      const primaryUserId = normalizeUserId(condo.userId);
+      const authUserId = normalizeUserId(condo.userUid);
+      if (primaryUserId) entries.push([primaryUserId, tower]);
+      if (authUserId) entries.push([authUserId, tower]);
+      return entries;
+    })
+  );
+  const towersByCondominiumNumber = new Map<string, Set<string>>();
+  normalizedUsers.forEach((condo) => {
+    const number = normalizeCondoNumber(condo.number);
+    if (!number) return;
+    if (!towersByCondominiumNumber.has(number)) {
+      towersByCondominiumNumber.set(number, new Set<string>());
+    }
+    const normalizedTowerLabelValue = normalizeTowerLabel(condo.tower);
+    towersByCondominiumNumber
+      .get(number)!
+      .add(normalizedTowerLabelValue || "");
+  });
+
   const resolveTowerByRecord = (
     record: PaymentRecord,
     fallbackNumber?: string
   ) => {
-    const snapshot = String(record.towerSnapshot || "").trim();
+    const snapshot = normalizeTowerLabel(record.towerSnapshot);
     if (snapshot.length > 0) return snapshot;
-    const number = String(
+    const userTower = towerByUserId.get(normalizeUserId(record.userId));
+    if (userTower && userTower.length > 0) return userTower;
+    const number = normalizeCondoNumber(
       record.numberCondominium || fallbackNumber || ""
-    ).trim();
-    return String(towerByCondominiumNumber.get(number) || "").trim();
+    );
+    const towers = towersByCondominiumNumber.get(number);
+    if (towers && towers.size === 1) {
+      return Array.from(towers)[0];
+    }
+    return "";
+  };
+  const resolveCondominiumKey = (
+    record: PaymentRecord,
+    fallbackNumber?: string
+  ) => {
+    const userId = normalizeUserId(record.userId);
+    if (userId) return `uid:${userId}`;
+    const number = normalizeCondoNumber(
+      record.numberCondominium || fallbackNumber || ""
+    );
+    const resolvedTower = normalizeTowerLabel(
+      resolveTowerByRecord(record, fallbackNumber)
+    );
+    if (number) {
+      return `number:${number}|tower:${resolvedTower || "sin_torre"}`;
+    }
+    return `record:${record.id}`;
   };
   const normalizedTowerFilter = normalizeTower(tower);
   const hasTowerFilter =
     normalizedTowerFilter.length > 0 &&
     normalizedTowerFilter !== "all" &&
     normalizedTowerFilter !== "todas";
-  const detailedForReport: Record<string, PaymentRecord[]> = hasTowerFilter
-    ? (Object.fromEntries(
-        Object.entries(detailed)
-          .map(([number, records]) => [
-            number,
-            records.filter(
-              (record) =>
-                normalizeTower(resolveTowerByRecord(record, number)) ===
-                normalizedTowerFilter
-            ),
-          ])
-          .filter(([, records]) => records.length > 0)
-      ) as Record<string, PaymentRecord[]>)
-    : detailed;
-  const detailedNumbersForReport = new Set(
-    Object.keys(detailedForReport).map((number) => String(number).trim())
-  );
-  const filteredCondominiums: Condominium[] = hasTowerFilter
-    ? (() => {
-        const mapped = new Map<string, Condominium>();
-        allCondominiums
-          .filter((condo) => normalizeTower(condo.tower) === normalizedTowerFilter)
-          .forEach((condo) => {
-            mapped.set(String(condo.number).trim(), condo);
-          });
-        detailedNumbersForReport.forEach((number) => {
-          if (!mapped.has(number)) {
-            mapped.set(number, { number });
-          }
-        });
-        return Array.from(mapped.values());
-      })()
-    : allCondominiums;
-  const allDetailedRecordsForReport: PaymentRecord[] =
-    Object.values(detailedForReport).flat();
+  const allDetailedRecords = Object.values(detailed).flat();
+  const allDetailedRecordsForReport: PaymentRecord[] = hasTowerFilter
+    ? allDetailedRecords.filter(
+        (record) =>
+          normalizeTower(
+            resolveTowerByRecord(record, record.numberCondominium)
+          ) === normalizedTowerFilter
+      )
+    : allDetailedRecords;
+
+  const detailedForReport: Record<string, PaymentRecord[]> =
+    allDetailedRecordsForReport.reduce((acc, record) => {
+      const key = resolveCondominiumKey(record, record.numberCondominium);
+      if (!acc[key]) {
+        acc[key] = [];
+      }
+      acc[key].push(record);
+      return acc;
+    }, {} as Record<string, PaymentRecord[]>);
+
+  const filteredCondominiums: Condominium[] = (() => {
+    const mapped = new Map<string, Condominium>();
+    const baseCondominiums = hasTowerFilter
+      ? allCondominiums.filter(
+          (condo) => normalizeTower(condo.tower) === normalizedTowerFilter
+        )
+      : allCondominiums;
+
+    baseCondominiums.forEach((condo) => {
+      mapped.set(condo.key, condo);
+    });
+
+    Object.entries(detailedForReport).forEach(([key, records]) => {
+      if (mapped.has(key)) return;
+      const firstRecord = records[0];
+      const userId = normalizeUserId(firstRecord?.userId);
+      const profile = userId
+        ? allCondominiums.find(
+            (condo) => normalizeUserId(condo.userId) === userId
+          )
+        : undefined;
+      const number =
+        normalizeCondoNumber(firstRecord?.numberCondominium) ||
+        profile?.number ||
+        "-";
+      const resolvedTower = firstRecord
+        ? normalizeTowerLabel(resolveTowerByRecord(firstRecord, number))
+        : "";
+
+      mapped.set(key, {
+        key,
+        userId: userId || profile?.userId,
+        number,
+        name: profile?.name,
+        tower: profile?.tower || resolvedTower,
+      });
+    });
+
+    return Array.from(mapped.values());
+  })();
   const normalizeRecordMonth = (monthRaw: string) =>
     String(monthRaw || "").includes("-")
       ? String(monthRaw).split("-")[1]
@@ -564,7 +651,7 @@ const PDFReportGeneratorByTower: React.FC<PDFReportGeneratorByTowerProps> = ({
         ? (doc as any).lastAutoTable.finalY + 10
         : 95;
       sortedCondominiums.forEach((cond) => {
-        const condDataFull = detailedForReport[cond.number] || [];
+        const condDataFull = detailedForReport[cond.key] || [];
         const condData = condDataFull.filter(
           (item) => item.concept === concept
         );

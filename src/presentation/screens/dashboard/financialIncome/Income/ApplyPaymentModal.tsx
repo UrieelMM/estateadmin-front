@@ -166,7 +166,7 @@ const ApplyPaymentModal = ({
       setNumberCondominium(user.number || "");
       setSelectedUser(user);
       if (user.number) {
-        fetchUserCharges(user.number).catch((err) =>
+        fetchUserCharges(user.number, user.uid).catch((err) =>
           console.error("Error fetching user charges:", err)
         );
       }

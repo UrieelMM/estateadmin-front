@@ -102,16 +102,16 @@ const PaymentHistory = () => {
     const newYear = e.target.value;
     setSelectedYear( newYear );
     if ( selectedCondominiumNumber ) {
-      fetchPayments( selectedCondominiumNumber, newYear );
+      fetchPayments( selectedCondominiumNumber, newYear, selectedUserUid );
     }
   };
 
   // Reconsultar historial si cambia el condómino o el año
   useEffect( () => {
     if ( selectedCondominiumNumber ) {
-      fetchPayments( selectedCondominiumNumber, selectedYear );
+      fetchPayments( selectedCondominiumNumber, selectedYear, selectedUserUid );
     }
-  }, [ selectedCondominiumNumber, selectedYear, fetchPayments ] );
+  }, [ selectedCondominiumNumber, selectedYear, selectedUserUid, fetchPayments ] );
 
   const monthNames: Record<string, string> = {
     "01": "Enero",
@@ -156,6 +156,7 @@ const PaymentHistory = () => {
     const compactTerm = compact( userSearch );
     const towerTerm = normalizeTowerValue( userSearch );
     const compactTowerTerm = compact( towerTerm );
+    const isTowerQuery = term.startsWith( "torre" ) && towerTerm.length > 0;
 
     const result = !term
       ? availableUsers
@@ -173,6 +174,13 @@ const PaymentHistory = () => {
         const normalizedTower = normalizeTowerValue( rawTower );
         const compactTower = compact( rawTower );
         const compactNormalizedTower = compact( normalizedTower );
+        const towerMatches = isTowerQuery
+          ? normalizedTower === towerTerm ||
+            compactNormalizedTower === compactTowerTerm
+          : tower.includes( term ) ||
+            normalizedTower.includes( towerTerm ) ||
+            compactTower.includes( compactTerm ) ||
+            compactNormalizedTower.includes( compactTowerTerm );
 
         return (
           number.includes( term ) ||
@@ -181,10 +189,7 @@ const PaymentHistory = () => {
           fullName.includes( term ) ||
           compactName.includes( compactTerm ) ||
           compactFullName.includes( compactTerm ) ||
-          tower.includes( term ) ||
-          normalizedTower.includes( towerTerm ) ||
-          compactTower.includes( compactTerm ) ||
-          compactNormalizedTower.includes( compactTowerTerm )
+          towerMatches
         );
       } );
 

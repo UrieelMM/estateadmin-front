@@ -250,6 +250,7 @@ const PaymentForm = ( { open, setOpen }: FormParcelReceptionProps ) => {
     const compactTerm = compactSearchText( recipientSearch );
     const towerTerm = normalizeTowerValue( recipientSearch );
     const compactTowerTerm = compactSearchText( towerTerm );
+    const isTowerQuery = term.startsWith( "torre" ) && towerTerm.length > 0;
 
     const usersFiltered = !term
       ? availableUsers
@@ -267,6 +268,13 @@ const PaymentForm = ( { open, setOpen }: FormParcelReceptionProps ) => {
         const normalizedTower = normalizeTowerValue( rawTower );
         const compactTower = compactSearchText( rawTower );
         const compactNormalizedTower = compactSearchText( normalizedTower );
+        const towerMatches = isTowerQuery
+          ? normalizedTower === towerTerm ||
+            compactNormalizedTower === compactTowerTerm
+          : tower.includes( term ) ||
+            normalizedTower.includes( towerTerm ) ||
+            compactTower.includes( compactTerm ) ||
+            compactNormalizedTower.includes( compactTowerTerm );
         return (
           number.includes( term ) ||
           compactNumber.includes( compactTerm ) ||
@@ -274,10 +282,7 @@ const PaymentForm = ( { open, setOpen }: FormParcelReceptionProps ) => {
           fullName.includes( term ) ||
           compactName.includes( compactTerm ) ||
           compactFullName.includes( compactTerm ) ||
-          tower.includes( term ) ||
-          normalizedTower.includes( towerTerm ) ||
-          compactTower.includes( compactTerm ) ||
-          compactNormalizedTower.includes( compactTowerTerm )
+          towerMatches
         );
       } );
 
@@ -320,7 +325,7 @@ const PaymentForm = ( { open, setOpen }: FormParcelReceptionProps ) => {
         try {
           // Actualizar cargos y datos del usuario en paralelo
           await Promise.all( [
-            fetchUserCharges( user.number ),
+            fetchUserCharges( user.number, user.uid ),
             fetchCondominiumsUsers(),
           ] );
           // Obtener el usuario actualizado del store
@@ -337,10 +342,7 @@ const PaymentForm = ( { open, setOpen }: FormParcelReceptionProps ) => {
     }
   };
 
-  const selectedRecipientUid =
-    selectedUser?.uid ||
-    users.find( ( u ) => u.number === numberCondominium )?.uid ||
-    "";
+  const selectedRecipientUid = selectedUser?.uid || "";
 
   const handleRecipientSortOrderChange = ( value: "" | "asc" | "desc" ) => {
     setRecipientSortOrder( value );
@@ -540,7 +542,7 @@ const PaymentForm = ( { open, setOpen }: FormParcelReceptionProps ) => {
         [
           setupRealtimeListeners( selectedYear ),
           fetchSummary( selectedYear ),
-          fetchUserCharges( numberCondominium ),
+          fetchUserCharges( numberCondominium, selectedUser?.uid || selectedRecipientUid || undefined ),
           fetchCondominiumsUsers(),
           isUnidentifiedPayment && fetchPayments(),
         ].filter( Boolean )

@@ -9,6 +9,7 @@ import { formatCurrency } from "../../../../../utils/curreyncy";
 type TowerStat = {
   tower: string;
   condominiumsCount: number;
+  condominiumKeys: string[];
   charges: number;
   income: number;
   pending: number;
@@ -18,15 +19,24 @@ type TowerStat = {
 const ALL_TOWERS = "__all__";
 const NO_TOWER = "Sin torre";
 
-const normalizeTowerLabel = (value?: string) => {
-  const trimmed = String(value || "").trim();
-  return trimmed.length > 0 ? trimmed : NO_TOWER;
-};
-
+const normalizeTowerValue = (value?: string) => String(value || "").trim();
 const normalizeCondoNumber = (value: unknown) => String(value || "").trim();
+const normalizeUserId = (value: unknown) => String(value || "").trim();
+const toTowerLabel = (value?: string) => {
+  const normalized = normalizeTowerValue(value);
+  return normalized.length > 0 ? normalized : NO_TOWER;
+};
+const compareTowerLabels = (a: string, b: string) => {
+  if (a === NO_TOWER && b !== NO_TOWER) return 1;
+  if (b === NO_TOWER && a !== NO_TOWER) return -1;
+  return a.localeCompare(b, "es", { numeric: true, sensitivity: "base" });
+};
 
 const TowerIncomeSummary: React.FC = () => {
   const [selectedTower, setSelectedTower] = useState<string>(ALL_TOWERS);
+  const [towerSortDirection, setTowerSortDirection] = useState<"asc" | "desc">(
+    "asc"
+  );
 
   const { detailed, selectedYear, loading } = usePaymentSummaryStore((state) => ({
     detailed: state.detailed,
@@ -45,38 +55,75 @@ const TowerIncomeSummary: React.FC = () => {
     });
   }, [fetchCondominiumsUsers]);
 
-  const towerByCondominiumNumber = useMemo(() => {
-    const map = new Map<string, string>();
-    condominiumsUsers.forEach((user) => {
+  const usersTowerContext = useMemo(() => {
+    const towerByUserId = new Map<string, string>();
+    const towersByNumber = new Map<string, Set<string>>();
+    const condominiumsByTower = new Map<string, Set<string>>();
+
+    condominiumsUsers.forEach((user, index) => {
+      const rawUser = user as unknown as { uid?: string; id?: string };
+      const userDocId = normalizeUserId(rawUser.id);
+      const userUid = normalizeUserId(rawUser.uid);
+      const primaryUserId = userDocId || userUid;
       const number = normalizeCondoNumber(user.number);
-      if (!number) return;
-      const nextTower = normalizeTowerLabel(user.tower);
-      const currentTower = map.get(number);
-      // Si ya existe una torre distinta, preservamos la primera no vacía para mantener consistencia.
-      if (!currentTower || currentTower === NO_TOWER) {
-        map.set(number, nextTower);
+      const tower = normalizeTowerValue(user.tower);
+
+      if (userDocId) towerByUserId.set(userDocId, tower);
+      if (userUid) towerByUserId.set(userUid, tower);
+
+      if (number) {
+        if (!towersByNumber.has(number)) {
+          towersByNumber.set(number, new Set<string>());
+        }
+        towersByNumber.get(number)!.add(tower);
       }
+
+      const towerLabel = toTowerLabel(tower);
+      if (!condominiumsByTower.has(towerLabel)) {
+        condominiumsByTower.set(towerLabel, new Set<string>());
+      }
+      const fallbackKey = number
+        ? `number:${number}|tower:${towerLabel}`
+        : `profile:${index}`;
+      condominiumsByTower
+        .get(towerLabel)!
+        .add(primaryUserId ? `uid:${primaryUserId}` : fallbackKey);
     });
-    return map;
+
+    return { towerByUserId, towersByNumber, condominiumsByTower };
   }, [condominiumsUsers]);
 
   const towerOptions = useMemo(() => {
-    const recordTowerValues = Object.values(detailed)
-      .flat()
-      .map((record) => normalizeTowerLabel(record.towerSnapshot))
-      .filter((tower) => tower !== NO_TOWER);
-    const values = Array.from(
-      new Set(
-        [
-          ...Array.from(towerByCondominiumNumber.values()).filter(
-            (tower) => tower !== NO_TOWER
-          ),
-          ...recordTowerValues,
-        ]
-      )
-    ).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
-    return values;
-  }, [towerByCondominiumNumber, detailed]);
+    const values = new Set<string>();
+    usersTowerContext.condominiumsByTower.forEach((_, tower) => {
+      if (tower !== NO_TOWER) values.add(tower);
+    });
+
+    Object.entries(detailed).forEach(([numberFromGroup, records]) => {
+      const normalizedNumber = normalizeCondoNumber(numberFromGroup);
+      records.forEach((record) => {
+        const snapshotTower = normalizeTowerValue(record.towerSnapshot);
+        if (snapshotTower) {
+          values.add(snapshotTower);
+          return;
+        }
+        const userTower = usersTowerContext.towerByUserId.get(
+          normalizeUserId(record.userId)
+        );
+        if (userTower) {
+          values.add(userTower);
+          return;
+        }
+        const towersForNumber = usersTowerContext.towersByNumber.get(normalizedNumber);
+        if (towersForNumber && towersForNumber.size === 1) {
+          const onlyTower = Array.from(towersForNumber)[0];
+          if (onlyTower) values.add(onlyTower);
+        }
+      });
+    });
+
+    return Array.from(values).sort(compareTowerLabels);
+  }, [detailed, usersTowerContext]);
 
   const hasConfiguredTowers = towerOptions.length > 0;
 
@@ -107,19 +154,37 @@ const TowerIncomeSummary: React.FC = () => {
       return base.get(tower)!;
     };
 
-    towerByCondominiumNumber.forEach((tower, number) => {
+    usersTowerContext.condominiumsByTower.forEach((condominiums, tower) => {
       const entry = ensureTower(tower);
-      entry.condominiumNumbers.add(number);
+      condominiums.forEach((identityKey) => {
+        entry.condominiumNumbers.add(identityKey);
+      });
     });
 
-    Object.entries(detailed).forEach(([numberCondominium, records]) => {
-      const number = normalizeCondoNumber(numberCondominium);
+    Object.entries(detailed).forEach(([numberFromGroup, records]) => {
+      const number = normalizeCondoNumber(numberFromGroup);
       records.forEach((record) => {
-        const recordTower = normalizeTowerLabel(
-          record.towerSnapshot || towerByCondominiumNumber.get(number) || ""
+        const userId = normalizeUserId(record.userId);
+        const snapshotTower = normalizeTowerValue(record.towerSnapshot);
+        const towerFromUser = usersTowerContext.towerByUserId.get(userId);
+        const towersForNumber = usersTowerContext.towersByNumber.get(number);
+        const towerFromNumber =
+          towersForNumber && towersForNumber.size === 1
+            ? Array.from(towersForNumber)[0]
+            : "";
+        const recordTower = toTowerLabel(
+          snapshotTower ||
+            towerFromUser ||
+            towerFromNumber ||
+            ""
         );
         const entry = ensureTower(recordTower);
-        entry.condominiumNumbers.add(number);
+        const identityKey = userId
+          ? `uid:${userId}`
+          : number
+          ? `number:${number}|tower:${recordTower}`
+          : `record:${record.id}`;
+        entry.condominiumNumbers.add(identityKey);
         entry.charges += Number(record.referenceAmount || 0);
         entry.amountPaid += Number(record.amountPaid || 0);
         entry.creditGenerated += Math.max(0, Number(record.creditBalance || 0));
@@ -137,6 +202,7 @@ const TowerIncomeSummary: React.FC = () => {
       return {
         tower,
         condominiumsCount: data.condominiumNumbers.size,
+        condominiumKeys: Array.from(data.condominiumNumbers),
         charges: data.charges,
         income,
         pending: data.pending,
@@ -149,16 +215,19 @@ const TowerIncomeSummary: React.FC = () => {
         ? rows
         : rows.filter((row) => row.tower === selectedTower);
 
-    return filtered.sort((a, b) => b.income - a.income);
-  }, [detailed, selectedTower, towerByCondominiumNumber]);
+    const direction = towerSortDirection === "asc" ? 1 : -1;
+    return filtered.sort((a, b) => compareTowerLabels(a.tower, b.tower) * direction);
+  }, [detailed, selectedTower, towerSortDirection, usersTowerContext]);
 
   const totals = useMemo(() => {
+    const uniqueCondominiums = new Set<string>();
     return towerStats.reduce(
       (acc, row) => {
-        acc.condominiumsCount += row.condominiumsCount;
+        row.condominiumKeys.forEach((key) => uniqueCondominiums.add(key));
         acc.charges += row.charges;
         acc.income += row.income;
         acc.pending += row.pending;
+        acc.condominiumsCount = uniqueCondominiums.size;
         return acc;
       },
       { condominiumsCount: 0, charges: 0, income: 0, pending: 0 }
@@ -213,6 +282,16 @@ const TowerIncomeSummary: React.FC = () => {
                 </option>
               ))}
               <option value={NO_TOWER}>Sin torre</option>
+            </select>
+            <select
+              value={towerSortDirection}
+              onChange={(event) =>
+                setTowerSortDirection(event.target.value as "asc" | "desc")
+              }
+              className="rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+            >
+              <option value="asc">Torre: Ascendente</option>
+              <option value="desc">Torre: Descendente</option>
             </select>
 
             <PDFReportGeneratorByTower
