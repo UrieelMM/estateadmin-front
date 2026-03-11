@@ -10,19 +10,18 @@ interface ClientEditModalProps {
   onSuccess: () => void;
 }
 
-// Límites de condominios por plan
-const PLAN_LIMITS = {
-  Basic: { min: 1, max: 50 },
-  Essential: { min: 51, max: 100 },
-  Professional: { min: 101, max: 250 },
-  Premium: { min: 251, max: 500 },
-};
+// Constantes de precios por unidad
+const PLAN_BASE = 499;
+const COST_PER_UNIT = 4.0;
+const MIN_UNITS = 30;
+const MAX_UNITS = 500;
+const IVA_RATE = 0.16;
 
-const ClientEditModal: React.FC<ClientEditModalProps> = ({
+const ClientEditModal: React.FC<ClientEditModalProps> = ( {
   isOpen,
   onClose,
   onSuccess,
-}) => {
+} ) => {
   const {
     currentClient,
     condominiumForm,
@@ -34,7 +33,7 @@ const ClientEditModal: React.FC<ClientEditModalProps> = ({
     createCondominium,
   } = useClientsConfig();
 
-  const [activeTab, setActiveTab] = useState<"edit" | "addCondominium">("edit");
+  const [ activeTab, setActiveTab ] = useState<"edit" | "addCondominium">( "edit" );
 
   // Opciones de funciones pro y sus etiquetas en español
   const proFunctionOptions = [
@@ -59,32 +58,41 @@ const ClientEditModal: React.FC<ClientEditModalProps> = ({
 
   // Labels para los status de condominio
   const statusLabels: Record<CondominiumStatus, string> = {
-    [CondominiumStatus.Pending]: "Pendiente",
-    [CondominiumStatus.Active]: "Activo",
-    [CondominiumStatus.Inactive]: "Inactivo",
-    [CondominiumStatus.Blocked]: "Bloqueado",
+    [ CondominiumStatus.Pending ]: "Pendiente",
+    [ CondominiumStatus.Active ]: "Activo",
+    [ CondominiumStatus.Inactive ]: "Inactivo",
+    [ CondominiumStatus.Blocked ]: "Bloqueado",
   };
 
-  if (!isOpen || !currentClient) return null;
+  if ( !isOpen || !currentClient ) return null;
 
   // Ensure we have an ID to edit
-  if (!currentClient.id) {
-    console.error("Error: Attempting to edit a client without an ID");
+  if ( !currentClient.id ) {
+    console.error( "Error: Attempting to edit a client without an ID" );
     onClose();
     return null;
   }
 
-  const selectedCondoPlanKey = (condominiumForm.plan ||
-    "Basic") as keyof typeof PLAN_LIMITS;
-  const selectedCondoPlanLimits =
-    PLAN_LIMITS[selectedCondoPlanKey] || PLAN_LIMITS.Basic;
+  const editUnits = parseInt( String( currentClient.plan ) ) || MIN_UNITS;
+  const editSubtotal = PLAN_BASE + editUnits * COST_PER_UNIT;
+  const editIva = editSubtotal * IVA_RATE;
+  const editTotal = editSubtotal + editIva;
+  const editSliderPct = ( ( editUnits - MIN_UNITS ) / ( MAX_UNITS - MIN_UNITS ) ) * 100;
+
+  const condoUnits = parseInt( String( condominiumForm.plan ) ) || MIN_UNITS;
+  const condoSubtotal = PLAN_BASE + condoUnits * COST_PER_UNIT;
+  const condoIva = condoSubtotal * IVA_RATE;
+  const condoTotal = condoSubtotal + condoIva;
+  const condoSliderPct = ( ( condoUnits - MIN_UNITS ) / ( MAX_UNITS - MIN_UNITS ) ) * 100;
+
+  const fmt = ( v: number ) => v.toLocaleString( "es-MX", { style: "currency", currency: "MXN" } );
 
   const handleInputChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
     >
   ) => {
-    updateClientForm(e.target.name, e.target.value);
+    updateClientForm( e.target.name, e.target.value );
   };
 
   const handleCondominiumInputChange = (
@@ -92,69 +100,55 @@ const ClientEditModal: React.FC<ClientEditModalProps> = ({
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
     >
   ) => {
-    updateCondominiumForm(e.target.name, e.target.value);
+    updateCondominiumForm( e.target.name, e.target.value );
   };
 
-  const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCheckboxChange = ( e: React.ChangeEvent<HTMLInputElement> ) => {
     const { name, checked } = e.target;
     const currentProFunctions = condominiumForm.proFunctions || [];
 
-    if (name === "hasMaintenanceApp") {
-      updateClientForm("hasMaintenanceApp", checked);
+    if ( name === "hasMaintenanceApp" ) {
+      updateClientForm( "hasMaintenanceApp", checked );
       return;
     }
 
-    if (checked) {
+    if ( checked ) {
       // Añadir la función al array si no está ya
-      if (!currentProFunctions.includes(name)) {
-        updateCondominiumForm("proFunctions", [...currentProFunctions, name]);
+      if ( !currentProFunctions.includes( name ) ) {
+        updateCondominiumForm( "proFunctions", [ ...currentProFunctions, name ] );
       }
     } else {
       // Eliminar la función del array
       updateCondominiumForm(
         "proFunctions",
-        currentProFunctions.filter((fn) => fn !== name)
+        currentProFunctions.filter( ( fn ) => fn !== name )
       );
     }
   };
 
-  const handleSubmitClientEdit = async (e: React.FormEvent) => {
+  const handleSubmitClientEdit = async ( e: React.FormEvent ) => {
     e.preventDefault();
-
-    // Validar plan y condominiumLimit si existe
-    if (currentClient.plan && currentClient.condominiumLimit) {
-      const planLimits =
-        PLAN_LIMITS[currentClient.plan as keyof typeof PLAN_LIMITS];
-      if (
-        planLimits &&
-        (currentClient.condominiumLimit < planLimits.min ||
-          currentClient.condominiumLimit > planLimits.max)
-      ) {
-        return;
-      }
-    }
-
     try {
       const success = await submitClientEdit();
-      if (success) {
+      if ( success ) {
         onClose();
-        onSuccess(); // Recargar datos desde el componente padre
+        onSuccess();
       }
-    } catch (error) {
-      console.error("Error al actualizar cliente:", error);
+    } catch ( error ) {
+      console.error( "Error al actualizar cliente:", error );
     }
   };
 
-  const handleSubmitNewCondominium = async (e: React.FormEvent) => {
+  const handleSubmitNewCondominium = async ( e: React.FormEvent ) => {
     e.preventDefault();
 
     try {
       const success = await createCondominium();
-      if (success) {
+      if ( success ) {
         onSuccess(); // Recargar datos desde el componente padre
       }
-    } catch (error) {
-      console.error("Error al crear condominio:", error);
+    } catch ( error ) {
+      console.error( "Error al crear condominio:", error );
     }
   };
 
@@ -163,45 +157,43 @@ const ClientEditModal: React.FC<ClientEditModalProps> = ({
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl mx-2 max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center border-b border-gray-200 dark:border-gray-700 px-6 py-4">
           <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
-            {activeTab === "edit" ? "Editar Cliente" : "Agregar Condominio"}
+            { activeTab === "edit" ? "Editar Cliente" : "Agregar Condominio" }
           </h3>
           <button
-            onClick={onClose}
+            onClick={ onClose }
             className="text-gray-400 hover:text-gray-500"
           >
             <XMarkIcon className="h-6 w-6" />
           </button>
         </div>
 
-        {/* Tabs de navegación */}
+        {/* Tabs de navegación */ }
         <div className="flex border-b border-gray-200 dark:border-gray-700">
           <button
-            onClick={() => setActiveTab("edit")}
-            className={`px-4 py-2 text-sm font-medium ${
-              activeTab === "edit"
-                ? "border-b-2 border-indigo-500 text-indigo-600 dark:text-indigo-400"
-                : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-            }`}
+            onClick={ () => setActiveTab( "edit" ) }
+            className={ `px-4 py-2 text-sm font-medium ${ activeTab === "edit"
+              ? "border-b-2 border-indigo-500 text-indigo-600 dark:text-indigo-400"
+              : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+              }` }
           >
             Editar Cliente
           </button>
           <button
-            onClick={() => setActiveTab("addCondominium")}
-            className={`px-4 py-2 text-sm font-medium ${
-              activeTab === "addCondominium"
-                ? "border-b-2 border-indigo-500 text-indigo-600 dark:text-indigo-400"
-                : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-            }`}
+            onClick={ () => setActiveTab( "addCondominium" ) }
+            className={ `px-4 py-2 text-sm font-medium ${ activeTab === "addCondominium"
+              ? "border-b-2 border-indigo-500 text-indigo-600 dark:text-indigo-400"
+              : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+              }` }
           >
             Agregar Condominio
           </button>
         </div>
 
-        {/* Contenido de las pestañas */}
-        {activeTab === "edit" ? (
-          <form onSubmit={handleSubmitClientEdit} className="px-6 py-4">
+        {/* Contenido de las pestañas */ }
+        { activeTab === "edit" ? (
+          <form onSubmit={ handleSubmitClientEdit } className="px-6 py-4">
             <div className="space-y-4">
-              {/* Datos de la empresa */}
+              {/* Datos de la empresa */ }
               <h4 className="text-md font-medium mb-3 text-gray-800 dark:text-gray-200 border-b pb-1">
                 Datos de la Empresa
               </h4>
@@ -217,8 +209,8 @@ const ClientEditModal: React.FC<ClientEditModalProps> = ({
                   type="text"
                   name="companyName"
                   id="companyName"
-                  value={currentClient.companyName}
-                  onChange={handleInputChange}
+                  value={ currentClient.companyName }
+                  onChange={ handleInputChange }
                   required
                   className="px-2 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
                 />
@@ -235,8 +227,8 @@ const ClientEditModal: React.FC<ClientEditModalProps> = ({
                   type="text"
                   name="businessName"
                   id="businessName"
-                  value={currentClient.businessName || ""}
-                  onChange={handleInputChange}
+                  value={ currentClient.businessName || "" }
+                  onChange={ handleInputChange }
                   className="px-2 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
                 />
               </div>
@@ -252,8 +244,8 @@ const ClientEditModal: React.FC<ClientEditModalProps> = ({
                   type="email"
                   name="email"
                   id="email"
-                  value={currentClient.email}
-                  onChange={handleInputChange}
+                  value={ currentClient.email }
+                  onChange={ handleInputChange }
                   required
                   className="px-2 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
                 />
@@ -270,8 +262,8 @@ const ClientEditModal: React.FC<ClientEditModalProps> = ({
                   type="tel"
                   name="phoneNumber"
                   id="phoneNumber"
-                  value={currentClient.phoneNumber || ""}
-                  onChange={handleInputChange}
+                  value={ currentClient.phoneNumber || "" }
+                  onChange={ handleInputChange }
                   className="px-2 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
                 />
               </div>
@@ -287,8 +279,8 @@ const ClientEditModal: React.FC<ClientEditModalProps> = ({
                   type="text"
                   name="RFC"
                   id="RFC"
-                  value={currentClient.RFC}
-                  onChange={handleInputChange}
+                  value={ currentClient.RFC }
+                  onChange={ handleInputChange }
                   className="px-2 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
                 />
               </div>
@@ -303,9 +295,9 @@ const ClientEditModal: React.FC<ClientEditModalProps> = ({
                 <textarea
                   name="fullFiscalAddress"
                   id="fullFiscalAddress"
-                  value={currentClient.fullFiscalAddress || ""}
-                  onChange={handleInputChange}
-                  rows={2}
+                  value={ currentClient.fullFiscalAddress || "" }
+                  onChange={ handleInputChange }
+                  rows={ 2 }
                   className="px-2 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
                 />
               </div>
@@ -320,9 +312,9 @@ const ClientEditModal: React.FC<ClientEditModalProps> = ({
                 <textarea
                   name="address"
                   id="address"
-                  value={currentClient.address || ""}
-                  onChange={handleInputChange}
-                  rows={2}
+                  value={ currentClient.address || "" }
+                  onChange={ handleInputChange }
+                  rows={ 2 }
                   className="px-2 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
                 />
               </div>
@@ -337,16 +329,16 @@ const ClientEditModal: React.FC<ClientEditModalProps> = ({
                 <select
                   name="country"
                   id="country"
-                  value={currentClient.country}
-                  onChange={handleInputChange}
+                  value={ currentClient.country }
+                  onChange={ handleInputChange }
                   className="px-2 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
                 >
                   <option value="">Seleccione un país</option>
-                  {countriesList.map((country: string) => (
-                    <option key={country} value={country}>
-                      {country}
+                  { countriesList.map( ( country: string ) => (
+                    <option key={ country } value={ country }>
+                      { country }
                     </option>
-                  ))}
+                  ) ) }
                 </select>
               </div>
 
@@ -361,8 +353,8 @@ const ClientEditModal: React.FC<ClientEditModalProps> = ({
                   type="text"
                   name="taxRegime"
                   id="taxRegime"
-                  value={currentClient.taxRegime || ""}
-                  onChange={handleInputChange}
+                  value={ currentClient.taxRegime || "" }
+                  onChange={ handleInputChange }
                   className="px-2 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
                 />
               </div>
@@ -378,8 +370,8 @@ const ClientEditModal: React.FC<ClientEditModalProps> = ({
                   type="text"
                   name="businessActivity"
                   id="businessActivity"
-                  value={currentClient.businessActivity || ""}
-                  onChange={handleInputChange}
+                  value={ currentClient.businessActivity || "" }
+                  onChange={ handleInputChange }
                   className="px-2 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
                 />
               </div>
@@ -395,8 +387,8 @@ const ClientEditModal: React.FC<ClientEditModalProps> = ({
                   type="text"
                   name="cfdiUse"
                   id="cfdiUse"
-                  value={currentClient.cfdiUse || ""}
-                  onChange={handleInputChange}
+                  value={ currentClient.cfdiUse || "" }
+                  onChange={ handleInputChange }
                   className="px-2 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
                 />
               </div>
@@ -412,8 +404,8 @@ const ClientEditModal: React.FC<ClientEditModalProps> = ({
                   type="text"
                   name="responsiblePersonName"
                   id="responsiblePersonName"
-                  value={currentClient.responsiblePersonName || ""}
-                  onChange={handleInputChange}
+                  value={ currentClient.responsiblePersonName || "" }
+                  onChange={ handleInputChange }
                   className="px-2 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
                 />
               </div>
@@ -429,12 +421,85 @@ const ClientEditModal: React.FC<ClientEditModalProps> = ({
                   type="text"
                   name="responsiblePersonPosition"
                   id="responsiblePersonPosition"
-                  value={currentClient.responsiblePersonPosition || ""}
-                  onChange={handleInputChange}
+                  value={ currentClient.responsiblePersonPosition || "" }
+                  onChange={ handleInputChange }
                   className="px-2 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
                 />
               </div>
 
+              {/* Sección de unidades contratadas */ }
+              <h4 className="text-md font-medium mb-3 mt-4 text-gray-800 dark:text-gray-200 border-b pb-1">
+                Unidades Contratadas
+              </h4>
+
+              {/* Calculadora compacta */ }
+              <div className="rounded-xl border border-indigo-200 dark:border-indigo-800 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/30 p-4">
+                <div className="text-center mb-3">
+                  <span className="text-3xl font-black bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600">
+                    { editUnits }
+                  </span>
+                  <span className="ml-1 text-sm font-semibold text-gray-500 dark:text-gray-400">unidades</span>
+                </div>
+                <input
+                  type="range"
+                  min={ MIN_UNITS }
+                  max={ MAX_UNITS }
+                  value={ editUnits }
+                  onChange={ ( e ) => {
+                    const v = Number( e.target.value );
+                    const sub = PLAN_BASE + v * COST_PER_UNIT;
+                    const tot = Math.round( sub * ( 1 + IVA_RATE ) * 100 ) / 100;
+                    updateClientForm( "plan", String( v ) );
+                    updateClientForm( "pricing", tot );
+                    updateClientForm( "condominiumLimit", v );
+                  } }
+                  className="w-full h-2 rounded-full appearance-none cursor-pointer mb-1"
+                  style={ { background: `linear-gradient(to right, #6366f1 0%, #a855f7 ${ editSliderPct }%, #e5e7eb ${ editSliderPct }%, #e5e7eb 100%)` } }
+                />
+                <div className="flex justify-between text-xs text-gray-400 mb-3">
+                  <span>{ MIN_UNITS }</span><span>{ MAX_UNITS }</span>
+                </div>
+                <div className="flex items-center gap-2 mb-3">
+                  <label className="text-xs text-gray-600 dark:text-gray-400 whitespace-nowrap">O ingresa:</label>
+                  <input
+                    type="number"
+                    min={ MIN_UNITS }
+                    max={ MAX_UNITS }
+                    value={ editUnits }
+                    onChange={ ( e ) => {
+                      const v = Math.min( MAX_UNITS, Math.max( MIN_UNITS, parseInt( e.target.value ) || MIN_UNITS ) );
+                      const sub = PLAN_BASE + v * COST_PER_UNIT;
+                      const tot = Math.round( sub * ( 1 + IVA_RATE ) * 100 ) / 100;
+                      updateClientForm( "plan", String( v ) );
+                      updateClientForm( "pricing", tot );
+                      updateClientForm( "condominiumLimit", v );
+                    } }
+                    className="w-16 rounded-lg border border-indigo-300 dark:border-indigo-700 bg-white dark:bg-gray-700 text-center font-bold text-sm px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:text-white"
+                  />
+                  <span className="text-xs text-gray-500">unidades</span>
+                </div>
+                {/* Precio */ }
+                <div className="rounded-lg bg-white dark:bg-gray-800 border border-indigo-100 dark:border-indigo-900/50 p-3 space-y-1.5 text-xs">
+                  <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                    <span>Plataforma base</span>
+                    <span className="font-medium">{ fmt( PLAN_BASE ) }</span>
+                  </div>
+                  <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                    <span>{ editUnits } uds. × { fmt( COST_PER_UNIT ) }</span>
+                    <span className="font-medium">{ fmt( editUnits * COST_PER_UNIT ) }</span>
+                  </div>
+                  <div className="flex justify-between text-gray-600 dark:text-gray-400 border-t border-gray-100 dark:border-gray-700 pt-1.5">
+                    <span>IVA (16%)</span>
+                    <span className="font-medium">{ fmt( editIva ) }</span>
+                  </div>
+                  <div className="flex justify-between border-t-2 border-indigo-200 dark:border-indigo-700 pt-1.5">
+                    <span className="font-bold text-gray-900 dark:text-white">Total / mes</span>
+                    <span className="font-black bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600">{ fmt( editTotal ) }</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Frecuencia de facturación — va DESPUÉS del bloque de unidades */ }
               <div>
                 <label
                   htmlFor="billingFrequency"
@@ -445,8 +510,8 @@ const ClientEditModal: React.FC<ClientEditModalProps> = ({
                 <select
                   name="billingFrequency"
                   id="billingFrequency"
-                  value={currentClient.billingFrequency || "monthly"}
-                  onChange={handleInputChange}
+                  value={ currentClient.billingFrequency || "monthly" }
+                  onChange={ handleInputChange }
                   className="px-2 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
                 >
                   <option value="monthly">Mensual</option>
@@ -455,29 +520,9 @@ const ClientEditModal: React.FC<ClientEditModalProps> = ({
                   <option value="annual">Anual</option>
                 </select>
               </div>
-
-              <div>
-                <label
-                  htmlFor="status"
-                  className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                >
-                  Estado
-                </label>
-                <select
-                  name="status"
-                  id="status"
-                  value={currentClient.status}
-                  onChange={handleInputChange}
-                  className="px-2 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
-                >
-                  <option value="active">Activo</option>
-                  <option value="inactive">Inactivo</option>
-                  <option value="pending">Pendiente</option>
-                </select>
-              </div>
             </div>
 
-            {/* App de Mantenimiento */}
+            {/* App de Mantenimiento */ }
             <div className="mt-4">
               <h4 className="text-md font-medium mb-3 text-gray-800 dark:text-gray-200 border-b pb-1">
                 App de Mantenimiento
@@ -487,8 +532,8 @@ const ClientEditModal: React.FC<ClientEditModalProps> = ({
                   type="checkbox"
                   id="hasMaintenanceApp"
                   name="hasMaintenanceApp"
-                  checked={currentClient.hasMaintenanceApp || false}
-                  onChange={handleCheckboxChange}
+                  checked={ currentClient.hasMaintenanceApp || false }
+                  onChange={ handleCheckboxChange }
                   className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
                 />
                 <label
@@ -503,17 +548,17 @@ const ClientEditModal: React.FC<ClientEditModalProps> = ({
             <div className="mt-6 flex justify-end space-x-3">
               <button
                 type="button"
-                onClick={onClose}
+                onClick={ onClose }
                 className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
               >
                 Cancelar
               </button>
               <button
                 type="submit"
-                disabled={loading}
+                disabled={ loading }
                 className="inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
               >
-                {loading ? (
+                { loading ? (
                   <>
                     <svg
                       className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
@@ -539,12 +584,12 @@ const ClientEditModal: React.FC<ClientEditModalProps> = ({
                   </>
                 ) : (
                   "Guardar Cambios"
-                )}
+                ) }
               </button>
             </div>
           </form>
         ) : (
-          <form onSubmit={handleSubmitNewCondominium} className="px-6 py-4">
+          <form onSubmit={ handleSubmitNewCondominium } className="px-6 py-4">
             <div className="space-y-4">
               <div>
                 <label
@@ -557,8 +602,8 @@ const ClientEditModal: React.FC<ClientEditModalProps> = ({
                   type="text"
                   name="name"
                   id="name"
-                  value={condominiumForm.name}
-                  onChange={handleCondominiumInputChange}
+                  value={ condominiumForm.name }
+                  onChange={ handleCondominiumInputChange }
                   required
                   className="px-2 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
                 />
@@ -574,9 +619,9 @@ const ClientEditModal: React.FC<ClientEditModalProps> = ({
                 <textarea
                   name="address"
                   id="address"
-                  rows={3}
-                  value={condominiumForm.address}
-                  onChange={handleCondominiumInputChange}
+                  rows={ 3 }
+                  value={ condominiumForm.address }
+                  onChange={ handleCondominiumInputChange }
                   required
                   className="px-2 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
                 />
@@ -592,65 +637,75 @@ const ClientEditModal: React.FC<ClientEditModalProps> = ({
                 <select
                   name="status"
                   id="status"
-                  value={condominiumForm.status || CondominiumStatus.Pending}
-                  onChange={handleCondominiumInputChange}
+                  value={ condominiumForm.status || CondominiumStatus.Pending }
+                  onChange={ handleCondominiumInputChange }
                   className="px-2 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
                 >
-                  {Object.values(CondominiumStatus).map((status) => (
-                    <option key={status} value={status}>
-                      {statusLabels[status]}
+                  { Object.values( CondominiumStatus ).map( ( status ) => (
+                    <option key={ status } value={ status }>
+                      { statusLabels[ status ] }
                     </option>
-                  ))}
+                  ) ) }
                 </select>
               </div>
 
-              <div>
-                <label
-                  htmlFor="plan"
-                  className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                >
-                  Plan
-                </label>
-                <select
-                  name="plan"
-                  id="plan"
-                  value={condominiumForm.plan || "Basic"}
-                  onChange={handleCondominiumInputChange}
-                  className="px-2 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
-                >
-                  <option value="Basic">Basic</option>
-                  <option value="Essential">Essential</option>
-                  <option value="Professional">Professional</option>
-                  <option value="Premium">Premium</option>
-                </select>
-                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                  Límite del plan {selectedCondoPlanKey}:{" "}
-                  {selectedCondoPlanLimits.min} a{" "}
-                  {selectedCondoPlanLimits.max} condominios.
-                </p>
-              </div>
-
-              <div>
-                <label
-                  htmlFor="condominiumLimit"
-                  className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                >
-                  Límite de Condominios
-                </label>
+              {/* Calculadora de unidades para nuevo condominio */ }
+              <div className="rounded-xl border border-indigo-200 dark:border-indigo-800 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/30 p-4">
+                <p className="text-xs font-semibold text-indigo-700 dark:text-indigo-300 mb-3">Unidades contratadas</p>
+                <div className="text-center mb-3">
+                  <span className="text-3xl font-black bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600">{ condoUnits }</span>
+                  <span className="ml-1 text-sm font-semibold text-gray-500 dark:text-gray-400">unidades</span>
+                </div>
                 <input
-                  type="number"
-                  name="condominiumLimit"
-                  id="condominiumLimit"
-                  value={condominiumForm.condominiumLimit || 1}
-                  onChange={handleCondominiumInputChange}
-                  min={selectedCondoPlanLimits.min}
-                  max={selectedCondoPlanLimits.max}
-                  className="px-2 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
+                  type="range"
+                  min={ MIN_UNITS }
+                  max={ MAX_UNITS }
+                  value={ condoUnits }
+                  onChange={ ( e ) => {
+                    updateCondominiumForm( "plan", e.target.value );
+                    updateCondominiumForm( "condominiumLimit", Number( e.target.value ) );
+                  } }
+                  className="w-full h-2 rounded-full appearance-none cursor-pointer mb-1"
+                  style={ { background: `linear-gradient(to right, #6366f1 0%, #a855f7 ${ condoSliderPct }%, #e5e7eb ${ condoSliderPct }%, #e5e7eb 100%)` } }
                 />
-                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                  Rango permitido para este plan: {selectedCondoPlanLimits.min}{" "}
-                  - {selectedCondoPlanLimits.max}
-                </p>
+                <div className="flex justify-between text-xs text-gray-400 mb-3">
+                  <span>{ MIN_UNITS }</span><span>{ MAX_UNITS }</span>
+                </div>
+                <div className="flex items-center gap-2 mb-3">
+                  <label className="text-xs text-gray-600 dark:text-gray-400 whitespace-nowrap">O ingresa:</label>
+                  <input
+                    type="number"
+                    min={ MIN_UNITS }
+                    max={ MAX_UNITS }
+                    value={ condoUnits }
+                    onChange={ ( e ) => {
+                      const v = Math.min( MAX_UNITS, Math.max( MIN_UNITS, parseInt( e.target.value ) || MIN_UNITS ) );
+                      updateCondominiumForm( "plan", String( v ) );
+                      updateCondominiumForm( "condominiumLimit", v );
+                    } }
+                    className="w-16 rounded-lg border border-indigo-300 dark:border-indigo-700 bg-white dark:bg-gray-700 text-center font-bold text-sm px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:text-white"
+                  />
+                  <span className="text-xs text-gray-500">unidades</span>
+                </div>
+                {/* Precio */ }
+                <div className="rounded-lg bg-white dark:bg-gray-800 border border-indigo-100 dark:border-indigo-900/50 p-3 space-y-1.5 text-xs">
+                  <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                    <span>Plataforma base</span>
+                    <span className="font-medium">{ fmt( PLAN_BASE ) }</span>
+                  </div>
+                  <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                    <span>{ condoUnits } uds. × { fmt( COST_PER_UNIT ) }</span>
+                    <span className="font-medium">{ fmt( condoUnits * COST_PER_UNIT ) }</span>
+                  </div>
+                  <div className="flex justify-between text-gray-600 dark:text-gray-400 border-t border-gray-100 dark:border-gray-700 pt-1.5">
+                    <span>IVA (16%)</span>
+                    <span className="font-medium">{ fmt( condoIva ) }</span>
+                  </div>
+                  <div className="flex justify-between border-t-2 border-indigo-200 dark:border-indigo-700 pt-1.5">
+                    <span className="font-bold text-gray-900 dark:text-white">Total / mes</span>
+                    <span className="font-black bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600">{ fmt( condoTotal ) }</span>
+                  </div>
+                </div>
               </div>
 
               <div>
@@ -661,35 +716,35 @@ const ClientEditModal: React.FC<ClientEditModalProps> = ({
                   Funciones Pro
                 </label>
                 <div className="mt-2 space-y-2">
-                  {proFunctionOptions.map((option) => (
-                    <div key={option} className="flex items-center">
+                  { proFunctionOptions.map( ( option ) => (
+                    <div key={ option } className="flex items-center">
                       <input
                         type="checkbox"
-                        id={option}
-                        name={option}
+                        id={ option }
+                        name={ option }
                         checked={
-                          condominiumForm.proFunctions?.includes(option) ||
+                          condominiumForm.proFunctions?.includes( option ) ||
                           false
                         }
-                        onChange={handleCheckboxChange}
+                        onChange={ handleCheckboxChange }
                         className="h-4 w-4 text-indigo-600 focus:ring-indigo-500"
                       />
                       <label
-                        htmlFor={option}
+                        htmlFor={ option }
                         className="ml-2 text-sm text-gray-700 dark:text-gray-300"
                       >
-                        {proFunctionLabels[option]}
+                        { proFunctionLabels[ option ] }
                       </label>
                     </div>
-                  ))}
+                  ) ) }
                 </div>
               </div>
 
               <div className="pt-2">
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                  El condominio será creado para el cliente:{" "}
+                  El condominio será creado para el cliente:{ " " }
                   <span className="font-medium text-gray-700 dark:text-gray-300">
-                    {currentClient.companyName}
+                    { currentClient.companyName }
                   </span>
                 </p>
               </div>
@@ -698,17 +753,17 @@ const ClientEditModal: React.FC<ClientEditModalProps> = ({
             <div className="mt-6 flex justify-end space-x-3">
               <button
                 type="button"
-                onClick={onClose}
+                onClick={ onClose }
                 className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
               >
                 Cancelar
               </button>
               <button
                 type="submit"
-                disabled={addingCondominium}
+                disabled={ addingCondominium }
                 className="inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
               >
-                {addingCondominium ? (
+                { addingCondominium ? (
                   <>
                     <svg
                       className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
@@ -734,11 +789,11 @@ const ClientEditModal: React.FC<ClientEditModalProps> = ({
                   </>
                 ) : (
                   "Agregar Condominio"
-                )}
+                ) }
               </button>
             </div>
           </form>
-        )}
+        ) }
       </div>
     </div>
   );

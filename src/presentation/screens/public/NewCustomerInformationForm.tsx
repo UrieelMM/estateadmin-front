@@ -13,8 +13,6 @@ import {
   DocumentTextIcon,
   IdentificationIcon,
   HomeModernIcon,
-  SparklesIcon,
-  ClockIcon,
   EnvelopeIcon,
   PhoneIcon,
   BuildingOfficeIcon,
@@ -23,6 +21,8 @@ import {
   MapPinIcon,
   HashtagIcon,
   ShieldCheckIcon,
+  CalculatorIcon,
+  ClockIcon,
 } from "@heroicons/react/24/outline";
 import { Helmet } from "react-helmet-async";
 import useNewCustomerFormStore, {
@@ -31,15 +31,15 @@ import useNewCustomerFormStore, {
 
 // Tipos y Interfaces
 interface FormErrors {
-  [key: string]: string;
+  [ key: string ]: string;
 }
 
 interface StepProps {
   currentData: Partial<NewCustomerInfo>;
-  updateField: (field: string, value: any) => void;
+  updateField: ( field: string, value: any ) => void;
   errors: FormErrors;
   touched: Record<string, boolean>;
-  setTouched: (field: string, value: boolean) => void;
+  setTouched: ( field: string, value: boolean ) => void;
 }
 
 // Constantes
@@ -49,7 +49,7 @@ const FORM_STEPS = [
   "Datos Fiscales",
   "Información de Responsable",
   "Información del Condominio",
-  "Selección de Plan",
+  "Configuración de Unidades",
 ];
 
 const STEP_ICONS = [
@@ -58,66 +58,31 @@ const STEP_ICONS = [
   DocumentTextIcon,
   IdentificationIcon,
   HomeModernIcon,
-  SparklesIcon,
+  CalculatorIcon,
 ];
 
-const getFieldClass = (hasError: boolean) =>
-  `mt-1 block w-full px-3 py-2.5 border rounded-lg transition-colors duration-200 shadow-sm text-sm bg-white/95 dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 ${
-    hasError
-      ? "border-red-300 dark:border-red-500"
-      : "border-gray-300 dark:border-gray-700"
+// Constantes de precios por unidad (mismas que PricingPage)
+const PLAN_BASE = 499;
+const COST_PER_UNIT = 4.0;
+const MIN_UNITS = 30;
+const MAX_UNITS = 500;
+const IVA_RATE = 0.16;
+
+const getFieldClass = ( hasError: boolean ) =>
+  `mt-1 block w-full px-3 py-2.5 border rounded-lg transition-colors duration-200 shadow-sm text-sm bg-white/95 dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 ${ hasError
+    ? "border-red-300 dark:border-red-500"
+    : "border-gray-300 dark:border-gray-700"
   }`;
 
-const PLANS = [
-  {
-    value: "Basic",
-    label: "Básico",
-    price: "$750.00 MXN",
-    tax: "+ IVA",
-    range: "1 - 50",
-    highlighted: false,
-    description:
-      "Ideal para condominios pequeños que buscan optimizar su administración.",
-  },
-  {
-    value: "Essential",
-    label: "Esencial",
-    price: "$1,200.00 MXN",
-    tax: "+ IVA",
-    range: "51 - 100",
-    highlighted: true,
-    description:
-      "Perfecto para condominios medianos con necesidades específicas de gestión.",
-  },
-  {
-    value: "Professional",
-    label: "Profesional",
-    price: "$1,850.00 MXN",
-    tax: "+ IVA",
-    range: "101 - 250",
-    highlighted: false,
-    description:
-      "Solución robusta para condominios grandes con múltiples necesidades.",
-  },
-  {
-    value: "Premium",
-    label: "Premium",
-    price: "$1,950.00 MXN",
-    tax: "+ IVA",
-    range: "251 - 500",
-    highlighted: false,
-    description: "Capacidad completa para grandes desarrollos residenciales.",
-  },
-];
 
 // Componentes para cada paso del formulario
-const PersonalInfoStep: React.FC<StepProps> = ({
+const PersonalInfoStep: React.FC<StepProps> = ( {
   currentData,
   updateField,
   errors,
   touched,
   setTouched,
-}) => (
+} ) => (
   <div className="space-y-4 rounded-2xl border border-gray-200 dark:border-gray-700 bg-gradient-to-b from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 p-5 md:p-6">
     <h3 className="text-lg font-medium leading-6 text-gray-900 dark:text-white">
       Información Personal
@@ -141,17 +106,17 @@ const PersonalInfoStep: React.FC<StepProps> = ({
           type="text"
           id="name"
           name="name"
-          value={currentData.name || ""}
-          onChange={(e) => updateField("name", e.target.value)}
-          onBlur={() => setTouched("name", true)}
+          value={ currentData.name || "" }
+          onChange={ ( e ) => updateField( "name", e.target.value ) }
+          onBlur={ () => setTouched( "name", true ) }
           placeholder="Ej. Alejandro"
-          className={getFieldClass(!!(errors.name && touched.name))}
+          className={ getFieldClass( !!( errors.name && touched.name ) ) }
         />
-        {errors.name && touched.name && (
+        { errors.name && touched.name && (
           <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-            {errors.name}
+            { errors.name }
           </p>
-        )}
+        ) }
       </div>
 
       <div>
@@ -168,17 +133,17 @@ const PersonalInfoStep: React.FC<StepProps> = ({
           type="text"
           id="lastName"
           name="lastName"
-          value={currentData.lastName || ""}
-          onChange={(e) => updateField("lastName", e.target.value)}
-          onBlur={() => setTouched("lastName", true)}
+          value={ currentData.lastName || "" }
+          onChange={ ( e ) => updateField( "lastName", e.target.value ) }
+          onBlur={ () => setTouched( "lastName", true ) }
           placeholder="Ej. Martínez"
-          className={getFieldClass(!!(errors.lastName && touched.lastName))}
+          className={ getFieldClass( !!( errors.lastName && touched.lastName ) ) }
         />
-        {errors.lastName && touched.lastName && (
+        { errors.lastName && touched.lastName && (
           <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-            {errors.lastName}
+            { errors.lastName }
           </p>
-        )}
+        ) }
       </div>
     </div>
 
@@ -197,22 +162,22 @@ const PersonalInfoStep: React.FC<StepProps> = ({
           type="email"
           id="email"
           name="email"
-          value={currentData.email || ""}
-          onChange={(e) => updateField("email", e.target.value)}
-          onBlur={() => setTouched("email", true)}
+          value={ currentData.email || "" }
+          onChange={ ( e ) => updateField( "email", e.target.value ) }
+          onBlur={ () => setTouched( "email", true ) }
           placeholder="correo@empresa.com"
-          className={getFieldClass(!!(errors.email && touched.email))}
+          className={ getFieldClass( !!( errors.email && touched.email ) ) }
         />
-        {!errors.email && (
+        { !errors.email && (
           <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
             Usaremos este correo para seguimiento comercial.
           </p>
-        )}
-        {errors.email && touched.email && (
+        ) }
+        { errors.email && touched.email && (
           <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-            {errors.email}
+            { errors.email }
           </p>
-        )}
+        ) }
       </div>
 
       <div>
@@ -229,30 +194,30 @@ const PersonalInfoStep: React.FC<StepProps> = ({
           type="tel"
           id="phoneNumber"
           name="phoneNumber"
-          value={currentData.phoneNumber || ""}
-          onChange={(e) => updateField("phoneNumber", e.target.value)}
-          onBlur={() => setTouched("phoneNumber", true)}
+          value={ currentData.phoneNumber || "" }
+          onChange={ ( e ) => updateField( "phoneNumber", e.target.value ) }
+          onBlur={ () => setTouched( "phoneNumber", true ) }
           placeholder="+52 55 1234 5678"
-          className={getFieldClass(!!(errors.phoneNumber && touched.phoneNumber))}
+          className={ getFieldClass( !!( errors.phoneNumber && touched.phoneNumber ) ) }
         />
-        {errors.phoneNumber && touched.phoneNumber && (
+        { errors.phoneNumber && touched.phoneNumber && (
           <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-            {errors.phoneNumber}
+            { errors.phoneNumber }
           </p>
-        )}
+        ) }
       </div>
     </div>
   </div>
 );
 
 // Paso 2: Información de la Empresa
-const CompanyInfoStep: React.FC<StepProps> = ({
+const CompanyInfoStep: React.FC<StepProps> = ( {
   currentData,
   updateField,
   errors,
   touched,
   setTouched,
-}) => (
+} ) => (
   <div className="space-y-4 rounded-2xl border border-gray-200 dark:border-gray-700 bg-gradient-to-b from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 p-5 md:p-6">
     <h3 className="text-lg font-medium leading-6 text-gray-900 dark:text-white">
       Información de la Empresa
@@ -276,17 +241,17 @@ const CompanyInfoStep: React.FC<StepProps> = ({
           type="text"
           id="companyName"
           name="companyName"
-          value={currentData.companyName || ""}
-          onChange={(e) => updateField("companyName", e.target.value)}
-          onBlur={() => setTouched("companyName", true)}
+          value={ currentData.companyName || "" }
+          onChange={ ( e ) => updateField( "companyName", e.target.value ) }
+          onBlur={ () => setTouched( "companyName", true ) }
           placeholder="Ej. Administración Central SA de CV"
-          className={getFieldClass(!!(errors.companyName && touched.companyName))}
+          className={ getFieldClass( !!( errors.companyName && touched.companyName ) ) }
         />
-        {errors.companyName && touched.companyName && (
+        { errors.companyName && touched.companyName && (
           <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-            {errors.companyName}
+            { errors.companyName }
           </p>
-        )}
+        ) }
       </div>
 
       <div>
@@ -303,17 +268,17 @@ const CompanyInfoStep: React.FC<StepProps> = ({
           type="text"
           id="businessName"
           name="businessName"
-          value={currentData.businessName || ""}
-          onChange={(e) => updateField("businessName", e.target.value)}
-          onBlur={() => setTouched("businessName", true)}
+          value={ currentData.businessName || "" }
+          onChange={ ( e ) => updateField( "businessName", e.target.value ) }
+          onBlur={ () => setTouched( "businessName", true ) }
           placeholder="Ej. EstateAdmin México"
-          className={getFieldClass(!!(errors.businessName && touched.businessName))}
+          className={ getFieldClass( !!( errors.businessName && touched.businessName ) ) }
         />
-        {errors.businessName && touched.businessName && (
+        { errors.businessName && touched.businessName && (
           <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-            {errors.businessName}
+            { errors.businessName }
           </p>
-        )}
+        ) }
       </div>
     </div>
 
@@ -332,17 +297,17 @@ const CompanyInfoStep: React.FC<StepProps> = ({
           type="text"
           id="country"
           name="country"
-          value={currentData.country || ""}
-          onChange={(e) => updateField("country", e.target.value)}
-          onBlur={() => setTouched("country", true)}
+          value={ currentData.country || "" }
+          onChange={ ( e ) => updateField( "country", e.target.value ) }
+          onBlur={ () => setTouched( "country", true ) }
           placeholder="Ej. México"
-          className={getFieldClass(!!(errors.country && touched.country))}
+          className={ getFieldClass( !!( errors.country && touched.country ) ) }
         />
-        {errors.country && touched.country && (
+        { errors.country && touched.country && (
           <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-            {errors.country}
+            { errors.country }
           </p>
-        )}
+        ) }
       </div>
 
       <div>
@@ -359,32 +324,32 @@ const CompanyInfoStep: React.FC<StepProps> = ({
           type="text"
           id="businessActivity"
           name="businessActivity"
-          value={currentData.businessActivity || ""}
-          onChange={(e) => updateField("businessActivity", e.target.value)}
-          onBlur={() => setTouched("businessActivity", true)}
+          value={ currentData.businessActivity || "" }
+          onChange={ ( e ) => updateField( "businessActivity", e.target.value ) }
+          onBlur={ () => setTouched( "businessActivity", true ) }
           placeholder="Ej. Administración de condominios"
-          className={getFieldClass(
-            !!(errors.businessActivity && touched.businessActivity)
-          )}
+          className={ getFieldClass(
+            !!( errors.businessActivity && touched.businessActivity )
+          ) }
         />
-        {errors.businessActivity && touched.businessActivity && (
+        { errors.businessActivity && touched.businessActivity && (
           <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-            {errors.businessActivity}
+            { errors.businessActivity }
           </p>
-        )}
+        ) }
       </div>
     </div>
   </div>
 );
 
 // Paso 3: Datos Fiscales
-const FiscalInfoStep: React.FC<StepProps> = ({
+const FiscalInfoStep: React.FC<StepProps> = ( {
   currentData,
   updateField,
   errors,
   touched,
   setTouched,
-}) => (
+} ) => (
   <div className="space-y-4 rounded-2xl border border-gray-200 dark:border-gray-700 bg-gradient-to-b from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 p-5 md:p-6">
     <h3 className="text-lg font-medium leading-6 text-gray-900 dark:text-white">
       Datos Fiscales
@@ -407,20 +372,20 @@ const FiscalInfoStep: React.FC<StepProps> = ({
         <textarea
           id="fullFiscalAddress"
           name="fullFiscalAddress"
-          rows={3}
-          value={currentData.fullFiscalAddress || ""}
-          onChange={(e) => updateField("fullFiscalAddress", e.target.value)}
-          onBlur={() => setTouched("fullFiscalAddress", true)}
+          rows={ 3 }
+          value={ currentData.fullFiscalAddress || "" }
+          onChange={ ( e ) => updateField( "fullFiscalAddress", e.target.value ) }
+          onBlur={ () => setTouched( "fullFiscalAddress", true ) }
           placeholder="Calle, número, colonia, municipio, estado, CP"
-          className={getFieldClass(
-            !!(errors.fullFiscalAddress && touched.fullFiscalAddress)
-          )}
+          className={ getFieldClass(
+            !!( errors.fullFiscalAddress && touched.fullFiscalAddress )
+          ) }
         />
-        {errors.fullFiscalAddress && touched.fullFiscalAddress && (
+        { errors.fullFiscalAddress && touched.fullFiscalAddress && (
           <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-            {errors.fullFiscalAddress}
+            { errors.fullFiscalAddress }
           </p>
-        )}
+        ) }
       </div>
     </div>
 
@@ -439,22 +404,22 @@ const FiscalInfoStep: React.FC<StepProps> = ({
           type="text"
           id="RFC"
           name="RFC"
-          value={currentData.RFC || ""}
-          onChange={(e) => updateField("RFC", e.target.value)}
-          onBlur={() => setTouched("RFC", true)}
+          value={ currentData.RFC || "" }
+          onChange={ ( e ) => updateField( "RFC", e.target.value ) }
+          onBlur={ () => setTouched( "RFC", true ) }
           placeholder="Ej. XAXX010101000"
-          className={getFieldClass(!!(errors.RFC && touched.RFC))}
+          className={ getFieldClass( !!( errors.RFC && touched.RFC ) ) }
         />
-        {!errors.RFC && (
+        { !errors.RFC && (
           <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
             Captúralo sin espacios y en mayúsculas.
           </p>
-        )}
-        {errors.RFC && touched.RFC && (
+        ) }
+        { errors.RFC && touched.RFC && (
           <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-            {errors.RFC}
+            { errors.RFC }
           </p>
-        )}
+        ) }
       </div>
 
       <div>
@@ -471,17 +436,17 @@ const FiscalInfoStep: React.FC<StepProps> = ({
           type="text"
           id="taxRegime"
           name="taxRegime"
-          value={currentData.taxRegime || ""}
-          onChange={(e) => updateField("taxRegime", e.target.value)}
-          onBlur={() => setTouched("taxRegime", true)}
+          value={ currentData.taxRegime || "" }
+          onChange={ ( e ) => updateField( "taxRegime", e.target.value ) }
+          onBlur={ () => setTouched( "taxRegime", true ) }
           placeholder="Ej. General de Ley Personas Morales"
-          className={getFieldClass(!!(errors.taxRegime && touched.taxRegime))}
+          className={ getFieldClass( !!( errors.taxRegime && touched.taxRegime ) ) }
         />
-        {errors.taxRegime && touched.taxRegime && (
+        { errors.taxRegime && touched.taxRegime && (
           <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-            {errors.taxRegime}
+            { errors.taxRegime }
           </p>
-        )}
+        ) }
       </div>
     </div>
 
@@ -496,10 +461,10 @@ const FiscalInfoStep: React.FC<StepProps> = ({
         type="text"
         id="cfdiUse"
         name="cfdiUse"
-        value={currentData.cfdiUse || ""}
-        onChange={(e) => updateField("cfdiUse", e.target.value)}
+        value={ currentData.cfdiUse || "" }
+        onChange={ ( e ) => updateField( "cfdiUse", e.target.value ) }
         placeholder="Ej. G03"
-        className={getFieldClass(false)}
+        className={ getFieldClass( false ) }
       />
       <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
         Si no lo conoces, puedes dejar el valor por defecto.
@@ -509,13 +474,13 @@ const FiscalInfoStep: React.FC<StepProps> = ({
 );
 
 // Paso 4: Información de Responsable
-const ResponsiblePersonStep: React.FC<StepProps> = ({
+const ResponsiblePersonStep: React.FC<StepProps> = ( {
   currentData,
   updateField,
   errors,
   touched,
   setTouched,
-}) => (
+} ) => (
   <div className="space-y-4 rounded-2xl border border-gray-200 dark:border-gray-700 bg-gradient-to-b from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 p-5 md:p-6">
     <h3 className="text-lg font-medium leading-6 text-gray-900 dark:text-white">
       Información de Responsable
@@ -539,19 +504,19 @@ const ResponsiblePersonStep: React.FC<StepProps> = ({
           type="text"
           id="responsiblePersonName"
           name="responsiblePersonName"
-          value={currentData.responsiblePersonName || ""}
-          onChange={(e) => updateField("responsiblePersonName", e.target.value)}
-          onBlur={() => setTouched("responsiblePersonName", true)}
+          value={ currentData.responsiblePersonName || "" }
+          onChange={ ( e ) => updateField( "responsiblePersonName", e.target.value ) }
+          onBlur={ () => setTouched( "responsiblePersonName", true ) }
           placeholder="Ej. Laura Gómez"
-          className={getFieldClass(
-            !!(errors.responsiblePersonName && touched.responsiblePersonName)
-          )}
+          className={ getFieldClass(
+            !!( errors.responsiblePersonName && touched.responsiblePersonName )
+          ) }
         />
-        {errors.responsiblePersonName && touched.responsiblePersonName && (
+        { errors.responsiblePersonName && touched.responsiblePersonName && (
           <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-            {errors.responsiblePersonName}
+            { errors.responsiblePersonName }
           </p>
-        )}
+        ) }
       </div>
 
       <div>
@@ -568,38 +533,38 @@ const ResponsiblePersonStep: React.FC<StepProps> = ({
           type="text"
           id="responsiblePersonPosition"
           name="responsiblePersonPosition"
-          value={currentData.responsiblePersonPosition || ""}
-          onChange={(e) =>
-            updateField("responsiblePersonPosition", e.target.value)
+          value={ currentData.responsiblePersonPosition || "" }
+          onChange={ ( e ) =>
+            updateField( "responsiblePersonPosition", e.target.value )
           }
-          onBlur={() => setTouched("responsiblePersonPosition", true)}
+          onBlur={ () => setTouched( "responsiblePersonPosition", true ) }
           placeholder="Ej. Administradora General"
-          className={getFieldClass(
+          className={ getFieldClass(
             !!(
               errors.responsiblePersonPosition &&
               touched.responsiblePersonPosition
             )
-          )}
+          ) }
         />
-        {errors.responsiblePersonPosition &&
+        { errors.responsiblePersonPosition &&
           touched.responsiblePersonPosition && (
             <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-              {errors.responsiblePersonPosition}
+              { errors.responsiblePersonPosition }
             </p>
-          )}
+          ) }
       </div>
     </div>
   </div>
 );
 
 // Paso 5: Información del Condominio
-const CondominiumInfoStep: React.FC<StepProps> = ({
+const CondominiumInfoStep: React.FC<StepProps> = ( {
   currentData,
   updateField,
   errors,
   touched,
   setTouched,
-}) => (
+} ) => (
   <div className="space-y-4 rounded-2xl border border-gray-200 dark:border-gray-700 bg-gradient-to-b from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 p-5 md:p-6">
     <h3 className="text-lg font-medium leading-6 text-gray-900 dark:text-white">
       Información del Condominio
@@ -630,19 +595,19 @@ const CondominiumInfoStep: React.FC<StepProps> = ({
           type="text"
           id="condominiumInfo.name"
           name="condominiumInfo.name"
-          value={currentData.condominiumInfo?.name || ""}
-          onChange={(e) => updateField("condominiumInfo.name", e.target.value)}
-          onBlur={() => setTouched("condominiumInfo.name", true)}
+          value={ currentData.condominiumInfo?.name || "" }
+          onChange={ ( e ) => updateField( "condominiumInfo.name", e.target.value ) }
+          onBlur={ () => setTouched( "condominiumInfo.name", true ) }
           placeholder="Ej. Residencial Los Encinos"
-          className={getFieldClass(
-            !!(errors["condominiumInfo.name"] && touched["condominiumInfo.name"])
-          )}
+          className={ getFieldClass(
+            !!( errors[ "condominiumInfo.name" ] && touched[ "condominiumInfo.name" ] )
+          ) }
         />
-        {errors["condominiumInfo.name"] && touched["condominiumInfo.name"] && (
+        { errors[ "condominiumInfo.name" ] && touched[ "condominiumInfo.name" ] && (
           <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-            {errors["condominiumInfo.name"]}
+            { errors[ "condominiumInfo.name" ] }
           </p>
-        )}
+        ) }
       </div>
 
       <div>
@@ -658,26 +623,26 @@ const CondominiumInfoStep: React.FC<StepProps> = ({
         <textarea
           id="condominiumInfo.address"
           name="condominiumInfo.address"
-          rows={3}
-          value={currentData.condominiumInfo?.address || ""}
-          onChange={(e) =>
-            updateField("condominiumInfo.address", e.target.value)
+          rows={ 3 }
+          value={ currentData.condominiumInfo?.address || "" }
+          onChange={ ( e ) =>
+            updateField( "condominiumInfo.address", e.target.value )
           }
-          onBlur={() => setTouched("condominiumInfo.address", true)}
+          onBlur={ () => setTouched( "condominiumInfo.address", true ) }
           placeholder="Ej. Av. Principal 123, Col. Centro, Monterrey, NL"
-          className={getFieldClass(
+          className={ getFieldClass(
             !!(
-              errors["condominiumInfo.address"] &&
-              touched["condominiumInfo.address"]
+              errors[ "condominiumInfo.address" ] &&
+              touched[ "condominiumInfo.address" ]
             )
-          )}
+          ) }
         />
-        {errors["condominiumInfo.address"] &&
-          touched["condominiumInfo.address"] && (
+        { errors[ "condominiumInfo.address" ] &&
+          touched[ "condominiumInfo.address" ] && (
             <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-              {errors["condominiumInfo.address"]}
+              { errors[ "condominiumInfo.address" ] }
             </p>
-          )}
+          ) }
       </div>
 
       {/* <div>
@@ -705,191 +670,221 @@ const CondominiumInfoStep: React.FC<StepProps> = ({
   </div>
 );
 
-// Paso 6: Selección de Plan
-const AdditionalConfigStep: React.FC<StepProps> = ({
+// Paso 6: Configuración de Unidades (calculadora de precio)
+const AdditionalConfigStep: React.FC<StepProps> = ( {
   currentData,
   updateField,
-}) => {
+} ) => {
+  const units = parseInt( currentData.plan || "50" ) || MIN_UNITS;
+
+  const subtotal = PLAN_BASE + units * COST_PER_UNIT;
+  const iva = subtotal * IVA_RATE;
+  const total = subtotal + iva;
+  const fmt = ( v: number ) =>
+    v.toLocaleString( "es-MX", { style: "currency", currency: "MXN" } );
+  const sliderPct = ( ( units - MIN_UNITS ) / ( MAX_UNITS - MIN_UNITS ) ) * 100;
+
   // Establecer billingFrequency como monthly por defecto
-  useEffect(() => {
-    if (!currentData.billingFrequency) {
-      updateField("billingFrequency", "monthly");
+  useEffect( () => {
+    if ( !currentData.billingFrequency ) {
+      updateField( "billingFrequency", "monthly" );
     }
-  }, [currentData.billingFrequency, updateField]);
+    if ( !currentData.plan ) {
+      updateField( "plan", "50" );
+    }
+    // Inicializar pricing si no está definido
+    if ( !currentData.pricing ) {
+      const initSubtotal = PLAN_BASE + 50 * COST_PER_UNIT;
+      const initTotal = initSubtotal * ( 1 + IVA_RATE );
+      updateField( "pricing", Math.round( initTotal * 100 ) / 100 );
+    }
+  }, [] );
+
+  const handleUnitsChange = ( value: number ) => {
+    const clamped = Math.min( MAX_UNITS, Math.max( MIN_UNITS, value ) );
+    const newSubtotal = PLAN_BASE + clamped * COST_PER_UNIT;
+    const newTotal = newSubtotal * ( 1 + IVA_RATE );
+    updateField( "plan", String( clamped ) );
+    updateField( "pricing", Math.round( newTotal * 100 ) / 100 );
+  };
 
   return (
     <div className="space-y-6 rounded-2xl border border-gray-200 dark:border-gray-700 bg-gradient-to-b from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 p-5 md:p-6">
-      <h3 className="text-lg font-medium leading-6 text-gray-900 dark:text-white">
-        Selección de Plan{" "}
-      </h3>
-      <p className="text-sm text-gray-500 dark:text-gray-400">
-        Elija el plan que mejor se adapte a las necesidades de su condominio.
-      </p>
-
-      <div className="bg-indigo-50 dark:bg-indigo-900/30 p-4 rounded-md mb-6">
-        <p className="text-indigo-800 dark:text-indigo-300 text-sm">
-          <strong>Nota:</strong> Todos los planes incluyen acceso a todas las
-          funciones: proyectos, inventario, sistema de gestión de mantenimiento
-          y más.
+      <div>
+        <h3 className="text-lg font-medium leading-6 text-gray-900 dark:text-white">
+          Configuración de Unidades
+        </h3>
+        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+          Indique cuántas unidades administra su condominio para calcular su tarifa mensual.
         </p>
       </div>
 
-      {/* Cards de planes */}
-      <div className="grid grid-cols-1 gap-6 mt-6 md:grid-cols-2 lg:grid-cols-4">
-        {PLANS.map((plan) => (
-          <div
-            key={plan.value}
-            className={`relative overflow-hidden border rounded-xl transition-all ${
-              currentData.plan === plan.value
-                ? "border-indigo-600 ring-2 ring-indigo-500 shadow-lg shadow-indigo-100/70 dark:shadow-none"
-                : "border-gray-200 dark:border-gray-700"
-            } ${
-              plan.highlighted && currentData.plan !== plan.value
-                ? "bg-gradient-to-b from-indigo-50 to-white dark:from-indigo-900/40 dark:to-gray-800"
-                : "bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700/70"
-            }`}
-          >
-            {plan.highlighted && (
-              <div className="absolute top-0 right-0">
-                <div className="inline-flex items-center px-3 py-1 text-xs font-medium bg-indigo-600 text-white rounded-bl-lg rounded-tr-lg">
-                  Recomendado
-                </div>
-              </div>
-            )}
+      <div className="bg-indigo-50 dark:bg-indigo-900/30 p-4 rounded-xl">
+        <p className="text-indigo-800 dark:text-indigo-300 text-sm">
+          <strong>Nota:</strong> Todos los planes incluyen acceso completo a la plataforma:
+          proyectos, inventario, sistema de gestión de mantenimiento, reportes con IA y más.
+        </p>
+      </div>
 
-            <div className="p-6">
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-                {plan.label}
-              </h3>
-              <p className="mt-1 text-xl font-semibold text-indigo-600 dark:text-indigo-400">
-                {plan.price} <span className="text-sm">{plan.tax}</span>
-              </p>
-              <p className="mt-2 text-sm font-medium text-gray-600 dark:text-gray-400">
-                {plan.range} condóminos/residentes
-              </p>
-              <p className="mt-4 text-sm text-gray-600 dark:text-gray-400">
-                {plan.description}
-              </p>
+      {/* Calculadora interactiva */ }
+      <div className="relative">
+        {/* Glow sutil */ }
+        <div className="absolute -inset-1 bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 rounded-3xl blur-xl opacity-10" />
 
-              <div className="mt-6">
-                <button
-                  type="button"
-                  onClick={() => updateField("plan", plan.value)}
-                  className={`w-full py-2.5 px-4 text-sm font-medium rounded-lg transition ${
-                    currentData.plan === plan.value
-                      ? "bg-indigo-600 text-white hover:bg-indigo-700"
-                      : "border border-gray-300 text-gray-700 dark:text-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700"
-                  }`}
-                >
-                  {currentData.plan === plan.value
-                    ? "Seleccionado"
-                    : "Seleccionar"}
-                </button>
-              </div>
+        <div className="relative rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-hidden shadow-lg">
+          {/* Header */ }
+          <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 p-5 text-center">
+            <div className="flex items-center justify-center gap-2 text-white">
+              <CalculatorIcon className="h-5 w-5" />
+              <h4 className="text-base font-bold">Descubre tu precio en segundos</h4>
+            </div>
+            <p className="mt-1 text-indigo-100 text-xs max-w-xs mx-auto">
+              Mueve el control para ver tu tarifa mensual estimada
+            </p>
+          </div>
 
-              <div className="mt-6">
-                <p className="text-sm font-medium text-gray-900 dark:text-white">
-                  Incluye:
-                </p>
-                <ul className="mt-2 space-y-2 text-sm text-gray-600 dark:text-gray-400">
-                  <li className="flex items-center">
-                    <svg
-                      className="w-4 h-4 mr-2 text-indigo-500"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                    Acceso a todas las funciones
-                  </li>
-                  <li className="flex items-center">
-                    <svg
-                      className="w-4 h-4 mr-2 text-indigo-500"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                    Sistema de gestión de proyectos
-                  </li>
-                  <li className="flex items-center">
-                    <svg
-                      className="w-4 h-4 mr-2 text-indigo-500"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                    Control de inventario
-                  </li>
-                  <li className="flex items-center">
-                    <svg
-                      className="w-4 h-4 mr-2 text-indigo-500"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                    Gestión de mantenimiento
-                  </li>
-                </ul>
+          <div className="p-6">
+            {/* Contador de unidades */ }
+            <div className="text-center mb-6">
+              <span className="text-6xl font-black bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600">
+                { units }
+              </span>
+              <span className="ml-2 text-lg font-semibold text-gray-500 dark:text-gray-400">
+                { units === 1 ? "unidad" : "unidades" }
+              </span>
+            </div>
+
+            {/* Slider */ }
+            <div className="mb-6">
+              <input
+                id="units-slider-pub"
+                type="range"
+                min={ MIN_UNITS }
+                max={ MAX_UNITS }
+                value={ units }
+                onChange={ ( e ) => handleUnitsChange( Number( e.target.value ) ) }
+                className="w-full h-3 rounded-full appearance-none cursor-pointer"
+                style={ {
+                  background: `linear-gradient(to right, #6366f1 0%, #a855f7 ${ sliderPct }%, #e5e7eb ${ sliderPct }%, #e5e7eb 100%)`,
+                } }
+              />
+              <div className="flex justify-between text-xs text-gray-400 mt-2">
+                <span>{ MIN_UNITS } unidades</span>
+                <span>{ MAX_UNITS } unidades</span>
               </div>
             </div>
+
+            {/* Input manual */ }
+            <div className="flex items-center gap-3 mb-6">
+              <label className="text-sm font-medium text-gray-600 dark:text-gray-400 whitespace-nowrap">
+                O ingresa el número:
+              </label>
+              <input
+                type="number"
+                min={ MIN_UNITS }
+                max={ MAX_UNITS }
+                value={ units }
+                onChange={ ( e ) => handleUnitsChange( parseInt( e.target.value ) || MIN_UNITS ) }
+                className="w-28 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white px-4 py-2 text-center font-bold text-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+              <span className="text-sm text-gray-500">unidades</span>
+            </div>
+
+            {/* Desglose de precios */ }
+            <div className="rounded-2xl bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 p-5 space-y-3">
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-gray-600 dark:text-gray-400">Acceso total a la plataforma</span>
+                <span className="font-semibold text-gray-900 dark:text-white">{ fmt( PLAN_BASE ) }</span>
+              </div>
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-gray-600 dark:text-gray-400">{ units } unidades × { fmt( COST_PER_UNIT ) }</span>
+                <span className="font-semibold text-gray-900 dark:text-white">{ fmt( units * COST_PER_UNIT ) }</span>
+              </div>
+              <div className="flex justify-between items-center text-sm border-t border-gray-200 dark:border-gray-600 pt-3">
+                <span className="text-gray-600 dark:text-gray-400">Subtotal</span>
+                <span className="font-semibold text-gray-900 dark:text-white">{ fmt( subtotal ) }</span>
+              </div>
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-gray-600 dark:text-gray-400">IVA (16%)</span>
+                <span className="font-semibold text-gray-900 dark:text-white">{ fmt( iva ) }</span>
+              </div>
+              <div className="flex justify-between items-center border-t-2 border-indigo-300 dark:border-indigo-600 pt-3">
+                <span className="text-base font-bold text-gray-900 dark:text-white">Total mensual</span>
+                <div className="text-right">
+                  <span className="text-xl font-black bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600">
+                    { fmt( total ) }
+                  </span>
+                  <p className="text-xs text-gray-400">/ mes con IVA</p>
+                </div>
+              </div>
+            </div>
+
+            <p className="mt-3 text-center text-sm text-gray-500 dark:text-gray-400">
+              Equivale a{ " " }
+              <strong className="text-indigo-600 dark:text-indigo-400">{ fmt( total / units ) }</strong>{ " " }
+              por unidad al mes
+            </p>
           </div>
-        ))}
+        </div>
       </div>
 
-      <div>
-        <span className="text-indigo-600 text-sm dark:text-indigo-400">
-          (Precio facturado mensualmente)
-        </span>
-      </div>
-
-      <div className="bg-yellow-50 dark:bg-yellow-900/30 p-4 rounded-md mt-4">
+      <div className="bg-yellow-50 dark:bg-yellow-900/30 p-4 rounded-xl">
         <p className="text-yellow-800 dark:text-yellow-200 text-sm">
-          <strong>Nota:</strong> Revisar cuidadosamente toda la información
-          antes de enviar. Una vez enviada, nuestro equipo se pondrá en contacto
-          con usted para completar el proceso.
+          <strong>Nota:</strong> Revise cuidadosamente toda la información antes de enviar.
+          Una vez enviada, nuestro equipo se pondrá en contacto con usted para completar el proceso.
         </p>
       </div>
+
+      <style>{ `
+        #units-slider-pub::-webkit-slider-thumb {
+          -webkit-appearance: none;
+          appearance: none;
+          width: 22px;
+          height: 22px;
+          border-radius: 50%;
+          background: linear-gradient(135deg, #6366f1, #a855f7);
+          cursor: pointer;
+          border: 3px solid white;
+          box-shadow: 0 2px 8px rgba(99,102,241,0.4);
+          transition: transform 0.2s, box-shadow 0.2s;
+        }
+        #units-slider-pub::-webkit-slider-thumb:hover {
+          transform: scale(1.2);
+          box-shadow: 0 4px 16px rgba(99,102,241,0.6);
+        }
+        #units-slider-pub::-moz-range-thumb {
+          width: 22px;
+          height: 22px;
+          border-radius: 50%;
+          background: linear-gradient(135deg, #6366f1, #a855f7);
+          cursor: pointer;
+          border: 3px solid white;
+          box-shadow: 0 2px 8px rgba(99,102,241,0.4);
+        }
+      ` }</style>
     </div>
   );
 };
 
 // Componente principal del formulario
 const NewCustomerInformationForm = () => {
-  const { formId } = useParams<{ formId: string }>();
+  const { formId } = useParams<{ formId: string; }>();
   const navigate = useNavigate();
   const { checkFormExpiration, submitCustomerInfo } = useNewCustomerFormStore();
 
   // Estados locales
-  const [currentStep, setCurrentStep] = useState(0);
-  const [formData, setFormData] = useState<Partial<NewCustomerInfo>>({
+  const [ currentStep, setCurrentStep ] = useState( 0 );
+  const [ formData, setFormData ] = useState<Partial<NewCustomerInfo>>( {
     condominiumInfo: { name: "", address: "" },
-    plan: "Basic",
+    plan: "50",
+    pricing: Math.round( ( PLAN_BASE + 50 * COST_PER_UNIT ) * ( 1 + IVA_RATE ) * 100 ) / 100,
     billingFrequency: "monthly",
-  });
-  const [errors, setErrors] = useState<FormErrors>({});
-  const [touched, setTouched] = useState<Record<string, boolean>>({});
-  const [isFormExpired, setIsFormExpired] = useState(false);
-  const [isCheckingExpiration, setIsCheckingExpiration] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
+  } );
+  const [ errors, setErrors ] = useState<FormErrors>( {} );
+  const [ touched, setTouched ] = useState<Record<string, boolean>>( {} );
+  const [ isFormExpired, setIsFormExpired ] = useState( false );
+  const [ isCheckingExpiration, setIsCheckingExpiration ] = useState( true );
+  const [ submitting, setSubmitting ] = useState( false );
   const seoHead = (
     <Helmet>
       <title>Alta de Cliente | EstateAdmin</title>
@@ -898,80 +893,80 @@ const NewCustomerInformationForm = () => {
         content="Formulario de alta comercial para nuevos clientes."
       />
       <meta name="robots" content="noindex, nofollow" />
-      <link rel="canonical" href={`https://estate-admin.com/nuevo-cliente/${formId || ""}`} />
+      <link rel="canonical" href={ `https://estate-admin.com/nuevo-cliente/${ formId || "" }` } />
     </Helmet>
   );
 
   // Comprobar la expiración del formulario al cargar
-  useEffect(() => {
+  useEffect( () => {
     const checkExpiration = async () => {
-      if (!formId) {
-        setIsFormExpired(true);
-        setIsCheckingExpiration(false);
+      if ( !formId ) {
+        setIsFormExpired( true );
+        setIsCheckingExpiration( false );
         return;
       }
 
-      setIsCheckingExpiration(true);
+      setIsCheckingExpiration( true );
       try {
-        const expirationData = await checkFormExpiration(formId);
-        setIsFormExpired(expirationData.expired);
+        const expirationData = await checkFormExpiration( formId );
+        setIsFormExpired( expirationData.expired );
 
-        if (expirationData.expired) {
+        if ( expirationData.expired ) {
           toast.error(
             "Este formulario ha expirado. Por favor, solicite un nuevo enlace."
           );
         }
-      } catch (error) {
-        console.error("Error al verificar expiración:", error);
-        toast.error("Error al verificar el estado del formulario");
-        setIsFormExpired(true);
+      } catch ( error ) {
+        console.error( "Error al verificar expiración:", error );
+        toast.error( "Error al verificar el estado del formulario" );
+        setIsFormExpired( true );
       } finally {
-        setIsCheckingExpiration(false);
+        setIsCheckingExpiration( false );
       }
     };
 
     checkExpiration();
-  }, [formId, checkFormExpiration]);
+  }, [ formId, checkFormExpiration ] );
 
   // Manejar la actualización de campos del formulario
-  const handleUpdateField = (field: string, value: any) => {
+  const handleUpdateField = ( field: string, value: any ) => {
     // Para campos anidados como condominiumInfo
-    if (field.includes(".")) {
-      const [parent, child] = field.split(".");
+    if ( field.includes( "." ) ) {
+      const [ parent, child ] = field.split( "." );
 
       // Tratamiento específico para condominiumInfo
-      if (parent === "condominiumInfo") {
-        setFormData((prev) => ({
+      if ( parent === "condominiumInfo" ) {
+        setFormData( ( prev ) => ( {
           ...prev,
           condominiumInfo: {
-            ...(prev.condominiumInfo || { name: "", address: "" }),
-            [child]: value,
+            ...( prev.condominiumInfo || { name: "", address: "" } ),
+            [ child ]: value,
           },
-        }));
+        } ) );
       }
     } else {
-      setFormData((prev) => ({
+      setFormData( ( prev ) => ( {
         ...prev,
-        [field]: value,
-      }));
+        [ field ]: value,
+      } ) );
     }
 
     // Limpiar error al editar el campo
-    if (errors[field]) {
-      setErrors((prev) => {
+    if ( errors[ field ] ) {
+      setErrors( ( prev ) => {
         const newErrors = { ...prev };
-        delete newErrors[field];
+        delete newErrors[ field ];
         return newErrors;
-      });
+      } );
     }
   };
 
   // Marcar un campo como "tocado" para la validación
-  const handleSetTouched = (field: string, isTouched: boolean) => {
-    setTouched((prev) => ({
+  const handleSetTouched = ( field: string, isTouched: boolean ) => {
+    setTouched( ( prev ) => ( {
       ...prev,
-      [field]: isTouched,
-    }));
+      [ field ]: isTouched,
+    } ) );
   };
 
   // Validar el paso actual
@@ -980,71 +975,71 @@ const NewCustomerInformationForm = () => {
     let isValid = true;
 
     // Validaciones para cada paso
-    switch (currentStep) {
+    switch ( currentStep ) {
       case 0: // Información personal
-        if (!formData.name?.trim()) {
+        if ( !formData.name?.trim() ) {
           newErrors.name = "El nombre es obligatorio";
           isValid = false;
         }
-        if (!formData.lastName?.trim()) {
+        if ( !formData.lastName?.trim() ) {
           newErrors.lastName = "El apellido es obligatorio";
           isValid = false;
         }
-        if (!formData.email?.trim()) {
+        if ( !formData.email?.trim() ) {
           newErrors.email = "El correo electrónico es obligatorio";
           isValid = false;
-        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+        } else if ( !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test( formData.email ) ) {
           newErrors.email =
             "El correo electrónico debe tener un formato válido";
           isValid = false;
         }
-        if (!formData.phoneNumber?.trim()) {
+        if ( !formData.phoneNumber?.trim() ) {
           newErrors.phoneNumber = "El número telefónico es obligatorio";
           isValid = false;
         }
         break;
 
       case 1: // Información de la empresa
-        if (!formData.companyName?.trim()) {
+        if ( !formData.companyName?.trim() ) {
           newErrors.companyName = "El nombre de la compañía es obligatorio";
           isValid = false;
         }
-        if (!formData.businessName?.trim()) {
+        if ( !formData.businessName?.trim() ) {
           newErrors.businessName = "El nombre comercial es obligatorio";
           isValid = false;
         }
-        if (!formData.country?.trim()) {
+        if ( !formData.country?.trim() ) {
           newErrors.country = "El país es obligatorio";
           isValid = false;
         }
-        if (!formData.businessActivity?.trim()) {
+        if ( !formData.businessActivity?.trim() ) {
           newErrors.businessActivity = "La actividad económica es obligatoria";
           isValid = false;
         }
         break;
 
       case 2: // Datos fiscales
-        if (!formData.fullFiscalAddress?.trim()) {
+        if ( !formData.fullFiscalAddress?.trim() ) {
           newErrors.fullFiscalAddress = "El domicilio fiscal es obligatorio";
           isValid = false;
         }
-        if (!formData.RFC?.trim()) {
+        if ( !formData.RFC?.trim() ) {
           newErrors.RFC = "El RFC es obligatorio";
           isValid = false;
         }
-        if (!formData.taxRegime?.trim()) {
+        if ( !formData.taxRegime?.trim() ) {
           newErrors.taxRegime = "El régimen fiscal es obligatorio";
           isValid = false;
         }
         break;
 
       case 3: // Información de responsable
-        if (!formData.responsiblePersonName?.trim()) {
+        if ( !formData.responsiblePersonName?.trim() ) {
           newErrors.responsiblePersonName =
             "El nombre de la persona responsable es obligatorio";
           isValid = false;
         }
-        if (!formData.responsiblePersonPosition?.trim()) {
+        if ( !formData.responsiblePersonPosition?.trim() ) {
           newErrors.responsiblePersonPosition =
             "El cargo de la persona responsable es obligatorio";
           isValid = false;
@@ -1052,13 +1047,13 @@ const NewCustomerInformationForm = () => {
         break;
 
       case 4: // Información del condominio
-        if (!formData.condominiumInfo?.name?.trim()) {
-          newErrors["condominiumInfo.name"] =
+        if ( !formData.condominiumInfo?.name?.trim() ) {
+          newErrors[ "condominiumInfo.name" ] =
             "El nombre del condominio es obligatorio";
           isValid = false;
         }
-        if (!formData.condominiumInfo?.address?.trim()) {
-          newErrors["condominiumInfo.address"] =
+        if ( !formData.condominiumInfo?.address?.trim() ) {
+          newErrors[ "condominiumInfo.address" ] =
             "La dirección del condominio es obligatoria";
           isValid = false;
         }
@@ -1069,25 +1064,25 @@ const NewCustomerInformationForm = () => {
         break;
     }
 
-    setErrors(newErrors);
+    setErrors( newErrors );
     return isValid;
   };
 
   // Obtener campos para el paso actual (para validación)
-  const getFieldsForStep = (step: number): string[] => {
-    switch (step) {
+  const getFieldsForStep = ( step: number ): string[] => {
+    switch ( step ) {
       case 0:
-        return ["name", "lastName", "email", "phoneNumber"];
+        return [ "name", "lastName", "email", "phoneNumber" ];
       case 1:
-        return ["companyName", "businessName", "country", "businessActivity"];
+        return [ "companyName", "businessName", "country", "businessActivity" ];
       case 2:
-        return ["fullFiscalAddress", "RFC", "taxRegime"];
+        return [ "fullFiscalAddress", "RFC", "taxRegime" ];
       case 3:
-        return ["responsiblePersonName", "responsiblePersonPosition"];
+        return [ "responsiblePersonName", "responsiblePersonPosition" ];
       case 4:
-        return ["condominiumInfo.name", "condominiumInfo.address"];
+        return [ "condominiumInfo.name", "condominiumInfo.address" ];
       case 5:
-        return ["plan", "billingFrequency", "photoURL"];
+        return [ "plan", "billingFrequency", "photoURL" ];
       default:
         return [];
     }
@@ -1099,89 +1094,89 @@ const NewCustomerInformationForm = () => {
     const newErrors: FormErrors = {};
 
     // Validar campos obligatorios
-    if (!formData.name?.trim()) {
+    if ( !formData.name?.trim() ) {
       newErrors.name = "El nombre es obligatorio";
       allFieldsValid = false;
     }
 
-    if (!formData.lastName?.trim()) {
+    if ( !formData.lastName?.trim() ) {
       newErrors.lastName = "El apellido es obligatorio";
       allFieldsValid = false;
     }
 
-    if (!formData.email?.trim()) {
+    if ( !formData.email?.trim() ) {
       newErrors.email = "El correo electrónico es obligatorio";
       allFieldsValid = false;
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+    } else if ( !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test( formData.email ) ) {
       newErrors.email = "El correo electrónico debe tener un formato válido";
       allFieldsValid = false;
     }
 
-    if (!formData.phoneNumber?.trim()) {
+    if ( !formData.phoneNumber?.trim() ) {
       newErrors.phoneNumber = "El número telefónico es obligatorio";
       allFieldsValid = false;
     }
 
-    if (!formData.companyName?.trim()) {
+    if ( !formData.companyName?.trim() ) {
       newErrors.companyName = "El nombre de la compañía es obligatorio";
       allFieldsValid = false;
     }
 
-    if (!formData.businessName?.trim()) {
+    if ( !formData.businessName?.trim() ) {
       newErrors.businessName = "El nombre comercial es obligatorio";
       allFieldsValid = false;
     }
 
-    if (!formData.country?.trim()) {
+    if ( !formData.country?.trim() ) {
       newErrors.country = "El país es obligatorio";
       allFieldsValid = false;
     }
 
-    if (!formData.businessActivity?.trim()) {
+    if ( !formData.businessActivity?.trim() ) {
       newErrors.businessActivity = "La actividad económica es obligatoria";
       allFieldsValid = false;
     }
 
-    if (!formData.fullFiscalAddress?.trim()) {
+    if ( !formData.fullFiscalAddress?.trim() ) {
       newErrors.fullFiscalAddress = "El domicilio fiscal es obligatorio";
       allFieldsValid = false;
     }
 
-    if (!formData.RFC?.trim()) {
+    if ( !formData.RFC?.trim() ) {
       newErrors.RFC = "El RFC es obligatorio";
       allFieldsValid = false;
     }
 
-    if (!formData.taxRegime?.trim()) {
+    if ( !formData.taxRegime?.trim() ) {
       newErrors.taxRegime = "El régimen fiscal es obligatorio";
       allFieldsValid = false;
     }
 
-    if (!formData.responsiblePersonName?.trim()) {
+    if ( !formData.responsiblePersonName?.trim() ) {
       newErrors.responsiblePersonName =
         "El nombre de la persona responsable es obligatorio";
       allFieldsValid = false;
     }
 
-    if (!formData.responsiblePersonPosition?.trim()) {
+    if ( !formData.responsiblePersonPosition?.trim() ) {
       newErrors.responsiblePersonPosition =
         "El cargo de la persona responsable es obligatorio";
       allFieldsValid = false;
     }
 
-    if (!formData.condominiumInfo?.name?.trim()) {
-      newErrors["condominiumInfo.name"] =
+    if ( !formData.condominiumInfo?.name?.trim() ) {
+      newErrors[ "condominiumInfo.name" ] =
         "El nombre del condominio es obligatorio";
       allFieldsValid = false;
     }
 
-    if (!formData.condominiumInfo?.address?.trim()) {
-      newErrors["condominiumInfo.address"] =
+    if ( !formData.condominiumInfo?.address?.trim() ) {
+      newErrors[ "condominiumInfo.address" ] =
         "La dirección del condominio es obligatoria";
       allFieldsValid = false;
     }
 
-    setErrors(newErrors);
+    setErrors( newErrors );
 
     // Marcar todos los campos como tocados para mostrar errores
     const newTouched: Record<string, boolean> = {};
@@ -1202,32 +1197,32 @@ const NewCustomerInformationForm = () => {
       "responsiblePersonPosition",
       "condominiumInfo.name",
       "condominiumInfo.address",
-    ].forEach((field) => {
-      newTouched[field] = true;
-    });
+    ].forEach( ( field ) => {
+      newTouched[ field ] = true;
+    } );
 
-    setTouched(newTouched);
+    setTouched( newTouched );
 
     return allFieldsValid;
   };
 
   // Manejar navegación entre pasos
   const handleNext = () => {
-    if (validateCurrentStep()) {
-      setCurrentStep((prev) => Math.min(prev + 1, FORM_STEPS.length - 1));
+    if ( validateCurrentStep() ) {
+      setCurrentStep( ( prev ) => Math.min( prev + 1, FORM_STEPS.length - 1 ) );
     } else {
       // Marcar todos los campos del paso actual como tocados para mostrar errores
-      const fieldsInCurrentStep = getFieldsForStep(currentStep);
+      const fieldsInCurrentStep = getFieldsForStep( currentStep );
       const newTouched = { ...touched };
-      fieldsInCurrentStep.forEach((field) => {
-        newTouched[field] = true;
-      });
-      setTouched(newTouched);
+      fieldsInCurrentStep.forEach( ( field ) => {
+        newTouched[ field ] = true;
+      } );
+      setTouched( newTouched );
     }
   };
 
   const handlePrevious = () => {
-    setCurrentStep((prev) => Math.max(prev - 1, 0));
+    setCurrentStep( ( prev ) => Math.max( prev - 1, 0 ) );
   };
 
   // Manejar el envío del formulario
@@ -1235,19 +1230,19 @@ const NewCustomerInformationForm = () => {
     // Validar todos los campos antes de enviar
     const allFieldsValid = validateAllFields();
 
-    if (!allFieldsValid) {
+    if ( !allFieldsValid ) {
       toast.error(
         "Por favor, complete todos los campos obligatorios antes de enviar"
       );
       return;
     }
 
-    if (!formId) {
-      toast.error("ID de formulario no válido");
+    if ( !formId ) {
+      toast.error( "ID de formulario no válido" );
       return;
     }
 
-    setSubmitting(true);
+    setSubmitting( true );
     try {
       // Usar el formId de la URL directamente sin generar un nuevo recordId
       const dataToSubmit = {
@@ -1255,26 +1250,26 @@ const NewCustomerInformationForm = () => {
         recordId: formId, // Usar el formId de la URL como recordId
       } as NewCustomerInfo;
 
-      const success = await submitCustomerInfo(formId, dataToSubmit);
+      const success = await submitCustomerInfo( formId, dataToSubmit );
 
-      if (success) {
-        navigate("/formulario-completado");
+      if ( success ) {
+        navigate( "/formulario-completado" );
       }
-    } catch (error) {
-      console.error("Error al enviar formulario:", error);
+    } catch ( error ) {
+      console.error( "Error al enviar formulario:", error );
       toast.error(
         "Error al enviar la información. Por favor, intente nuevamente."
       );
     } finally {
-      setSubmitting(false);
+      setSubmitting( false );
     }
   };
 
   // Renderizar contenido según el estado
-  if (isCheckingExpiration) {
+  if ( isCheckingExpiration ) {
     return (
       <>
-        {seoHead}
+        { seoHead }
         <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
           <div className="text-center">
             <ArrowPathIcon className="h-12 w-12 mx-auto animate-spin text-indigo-600 dark:text-indigo-400" />
@@ -1287,10 +1282,10 @@ const NewCustomerInformationForm = () => {
     );
   }
 
-  if (isFormExpired) {
+  if ( isFormExpired ) {
     return (
       <>
-        {seoHead}
+        { seoHead }
         <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
           <div className="max-w-md w-full bg-white dark:bg-gray-800 shadow-lg rounded-lg p-8 text-center">
             <ExclamationTriangleIcon className="h-16 w-16 mx-auto text-amber-500" />
@@ -1317,225 +1312,221 @@ const NewCustomerInformationForm = () => {
 
   // Componente principal del formulario (cuando es válido)
   const progressPercentage = Math.round(
-    ((currentStep + 1) / FORM_STEPS.length) * 100
+    ( ( currentStep + 1 ) / FORM_STEPS.length ) * 100
   );
 
   return (
     <>
-      {seoHead}
+      { seoHead }
       <div className="min-h-screen bg-[radial-gradient(circle_at_top,_#e0e7ff_0%,_#ffffff_40%,_#f8fafc_100%)] dark:bg-[radial-gradient(circle_at_top,_#1f2937_0%,_#111827_60%,_#0b1220_100%)] py-10 px-4 sm:px-6 lg:px-8">
         <div
-          className={`mx-auto ${currentStep === 5 ? "max-w-6xl" : "max-w-3xl"}`}
+          className={ `mx-auto ${ currentStep === 5 ? "max-w-6xl" : "max-w-3xl" }` }
         >
-        <div className="text-center mb-8">
-          <h1 className="bg-gradient-to-r from-indigo-700 via-indigo-500 to-cyan-500 bg-clip-text text-transparent text-5xl font-extrabold mb-3">
-            EstateAdmin
-          </h1>
-          <h2 className="text-xl font-extrabold text-gray-900 dark:text-white sm:text-4xl">
-            Información de Nuevo Cliente
-          </h2>
-          <p className="mt-3 text-lg text-gray-500 dark:text-gray-400">
-            Complete el formulario para iniciar su proceso de alta comercial
-          </p>
-        </div>
-
-        <div className="mb-6 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white/90 dark:bg-gray-800/80 backdrop-blur-sm shadow-sm p-4">
-          <div className="flex items-center justify-between mb-3">
-            <div>
-              <p className="text-xs uppercase tracking-wide font-semibold text-indigo-600 dark:text-indigo-300">
-                Progreso del Formulario
-              </p>
-              <p className="text-sm text-gray-600 dark:text-gray-300">
-                Paso {currentStep + 1} de {FORM_STEPS.length}:{" "}
-                {FORM_STEPS[currentStep]}
-              </p>
-            </div>
-            <div className="inline-flex items-center rounded-full bg-indigo-100 dark:bg-indigo-900/40 px-3 py-1 text-xs font-semibold text-indigo-700 dark:text-indigo-300">
-              {progressPercentage}%
-            </div>
-          </div>
-          <div className="h-2 w-full bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-            <motion.div
-              className="h-full bg-gradient-to-r from-indigo-500 to-cyan-500"
-              initial={{ width: 0 }}
-              animate={{ width: `${progressPercentage}%` }}
-              transition={{ duration: 0.35 }}
-            />
+          <div className="text-center mb-8">
+            <h1 className="bg-gradient-to-r from-indigo-700 via-indigo-500 to-cyan-500 bg-clip-text text-transparent text-5xl font-extrabold mb-3">
+              EstateAdmin
+            </h1>
+            <h2 className="text-xl font-extrabold text-gray-900 dark:text-white sm:text-4xl">
+              Información de Nuevo Cliente
+            </h2>
+            <p className="mt-3 text-lg text-gray-500 dark:text-gray-400">
+              Complete el formulario para iniciar su proceso de alta comercial
+            </p>
           </div>
 
-          {/* Indicador de pasos */}
-          <div className="mt-4 grid grid-cols-3 md:grid-cols-6 gap-2">
-            {FORM_STEPS.map((step, index) => {
-              const Icon = STEP_ICONS[index];
-              const done = index < currentStep;
-              const active = index === currentStep;
-              return (
-                <button
-                  key={step}
-                  onClick={() => done && setCurrentStep(index)}
-                  disabled={!done}
-                  className={`flex items-center gap-2 rounded-lg border px-2 py-2 text-left transition-colors ${
-                    active
+          <div className="mb-6 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white/90 dark:bg-gray-800/80 backdrop-blur-sm shadow-sm p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <p className="text-xs uppercase tracking-wide font-semibold text-indigo-600 dark:text-indigo-300">
+                  Progreso del Formulario
+                </p>
+                <p className="text-sm text-gray-600 dark:text-gray-300">
+                  Paso { currentStep + 1 } de { FORM_STEPS.length }:{ " " }
+                  { FORM_STEPS[ currentStep ] }
+                </p>
+              </div>
+              <div className="inline-flex items-center rounded-full bg-indigo-100 dark:bg-indigo-900/40 px-3 py-1 text-xs font-semibold text-indigo-700 dark:text-indigo-300">
+                { progressPercentage }%
+              </div>
+            </div>
+            <div className="h-2 w-full bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+              <motion.div
+                className="h-full bg-gradient-to-r from-indigo-500 to-cyan-500"
+                initial={ { width: 0 } }
+                animate={ { width: `${ progressPercentage }%` } }
+                transition={ { duration: 0.35 } }
+              />
+            </div>
+
+            {/* Indicador de pasos */ }
+            <div className="mt-4 grid grid-cols-3 md:grid-cols-6 gap-2">
+              { FORM_STEPS.map( ( step, index ) => {
+                const Icon = STEP_ICONS[ index ];
+                const done = index < currentStep;
+                const active = index === currentStep;
+                return (
+                  <button
+                    key={ step }
+                    onClick={ () => done && setCurrentStep( index ) }
+                    disabled={ !done }
+                    className={ `flex items-center gap-2 rounded-lg border px-2 py-2 text-left transition-colors ${ active
                       ? "border-indigo-300 bg-indigo-50 dark:border-indigo-700 dark:bg-indigo-900/30"
                       : done
-                      ? "border-emerald-200 bg-emerald-50 dark:border-emerald-900/40 dark:bg-emerald-900/20 cursor-pointer"
-                      : "border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800 cursor-not-allowed"
-                  }`}
-                >
-                  <Icon
-                    className={`h-4 w-4 ${
-                      active
+                        ? "border-emerald-200 bg-emerald-50 dark:border-emerald-900/40 dark:bg-emerald-900/20 cursor-pointer"
+                        : "border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800 cursor-not-allowed"
+                      }` }
+                  >
+                    <Icon
+                      className={ `h-4 w-4 ${ active
                         ? "text-indigo-600 dark:text-indigo-300"
                         : done
-                        ? "text-emerald-600 dark:text-emerald-300"
-                        : "text-gray-400"
-                    }`}
-                  />
-                  <span
-                    className={`text-[11px] font-medium leading-tight ${
-                      active
+                          ? "text-emerald-600 dark:text-emerald-300"
+                          : "text-gray-400"
+                        }` }
+                    />
+                    <span
+                      className={ `text-[11px] font-medium leading-tight ${ active
                         ? "text-indigo-700 dark:text-indigo-300"
                         : done
-                        ? "text-emerald-700 dark:text-emerald-300"
-                        : "text-gray-500 dark:text-gray-400"
-                    }`}
-                  >
-                    {step}
-                  </span>
-                </button>
-              );
-            })}
+                          ? "text-emerald-700 dark:text-emerald-300"
+                          : "text-gray-500 dark:text-gray-400"
+                        }` }
+                    >
+                      { step }
+                    </span>
+                  </button>
+                );
+              } ) }
+            </div>
           </div>
-        </div>
 
-        {/* Contenedor del formulario */}
-        <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white/95 dark:bg-gray-800/95 shadow-xl overflow-hidden">
-          <div className="px-4 sm:px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-indigo-50/80 to-cyan-50/60 dark:from-gray-800 dark:to-gray-800">
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-sm font-medium text-gray-700 dark:text-gray-200">
-                Información segura y confidencial
-              </p>
-              <div className="inline-flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
-                <ClockIcon className="h-4 w-4" />
-                <span>Tiempo estimado: 6-8 minutos</span>
+          {/* Contenedor del formulario */ }
+          <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white/95 dark:bg-gray-800/95 shadow-xl overflow-hidden">
+            <div className="px-4 sm:px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-indigo-50/80 to-cyan-50/60 dark:from-gray-800 dark:to-gray-800">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-200">
+                  Información segura y confidencial
+                </p>
+                <div className="inline-flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+                  <ClockIcon className="h-4 w-4" />
+                  <span>Tiempo estimado: 6-8 minutos</span>
+                </div>
+              </div>
+            </div>
+            <div className="px-4 py-5 sm:p-6">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={ currentStep }
+                  initial={ { opacity: 0, x: 20 } }
+                  animate={ { opacity: 1, x: 0 } }
+                  exit={ { opacity: 0, x: -20 } }
+                  transition={ { duration: 0.3 } }
+                >
+                  {/* Renderizar el paso actual del formulario */ }
+                  { currentStep === 0 && (
+                    <PersonalInfoStep
+                      currentData={ formData }
+                      updateField={ handleUpdateField }
+                      errors={ errors }
+                      touched={ touched }
+                      setTouched={ handleSetTouched }
+                    />
+                  ) }
+                  { currentStep === 1 && (
+                    <CompanyInfoStep
+                      currentData={ formData }
+                      updateField={ handleUpdateField }
+                      errors={ errors }
+                      touched={ touched }
+                      setTouched={ handleSetTouched }
+                    />
+                  ) }
+                  { currentStep === 2 && (
+                    <FiscalInfoStep
+                      currentData={ formData }
+                      updateField={ handleUpdateField }
+                      errors={ errors }
+                      touched={ touched }
+                      setTouched={ handleSetTouched }
+                    />
+                  ) }
+                  { currentStep === 3 && (
+                    <ResponsiblePersonStep
+                      currentData={ formData }
+                      updateField={ handleUpdateField }
+                      errors={ errors }
+                      touched={ touched }
+                      setTouched={ handleSetTouched }
+                    />
+                  ) }
+                  { currentStep === 4 && (
+                    <CondominiumInfoStep
+                      currentData={ formData }
+                      updateField={ handleUpdateField }
+                      errors={ errors }
+                      touched={ touched }
+                      setTouched={ handleSetTouched }
+                    />
+                  ) }
+                  { currentStep === 5 && (
+                    <AdditionalConfigStep
+                      currentData={ formData }
+                      updateField={ handleUpdateField }
+                      errors={ errors }
+                      touched={ touched }
+                      setTouched={ handleSetTouched }
+                    />
+                  ) }
+                </motion.div>
+              </AnimatePresence>
+
+              {/* Botones de navegación */ }
+              <div className="mt-8 sticky bottom-0 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm border-t border-gray-200 dark:border-gray-700 pt-4 flex justify-between">
+                <button
+                  type="button"
+                  onClick={ handlePrevious }
+                  disabled={ currentStep === 0 }
+                  className={ `inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-lg text-gray-700 dark:text-gray-300 dark:border-gray-600 ${ currentStep === 0
+                    ? "bg-gray-100 dark:bg-gray-700 cursor-not-allowed opacity-50"
+                    : "bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"
+                    } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500` }
+                >
+                  <ArrowLeftIcon className="mr-2 h-4 w-4" />
+                  Anterior
+                </button>
+
+                { currentStep < FORM_STEPS.length - 1 ? (
+                  <button
+                    type="button"
+                    onClick={ handleNext }
+                    className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                  >
+                    Siguiente
+                    <ArrowRightIcon className="ml-2 h-4 w-4" />
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={ handleSubmit }
+                    disabled={ submitting }
+                    className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-70 disabled:cursor-not-allowed"
+                  >
+                    { submitting ? (
+                      <>
+                        <ArrowPathIcon className="mr-2 h-4 animate-spin" />
+                        Enviando...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircleIcon className="mr-2 h-4 w-4" />
+                        Enviar Información
+                      </>
+                    ) }
+                  </button>
+                ) }
               </div>
             </div>
           </div>
-          <div className="px-4 py-5 sm:p-6">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={currentStep}
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.3 }}
-              >
-                {/* Renderizar el paso actual del formulario */}
-                {currentStep === 0 && (
-                  <PersonalInfoStep
-                    currentData={formData}
-                    updateField={handleUpdateField}
-                    errors={errors}
-                    touched={touched}
-                    setTouched={handleSetTouched}
-                  />
-                )}
-                {currentStep === 1 && (
-                  <CompanyInfoStep
-                    currentData={formData}
-                    updateField={handleUpdateField}
-                    errors={errors}
-                    touched={touched}
-                    setTouched={handleSetTouched}
-                  />
-                )}
-                {currentStep === 2 && (
-                  <FiscalInfoStep
-                    currentData={formData}
-                    updateField={handleUpdateField}
-                    errors={errors}
-                    touched={touched}
-                    setTouched={handleSetTouched}
-                  />
-                )}
-                {currentStep === 3 && (
-                  <ResponsiblePersonStep
-                    currentData={formData}
-                    updateField={handleUpdateField}
-                    errors={errors}
-                    touched={touched}
-                    setTouched={handleSetTouched}
-                  />
-                )}
-                {currentStep === 4 && (
-                  <CondominiumInfoStep
-                    currentData={formData}
-                    updateField={handleUpdateField}
-                    errors={errors}
-                    touched={touched}
-                    setTouched={handleSetTouched}
-                  />
-                )}
-                {currentStep === 5 && (
-                  <AdditionalConfigStep
-                    currentData={formData}
-                    updateField={handleUpdateField}
-                    errors={errors}
-                    touched={touched}
-                    setTouched={handleSetTouched}
-                  />
-                )}
-              </motion.div>
-            </AnimatePresence>
-
-            {/* Botones de navegación */}
-            <div className="mt-8 sticky bottom-0 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm border-t border-gray-200 dark:border-gray-700 pt-4 flex justify-between">
-              <button
-                type="button"
-                onClick={handlePrevious}
-                disabled={currentStep === 0}
-                className={`inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-lg text-gray-700 dark:text-gray-300 dark:border-gray-600 ${
-                  currentStep === 0
-                    ? "bg-gray-100 dark:bg-gray-700 cursor-not-allowed opacity-50"
-                    : "bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"
-                } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500`}
-              >
-                <ArrowLeftIcon className="mr-2 h-4 w-4" />
-                Anterior
-              </button>
-
-              {currentStep < FORM_STEPS.length - 1 ? (
-                <button
-                  type="button"
-                  onClick={handleNext}
-                  className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                >
-                  Siguiente
-                  <ArrowRightIcon className="ml-2 h-4 w-4" />
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={handleSubmit}
-                  disabled={submitting}
-                  className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-70 disabled:cursor-not-allowed"
-                >
-                  {submitting ? (
-                    <>
-                      <ArrowPathIcon className="mr-2 h-4 animate-spin" />
-                      Enviando...
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircleIcon className="mr-2 h-4 w-4" />
-                      Enviar Información
-                    </>
-                  )}
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
         </div>
       </div>
     </>

@@ -3,11 +3,13 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   ClipboardIcon,
+  TrashIcon,
 } from "@heroicons/react/24/outline";
 import { CheckCircleIcon } from "@heroicons/react/24/solid";
 import useNewCustomerFormStore from "../../../../store/superAdmin/useNewCustomerFormStore";
 import toast from "react-hot-toast";
 import LoadingApp from "../../../components/shared/loaders/LoadingApp";
+import DeleteConfirmationModal from "../../../components/shared/modals/DeleteConfirmationModal";
 
 interface FormUrlInfo {
   formId: string;
@@ -21,49 +23,61 @@ interface FormUrlInfo {
 }
 
 const FormUrlsTable: React.FC = () => {
-  const { fetchFormUrls, isLoading } = useNewCustomerFormStore();
-  const [formUrls, setFormUrls] = useState<FormUrlInfo[]>([]);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const { fetchFormUrls, deleteFormUrl, isLoading } = useNewCustomerFormStore();
+  const [ formUrls, setFormUrls ] = useState<FormUrlInfo[]>( [] );
+  const [ currentPage, setCurrentPage ] = useState( 1 );
+  const [ totalPages, setTotalPages ] = useState( 1 );
+  const [ copiedId, setCopiedId ] = useState<string | null>( null );
+  const [ deleteModalOpen, setDeleteModalOpen ] = useState( false );
+  const [ urlToDelete, setUrlToDelete ] = useState<FormUrlInfo | null>( null );
   const itemsPerPage = 10;
 
-  useEffect(() => {
+  useEffect( () => {
     loadFormUrlsData();
-  }, [currentPage]);
+  }, [ currentPage ] );
 
   const loadFormUrlsData = async () => {
     try {
-      const result = await fetchFormUrls(currentPage, itemsPerPage);
-      setFormUrls(result.data);
-      setTotalPages(Math.ceil(result.total / itemsPerPage));
-    } catch (error) {
-      console.error("Error al cargar la información de URLs:", error);
+      const result = await fetchFormUrls( currentPage, itemsPerPage );
+      setFormUrls( result.data );
+      setTotalPages( Math.ceil( result.total / itemsPerPage ) );
+    } catch ( error ) {
+      console.error( "Error al cargar la información de URLs:", error );
     }
   };
 
-  const handleCopyLink = (formId: string) => {
-    const url = `${window.location.origin}/nuevo-cliente/${formId}`;
-    navigator.clipboard.writeText(url);
-    setCopiedId(formId);
-    toast.success("Enlace copiado al portapapeles");
-
-    // Resetear el estado de copiado después de 3 segundos
-    setTimeout(() => {
-      setCopiedId(null);
-    }, 3000);
+  const handleCopyLink = ( formId: string ) => {
+    const url = `${ window.location.origin }/nuevo-cliente/${ formId }`;
+    navigator.clipboard.writeText( url );
+    setCopiedId( formId );
+    toast.success( "Enlace copiado al portapapeles" );
+    setTimeout( () => { setCopiedId( null ); }, 3000 );
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return new Intl.DateTimeFormat("es-MX", {
+  const handleDeleteClick = ( urlInfo: FormUrlInfo ) => {
+    setUrlToDelete( urlInfo );
+    setDeleteModalOpen( true );
+  };
+
+  const handleConfirmDelete = async () => {
+    if ( !urlToDelete ) return;
+    const success = await deleteFormUrl( urlToDelete.formId );
+    if ( success ) {
+      setFormUrls( ( prev ) => prev.filter( ( u ) => u.formId !== urlToDelete.formId ) );
+    }
+    setUrlToDelete( null );
+  };
+
+  const formatDate = ( dateString: string ) => {
+    const date = new Date( dateString );
+    return new Intl.DateTimeFormat( "es-MX", {
       dateStyle: "medium",
       timeStyle: "short",
-    }).format(date);
+    } ).format( date );
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
+  const getStatusBadge = ( status: string ) => {
+    switch ( status ) {
       case "pending":
         return (
           <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-100">
@@ -91,13 +105,13 @@ const FormUrlsTable: React.FC = () => {
     }
   };
 
-  const getDaysRemaining = (expirationDate: string) => {
+  const getDaysRemaining = ( expirationDate: string ) => {
     const today = new Date();
-    const expiry = new Date(expirationDate);
+    const expiry = new Date( expirationDate );
     const diffTime = expiry.getTime() - today.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    const diffDays = Math.ceil( diffTime / ( 1000 * 60 * 60 * 24 ) );
 
-    if (diffDays < 0) return 0;
+    if ( diffDays < 0 ) return 0;
     return diffDays;
   };
 
@@ -107,7 +121,7 @@ const FormUrlsTable: React.FC = () => {
         URLs de Formularios Generados
       </h2>
 
-      {isLoading ? (
+      { isLoading ? (
         <div className="flex justify-center items-center py-10">
           <LoadingApp />
         </div>
@@ -172,90 +186,99 @@ const FormUrlsTable: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                {formUrls.map((urlInfo) => (
+                { formUrls.map( ( urlInfo ) => (
                   <tr
-                    key={urlInfo.formId}
+                    key={ urlInfo.formId }
                     className="hover:bg-gray-50 dark:hover:bg-gray-700"
                   >
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 font-mono">
-                      {urlInfo.formId.substring(0, 8)}...
+                      { urlInfo.formId.substring( 0, 8 ) }...
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      {getStatusBadge(urlInfo.status)}
+                      { getStatusBadge( urlInfo.status ) }
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                      {formatDate(urlInfo.createdAt)}
+                      { formatDate( urlInfo.createdAt ) }
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                      {formatDate(urlInfo.expirationDate)}
+                      { formatDate( urlInfo.expirationDate ) }
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       <span
-                        className={`
-                          ${
-                            getDaysRemaining(urlInfo.expirationDate) > 3
-                              ? "text-green-600 dark:text-green-400"
-                              : getDaysRemaining(urlInfo.expirationDate) > 1
+                        className={ `
+                          ${ getDaysRemaining( urlInfo.expirationDate ) > 3
+                            ? "text-green-600 dark:text-green-400"
+                            : getDaysRemaining( urlInfo.expirationDate ) > 1
                               ? "text-yellow-600 dark:text-yellow-400"
                               : "text-red-600 dark:text-red-400"
                           }
                           font-medium
                         `}
                       >
-                        {getDaysRemaining(urlInfo.expirationDate)} días
+                        { getDaysRemaining( urlInfo.expirationDate ) } días
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                      {urlInfo.usedAt
-                        ? formatDate(urlInfo.usedAt)
-                        : "No utilizado"}
+                      { urlInfo.usedAt
+                        ? formatDate( urlInfo.usedAt )
+                        : "No utilizado" }
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 font-mono">
-                      {urlInfo.customerInfoId
-                        ? urlInfo.customerInfoId.substring(0, 8) + "..."
-                        : "N/A"}
+                      { urlInfo.customerInfoId
+                        ? urlInfo.customerInfoId.substring( 0, 8 ) + "..."
+                        : "N/A" }
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <button
-                        onClick={() => handleCopyLink(urlInfo.formId)}
-                        disabled={!urlInfo.active}
-                        className={`
-                          inline-flex items-center text-indigo-600 hover:text-indigo-900 
-                          dark:text-indigo-400 dark:hover:text-indigo-300
-                          ${!urlInfo.active && "opacity-50 cursor-not-allowed"}
-                        `}
-                      >
-                        {copiedId === urlInfo.formId ? (
-                          <CheckCircleIcon className="h-5 w-5" />
-                        ) : (
-                          <>
-                            <ClipboardIcon className="h-4 w-4 mr-1" />
-                            Copiar
-                          </>
-                        )}
-                      </button>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={ () => handleCopyLink( urlInfo.formId ) }
+                          disabled={ !urlInfo.active }
+                          title="Copiar enlace"
+                          className={ `
+                            inline-flex items-center text-indigo-600 hover:text-indigo-900 
+                            dark:text-indigo-400 dark:hover:text-indigo-300 transition-colors
+                            ${ !urlInfo.active && "opacity-50 cursor-not-allowed" }
+                          `}
+                        >
+                          { copiedId === urlInfo.formId ? (
+                            <CheckCircleIcon className="h-5 w-5" />
+                          ) : (
+                            <>
+                              <ClipboardIcon className="h-4 w-4 mr-1" />
+                              Copiar
+                            </>
+                          ) }
+                        </button>
+                        <button
+                          onClick={ () => handleDeleteClick( urlInfo ) }
+                          title="Eliminar URL"
+                          className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 transition-colors"
+                        >
+                          <TrashIcon className="h-5 w-5" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
-                ))}
+                ) ) }
               </tbody>
             </table>
           </div>
 
-          {/* Paginación */}
+          {/* Paginación */ }
           <div className="flex items-center justify-between px-4 py-3 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 sm:px-6 mt-4">
             <div className="flex-1 flex justify-between sm:hidden">
               <button
-                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                disabled={currentPage === 1}
+                onClick={ () => setCurrentPage( Math.max( 1, currentPage - 1 ) ) }
+                disabled={ currentPage === 1 }
                 className="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50"
               >
                 Anterior
               </button>
               <button
-                onClick={() =>
-                  setCurrentPage(Math.min(totalPages, currentPage + 1))
+                onClick={ () =>
+                  setCurrentPage( Math.min( totalPages, currentPage + 1 ) )
                 }
-                disabled={currentPage === totalPages}
+                disabled={ currentPage === totalPages }
                 className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50"
               >
                 Siguiente
@@ -264,15 +287,15 @@ const FormUrlsTable: React.FC = () => {
             <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
               <div>
                 <p className="text-sm text-gray-700 dark:text-gray-300">
-                  Mostrando{" "}
+                  Mostrando{ " " }
                   <span className="font-medium">
-                    {(currentPage - 1) * itemsPerPage + 1}
-                  </span>{" "}
-                  a{" "}
+                    { ( currentPage - 1 ) * itemsPerPage + 1 }
+                  </span>{ " " }
+                  a{ " " }
                   <span className="font-medium">
-                    {Math.min(currentPage * itemsPerPage, formUrls.length)}
-                  </span>{" "}
-                  de <span className="font-medium">{formUrls.length}</span>{" "}
+                    { Math.min( currentPage * itemsPerPage, formUrls.length ) }
+                  </span>{ " " }
+                  de <span className="font-medium">{ formUrls.length }</span>{ " " }
                   resultados
                 </p>
               </div>
@@ -282,33 +305,32 @@ const FormUrlsTable: React.FC = () => {
                   aria-label="Pagination"
                 >
                   <button
-                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                    disabled={currentPage === 1}
+                    onClick={ () => setCurrentPage( Math.max( 1, currentPage - 1 ) ) }
+                    disabled={ currentPage === 1 }
                     className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm font-medium text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50"
                   >
                     <span className="sr-only">Anterior</span>
                     <ChevronLeftIcon className="h-5 w-5" aria-hidden="true" />
                   </button>
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                    (page) => (
+                  { Array.from( { length: totalPages }, ( _, i ) => i + 1 ).map(
+                    ( page ) => (
                       <button
-                        key={page}
-                        onClick={() => setCurrentPage(page)}
-                        className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
-                          page === currentPage
+                        key={ page }
+                        onClick={ () => setCurrentPage( page ) }
+                        className={ `relative inline-flex items-center px-4 py-2 border text-sm font-medium ${ page === currentPage
                             ? "z-10 bg-indigo-50 dark:bg-indigo-900 border-indigo-500 dark:border-indigo-700 text-indigo-600 dark:text-indigo-300"
                             : "bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600"
-                        }`}
+                          }` }
                       >
-                        {page}
+                        { page }
                       </button>
                     )
-                  )}
+                  ) }
                   <button
-                    onClick={() =>
-                      setCurrentPage(Math.min(totalPages, currentPage + 1))
+                    onClick={ () =>
+                      setCurrentPage( Math.min( totalPages, currentPage + 1 ) )
                     }
-                    disabled={currentPage === totalPages}
+                    disabled={ currentPage === totalPages }
                     className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm font-medium text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50"
                   >
                     <span className="sr-only">Siguiente</span>
@@ -319,7 +341,14 @@ const FormUrlsTable: React.FC = () => {
             </div>
           </div>
         </>
-      )}
+      ) }
+      <DeleteConfirmationModal
+        open={ deleteModalOpen }
+        setOpen={ setDeleteModalOpen }
+        title="Eliminar URL de formulario"
+        message={ `¿Estás seguro de que deseas eliminar la URL del formulario ${ urlToDelete?.formId.substring( 0, 8 ) ?? "" }...? Esta acción lo eliminará permanentemente de Firestore.` }
+        onConfirm={ handleConfirmDelete }
+      />
     </div>
   );
 };

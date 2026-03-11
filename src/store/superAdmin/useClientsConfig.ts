@@ -34,6 +34,7 @@ export interface Client {
   responsiblePersonPosition?: string;
   billingFrequency?: string;
   hasMaintenanceApp?: boolean;
+  pricing?: number;
 }
 
 export interface ClientFormData {
@@ -56,6 +57,7 @@ export interface ClientFormData {
   responsiblePersonPosition?: string;
   billingFrequency?: string;
   hasMaintenanceApp?: boolean;
+  pricing?: number;
 }
 
 export interface CondominiumFormData {
@@ -88,13 +90,6 @@ export interface CondominiumWithUsers extends CondominiumFormData {
   regularUsersCount?: number;
 }
 
-// Límites de condominios por plan
-const PLAN_LIMITS = {
-  Basic: { min: 1, max: 50 },
-  Essential: { min: 51, max: 100 },
-  Professional: { min: 101, max: 250 },
-  Premium: { min: 251, max: 500 },
-};
 
 interface ClientsConfigStore {
   // Estado
@@ -255,7 +250,7 @@ const useClientsConfig = create<ClientsConfigStore>()((set, get) => ({
         fullFiscalAddress: client.fullFiscalAddress || "",
         taxRegime: client.taxRegime || "",
         businessActivity: client.businessActivity || "",
-        condominiumLimit: client.condominiumLimit || 1,
+        condominiumLimit: client.condominiumLimit || 50,
         phoneNumber: client.phoneNumber || "",
         address: client.address || "",
         cfdiUse: client.cfdiUse || "",
@@ -263,6 +258,7 @@ const useClientsConfig = create<ClientsConfigStore>()((set, get) => ({
         responsiblePersonPosition: client.responsiblePersonPosition || "",
         billingFrequency: client.billingFrequency || "monthly",
         hasMaintenanceApp: client.hasMaintenanceApp || false,
+        pricing: client.pricing,
       },
     });
   },
@@ -351,23 +347,6 @@ const useClientsConfig = create<ClientsConfigStore>()((set, get) => ({
     set({ loading: true });
 
     try {
-      // Validar plan y condominiumLimit si existe
-      if (currentClient.plan && currentClient.condominiumLimit) {
-        const planLimits =
-          PLAN_LIMITS[currentClient.plan as keyof typeof PLAN_LIMITS];
-        if (
-          planLimits &&
-          (currentClient.condominiumLimit < planLimits.min ||
-            currentClient.condominiumLimit > planLimits.max)
-        ) {
-          toast.error(
-            `El plan ${currentClient.plan} permite entre ${planLimits.min} y ${planLimits.max} condominios`
-          );
-          set({ loading: false });
-          return false;
-        }
-      }
-
       // Usar la Cloud Function para actualizar cliente
       const result = await executeSuperAdminOperation(
         "update_client",
@@ -379,6 +358,7 @@ const useClientsConfig = create<ClientsConfigStore>()((set, get) => ({
           RFC: currentClient.RFC,
           status: currentClient.status,
           plan: currentClient.plan,
+          pricing: currentClient.pricing,
           businessName: currentClient.businessName,
           fullFiscalAddress: currentClient.fullFiscalAddress,
           taxRegime: currentClient.taxRegime,

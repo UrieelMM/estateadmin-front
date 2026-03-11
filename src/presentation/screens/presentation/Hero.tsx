@@ -26,6 +26,7 @@ import { getSeoExperimentCopy } from "../../seo/seoExperiments";
 const navigation = [
   { name: "Características", href: "#features" },
   { name: "¿Para quién es?", href: "/para-quien-es" },
+  { name: "Precios", href: "/precios" },
   { name: "FAQ", href: "/preguntas-frecuentes" },
   { name: "Sobre nosotros", href: "/sobre-nosotros" },
   { name: "Contacto", href: "/contacto" },

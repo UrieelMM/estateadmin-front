@@ -69,6 +69,16 @@ const Footer = () => {
 
           <li>
             <a
+              href="/precios"
+              title="Precios y planes"
+              className="inline-flex text-lg font-medium text-gray-900 dark:text-gray-100 transition-all duration-200 transform font-pj hover:-translate-y-1 hover:text-gray-600 dark:hover:text-gray-400"
+            >
+              Precios
+            </a>
+          </li>
+
+          <li>
+            <a
               href="/privacidad"
               title="Política de Privacidad"
               className="inline-flex text-lg font-medium text-gray-900 dark:text-gray-100 transition-all duration-200 transform font-pj hover:-translate-y-1 hover:text-gray-600 dark:hover:text-gray-400"

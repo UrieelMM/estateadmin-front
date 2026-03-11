@@ -24,6 +24,7 @@ import AboutUs from "../presentation/screens/presentation/AboutUs";
 import AIFeatures from "../presentation/screens/presentation/AIFeatures";
 import FaqPage from "../presentation/screens/presentation/FaqPage";
 import ForWhoPage from "../presentation/screens/presentation/ForWhoPage";
+import PricingPage from "../presentation/screens/presentation/PricingPage";
 import {
   GuidesList,
   GuidePage,
@@ -37,43 +38,44 @@ export const AppRouterPage = () => {
   return (
     <Router>
       <Routes>
-        {/* Rutas públicas */}
-        <Route path="/" element={<Hero />} />
-        <Route path="/login" element={<LoginScreen />} />
-        <Route path="/reset-password" element={<ResetPasswordScreen />} />
-        <Route path="/presentation" element={<Navigate to="/" replace />} />
-        <Route path="/contacto" element={<ContactForm />} />
-        <Route path="/privacidad" element={<PrivacyPolicy />} />
-        <Route path="/eliminar-datos" element={<DataDeletion />} />
-        <Route path="/sobre-nosotros" element={<AboutUs />} />
-        <Route path="/para-quien-es" element={<ForWhoPage />} />
-        <Route path="/preguntas-frecuentes" element={<FaqPage />} />
+        {/* Rutas públicas */ }
+        <Route path="/" element={ <Hero /> } />
+        <Route path="/login" element={ <LoginScreen /> } />
+        <Route path="/reset-password" element={ <ResetPasswordScreen /> } />
+        <Route path="/presentation" element={ <Navigate to="/" replace /> } />
+        <Route path="/contacto" element={ <ContactForm /> } />
+        <Route path="/privacidad" element={ <PrivacyPolicy /> } />
+        <Route path="/eliminar-datos" element={ <DataDeletion /> } />
+        <Route path="/sobre-nosotros" element={ <AboutUs /> } />
+        <Route path="/para-quien-es" element={ <ForWhoPage /> } />
+        <Route path="/preguntas-frecuentes" element={ <FaqPage /> } />
+        <Route path="/precios" element={ <PricingPage /> } />
         <Route
           path="/caracteristicas-inteligencia-artificial"
-          element={<AIFeatures />}
+          element={ <AIFeatures /> }
         />
         <Route
           path="/unidentified-payments/:qrId"
-          element={<UnidentifiedPaymentsPublic />}
+          element={ <UnidentifiedPaymentsPublic /> }
         />
-        <Route path="/attendance/:qrId" element={<AttendancePublic />} />
+        <Route path="/attendance/:qrId" element={ <AttendancePublic /> } />
 
-        {/* Rutas para el formulario de nuevos clientes */}
+        {/* Rutas para el formulario de nuevos clientes */ }
         <Route
           path="/nuevo-cliente/:formId"
-          element={<NewCustomerInformationForm />}
+          element={ <NewCustomerInformationForm /> }
         />
         <Route
           path="/formulario-completado"
-          element={<FormSubmissionSuccess />}
+          element={ <FormSubmissionSuccess /> }
         />
 
-        {/* Rutas para guías */}
-        <Route path="/guias" element={<GuidesList />} />
-        <Route path="/guias/:slug" element={<GuidePage />} />
+        {/* Rutas para guías */ }
+        <Route path="/guias" element={ <GuidesList /> } />
+        <Route path="/guias/:slug" element={ <GuidePage /> } />
 
-        {/* Rutas protegidas para usuarios normales */}
-        <Route element={<ProtectedRoute />}>
+        {/* Rutas protegidas para usuarios normales */ }
+        <Route element={ <ProtectedRoute /> }>
           <Route
             path="/dashboard"
             element={
@@ -82,19 +84,19 @@ export const AppRouterPage = () => {
               </LayoutDashboard>
             }
           >
-            {routesApp.map((route) => (
+            { routesApp.map( ( route ) => (
               <Route
-                key={route.to}
-                path={route.to}
-                element={route.component}
+                key={ route.to }
+                path={ route.to }
+                element={ route.component }
               />
-            ))}
-            <Route index element={<Navigate to="/dashboard/home" />} />
+            ) ) }
+            <Route index element={ <Navigate to="/dashboard/home" /> } />
           </Route>
         </Route>
 
-        {/* Rutas protegidas para Super Admin */}
-        <Route element={<SuperAdminProtectedRoute />}>
+        {/* Rutas protegidas para Super Admin */ }
+        <Route element={ <SuperAdminProtectedRoute /> }>
           <Route
             path="/super-admin"
             element={
@@ -103,18 +105,18 @@ export const AppRouterPage = () => {
               </SuperAdminLayout>
             }
           >
-            {superAdminRoutes.map((route) => (
+            { superAdminRoutes.map( ( route ) => (
               <Route
-                key={route.to}
-                path={route.to}
-                element={<route.Component />}
+                key={ route.to }
+                path={ route.to }
+                element={ <route.Component /> }
               />
-            ))}
-            <Route index element={<Navigate to={superAdminRoutes[0].to} />} />
+            ) ) }
+            <Route index element={ <Navigate to={ superAdminRoutes[ 0 ].to } /> } />
           </Route>
         </Route>
 
-        <Route path="*" element={<NotFoundPage />} />
+        <Route path="*" element={ <NotFoundPage /> } />
       </Routes>
       <FloatingWhatsAppButton />
     </Router>

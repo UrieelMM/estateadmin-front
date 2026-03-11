@@ -25,6 +25,7 @@ export interface NewCustomerInfo {
   condominiumInfo: CondominiumInfo;
   photoURL?: string;
   plan?: string;
+  pricing?: number;
   cfdiUse?: string;
   billingFrequency?: string;
   recordId?: string;
@@ -83,6 +84,8 @@ interface NewCustomerFormState {
     page: number,
     perPage: number
   ) => Promise<PaginatedResult<FormUrlInfo>>;
+  deleteCustomerInformation: ( recordId: string ) => Promise<boolean>;
+  deleteFormUrl: ( formId: string ) => Promise<boolean>;
   clearState: () => void;
 }
 
@@ -279,6 +282,48 @@ const useNewCustomerFormStore = create<NewCustomerFormState>((set, _get) => ({
         perPage,
         totalPages: 0,
       };
+    }
+  },
+
+  // 7. Eliminar información de un cliente (lead) y su referencia de form URL
+  deleteCustomerInformation: async ( recordId: string ) => {
+    set( { isLoading: true, error: null } );
+    try {
+      await axios.delete(
+        `${ import.meta.env.VITE_URL_SERVER }/tools/customer-information/${ recordId }`
+      );
+      set( { isLoading: false } );
+      toast.success( "Registro eliminado correctamente" );
+      return true;
+    } catch ( error ) {
+      console.error( "Error al eliminar el registro del cliente:", error );
+      set( {
+        isLoading: false,
+        error: error instanceof Error ? error.message : "Error desconocido",
+      } );
+      toast.error( "Error al eliminar el registro" );
+      return false;
+    }
+  },
+
+  // 8. Eliminar URL de formulario generada
+  deleteFormUrl: async ( formId: string ) => {
+    set( { isLoading: true, error: null } );
+    try {
+      await axios.delete(
+        `${ import.meta.env.VITE_URL_SERVER }/tools/form-urls/${ formId }`
+      );
+      set( { isLoading: false } );
+      toast.success( "URL de formulario eliminada correctamente" );
+      return true;
+    } catch ( error ) {
+      console.error( "Error al eliminar la URL de formulario:", error );
+      set( {
+        isLoading: false,
+        error: error instanceof Error ? error.message : "Error desconocido",
+      } );
+      toast.error( "Error al eliminar la URL de formulario" );
+      return false;
     }
   },
 

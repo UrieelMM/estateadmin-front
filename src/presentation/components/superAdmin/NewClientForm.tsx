@@ -18,19 +18,15 @@ interface NewClientFormProps {
   }>;
 }
 
-// Tipos de planes disponibles
-type PlanType = "Basic" | "Essential" | "Professional" | "Premium";
-
 // Tipo de frecuencia de facturación
 type BillingFrequency = "monthly" | "quarterly" | "biannual" | "annual";
 
-// Límites de condominios por plan
-const PLAN_LIMITS = {
-  Basic: { min: 1, max: 50 },
-  Essential: { min: 51, max: 100 },
-  Professional: { min: 101, max: 250 },
-  Premium: { min: 251, max: 500 },
-};
+// Constantes de precios por unidad
+const PLAN_BASE = 499;
+const COST_PER_UNIT = 4.0;
+const MIN_UNITS = 30;
+const MAX_UNITS = 500;
+const IVA_RATE = 0.16;
 
 const NewClientForm: React.FC<NewClientFormProps> = ( {
   isOpen,
@@ -55,7 +51,7 @@ const NewClientForm: React.FC<NewClientFormProps> = ( {
     businessActivity: "",
     responsiblePersonName: "",
     responsiblePersonPosition: "",
-    condominiumLimit: 1,
+
     currency: "MXN",
     language: "es-MX",
     condominiumInfo: {
@@ -66,7 +62,8 @@ const NewClientForm: React.FC<NewClientFormProps> = ( {
 
     // Campos opcionales con valores predeterminados
     photoURL: "",
-    plan: "Basic" as PlanType,
+    plan: "50", // Número de unidades contratadas
+    pricing: Math.round( ( PLAN_BASE + 50 * COST_PER_UNIT ) * ( 1 + IVA_RATE ) * 100 ) / 100,
     proFunctions: [] as string[],
     hasMaintenanceApp: false,
     cfdiUse: "G03",
@@ -74,6 +71,7 @@ const NewClientForm: React.FC<NewClientFormProps> = ( {
     billingFrequency: "monthly" as BillingFrequency,
     termsAccepted: true,
     address: "", // Mantenido por compatibilidad
+    condominiumLimit: 50,
   } );
 
   const proFunctionOptions = [
@@ -196,15 +194,16 @@ const NewClientForm: React.FC<NewClientFormProps> = ( {
     }
   }, [ formData.proFunctions ] );
 
-  // Actualizar condominiumLimit basado en el plan seleccionado
+  // Sincronizar condominiumLimit y pricing con el número de unidades (plan)
   useEffect( () => {
-    const plan = formData.plan as keyof typeof PLAN_LIMITS;
-    if ( PLAN_LIMITS[ plan ] ) {
-      // Establecer un valor dentro del rango válido para el plan
-      const minValue = PLAN_LIMITS[ plan ].min;
+    const units = parseInt( formData.plan );
+    if ( !isNaN( units ) ) {
+      const sub = PLAN_BASE + units * COST_PER_UNIT;
+      const total = Math.round( sub * ( 1 + IVA_RATE ) * 100 ) / 100;
       setFormData( ( prev ) => ( {
         ...prev,
-        condominiumLimit: minValue,
+        condominiumLimit: units,
+        pricing: total,
       } ) );
     }
   }, [ formData.plan ] );
@@ -276,14 +275,11 @@ const NewClientForm: React.FC<NewClientFormProps> = ( {
       return;
     }
 
-    // Validar condominium limit según el plan
-    const planLimits = PLAN_LIMITS[ formData.plan as keyof typeof PLAN_LIMITS ];
-    if (
-      formData.condominiumLimit < planLimits.min ||
-      formData.condominiumLimit > planLimits.max
-    ) {
+    // Validar número de unidades
+    const units = parseInt( formData.plan );
+    if ( isNaN( units ) || units < MIN_UNITS || units > MAX_UNITS ) {
       setFormError(
-        `El límite de condominios debe estar entre ${ planLimits.min } y ${ planLimits.max } para el plan ${ formData.plan }.`
+        `El número de unidades debe estar entre ${ MIN_UNITS } y ${ MAX_UNITS }.`
       );
       return;
     }
@@ -449,9 +445,9 @@ const NewClientForm: React.FC<NewClientFormProps> = ( {
 
           {/* Sección de datos del administrador */ }
           <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900/30 p-4">
-            <h4 className="text-md font-semibold mb-3 text-gray-800 dark:text-gray-200 border-b border-gray-200 dark:border-gray-700 pb-2">
+            <h3 className="text-md font-semibold mb-3 text-gray-800 dark:text-gray-200 border-b border-gray-200 dark:border-gray-700 pb-2">
               Datos del Administradoor
-            </h4>
+            </h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -886,52 +882,96 @@ const NewClientForm: React.FC<NewClientFormProps> = ( {
                 </select>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Plan*
-                </label>
-                <select
-                  name="plan"
-                  value={ formData.plan }
-                  onChange={ handleInputChange }
-                  required
-                  className="w-full px-2 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
-                >
-                  <option value="Basic">Basic (1-50 condominios)</option>
-                  <option value="Essential">
-                    Essential (51-100 condominios)
-                  </option>
-                  <option value="Professional">
-                    Professional (101-250 condominios)
-                  </option>
-                  <option value="Premium">Premium (251-500 condominios)</option>
-                </select>
-              </div>
+              { /* Calculadora de precio por unidades */ }
+              <div className="md:col-span-3 rounded-2xl border border-indigo-200 dark:border-indigo-800 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/30 p-5">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="p-1.5 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 text-white">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4">
+                      <path fillRule="evenodd" d="M6.32 2.577a49.255 49.255 0 0 1 11.36 0c1.497.174 2.57 1.46 2.57 2.93V21a.75.75 0 0 1-1.085.67L12 18.089l-7.165 3.583A.75.75 0 0 1 3.75 21V5.507c0-1.47 1.073-2.756 2.57-2.93Z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <h4 className="text-sm font-bold text-indigo-800 dark:text-indigo-300">Calculadora de precio</h4>
+                </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Límite de Condominios*
-                </label>
-                <input
-                  type="number"
-                  name="condominiumLimit"
-                  value={ formData.condominiumLimit }
-                  onChange={ handleInputChange }
-                  min={
-                    PLAN_LIMITS[ formData.plan as keyof typeof PLAN_LIMITS ].min
-                  }
-                  max={
-                    PLAN_LIMITS[ formData.plan as keyof typeof PLAN_LIMITS ].max
-                  }
-                  required
-                  className="w-full px-2 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Para el plan { formData.plan }: mínimo{ " " }
-                  { PLAN_LIMITS[ formData.plan as keyof typeof PLAN_LIMITS ].min },
-                  máximo{ " " }
-                  { PLAN_LIMITS[ formData.plan as keyof typeof PLAN_LIMITS ].max }
-                </p>
+                { /* Número de unidades */ }
+                <div className="text-center mb-4">
+                  <span className="text-4xl font-black bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600">
+                    { formData.plan }
+                  </span>
+                  <span className="ml-2 text-sm font-semibold text-gray-500 dark:text-gray-400">unidades</span>
+                </div>
+
+                { /* Slider */ }
+                <div className="mb-4">
+                  <input
+                    type="range"
+                    min={ MIN_UNITS }
+                    max={ MAX_UNITS }
+                    value={ parseInt( formData.plan ) || MIN_UNITS }
+                    onChange={ ( e ) => setFormData( ( prev ) => ( { ...prev, plan: e.target.value } ) ) }
+                    className="w-full h-2 rounded-full appearance-none cursor-pointer"
+                    style={ {
+                      background: `linear-gradient(to right, #6366f1 0%, #a855f7 ${ ( ( ( parseInt( formData.plan ) || MIN_UNITS ) - MIN_UNITS ) / ( MAX_UNITS - MIN_UNITS ) ) * 100 }%, #e5e7eb ${ ( ( ( parseInt( formData.plan ) || MIN_UNITS ) - MIN_UNITS ) / ( MAX_UNITS - MIN_UNITS ) ) * 100 }%, #e5e7eb 100%)`,
+                    } }
+                  />
+                  <div className="flex justify-between text-xs text-gray-400 mt-1">
+                    <span>{ MIN_UNITS } unidades</span>
+                    <span>{ MAX_UNITS } unidades</span>
+                  </div>
+                </div>
+
+                { /* Input manual */ }
+                <div className="flex items-center gap-2 mb-5">
+                  <label className="text-xs font-medium text-gray-600 dark:text-gray-400 whitespace-nowrap">O ingresa el número:</label>
+                  <input
+                    type="number"
+                    min={ MIN_UNITS }
+                    max={ MAX_UNITS }
+                    value={ formData.plan }
+                    onChange={ ( e ) => {
+                      const v = Math.min( MAX_UNITS, Math.max( MIN_UNITS, parseInt( e.target.value ) || MIN_UNITS ) );
+                      setFormData( ( prev ) => ( { ...prev, plan: String( v ) } ) );
+                    } }
+                    className="w-20 rounded-lg border border-indigo-300 dark:border-indigo-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white px-3 py-1.5 text-center font-bold text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                  <span className="text-xs text-gray-500">unidades</span>
+                </div>
+
+                { /* Desglose de precios */ }
+                { ( () => {
+                  const units = parseInt( formData.plan ) || MIN_UNITS;
+                  const subtotal = PLAN_BASE + units * COST_PER_UNIT;
+                  const iva = subtotal * IVA_RATE;
+                  const total = subtotal + iva;
+                  const fmt = ( v: number ) => v.toLocaleString( "es-MX", { style: "currency", currency: "MXN" } );
+                  return (
+                    <div className="rounded-xl bg-white dark:bg-gray-800 border border-indigo-100 dark:border-indigo-900/50 p-4 space-y-2 text-sm">
+                      <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                        <span>Acceso total a la plataforma</span>
+                        <span className="font-medium text-gray-800 dark:text-gray-200">{ fmt( PLAN_BASE ) }</span>
+                      </div>
+                      <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                        <span>{ units } unidades × { fmt( COST_PER_UNIT ) }</span>
+                        <span className="font-medium text-gray-800 dark:text-gray-200">{ fmt( units * COST_PER_UNIT ) }</span>
+                      </div>
+                      <div className="flex justify-between text-gray-600 dark:text-gray-400 border-t border-gray-100 dark:border-gray-700 pt-2">
+                        <span>Subtotal</span>
+                        <span className="font-medium text-gray-800 dark:text-gray-200">{ fmt( subtotal ) }</span>
+                      </div>
+                      <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                        <span>IVA (16%)</span>
+                        <span className="font-medium text-gray-800 dark:text-gray-200">{ fmt( iva ) }</span>
+                      </div>
+                      <div className="flex justify-between border-t-2 border-indigo-200 dark:border-indigo-700 pt-2">
+                        <span className="font-bold text-gray-900 dark:text-white">Total mensual</span>
+                        <span className="font-black text-base bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600">{ fmt( total ) }</span>
+                      </div>
+                      <p className="text-center text-xs text-gray-400 pt-1">
+                        ≈ { fmt( total / units ) } por unidad / mes
+                      </p>
+                    </div>
+                  );
+                } )() }
               </div>
             </div>
           </div>
