@@ -77,77 +77,77 @@ const ClientsManagement: React.FC = () => {
     loading: storeLoading,
   } = useClientsConfig();
 
-  const [searchQuery, setSearchQuery] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [showCredentials, setShowCredentials] = useState(false);
-  const [expandedRows, setExpandedRows] = useState<string[]>([]);
-  const [isCondominiumEditModalOpen, setIsCondominiumEditModalOpen] =
-    useState(false);
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [clientToDelete, setClientToDelete] = useState<string | null>(null);
-  const [condominiumToDelete, setCondominiumToDelete] = useState<{
+  const [ searchQuery, setSearchQuery ] = useState( "" );
+  const [ loading, setLoading ] = useState( false );
+  const [ isEditModalOpen, setIsEditModalOpen ] = useState( false );
+  const [ isCreateModalOpen, setIsCreateModalOpen ] = useState( false );
+  const [ showCredentials, setShowCredentials ] = useState( false );
+  const [ expandedRows, setExpandedRows ] = useState<string[]>( [] );
+  const [ isCondominiumEditModalOpen, setIsCondominiumEditModalOpen ] =
+    useState( false );
+  const [ isDeleteModalOpen, setIsDeleteModalOpen ] = useState( false );
+  const [ clientToDelete, setClientToDelete ] = useState<string | null>( null );
+  const [ condominiumToDelete, setCondominiumToDelete ] = useState<{
     clientId: string;
     condominiumId: string;
-  } | null>(null);
+  } | null>( null );
 
   const loadClients = async () => {
     await fetchClientsFromStore();
     // Después de cargar los clientes básicos, cargamos la información de condominios
-    if (clients.length > 0) {
-      await fetchClientsWithCondominiums(clients);
+    if ( clients.length > 0 ) {
+      await fetchClientsWithCondominiums( clients );
     }
   };
 
-  useEffect(() => {
+  useEffect( () => {
     // Cargar clientes cuando se monta el componente
     loadClients();
-  }, []);
+  }, [] );
 
   // Cuando clients cambia y hay clientes disponibles, actualizar con la información de condominios
-  useEffect(() => {
-    if (clients.length > 0 && !loadingClients) {
-      fetchClientsWithCondominiums(clients);
+  useEffect( () => {
+    if ( clients.length > 0 && !loadingClients ) {
+      fetchClientsWithCondominiums( clients );
     }
-  }, [clients, loadingClients]);
+  }, [ clients, loadingClients ] );
 
-  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(e.target.value);
+  const handleSearch = ( e: React.ChangeEvent<HTMLInputElement> ) => {
+    setSearchQuery( e.target.value );
   };
 
   const filteredClients = (
     clientsWithCondominiums.length > 0 ? clientsWithCondominiums : clients
   ).filter(
-    (client: Client) =>
-      client.companyName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      client.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (client.businessName &&
+    ( client: Client ) =>
+      client.companyName.toLowerCase().includes( searchQuery.toLowerCase() ) ||
+      client.email.toLowerCase().includes( searchQuery.toLowerCase() ) ||
+      ( client.businessName &&
         client.businessName
           .toLowerCase()
-          .includes(searchQuery.toLowerCase())) ||
-      (client.RFC &&
-        client.RFC.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (client.plan &&
-        client.plan.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (client.name &&
-        client.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (client.lastName &&
-        client.lastName.toLowerCase().includes(searchQuery.toLowerCase()))
+          .includes( searchQuery.toLowerCase() ) ) ||
+      ( client.RFC &&
+        client.RFC.toLowerCase().includes( searchQuery.toLowerCase() ) ) ||
+      ( client.plan &&
+        client.plan.toLowerCase().includes( searchQuery.toLowerCase() ) ) ||
+      ( client.name &&
+        client.name.toLowerCase().includes( searchQuery.toLowerCase() ) ) ||
+      ( client.lastName &&
+        client.lastName.toLowerCase().includes( searchQuery.toLowerCase() ) )
   );
 
-  const handleDeleteClient = async (clientId: string) => {
+  const handleDeleteClient = async ( clientId: string ) => {
     // Abrir el modal de confirmación
-    setClientToDelete(clientId);
-    setIsDeleteModalOpen(true);
+    setClientToDelete( clientId );
+    setIsDeleteModalOpen( true );
   };
 
   // Nueva función para confirmar la eliminación cuando el usuario acepta en el modal
   const confirmDeleteClient = async () => {
-    if (!clientToDelete) return;
+    if ( !clientToDelete ) return;
 
     try {
-      setLoading(true);
+      setLoading( true );
       // Usar la Cloud Function para operaciones críticas
       const result = await executeSuperAdminOperation(
         "delete_client",
@@ -155,100 +155,103 @@ const ClientsManagement: React.FC = () => {
         { reason: "Eliminación solicitada por administrador" }
       );
 
-      if (result && result.success) {
-        toast.success("Cliente eliminado con éxito");
+      if ( result && result.success ) {
+        toast.success( "Cliente eliminado con éxito" );
         // Recargar la lista de clientes
         loadClients();
       } else {
-        toast.error("No se pudo eliminar el cliente");
+        toast.error( "No se pudo eliminar el cliente" );
       }
-    } catch (error) {
-      console.error("Error al eliminar cliente:", error);
+    } catch ( error ) {
+      console.error( "Error al eliminar cliente:", error );
       toast.error(
         "Error al eliminar el cliente. Verifique su conexión o permisos."
       );
     } finally {
-      setLoading(false);
+      setLoading( false );
       // Cerrar el modal y limpiar el estado
-      setIsDeleteModalOpen(false);
-      setClientToDelete(null);
+      setIsDeleteModalOpen( false );
+      setClientToDelete( null );
     }
   };
 
   // Función para abrir el modal de edición con los datos del cliente
-  const openEditModal = (client: Client) => {
+  const openEditModal = ( client: Client ) => {
     // Asegurar compatibilidad del status con el tipo esperado por setCurrentClient
     const compatibleClient = {
       ...client,
       status: client.status === "blocked" ? "inactive" : client.status,
     };
-    setCurrentClient(compatibleClient);
-    setIsEditModalOpen(true);
+    setCurrentClient( compatibleClient );
+    setIsEditModalOpen( true );
   };
 
   // Función para abrir el modal de edición de condominio
-  const openCondominiumEditModal = (clientId: string, condominium: any) => {
-    const client = filteredClients.find((c) => c.id === clientId);
-    if (client) {
+  const openCondominiumEditModal = ( clientId: string, condominium: any ) => {
+    const client = filteredClients.find( ( c ) => c.id === clientId );
+    if ( client ) {
       // Establecer el cliente actual (necesario para actualizar el condominio)
       const compatibleClient = {
         ...client,
         status: client.status === "blocked" ? "inactive" : client.status,
       };
-      setCurrentClient(compatibleClient);
+      setCurrentClient( compatibleClient );
 
       // Establecer el condominio actual
-      setCurrentCondominium(condominium);
+      setCurrentCondominium( condominium );
 
       // Abrir el modal
-      setIsCondominiumEditModalOpen(true);
+      setIsCondominiumEditModalOpen( true );
     } else {
-      toast.error("No se pudo encontrar el cliente para este condominio");
+      toast.error( "No se pudo encontrar el cliente para este condominio" );
     }
   };
 
-  const handleCreateClient = async (clientData: any) => {
+  const handleCreateClient = async ( clientData: any ) => {
     try {
-      setLoading(true);
-      const result = await createClient(clientData);
-      if (result.success) {
-        toast.success("Cliente creado exitosamente");
-        setIsCreateModalOpen(false);
-        // Mostrar las credenciales en el modal
-        if (result.credentials) {
-          setCredentials(result.credentials);
-          setShowCredentials(true);
+      setLoading( true );
+      const result = await createClient( clientData );
+      if ( result.success ) {
+        toast.success( "Cliente creado exitosamente" );
+        setIsCreateModalOpen( false );
+        loadClients();
+        // Mostrar credenciales desde el padre — NewClientForm se desmonta al cerrarse
+        if ( result.credentials ) {
+          setCredentials( result.credentials );
+          setShowCredentials( true );
         }
       } else {
-        toast.error("No se pudo crear el cliente");
+        toast.error( "No se pudo crear el cliente" );
       }
-    } catch (error) {
-      console.error("Error al crear cliente:", error);
-      toast.error("Error al crear el cliente");
+      return result;
+    } catch ( error ) {
+      console.error( "Error al crear cliente:", error );
+      toast.error( "Error al crear el cliente" );
+      return { success: false };
     } finally {
-      setLoading(false);
+      setLoading( false );
     }
   };
 
   // Función para alternar la expansión de una fila
-  const toggleRowExpansion = (clientId: string, event: React.MouseEvent) => {
+  const toggleRowExpansion = ( clientId: string, event: React.MouseEvent ) => {
     // Evitar que se expanda al hacer clic en botones de acción
-    if ((event.target as HTMLElement).closest(".action-button")) {
+    if ( ( event.target as HTMLElement ).closest( ".action-button" ) ) {
       return;
     }
 
-    setExpandedRows((prevExpandedRows) => {
-      if (prevExpandedRows.includes(clientId)) {
-        return prevExpandedRows.filter((id) => id !== clientId);
+    setExpandedRows( ( prevExpandedRows ) => {
+      if ( prevExpandedRows.includes( clientId ) ) {
+        return prevExpandedRows.filter( ( id ) => id !== clientId );
       } else {
-        return [...prevExpandedRows, clientId];
+        return [ ...prevExpandedRows, clientId ];
       }
-    });
+    } );
   };
 
   // Verificar si una fila está expandida
-  const isRowExpanded = (clientId: string) => {
-    return expandedRows.includes(clientId);
+  const isRowExpanded = ( clientId: string ) => {
+    return expandedRows.includes( clientId );
   };
 
   const handleDeleteCondominium = async (
@@ -256,16 +259,16 @@ const ClientsManagement: React.FC = () => {
     condominiumId: string
   ) => {
     // Guardar la info y abrir el modal
-    setCondominiumToDelete({ clientId, condominiumId });
-    setIsDeleteModalOpen(true);
+    setCondominiumToDelete( { clientId, condominiumId } );
+    setIsDeleteModalOpen( true );
   };
 
   // Nueva función para confirmar la eliminación del condominio
   const confirmDeleteCondominium = async () => {
-    if (!condominiumToDelete) return;
+    if ( !condominiumToDelete ) return;
 
     try {
-      setLoading(true);
+      setLoading( true );
 
       const result = await executeSuperAdminOperation(
         "delete_condominium",
@@ -276,23 +279,23 @@ const ClientsManagement: React.FC = () => {
         }
       );
 
-      if (result && result.success) {
-        toast.success("Condominio eliminado con éxito");
+      if ( result && result.success ) {
+        toast.success( "Condominio eliminado con éxito" );
         // Recargar la lista de clientes
         loadClients();
       } else {
-        toast.error("No se pudo eliminar el condominio");
+        toast.error( "No se pudo eliminar el condominio" );
       }
-    } catch (error) {
-      console.error("Error al eliminar condominio:", error);
+    } catch ( error ) {
+      console.error( "Error al eliminar condominio:", error );
       toast.error(
         "Error al eliminar el condominio. Verifique su conexión o permisos."
       );
     } finally {
-      setLoading(false);
+      setLoading( false );
       // Cerrar el modal y limpiar el estado
-      setIsDeleteModalOpen(false);
-      setCondominiumToDelete(null);
+      setIsDeleteModalOpen( false );
+      setCondominiumToDelete( null );
     }
   };
 
@@ -308,7 +311,7 @@ const ClientsManagement: React.FC = () => {
           </p>
         </div>
         <button
-          onClick={() => setIsCreateModalOpen(true)}
+          onClick={ () => setIsCreateModalOpen( true ) }
           className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600"
         >
           <PlusIcon className="h-5 w-5 mr-2" />
@@ -316,7 +319,7 @@ const ClientsManagement: React.FC = () => {
         </button>
       </div>
 
-      {/* Barra de búsqueda */}
+      {/* Barra de búsqueda */ }
       <div className="flex items-center space-x-2 bg-white dark:bg-gray-800 p-2 rounded-md shadow-sm">
         <div className="relative flex-grow">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -324,17 +327,17 @@ const ClientsManagement: React.FC = () => {
           </div>
           <input
             type="text"
-            value={searchQuery}
-            onChange={handleSearch}
+            value={ searchQuery }
+            onChange={ handleSearch }
             className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md leading-5 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
             placeholder="Buscar por email..."
           />
         </div>
       </div>
 
-      {/* Tabla de clientes */}
+      {/* Tabla de clientes */ }
       <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-md">
-        {loadingClients || loading || storeLoading ? (
+        { loadingClients || loading || storeLoading ? (
           <div className="animate-pulse p-6">
             <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/4 mb-4"></div>
             <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full mb-2.5"></div>
@@ -344,9 +347,9 @@ const ClientsManagement: React.FC = () => {
           </div>
         ) : error ? (
           <div className="p-6 text-center text-red-600 dark:text-red-400">
-            <p>Error al cargar los datos: {error}</p>
+            <p>Error al cargar los datos: { error }</p>
             <button
-              onClick={() => loadClients()}
+              onClick={ () => loadClients() }
               className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
             >
               Reintentar
@@ -390,29 +393,28 @@ const ClientsManagement: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                {filteredClients.map((client: Client) => (
-                  <React.Fragment key={client.id}>
+                { filteredClients.map( ( client: Client ) => (
+                  <React.Fragment key={ client.id }>
                     <tr
-                      className={`hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer ${
-                        isRowExpanded(client.id)
-                          ? "bg-gray-50 dark:bg-gray-700"
-                          : ""
-                      }`}
-                      onClick={(e) => toggleRowExpansion(client.id, e)}
+                      className={ `hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer ${ isRowExpanded( client.id )
+                        ? "bg-gray-50 dark:bg-gray-700"
+                        : ""
+                        }` }
+                      onClick={ ( e ) => toggleRowExpansion( client.id, e ) }
                     >
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
-                          {isRowExpanded(client.id) ? (
+                          { isRowExpanded( client.id ) ? (
                             <ChevronDownIcon className="h-5 w-5 text-gray-500 mr-2" />
                           ) : (
                             <ChevronRightIcon className="h-5 w-5 text-gray-500 mr-2" />
-                          )}
+                          ) }
                           <div className="flex flex-col">
                             <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                              {client.companyName}
+                              { client.companyName }
                             </div>
                             <div className="text-sm text-gray-500 dark:text-gray-400">
-                              {client.businessName || "-"}
+                              { client.businessName || "-" }
                             </div>
                           </div>
                         </div>
@@ -420,34 +422,34 @@ const ClientsManagement: React.FC = () => {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex flex-col">
                           <div className="text-sm text-gray-900 dark:text-gray-100">
-                            {client.name} {client.lastName}
+                            { client.name } { client.lastName }
                           </div>
                           <div className="text-sm text-gray-500 dark:text-gray-400">
-                            Tel: {client.phoneNumber || "-"}
+                            Tel: { client.phoneNumber || "-" }
                           </div>
                           <div className="text-xs text-gray-500 dark:text-gray-400">
-                            Email: {client.email}
+                            Email: { client.email }
                           </div>
-                          {client.responsiblePersonName && (
+                          { client.responsiblePersonName && (
                             <div className="text-xs text-gray-500 dark:text-gray-400">
-                              Resp: {client.responsiblePersonName}
+                              Resp: { client.responsiblePersonName }
                             </div>
-                          )}
+                          ) }
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex flex-col">
                           <div className="text-sm text-gray-900 dark:text-gray-100">
-                            RFC: {client.RFC || "-"}
+                            RFC: { client.RFC || "-" }
                           </div>
                           <div className="text-sm text-gray-500 dark:text-gray-400">
-                            País: {client.country || "-"}
+                            País: { client.country || "-" }
                           </div>
                           <div className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[150px]">
-                            Régimen: {client.taxRegime || "-"}
+                            Régimen: { client.taxRegime || "-" }
                           </div>
                           <div className="text-xs text-gray-500 dark:text-gray-400">
-                            Act: {client.businessActivity || "-"}
+                            Act: { client.businessActivity || "-" }
                           </div>
                         </div>
                       </td>
@@ -455,29 +457,29 @@ const ClientsManagement: React.FC = () => {
                         <div className="flex flex-col">
                           <div className="font-medium text-gray-900 dark:text-gray-100">
                             <span className="font-bold mr-1">Condominios:</span>
-                            {client.condominiumsCount !== undefined
+                            { client.condominiumsCount !== undefined
                               ? client.condominiumsCount
-                              : "..."}
+                              : "..." }
                           </div>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex justify-end space-x-2">
                           <button
-                            onClick={(e) => {
+                            onClick={ ( e ) => {
                               e.stopPropagation();
-                              openEditModal(client);
-                            }}
+                              openEditModal( client );
+                            } }
                             className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-300 action-button"
                             title="Editar cliente"
                           >
                             <PencilIcon className="h-5 w-5" />
                           </button>
                           <button
-                            onClick={(e) => {
+                            onClick={ ( e ) => {
                               e.stopPropagation();
-                              handleDeleteClient(client.id);
-                            }}
+                              handleDeleteClient( client.id );
+                            } }
                             className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 action-button"
                             title="Eliminar cliente"
                           >
@@ -487,22 +489,22 @@ const ClientsManagement: React.FC = () => {
                       </td>
                     </tr>
 
-                    {/* Filas expandibles con información de condominios */}
-                    {isRowExpanded(client.id) && (
+                    {/* Filas expandibles con información de condominios */ }
+                    { isRowExpanded( client.id ) && (
                       <tr>
                         <td
-                          colSpan={5}
+                          colSpan={ 5 }
                           className="px-0 py-0 border-b border-gray-200 dark:border-gray-700"
                         >
                           <div className="bg-gray-50 dark:bg-gray-900 p-4">
                             <div className="mb-3">
                               <h3 className="text-md font-semibold text-gray-900 dark:text-gray-100">
-                                Condominios de {client.companyName}
+                                Condominios de { client.companyName }
                               </h3>
                             </div>
 
-                            {client.condominiums &&
-                            client.condominiums.length > 0 ? (
+                            { client.condominiums &&
+                              client.condominiums.length > 0 ? (
                               <div className="overflow-x-auto">
                                 <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700 border border-gray-200 dark:border-gray-700 rounded-lg">
                                   <thead className="bg-gray-100 dark:bg-gray-800">
@@ -528,81 +530,79 @@ const ClientsManagement: React.FC = () => {
                                     </tr>
                                   </thead>
                                   <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                                    {client.condominiums.map(
-                                      (condominium, index) => (
+                                    { client.condominiums.map(
+                                      ( condominium, index ) => (
                                         <tr
-                                          key={condominium.id || index}
+                                          key={ condominium.id || index }
                                           className="hover:bg-gray-50 dark:hover:bg-gray-700"
                                         >
                                           <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                                            {condominium.name}
+                                            { condominium.name }
                                           </td>
                                           <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                                            {condominium.address || "-"}
+                                            { condominium.address || "-" }
                                           </td>
                                           <td className="px-4 py-2 whitespace-nowrap">
                                             <span
-                                              className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                                planColors[
-                                                  condominium.plan as keyof typeof planColors
-                                                ] ||
+                                              className={ `px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${ planColors[
+                                                condominium.plan as keyof typeof planColors
+                                              ] ||
                                                 "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
-                                              }`}
+                                                }` }
                                             >
-                                              {condominium.plan || "Free"}
+                                              { condominium.plan || "Free" }
                                             </span>
                                           </td>
                                           <td className="px-4 py-2 whitespace-nowrap">
                                             <span
-                                              className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                                statusColors[
-                                                  condominium.status as keyof typeof statusColors
-                                                ] ||
+                                              className={ `px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${ statusColors[
+                                                condominium.status as keyof typeof statusColors
+                                              ] ||
                                                 "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
-                                              }`}
+                                                }` }
                                             >
-                                              {condominium.status === "active"
+                                              { condominium.status === "active"
                                                 ? "Activo"
                                                 : condominium.status ===
                                                   "inactive"
-                                                ? "Inactivo"
-                                                : condominium.status ===
-                                                  "blocked"
-                                                ? "Bloqueado"
-                                                : "Pendiente"}
+                                                  ? "Inactivo"
+                                                  : condominium.status ===
+                                                    "blocked"
+                                                    ? "Bloqueado"
+                                                    : "Pendiente" }
                                             </span>
                                           </td>
                                           <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                            {condominium.createdDate &&
-                                            condominium.createdDate.toDate
+                                            { condominium.createdDate &&
+                                              condominium.createdDate.toDate
                                               ? condominium.createdDate
-                                                  .toDate()
-                                                  .toLocaleDateString("es-ES")
-                                              : "-"}
+                                                .toDate()
+                                                .toLocaleDateString( "es-ES" )
+                                              : "-" }
                                           </td>
                                           <td className="px-4 py-2 whitespace-nowrap text-right text-sm font-medium">
                                             <div className="flex justify-end space-x-2">
                                               <button
-                                                onClick={(e) => {
+                                                onClick={ ( e ) => {
                                                   e.stopPropagation();
                                                   openCondominiumEditModal(
                                                     client.id,
                                                     condominium
                                                   );
-                                                }}
+                                                } }
                                                 className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-300 action-button"
                                                 title="Editar condominio"
                                               >
                                                 <PencilIcon className="h-4 w-4" />
                                               </button>
                                               <button
-                                                onClick={(e) => {
+                                                onClick={ ( e ) => {
                                                   e.stopPropagation();
                                                   handleDeleteCondominium(
                                                     client.id,
                                                     condominium.id
                                                   );
-                                                }}
+                                                } }
                                                 className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 action-button"
                                                 title="Eliminar condominio"
                                               >
@@ -612,7 +612,7 @@ const ClientsManagement: React.FC = () => {
                                           </td>
                                         </tr>
                                       )
-                                    )}
+                                    ) }
                                   </tbody>
                                 </table>
                               </div>
@@ -620,69 +620,69 @@ const ClientsManagement: React.FC = () => {
                               <div className="text-center py-4 text-gray-500 dark:text-gray-400">
                                 No hay condominios registrados para este cliente
                               </div>
-                            )}
+                            ) }
                           </div>
                         </td>
                       </tr>
-                    )}
+                    ) }
                   </React.Fragment>
-                ))}
+                ) ) }
               </tbody>
             </table>
           </div>
-        )}
+        ) }
       </div>
 
-      {/* Modal de Edición con Componente Separado */}
+      {/* Modal de Edición con Componente Separado */ }
       <ClientEditModal
-        isOpen={isEditModalOpen}
-        onClose={() => setIsEditModalOpen(false)}
-        onSuccess={loadClients}
+        isOpen={ isEditModalOpen }
+        onClose={ () => setIsEditModalOpen( false ) }
+        onSuccess={ loadClients }
       />
 
-      {/* Modal para crear nuevo cliente */}
+      {/* Modal para crear nuevo cliente */ }
       <NewClientForm
-        isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
-        onSubmit={handleCreateClient as any}
+        isOpen={ isCreateModalOpen }
+        onClose={ () => setIsCreateModalOpen( false ) }
+        onSubmit={ handleCreateClient as any }
       />
 
-      {/* Modal de Credenciales con Componente Separado */}
+      {/* Modal de Credenciales con Componente Separado */ }
       <CredentialsModal
-        isOpen={showCredentials}
-        onClose={() => {
-          setShowCredentials(false);
-          setCredentials(null);
-        }}
+        isOpen={ showCredentials }
+        onClose={ () => {
+          setShowCredentials( false );
+          setCredentials( null );
+        } }
       />
 
-      {/* Modal de Edición de Condominio */}
+      {/* Modal de Edición de Condominio */ }
       <CondominiumEditModal
-        isOpen={isCondominiumEditModalOpen}
-        onClose={() => setIsCondominiumEditModalOpen(false)}
-        onSuccess={loadClients}
+        isOpen={ isCondominiumEditModalOpen }
+        onClose={ () => setIsCondominiumEditModalOpen( false ) }
+        onSuccess={ loadClients }
       />
 
-      {/* Modal de Confirmación para Eliminación */}
-      {isDeleteModalOpen && (
+      {/* Modal de Confirmación para Eliminación */ }
+      { isDeleteModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4">
             <div className="p-6">
               <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">
-                {clientToDelete ? "Eliminar Cliente" : "Eliminar Condominio"}
+                { clientToDelete ? "Eliminar Cliente" : "Eliminar Condominio" }
               </h3>
               <p className="text-gray-700 dark:text-gray-300 mb-6">
-                {clientToDelete
+                { clientToDelete
                   ? "¿Estás seguro de que deseas eliminar este cliente? Esta acción no se puede deshacer."
-                  : "¿Estás seguro de que deseas eliminar este condominio? Esta acción no se puede deshacer."}
+                  : "¿Estás seguro de que deseas eliminar este condominio? Esta acción no se puede deshacer." }
               </p>
               <div className="flex justify-end space-x-3">
                 <button
-                  onClick={() => {
-                    setIsDeleteModalOpen(false);
-                    setClientToDelete(null);
-                    setCondominiumToDelete(null);
-                  }}
+                  onClick={ () => {
+                    setIsDeleteModalOpen( false );
+                    setClientToDelete( null );
+                    setCondominiumToDelete( null );
+                  } }
                   className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
                 >
                   Cancelar
@@ -695,13 +695,13 @@ const ClientsManagement: React.FC = () => {
                   }
                   className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800"
                 >
-                  {loading ? "Eliminando..." : "Confirmar Eliminación"}
+                  { loading ? "Eliminando..." : "Confirmar Eliminación" }
                 </button>
               </div>
             </div>
           </div>
         </div>
-      )}
+      ) }
     </div>
   );
 };

@@ -72,7 +72,7 @@ interface NewClientData {
 
   // Campos opcionales con valores predeterminados
   photoURL?: string;
-  plan: "Basic" | "Essential" | "Professional" | "Premium";
+  plan: string; // Número de unidades contratadas (ej. "50")
   proFunctions?: string[];
   hasMaintenanceApp?: boolean; // App de Mantenimiento
   cfdiUse?: string;
@@ -215,17 +215,10 @@ const useSuperAdminStore = create<SuperAdminStore>()((set, _get) => ({
     set({ creatingClient: true, error: null });
 
     try {
-      // Validar la compatibilidad entre plan y condominiumLimit
-      const isValidPlanLimit = validatePlanCondominiumLimit(
-        clientData.plan,
-        clientData.condominiumLimit
-      );
-
-      if (!isValidPlanLimit.valid) {
-        toast.error(
-          isValidPlanLimit.message ||
-            "Límite de condominios incompatible con el plan seleccionado"
-        );
+      // Validar rango de unidades (plan = número de unidades)
+      const units = parseInt(clientData.plan);
+      if (isNaN(units) || units < 30 || units > 500) {
+        toast.error("El número de unidades debe estar entre 30 y 500");
         set({ creatingClient: false });
         return { success: false };
       }
@@ -273,49 +266,5 @@ const useSuperAdminStore = create<SuperAdminStore>()((set, _get) => ({
   },
 }));
 
-// Función auxiliar para validar la compatibilidad entre plan y límite de condominios
-function validatePlanCondominiumLimit(
-  plan: string,
-  limit: number
-): { valid: boolean; message?: string } {
-  switch (plan) {
-    case "Basic":
-      if (limit < 1 || limit > 50) {
-        return {
-          valid: false,
-          message: "El plan Basic permite entre 1 y 50 condominios",
-        };
-      }
-      break;
-    case "Essential":
-      if (limit < 51 || limit > 100) {
-        return {
-          valid: false,
-          message: "El plan Essential permite entre 51 y 100 condominios",
-        };
-      }
-      break;
-    case "Professional":
-      if (limit < 101 || limit > 250) {
-        return {
-          valid: false,
-          message: "El plan Professional permite entre 101 y 250 condominios",
-        };
-      }
-      break;
-    case "Premium":
-      if (limit < 251 || limit > 500) {
-        return {
-          valid: false,
-          message: "El plan Premium permite entre 251 y 500 condominios",
-        };
-      }
-      break;
-    default:
-      return { valid: false, message: "Plan no válido" };
-  }
-
-  return { valid: true };
-}
 
 export default useSuperAdminStore;
