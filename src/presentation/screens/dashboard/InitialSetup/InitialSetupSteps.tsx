@@ -28,8 +28,8 @@ import {
   ArrowDownTrayIcon,
   TableCellsIcon,
   InformationCircleIcon,
-  ShieldCheckIcon,
   LockClosedIcon,
+  XCircleIcon,
 } from "@heroicons/react/24/solid";
 import { motion, AnimatePresence } from "framer-motion";
 import logo from "../../../../assets/logo.png";
@@ -127,6 +127,9 @@ const InitialSetupSteps = () => {
   } | null>( null );
   const [ loadingInvoice, setLoadingInvoice ] = useState( false );
 
+  // Estado para controlar la UI tras redirección de Stripe
+  const [ paymentState, setPaymentState ] = useState<"pending" | "cancel" | "error" | "success">( "pending" );
+
   const { config, fetchConfig, updateConfig } = useConfigStore();
   const { createAccount } = useFinancialAccountsStore();
   const { initiateStripePayment, checkPaymentStatus } = useClientInvoicesStore();
@@ -136,11 +139,12 @@ const InitialSetupSteps = () => {
   // Escuchar respuesta de Stripe (redirect de vuelta)
   useEffect( () => {
     const queryParams = new URLSearchParams( window.location.search );
-    const paymentStatus = queryParams.get( "payment" );
+    const status = queryParams.get( "payment" );
     const sessionId = queryParams.get( "session_id" );
 
-    if ( paymentStatus === "success" && sessionId ) {
+    if ( status === "success" && sessionId ) {
       setCurrentStep( 7 ); // Ir directo al paso de pago
+      setPaymentState( "success" );
       const verifyAndFinish = async () => {
         setIsSubmitting( true );
         try {
@@ -150,19 +154,22 @@ const InitialSetupSteps = () => {
             // Ejecutar finalización
             await handleFinish();
           } else {
+            setPaymentState( "error" );
             toast.error( "El pago no ha sido completado correctamente" );
             setIsSubmitting( false );
           }
         } catch ( error ) {
           console.error( "Error al verificar el pago:", error );
+          setPaymentState( "error" );
           toast.error( "Error al verificar el pago con Stripe." );
           setIsSubmitting( false );
         }
       };
       // Pequeño timeout para permitir cargar datos de auth y config inicial
       setTimeout( () => verifyAndFinish(), 1000 );
-    } else if ( paymentStatus === "cancel" ) {
+    } else if ( status === "cancel" ) {
       setCurrentStep( 7 ); // Ir directo al paso de pago
+      setPaymentState( "cancel" );
       toast.error( "Has cancelado el proceso de pago." );
     }
   }, [] );
@@ -236,12 +243,15 @@ const InitialSetupSteps = () => {
           message: data.message,
           invoiceURL: data.invoiceURL,
         } );
+        setPaymentState( "pending" ); // Ensure state is pending if invoice found
       } else {
         // No hay factura pendiente aún (posible si aún no se generó)
         setPaymentInvoice( null );
+        setPaymentState( "pending" ); // No invoice, but still "pending" for the user to proceed
       }
     } catch ( err ) {
       console.error( "Error al cargar factura pendiente:", err );
+      setPaymentState( "error" ); // Set error state if loading fails
     } finally {
       setLoadingInvoice( false );
     }
@@ -446,8 +456,8 @@ const InitialSetupSteps = () => {
       setIsSubmitting( true );
 
       const currentDomain = window.location.origin || "http://localhost:3000";
-      const customSuccessUrl = `${ currentDomain }/dashboard/initial-setup?payment=success`;
-      const customCancelUrl = `${ currentDomain }/dashboard/initial-setup?payment=cancel`;
+      const customSuccessUrl = `${ currentDomain }${ window.location.pathname }?payment=success`;
+      const customCancelUrl = `${ currentDomain }${ window.location.pathname }?payment=cancel`;
 
       // Necesitamos pasarle el ID real (document id de Firestore) a initiateStripePayment
       // Como paymentInvoice actualmente no tiene "id", usamos la búsqueda si es necesario o asumimos que lo tenemos.
@@ -966,142 +976,190 @@ const InitialSetupSteps = () => {
           : null;
 
         return (
-          <div className="space-y-5">
-            {/* Hero amigable */ }
-            <div className="rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 p-5 text-white">
-              <p className="text-sm font-bold uppercase tracking-widest text-indigo-200">
-                ¡Ya casi terminas!
-              </p>
-              <p className="mt-1 text-sm leading-snug">
-                Solo falta un último paso: <span className="font-bold">completa tu pago</span> para comenzar a vivir la experiencia EstateAdmin.
-              </p>
-              <p className="mt-1 text-sm text-indigo-100">
-                Una vez confirmado tu pago, tendrás acceso completo a todas
-                las funciones de la plataforma.
-              </p>
-            </div>
-
-            {/* Tarjeta de factura */ }
-            { loadingInvoice ? (
-              <div className="animate-pulse space-y-2 rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-800">
-                <div className="h-4 w-1/3 rounded bg-gray-200 dark:bg-gray-700" />
-                <div className="h-8 w-1/2 rounded bg-gray-200 dark:bg-gray-700" />
-                <div className="h-4 w-2/3 rounded bg-gray-200 dark:bg-gray-700" />
-              </div>
-            ) : paymentInvoice ? (
-              <div className="overflow-hidden rounded-xl border border-indigo-100 bg-white shadow-lg dark:border-indigo-900 dark:bg-gray-800">
-                {/* Header de la tarjeta */ }
-                <div className="flex items-center justify-between border-b border-indigo-50 bg-indigo-50/50 px-5 py-3 dark:border-indigo-900/50 dark:bg-indigo-900/20">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
-                    Factura { paymentInvoice.invoiceNumber }
-                  </span>
-                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
-                    Pendiente de pago
-                  </span>
+          <div className="space-y-5 flex flex-col items-center max-w-lg mx-auto w-full">
+            {/* Si está en proceso exitoso */ }
+            { paymentState === "success" && (
+              <div className="w-full rounded-2xl bg-gradient-to-br from-green-50 to-emerald-50 p-8 text-center shadow-lg border border-green-100 dark:from-green-900/20 dark:to-emerald-900/20 dark:border-green-800">
+                <div className="bg-green-100 dark:bg-green-800/50 rounded-full p-3 w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                  <CheckIcon className="h-10 w-10 text-green-600 dark:text-green-400" />
                 </div>
-
-                {/* Monto prominente */ }
-                <div className="px-5 py-5">
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Total a pagar</p>
-                  <p className="mt-1 text-4xl font-extrabold tracking-tight text-gray-900 dark:text-white">
-                    { formatMXN( paymentInvoice.amount ) }
-                    <span className="ml-2 text-base font-normal text-gray-400">MXN</span>
-                  </p>
-
-                  {/* Detalle del concepto */ }
-                  <div className="mt-4 space-y-2 border-t border-gray-100 pt-4 dark:border-gray-700">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-500 dark:text-gray-400">Concepto</span>
-                      <span className="font-medium text-gray-800 dark:text-gray-200">
-                        { paymentInvoice.concept }
-                      </span>
-                    </div>
-                    { paymentInvoice.plan && (
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-500 dark:text-gray-400">Plan / Unidades</span>
-                        <span className="font-medium text-gray-800 dark:text-gray-200">
-                          { paymentInvoice.plan } uds.
-                        </span>
-                      </div>
-                    ) }
-                    { dueLabel && (
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-500 dark:text-gray-400">Fecha límite</span>
-                        <span className="font-medium text-rose-600 dark:text-rose-400">
-                          { dueLabel }
-                        </span>
-                      </div>
-                    ) }
-                    { nextBillingLabel && (
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-500 dark:text-gray-400">Próximo cobro</span>
-                        <span className="font-medium text-gray-800 dark:text-gray-200">
-                          { nextBillingLabel }
-                        </span>
-                      </div>
-                    ) }
-                  </div>
-
-                  { paymentInvoice.message && (
-                    <div className="mt-4 rounded bg-blue-50 p-3 text-sm text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
-                      <InformationCircleIcon className="mb-0.5 inline h-4 w-4 mr-1" />
-                      { paymentInvoice.message }
-                    </div>
-                  ) }
-
-                  {/* Botones */ }
-                  <div className="mt-5 flex flex-col gap-3 sm:flex-row">
-                    <button
-                      onClick={ handlePayInvoice }
-                      disabled={ isSubmitting }
-                      className="inline-flex items-center justify-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-green-700 disabled:opacity-50"
-                    >
-                      <CreditCardIcon className="h-4 w-4" />
-                      Pagar factura
-                    </button>
-                    { paymentInvoice.invoiceURL && (
-                      <a
-                        href={ paymentInvoice.invoiceURL }
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex items-center justify-center gap-2 rounded-lg border border-indigo-600 px-4 py-2 text-sm font-semibold text-indigo-600 transition hover:bg-indigo-50 dark:border-indigo-400 dark:text-indigo-400 dark:hover:bg-indigo-900/30"
-                      >
-                        <ArrowDownTrayIcon className="h-4 w-4" />
-                        Descargar factura
-                      </a>
-                    ) }
-                    <a
-                      href="mailto:soporte@estate-admin.com?subject=Problemas%20con%20el%20pago%20de%20suscripción"
-                      className="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
-                    >
-                      <EnvelopeIcon className="h-4 w-4" />
-                      Contactar para asistencia
-                    </a>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              /* Sin factura pendiente */
-              <div className="rounded-xl border border-green-200 bg-green-50 p-5 dark:border-green-800 dark:bg-green-900/20">
-                <div className="flex items-center gap-3">
-                  <ShieldCheckIcon className="h-8 w-8 text-green-500" />
-                  <div>
-                    <p className="font-semibold text-green-800 dark:text-green-300">
-                      ¡Sin pagos pendientes!
-                    </p>
-                    <p className="text-sm text-green-700 dark:text-green-400">
-                      Tu cuenta está al corriente. Puedes finalizar tu configuración.
-                    </p>
-                  </div>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">¡Pago en proceso!</h2>
+                <p className="text-gray-600 dark:text-gray-300">Estamos verificando tu pago con Stripe. Por favor, no cierres esta ventana.</p>
+                <div className="mt-6 flex justify-center">
+                  <div className="h-8 w-8 animate-spin rounded-full border-4 border-solid border-green-600 border-r-transparent align-[[-0.125em]]" />
                 </div>
               </div>
             ) }
 
-            {/* Sello de seguridad */ }
-            <div className="flex items-center gap-2 text-xs text-gray-400 dark:text-gray-500">
-              <LockClosedIcon className="h-3.5 w-3.5" />
-              Tus datos de pago están protegidos con cifrado de extremo a extremo.
-            </div>
+            {/* Si canceló o falló */ }
+            { ( paymentState === "cancel" || paymentState === "error" ) && (
+              <div className="w-full rounded-2xl bg-gradient-to-br from-red-50 to-rose-50 p-8 text-center shadow-lg border border-red-100 dark:from-red-900/20 dark:to-rose-900/20 dark:border-red-800">
+                <div className="bg-red-100 dark:bg-red-800/50 rounded-full p-3 w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                  <XCircleIcon className="h-10 w-10 text-red-600 dark:text-red-400" />
+                </div>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                  { paymentState === "cancel" ? "Pago Cancelado" : "Error en el Pago" }
+                </h2>
+                <div className="h-1 w-12 bg-red-500 mx-auto mb-4 rounded-full"></div>
+                <p className="text-gray-600 dark:text-gray-300 mb-6 font-medium">
+                  { paymentState === "cancel"
+                    ? "Has cancelado el proceso de pago. No se ha realizado ningún cargo a tu tarjeta."
+                    : "Hubo un problema procesando tu pago. Por favor, revisa tus datos o intenta más tarde." }
+                </p>
+                <div className="flex flex-col gap-3">
+                  <button
+                    onClick={ handlePayInvoice }
+                    disabled={ isSubmitting || loadingInvoice }
+                    className="w-full flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-indigo-700 shadow-md"
+                  >
+                    <CreditCardIcon className="h-5 w-5" />
+                    Reintentar Pago
+                  </button>
+                  <a
+                    href="mailto:soporte@estate-admin.com?subject=Problemas%20con%20el%20pago%20de%20InitialSetup"
+                    className="w-full flex items-center justify-center gap-2 rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 shadow-sm dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700"
+                  >
+                    <EnvelopeIcon className="h-5 w-5" />
+                    Contactar a Soporte
+                  </a>
+                </div>
+              </div>
+            ) }
+
+            { paymentState === "pending" && (
+              <>
+                {/* Hero amigable */ }
+                <div className="w-full rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 p-5 text-white shadow-lg">
+                  <p className="text-sm font-bold uppercase tracking-widest text-indigo-200 flex items-center gap-2">
+                    <SparklesIcon className="h-4 w-4" /> ¡Ya casi terminas!
+                  </p>
+                  <p className="mt-2 text-sm leading-snug">
+                    Solo falta un último paso: <span className="font-bold">completa tu pago</span> para comenzar a vivir la experiencia EstateAdmin.
+                  </p>
+                  <p className="mt-2 text-xs text-indigo-100">
+                    Una vez confirmado tu pago, tendrás acceso completo a todas
+                    las funciones de tu tablero de administración.
+                  </p>
+                </div>
+
+                {/* Tarjeta de factura */ }
+                { loadingInvoice ? (
+                  <div className="animate-pulse space-y-2 rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-800">
+                    <div className="h-4 w-1/3 rounded bg-gray-200 dark:bg-gray-700" />
+                    <div className="h-8 w-1/2 rounded bg-gray-200 dark:bg-gray-700" />
+                    <div className="h-4 w-2/3 rounded bg-gray-200 dark:bg-gray-700" />
+                  </div>
+                ) : paymentInvoice ? (
+                  <div className="overflow-hidden rounded-xl border border-indigo-100 bg-white shadow-lg dark:border-indigo-900 dark:bg-gray-800">
+                    {/* Header de la tarjeta */ }
+                    <div className="flex items-center justify-between border-b border-indigo-50 bg-indigo-50/50 px-5 py-3 dark:border-indigo-900/50 dark:bg-indigo-900/20">
+                      <span className="text-xs font-semibold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
+                        Factura { paymentInvoice.invoiceNumber }
+                      </span>
+                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+                        Pendiente de pago
+                      </span>
+                    </div>
+
+                    {/* Monto prominente */ }
+                    <div className="px-5 py-5">
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Total a pagar</p>
+                      <p className="mt-1 text-4xl font-extrabold tracking-tight text-gray-900 dark:text-white">
+                        { formatMXN( paymentInvoice.amount ) }
+                        <span className="ml-2 text-base font-normal text-gray-400">MXN</span>
+                      </p>
+
+                      {/* Detalle del concepto */ }
+                      <div className="mt-4 space-y-2 border-t border-gray-100 pt-4 dark:border-gray-700">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-500 dark:text-gray-400">Concepto</span>
+                          <span className="font-medium text-gray-800 dark:text-gray-200">
+                            { paymentInvoice.concept }
+                          </span>
+                        </div>
+                        { paymentInvoice.plan && (
+                          <div className="flex justify-between text-sm">
+                            <span className="text-gray-500 dark:text-gray-400">Plan / Unidades</span>
+                            <span className="font-medium text-gray-800 dark:text-gray-200">
+                              { paymentInvoice.plan } uds.
+                            </span>
+                          </div>
+                        ) }
+                        { dueLabel && (
+                          <div className="flex justify-between text-sm">
+                            <span className="text-gray-500 dark:text-gray-400">Fecha límite</span>
+                            <span className="font-medium text-rose-600 dark:text-rose-400">
+                              { dueLabel }
+                            </span>
+                          </div>
+                        ) }
+                        { nextBillingLabel && (
+                          <div className="flex justify-between text-sm">
+                            <span className="text-gray-500 dark:text-gray-400">Próximo cobro</span>
+                            <span className="font-medium text-gray-800 dark:text-gray-200">
+                              { nextBillingLabel }
+                            </span>
+                          </div>
+                        ) }
+                      </div>
+
+                      { paymentInvoice.message && (
+                        <div className="mt-4 rounded bg-blue-50 p-3 text-sm text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
+                          <InformationCircleIcon className="mb-0.5 inline h-4 w-4 mr-1" />
+                          { paymentInvoice.message }
+                        </div>
+                      ) }
+
+                      {/* Botones */ }
+                      <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+                        <button
+                          onClick={ handlePayInvoice }
+                          disabled={ isSubmitting }
+                          className="inline-flex items-center justify-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-green-700 disabled:opacity-50"
+                        >
+                          <CreditCardIcon className="h-4 w-4" />
+                          Pagar factura
+                        </button>
+                        { paymentInvoice.invoiceURL && (
+                          <a
+                            href={ paymentInvoice.invoiceURL }
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center justify-center gap-2 rounded-lg border border-indigo-600 px-4 py-2 text-sm font-semibold text-indigo-600 transition hover:bg-indigo-50 dark:border-indigo-400 dark:text-indigo-400 dark:hover:bg-indigo-900/30"
+                          >
+                            <ArrowDownTrayIcon className="h-4 w-4" />
+                            Descargar factura
+                          </a>
+                        ) }
+                        <a
+                          href="mailto:soporte@estate-admin.com?subject=Problemas%20con%20el%20pago%20de%20suscripción"
+                          className="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+                        >
+                          <EnvelopeIcon className="h-4 w-4" />
+                          Contactar para asistencia
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="w-full rounded-2xl bg-gradient-to-br from-green-50 to-emerald-50 p-8 text-center shadow-lg border border-green-100 dark:from-green-900/20 dark:to-emerald-900/20 dark:border-green-800">
+                    <div className="bg-green-100 dark:bg-green-800/50 rounded-full p-3 w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                      <CheckIcon className="h-10 w-10 text-green-600 dark:text-green-400" />
+                    </div>
+                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">¡Todo listo!</h2>
+                    <p className="text-gray-600 dark:text-gray-300">
+                      Tu cuenta está al corriente. Puedes finalizar tu configuración.
+                    </p>
+                  </div>
+                ) }
+
+                {/* Sello de seguridad */ }
+                <div className="flex items-center gap-2 text-xs text-gray-400 dark:text-gray-500">
+                  <LockClosedIcon className="h-3.5 w-3.5" />
+                  Tus datos de pago están protegidos con cifrado de extremo a extremo.
+                </div>
+              </>
+            ) }
           </div>
         );
       }
