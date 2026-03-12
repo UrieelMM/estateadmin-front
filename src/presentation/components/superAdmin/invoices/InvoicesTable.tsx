@@ -371,8 +371,9 @@ const InvoicesTable: React.FC<InvoicesTableProps> = ( {
                               className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300"
                               title="Descargar PDF"
                               onClick={ () => {
-                                if ( invoice.invoiceURL ) {
-                                  window.open( invoice.invoiceURL, "_blank" );
+                                const pdfUrl = invoice.invoicePdfStorageUrl || invoice.invoiceURL;
+                                if ( pdfUrl ) {
+                                  window.open( pdfUrl, "_blank" );
                                 } else {
                                   toast.error(
                                     "No hay factura disponible para descargar"
@@ -445,8 +446,8 @@ const InvoicesTable: React.FC<InvoicesTableProps> = ( {
                       key={ page }
                       onClick={ () => handlePageChange( page ) }
                       className={ `relative inline-flex items-center px-4 py-2 text-sm font-semibold ${ page === currentPage
-                          ? "z-10 bg-indigo-700 border-2 text-white border-indigo-700 rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 dark:text-gray-100"
-                          : "z-10 border-2 border-indigo-700 rounded-md text-indigo-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 dark:text-gray-100"
+                        ? "z-10 bg-indigo-700 border-2 text-white border-indigo-700 rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 dark:text-gray-100"
+                        : "z-10 border-2 border-indigo-700 rounded-md text-indigo-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 dark:text-gray-100"
                         }` }
                     >
                       { page }
@@ -579,7 +580,7 @@ const InvoicesTable: React.FC<InvoicesTableProps> = ( {
                                     <span
                                       className={ `px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${ statusColors[
                                         invoice.paymentStatus || "pending"
-                                        ]
+                                      ]
                                         }` }
                                     >
                                       { formatStatus(

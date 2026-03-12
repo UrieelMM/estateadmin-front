@@ -40,6 +40,8 @@ export interface InvoiceData {
   condominiumName: string;
   nextBillingDate?: any;
   message?: string;
+  invoicePdfStoragePath?: string;
+  invoicePdfStorageUrl?: string;
 }
 
 export interface InvoiceRecord {
@@ -66,6 +68,8 @@ export interface InvoiceRecord {
   optionalMessage: string;
   nextBillingDate?: any;
   message?: string;
+  invoicePdfStoragePath?: string;
+  invoicePdfStorageUrl?: string;
 }
 
 interface BillingStore {

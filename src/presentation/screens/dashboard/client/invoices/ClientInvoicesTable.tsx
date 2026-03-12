@@ -373,26 +373,13 @@ const ClientInvoicesTable: React.FC<ClientInvoicesTableProps> = ( {
                         </td>
                         <td className="whitespace-nowrap px-3 py-4 text-sm text-right font-medium">
                           <div className="flex justify-end space-x-2">
-                            <button
-                              className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 group relative"
-                              onClick={ () => {
-                                if ( invoice.xmlURL ) {
-                                  window.open( invoice.xmlURL, "_blank" );
-                                } else {
-                                  toast.error( "No hay XML disponible para ver" );
-                                }
-                              } }
-                            >
-                              <DocumentTextIcon className="h-5 w-5" />
-                              <span className="absolute bottom-full left-[-20px] transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-gray-900 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                                Descargar XML
-                              </span>
-                            </button>
+
                             <button
                               className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300 group relative"
                               onClick={ () => {
-                                if ( invoice.invoiceURL ) {
-                                  window.open( invoice.invoiceURL, "_blank" );
+                                const pdfUrl = invoice.invoicePdfStorageUrl || invoice.invoiceURL;
+                                if ( pdfUrl ) {
+                                  window.open( pdfUrl, "_blank" );
                                 } else {
                                   toast.error(
                                     "No hay factura disponible para descargar"
@@ -463,8 +450,8 @@ const ClientInvoicesTable: React.FC<ClientInvoicesTableProps> = ( {
                       key={ page }
                       onClick={ () => handlePageChange( page ) }
                       className={ `relative inline-flex items-center px-4 py-2 text-sm font-semibold ${ page === currentPage
-                          ? "z-10 bg-indigo-700 border-2 text-white border-indigo-700 rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 dark:text-gray-100"
-                          : "z-10 border-2 border-indigo-700 rounded-md text-indigo-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 dark:text-gray-100"
+                        ? "z-10 bg-indigo-700 border-2 text-white border-indigo-700 rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 dark:text-gray-100"
+                        : "z-10 border-2 border-indigo-700 rounded-md text-indigo-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 dark:text-gray-100"
                         }` }
                     >
                       { page }
@@ -587,7 +574,7 @@ const ClientInvoicesTable: React.FC<ClientInvoicesTableProps> = ( {
                                     <span
                                       className={ `px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${ statusColors[
                                         invoice.paymentStatus || "pending"
-                                        ]
+                                      ]
                                         }` }
                                     >
                                       { formatStatus(

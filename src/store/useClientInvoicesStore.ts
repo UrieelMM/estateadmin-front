@@ -38,6 +38,8 @@ export interface ClientInvoice {
   condominiumName?: string;
   nextBillingDate?: any;
   message?: string;
+  invoicePdfStoragePath?: string;
+  invoicePdfStorageUrl?: string;
 }
 
 interface ClientInvoicesState {
