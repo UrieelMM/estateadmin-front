@@ -427,6 +427,24 @@ const ClientEditModal: React.FC<ClientEditModalProps> = ( {
                 />
               </div>
 
+              <div>
+                <label
+                  htmlFor="condominiumManager"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                >
+                  Nombre del Administrador del Condominio*
+                </label>
+                <input
+                  type="text"
+                  name="condominiumManager"
+                  id="condominiumManager"
+                  value={ currentClient.condominiumManager || "" }
+                  onChange={ handleInputChange }
+                  required
+                  className="px-2 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
+                />
+              </div>
+
               {/* Sección de unidades contratadas */ }
               <h4 className="text-md font-medium mb-3 mt-4 text-gray-800 dark:text-gray-200 border-b pb-1">
                 Unidades Contratadas
@@ -621,6 +639,24 @@ const ClientEditModal: React.FC<ClientEditModalProps> = ( {
                   id="address"
                   rows={ 3 }
                   value={ condominiumForm.address }
+                  onChange={ handleCondominiumInputChange }
+                  required
+                  className="px-2 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="condominiumManager"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                >
+                  Nombre del Administrador del Condominio*
+                </label>
+                <input
+                  type="text"
+                  name="condominiumManager"
+                  id="condominiumManager"
+                  value={ condominiumForm.condominiumManager || "" }
                   onChange={ handleCondominiumInputChange }
                   required
                   className="px-2 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"

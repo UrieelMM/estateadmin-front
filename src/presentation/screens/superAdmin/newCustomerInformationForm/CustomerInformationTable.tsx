@@ -29,11 +29,13 @@ interface CustomerInfo {
   };
   plan?: string;
   pricing?: number;
+  pricingWithoutTax?: number;
   cfdiUse?: string;
   billingFrequency?: string;
   formId?: string;
   recordId?: string;
   registrationDate?: string;
+  condominiumManager?: string;
 }
 
 const CustomerInformationTable: React.FC = () => {
@@ -416,22 +418,6 @@ const CustomerInformationTable: React.FC = () => {
                             <span className="font-medium">Actividad:</span>{ " " }
                             { selectedCustomer.businessActivity }
                           </p>
-                          <p className="text-sm text-gray-700 dark:text-gray-300">
-                            <span className="font-medium">Unidades contratadas:</span>{ " " }
-                            { selectedCustomer.plan ?? "—" } unidades
-                          </p>
-                          <p className="text-sm text-gray-700 dark:text-gray-300">
-                            <span className="font-medium">Precio mensual (con IVA):</span>{ " " }
-                            { selectedCustomer.pricing != null
-                              ? selectedCustomer.pricing.toLocaleString( "es-MX", { style: "currency", currency: "MXN" } )
-                              : "—" }
-                          </p>
-                          <p className="text-sm text-gray-700 dark:text-gray-300">
-                            <span className="font-medium">
-                              Frecuencia de Facturación:
-                            </span>{ " " }
-                            { selectedCustomer.billingFrequency }
-                          </p>
                         </div>
                       </div>
 
@@ -448,6 +434,12 @@ const CustomerInformationTable: React.FC = () => {
                             <span className="font-medium">Dirección:</span>{ " " }
                             { selectedCustomer.condominiumInfo.address }
                           </p>
+                          { selectedCustomer.condominiumManager && (
+                            <p className="text-sm text-gray-700 dark:text-gray-300">
+                              <span className="font-medium">Administrador:</span>{ " " }
+                              { selectedCustomer.condominiumManager }
+                            </p>
+                          ) }
                           <p className="text-sm text-gray-700 dark:text-gray-300">
                             <span className="font-medium">ID de Registro:</span>{ " " }
                             { selectedCustomer.recordId || "N/A" }
@@ -458,6 +450,29 @@ const CustomerInformationTable: React.FC = () => {
                             </span>{ " " }
                             { formatDate( selectedCustomer.registrationDate ) }
                           </p>
+                          <p className="text-sm text-gray-700 dark:text-gray-300">
+                            <span className="font-medium">
+                              Frecuencia de Facturación:
+                            </span>{ " " }
+                            { selectedCustomer.billingFrequency }
+                          </p>
+                          <p className="text-sm text-gray-700 dark:text-gray-300">
+                            <span className="font-medium">Unidades contratadas:</span>{ " " }
+                            { selectedCustomer.plan ?? "—" } unidades
+                          </p>
+                          <p className="text-sm text-gray-700 dark:text-gray-300">
+                            <span className="font-medium">Precio mensual (con IVA):</span>{ " " }
+                            { selectedCustomer.pricing != null
+                              ? selectedCustomer.pricing.toLocaleString( "es-MX", { style: "currency", currency: "MXN" } )
+                              : "—" }
+                          </p>
+
+                          { selectedCustomer.pricingWithoutTax != null && (
+                            <p className="text-sm text-gray-700 dark:text-gray-300">
+                              <span className="font-medium">Precio sin IVA:</span>{ " " }
+                              { selectedCustomer.pricingWithoutTax.toLocaleString( "es-MX", { style: "currency", currency: "MXN" } ) }
+                            </p>
+                          ) }
                         </div>
                       </div>
                     </div>

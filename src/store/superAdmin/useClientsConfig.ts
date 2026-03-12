@@ -35,6 +35,7 @@ export interface Client {
   billingFrequency?: string;
   hasMaintenanceApp?: boolean;
   pricing?: number;
+  condominiumManager?: string;
 }
 
 export interface ClientFormData {
@@ -58,6 +59,7 @@ export interface ClientFormData {
   billingFrequency?: string;
   hasMaintenanceApp?: boolean;
   pricing?: number;
+  condominiumManager?: string;
 }
 
 export interface CondominiumFormData {
@@ -69,6 +71,7 @@ export interface CondominiumFormData {
   status?: CondominiumStatus;
   clientId?: string;
   condominiumLimit?: number;
+  condominiumManager?: string;
 }
 
 export interface ClientCredentials {
@@ -121,6 +124,7 @@ const initialCondominiumForm: CondominiumFormData = {
   plan: "Free",
   proFunctions: [],
   status: CondominiumStatus.Pending,
+  condominiumManager: "",
 };
 
 const db = getFirestore();
@@ -259,6 +263,7 @@ const useClientsConfig = create<ClientsConfigStore>()((set, get) => ({
         billingFrequency: client.billingFrequency || "monthly",
         hasMaintenanceApp: client.hasMaintenanceApp || false,
         pricing: client.pricing,
+        condominiumManager: client.condominiumManager || "",
       },
     });
   },
@@ -372,6 +377,7 @@ const useClientsConfig = create<ClientsConfigStore>()((set, get) => ({
           responsiblePersonPosition: currentClient.responsiblePersonPosition,
           billingFrequency: currentClient.billingFrequency,
           hasMaintenanceApp: currentClient.hasMaintenanceApp,
+          condominiumManager: currentClient.condominiumManager,
         }
       );
 
@@ -506,6 +512,7 @@ const useClientsConfig = create<ClientsConfigStore>()((set, get) => ({
             proFunctions: condominiumForm.proFunctions || [],
             status: condominiumForm.status || CondominiumStatus.Pending,
             condominiumLimit: condominiumForm.condominiumLimit || 1,
+            condominiumManager: condominiumForm.condominiumManager || "",
           }),
         }
       );

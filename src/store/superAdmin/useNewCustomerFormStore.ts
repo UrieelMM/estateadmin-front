@@ -6,6 +6,7 @@ import toast from "react-hot-toast";
 export interface CondominiumInfo {
   name: string;
   address: string;
+  condominiumManager?: string;
 }
 
 export interface NewCustomerInfo {
@@ -23,9 +24,11 @@ export interface NewCustomerInfo {
   responsiblePersonName: string;
   responsiblePersonPosition: string;
   condominiumInfo: CondominiumInfo;
+  condominiumManager?: string;
   photoURL?: string;
   plan?: string;
   pricing?: number;
+  pricingWithoutTax?: number;
   cfdiUse?: string;
   billingFrequency?: string;
   recordId?: string;

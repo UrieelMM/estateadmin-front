@@ -59,6 +59,7 @@ const NewClientForm: React.FC<NewClientFormProps> = ( {
       address: "",
       status: CondominiumStatus.Pending,
     },
+    condominiumManager: "",
 
     // Campos opcionales con valores predeterminados
     photoURL: "",
@@ -262,6 +263,7 @@ const NewClientForm: React.FC<NewClientFormProps> = ( {
       "responsiblePersonPosition",
       "currency",
       "language",
+      "condominiumManager",
     ];
 
     const missingFields = requiredFields.filter(
@@ -858,6 +860,20 @@ const NewClientForm: React.FC<NewClientFormProps> = ( {
                   type="text"
                   name="condominiumInfo.address"
                   value={ formData.condominiumInfo.address }
+                  onChange={ handleInputChange }
+                  required
+                  className="w-full px-2 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Nombre del Administrador del Condominio*
+                </label>
+                <input
+                  type="text"
+                  name="condominiumManager"
+                  value={ formData.condominiumManager }
                   onChange={ handleInputChange }
                   required
                   className="w-full px-2 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"

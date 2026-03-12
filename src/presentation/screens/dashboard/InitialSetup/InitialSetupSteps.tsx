@@ -126,6 +126,7 @@ const InitialSetupSteps = () => {
     invoiceURL?: string;
   } | null>( null );
   const [ loadingInvoice, setLoadingInvoice ] = useState( false );
+  const [ savingBeforePayment, setSavingBeforePayment ] = useState( false );
 
   // Estado para controlar la UI tras redirección de Stripe
   const [ paymentState, setPaymentState ] = useState<"pending" | "cancel" | "error" | "success">( "pending" );
@@ -307,10 +308,86 @@ const InitialSetupSteps = () => {
         return;
       }
     } else if ( currentStep === 6 ) {
-      // Al llegar al paso 7 (pago), cargar la factura
-      loadPaymentInvoice();
+      // Al llegar al paso 7 (pago), guardar datos previos y luego cargar la factura
+      saveDataBeforePayment();
     }
     setCurrentStep( ( prev ) => prev + 1 );
+  };
+
+  // Guardar toda la información de los pasos anteriores antes de ir a pago
+  const saveDataBeforePayment = async () => {
+    setSavingBeforePayment( true );
+    try {
+      const auth = getAuth();
+      const user = auth.currentUser;
+      if ( !user ) throw new Error( "Usuario no autenticado" );
+
+      const tokenResult = await getIdTokenResult( user );
+      const clientId = tokenResult.claims[ "clientId" ] as string;
+      if ( !clientId ) throw new Error( "clientId no disponible en el token" );
+
+      const condominiumId = localStorage.getItem( "condominiumId" );
+      if ( !condominiumId ) throw new Error( "Condominio no seleccionado" );
+
+      const db = getFirestore();
+
+      // 1. Crear/actualizar documento del usuario
+      const userEmail = user.email?.toLowerCase() || "";
+      const userCollRef = collection(
+        db,
+        `clients/${ clientId }/condominiums/${ condominiumId }/users`
+      );
+      const q = query( userCollRef, where( "email", "==", userEmail ) );
+      const snap = await getDocs( q );
+
+      if ( snap.empty ) {
+        await addDoc( userCollRef, {
+          email: userEmail,
+          role: "admin",
+          darkMode: isDarkMode,
+          createdAt: serverTimestamp(),
+          userId: user.uid,
+        } );
+      } else {
+        const userDoc = snap.docs[ 0 ];
+        await updateDoc( userDoc.ref, {
+          darkMode: isDarkMode,
+          userId: user.uid,
+        } );
+      }
+
+      // 2. Guardar configuración general + imágenes
+      await updateConfig(
+        {
+          ...userData,
+          darkMode: isDarkMode,
+        },
+        logoFile || undefined,
+        signReportsFile || undefined,
+        logoReportsFile || undefined
+      );
+
+      // 3. Crear cuenta financiera si se proporcionaron datos
+      if ( accountData.name ) {
+        await createAccount( {
+          name: accountData.name,
+          type: accountData.type,
+          description: accountData.description,
+          initialBalance: accountData.initialBalance,
+          active: true,
+        } );
+      }
+
+      toast.success( "Datos guardados correctamente" );
+
+      // 4. Cargar la factura pendiente
+      await loadPaymentInvoice();
+    } catch ( error: any ) {
+      console.error( "Error al guardar datos antes de pago:", error );
+      toast.error( error.message || "Error al guardar los datos previos" );
+    } finally {
+      setSavingBeforePayment( false );
+    }
   };
 
   const prevStep = () => setCurrentStep( ( prev ) => prev - 1 );
@@ -996,8 +1073,21 @@ const InitialSetupSteps = () => {
 
         return (
           <div className="space-y-5 flex flex-col items-center max-w-lg mx-auto w-full">
+            {/* Loading de guardado previo */ }
+            { savingBeforePayment && (
+              <div className="w-full rounded-2xl bg-gradient-to-br from-indigo-50 to-purple-50 p-8 text-center shadow-lg border border-indigo-100 dark:from-indigo-900/20 dark:to-purple-900/20 dark:border-indigo-800">
+                <div className="flex flex-col items-center gap-4">
+                  <div className="h-10 w-10 animate-spin rounded-full border-4 border-solid border-indigo-600 border-r-transparent" />
+                  <h2 className="text-lg font-bold text-gray-900 dark:text-white">Guardando tu información...</h2>
+                  <p className="text-sm text-gray-600 dark:text-gray-300">
+                    Estamos guardando los datos de los pasos anteriores antes de continuar al pago. Por favor, no cierres esta ventana.
+                  </p>
+                </div>
+              </div>
+            ) }
+
             {/* Si está en proceso exitoso */ }
-            { paymentState === "success" && (
+            { !savingBeforePayment && paymentState === "success" && (
               <div className="w-full rounded-2xl bg-gradient-to-br from-green-50 to-emerald-50 p-8 text-center shadow-lg border border-green-100 dark:from-green-900/20 dark:to-emerald-900/20 dark:border-green-800">
                 <div className="bg-green-100 dark:bg-green-800/50 rounded-full p-3 w-16 h-16 mx-auto mb-4 flex items-center justify-center">
                   <CheckIcon className="h-10 w-10 text-green-600 dark:text-green-400" />
@@ -1011,7 +1101,7 @@ const InitialSetupSteps = () => {
             ) }
 
             {/* Si canceló o falló */ }
-            { ( paymentState === "cancel" || paymentState === "error" ) && (
+            { !savingBeforePayment && ( paymentState === "cancel" || paymentState === "error" ) && (
               <div className="w-full rounded-2xl bg-gradient-to-br from-red-50 to-rose-50 p-8 text-center shadow-lg border border-red-100 dark:from-red-900/20 dark:to-rose-900/20 dark:border-red-800">
                 <div className="bg-red-100 dark:bg-red-800/50 rounded-full p-3 w-16 h-16 mx-auto mb-4 flex items-center justify-center">
                   <XCircleIcon className="h-10 w-10 text-red-600 dark:text-red-400" />
@@ -1045,7 +1135,7 @@ const InitialSetupSteps = () => {
               </div>
             ) }
 
-            { paymentState === "pending" && (
+            { !savingBeforePayment && paymentState === "pending" && (
               <>
                 {/* Hero amigable */ }
                 <div className="w-full rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 p-5 text-white shadow-lg">

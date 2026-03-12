@@ -645,27 +645,34 @@ const CondominiumInfoStep: React.FC<StepProps> = ( {
           ) }
       </div>
 
-      {/* <div>
+      <div>
         <label
-          htmlFor="photoURL"
+          htmlFor="condominiumManager"
           className="block text-sm font-medium text-gray-700 dark:text-gray-300"
         >
-          URL de la Foto del Condominio (Opcional)
+          <span className="inline-flex items-center gap-1">
+            <UserCircleIcon className="h-4 w-4 text-indigo-500" />
+            Nombre del Administrador*
+          </span>
         </label>
         <input
-          type="url"
-          id="photoURL"
-          name="photoURL"
-          value={currentData.photoURL || ""}
-          onChange={(e) => updateField("photoURL", e.target.value)}
-          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-          placeholder="https://ejemplo.com/imagen.jpg"
+          type="text"
+          id="condominiumManager"
+          name="condominiumManager"
+          value={ currentData.condominiumManager || "" }
+          onChange={ ( e ) => updateField( "condominiumManager", e.target.value ) }
+          onBlur={ () => setTouched( "condominiumManager", true ) }
+          placeholder="Ej. Carlos Pérez"
+          className={ getFieldClass(
+            !!( errors.condominiumManager && touched.condominiumManager )
+          ) }
         />
-        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-          Puede proporcionar una URL de imagen que represente al condominio para
-          personalizar su cuenta.
-        </p>
-      </div> */}
+        { errors.condominiumManager && touched.condominiumManager && (
+          <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+            { errors.condominiumManager }
+          </p>
+        ) }
+      </div>
     </div>
   </div>
 );
@@ -697,6 +704,7 @@ const AdditionalConfigStep: React.FC<StepProps> = ( {
       const initSubtotal = PLAN_BASE + 50 * COST_PER_UNIT;
       const initTotal = initSubtotal * ( 1 + IVA_RATE );
       updateField( "pricing", Math.round( initTotal * 100 ) / 100 );
+      updateField( "pricingWithoutTax", Math.round( initSubtotal * 100 ) / 100 );
     }
   }, [] );
 
@@ -706,6 +714,7 @@ const AdditionalConfigStep: React.FC<StepProps> = ( {
     const newTotal = newSubtotal * ( 1 + IVA_RATE );
     updateField( "plan", String( clamped ) );
     updateField( "pricing", Math.round( newTotal * 100 ) / 100 );
+    updateField( "pricingWithoutTax", Math.round( newSubtotal * 100 ) / 100 );
   };
 
   return (
@@ -876,8 +885,10 @@ const NewCustomerInformationForm = () => {
   const [ currentStep, setCurrentStep ] = useState( 0 );
   const [ formData, setFormData ] = useState<Partial<NewCustomerInfo>>( {
     condominiumInfo: { name: "", address: "" },
+    condominiumManager: "",
     plan: "50",
     pricing: Math.round( ( PLAN_BASE + 50 * COST_PER_UNIT ) * ( 1 + IVA_RATE ) * 100 ) / 100,
+    pricingWithoutTax: Math.round( ( PLAN_BASE + 50 * COST_PER_UNIT ) * 100 ) / 100,
     billingFrequency: "monthly",
   } );
   const [ errors, setErrors ] = useState<FormErrors>( {} );
@@ -1057,6 +1068,11 @@ const NewCustomerInformationForm = () => {
             "La dirección del condominio es obligatoria";
           isValid = false;
         }
+        if ( !formData.condominiumManager?.trim() ) {
+          newErrors.condominiumManager =
+            "El nombre del administrador es obligatorio";
+          isValid = false;
+        }
         break;
 
       case 5: // Selección de Plan
@@ -1080,7 +1096,7 @@ const NewCustomerInformationForm = () => {
       case 3:
         return [ "responsiblePersonName", "responsiblePersonPosition" ];
       case 4:
-        return [ "condominiumInfo.name", "condominiumInfo.address" ];
+        return [ "condominiumInfo.name", "condominiumInfo.address", "condominiumManager" ];
       case 5:
         return [ "plan", "billingFrequency", "photoURL" ];
       default:
@@ -1176,6 +1192,12 @@ const NewCustomerInformationForm = () => {
       allFieldsValid = false;
     }
 
+    if ( !formData.condominiumManager?.trim() ) {
+      newErrors.condominiumManager =
+        "El nombre del administrador es obligatorio";
+      allFieldsValid = false;
+    }
+
     setErrors( newErrors );
 
     // Marcar todos los campos como tocados para mostrar errores
@@ -1197,6 +1219,7 @@ const NewCustomerInformationForm = () => {
       "responsiblePersonPosition",
       "condominiumInfo.name",
       "condominiumInfo.address",
+      "condominiumManager",
     ].forEach( ( field ) => {
       newTouched[ field ] = true;
     } );
@@ -1245,8 +1268,14 @@ const NewCustomerInformationForm = () => {
     setSubmitting( true );
     try {
       // Usar el formId de la URL directamente sin generar un nuevo recordId
+      // Calcular pricingWithoutTax a partir de pricing
+      const pricingWithoutTax = formData.pricing
+        ? Math.round( ( formData.pricing / ( 1 + IVA_RATE ) ) * 100 ) / 100
+        : undefined;
+
       const dataToSubmit = {
         ...formData,
+        pricingWithoutTax,
         recordId: formId, // Usar el formId de la URL como recordId
       } as NewCustomerInfo;
 
