@@ -145,6 +145,17 @@ const InitialSetupSteps = () => {
     if ( status === "success" && sessionId ) {
       setCurrentStep( 7 ); // Ir directo al paso de pago
       setPaymentState( "success" );
+
+      // Recuperar datos temporales almacenados antes del pago
+      const storedUserData = localStorage.getItem( "tempSetupUserData" );
+      const storedAccountData = localStorage.getItem( "tempSetupAccountData" );
+      if ( storedUserData ) {
+        setUserData( JSON.parse( storedUserData ) );
+      }
+      if ( storedAccountData ) {
+        setAccountData( JSON.parse( storedAccountData ) );
+      }
+
       const verifyAndFinish = async () => {
         setIsSubmitting( true );
         try {
@@ -165,8 +176,12 @@ const InitialSetupSteps = () => {
           setIsSubmitting( false );
         }
       };
-      // Pequeño timeout para permitir cargar datos de auth y config inicial
-      setTimeout( () => verifyAndFinish(), 1000 );
+      // Remover variables temporales tras intentar finalizar (éxito o error)
+      localStorage.removeItem( "tempSetupUserData" );
+      localStorage.removeItem( "tempSetupAccountData" );
+
+      // Pequeño timeout (2.5s) para asegurar que el state de userData y accountData se haya actualizado 
+      setTimeout( () => verifyAndFinish(), 2500 );
     } else if ( status === "cancel" ) {
       setCurrentStep( 7 ); // Ir directo al paso de pago
       setPaymentState( "cancel" );
@@ -458,6 +473,10 @@ const InitialSetupSteps = () => {
       const currentDomain = window.location.origin || "http://localhost:3000";
       const customSuccessUrl = `${ currentDomain }${ window.location.pathname }?payment=success`;
       const customCancelUrl = `${ currentDomain }${ window.location.pathname }?payment=cancel`;
+
+      // Guardar el estado actual del formulario antes de salir a Stripe (imágenes no se guardan por localStorage por tamaño, pero userData y accountData sí)
+      localStorage.setItem( "tempSetupUserData", JSON.stringify( userData ) );
+      localStorage.setItem( "tempSetupAccountData", JSON.stringify( accountData ) );
 
       // Necesitamos pasarle el ID real (document id de Firestore) a initiateStripePayment
       // Como paymentInvoice actualmente no tiene "id", usamos la búsqueda si es necesario o asumimos que lo tenemos.
@@ -1229,7 +1248,7 @@ const InitialSetupSteps = () => {
                 Siguiente
                 <ChevronRightIcon className="h-5 w-5 ml-1" />
               </button>
-            ) : (
+            ) : ( !paymentInvoice || paymentState === "success" ) ? (
               <button
                 onClick={ handleFinish }
                 disabled={ isSubmitting }
@@ -1266,6 +1285,8 @@ const InitialSetupSteps = () => {
                   </>
                 ) }
               </button>
+            ) : (
+              <div />
             ) }
           </div>
         </div>
