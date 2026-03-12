@@ -35,6 +35,26 @@ interface SelectedCharge {
   amount: number;
 }
 
+const parseCurrencyInput = (value: string): number => {
+  const raw = String(value || "")
+    .replace(/[^0-9,.-]/g, "")
+    .trim();
+  if (!raw) return NaN;
+
+  const hasDot = raw.includes(".");
+  const hasComma = raw.includes(",");
+  let normalized = raw;
+
+  if (hasDot && hasComma) {
+    normalized = raw.replace(/,/g, "");
+  } else if (hasComma && !hasDot) {
+    normalized = raw.replace(/,/g, ".");
+  }
+
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? parsed : NaN;
+};
+
 const ApplyPaymentModal = ({
   open,
   setOpen,
@@ -55,7 +75,9 @@ const ApplyPaymentModal = ({
   const [email, setEmail] = useState<string>("");
   const [numberCondominium, setNumberCondominium] = useState<string>("");
   // El monto abonado se inicializa con el valor recibido, pero se mantendrá como string
-  const [amountPaid, setAmountPaid] = useState<string>(amount.toString());
+  const [amountPaid, setAmountPaid] = useState<string>(
+    Number.isFinite(amount) ? amount.toString() : ""
+  );
   // Monto pendiente: estado raw y visual
   const [amountPending, setAmountPending] = useState<string>("");
   const [amountPendingDisplay, setAmountPendingDisplay] = useState<string>("");
@@ -200,10 +222,14 @@ const ApplyPaymentModal = ({
     selectedUser && selectedUser.totalCreditBalance
       ? Number(selectedUser.totalCreditBalance) / 100
       : 0;
+  const amountPaidValue = parseCurrencyInput(amountPaid);
+  const safeAmountPaidValue = Number.isFinite(amountPaidValue)
+    ? amountPaidValue
+    : 0;
   const effectiveTotal =
     useCreditBalance && selectedUser
-      ? Number(amountPaid) + userCreditInPesos
-      : Number(amountPaid);
+      ? safeAmountPaidValue + userCreditInPesos
+      : safeAmountPaidValue;
   const creditUsed = useCreditBalance ? userCreditInPesos : 0;
   const remainingEffective = effectiveTotal - totalAssigned;
 
@@ -238,6 +264,14 @@ const ApplyPaymentModal = ({
       setLoading(false);
       return;
     }
+    if (
+      !useCreditBalance &&
+      (!Number.isFinite(amountPaidValue) || amountPaidValue <= 0)
+    ) {
+      toast.error("El monto abonado no es válido.");
+      setLoading(false);
+      return;
+    }
     if (!paymentType) {
       toast.error("El campo 'tipo de pago' es obligatorio.");
       setLoading(false);
@@ -264,7 +298,9 @@ const ApplyPaymentModal = ({
         return;
       }
     } else {
-      if (Number(amountPaid).toFixed(2) !== Number(totalAssigned).toFixed(2)) {
+      if (
+        safeAmountPaidValue.toFixed(2) !== Number(totalAssigned).toFixed(2)
+      ) {
         toast.error(
           "El monto abonado debe coincidir exactamente con la suma de los cargos asignados."
         );
@@ -295,7 +331,7 @@ const ApplyPaymentModal = ({
         userId: selectedUser?.uid || "",
         email,
         numberCondominium,
-        amountPaid: Number(amountPaid),
+        amountPaid: safeAmountPaidValue,
         amountPending: Number(amountPending),
         comments,
         file,
@@ -355,7 +391,7 @@ const ApplyPaymentModal = ({
       // Resetear formulario
       setEmail("");
       setNumberCondominium("");
-      setAmountPaid(amount.toString());
+      setAmountPaid(Number.isFinite(amount) ? amount.toString() : "");
       setAmountPending("");
       setAmountPendingDisplay("");
       setComments("");
@@ -523,8 +559,8 @@ const ApplyPaymentModal = ({
                                   id="amountPaid"
                                   className="px-8 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
                                   value={
-                                    amountPaid
-                                      ? formatCurrency(Number(amountPaid))
+                                    Number.isFinite(amountPaidValue)
+                                      ? formatCurrency(amountPaidValue)
                                       : ""
                                   }
                                 />

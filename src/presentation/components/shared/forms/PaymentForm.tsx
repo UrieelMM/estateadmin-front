@@ -30,6 +30,26 @@ interface SelectedCharge {
   amount: number;
 }
 
+const parseCurrencyInput = ( value: string ): number => {
+  const raw = String( value || "" )
+    .replace( /[^0-9,.-]/g, "" )
+    .trim();
+  if ( !raw ) return NaN;
+
+  const hasDot = raw.includes( "." );
+  const hasComma = raw.includes( "," );
+  let normalized = raw;
+
+  if ( hasDot && hasComma ) {
+    normalized = raw.replace( /,/g, "" );
+  } else if ( hasComma && !hasDot ) {
+    normalized = raw.replace( /,/g, "." );
+  }
+
+  const parsed = Number( normalized );
+  return Number.isFinite( parsed ) ? parsed : NaN;
+};
+
 const PaymentForm = ( { open, setOpen }: FormParcelReceptionProps ) => {
   const RECIPIENT_LOCALSTORAGE_PREFIX = "paymentForm:selectedRecipientUid";
   const RECIPIENT_SORT_LOCALSTORAGE_PREFIX = "paymentForm:recipientSortOrder";
@@ -419,11 +439,15 @@ const PaymentForm = ( { open, setOpen }: FormParcelReceptionProps ) => {
   const userCreditInPesos = userCreditBalance
     ? Number( userCreditBalance ) / 100
     : 0;
+  const amountPaidValue = parseCurrencyInput( amountPaid );
+  const safeAmountPaidValue = Number.isFinite( amountPaidValue )
+    ? amountPaidValue
+    : 0;
 
   // Si se usa crédito, sumar el saldo convertido
   const effectiveTotal = useCreditBalance
-    ? Number( amountPaid ) + userCreditInPesos
-    : Number( amountPaid );
+    ? safeAmountPaidValue + userCreditInPesos
+    : safeAmountPaidValue;
 
   // Calcular el crédito usado
   const creditUsed = useCreditBalance ? userCreditInPesos : 0;
@@ -444,6 +468,12 @@ const PaymentForm = ( { open, setOpen }: FormParcelReceptionProps ) => {
       }
       if ( !amountPaid && !useCreditBalance ) {
         throw new Error( "El campo 'monto abonado' es obligatorio." );
+      }
+      if (
+        !useCreditBalance &&
+        ( !Number.isFinite( amountPaidValue ) || amountPaidValue <= 0 )
+      ) {
+        throw new Error( "El monto abonado no es válido." );
       }
       if ( !paymentType ) {
         throw new Error( "El campo 'tipo de pago' es obligatorio." );
@@ -478,7 +508,8 @@ const PaymentForm = ( { open, setOpen }: FormParcelReceptionProps ) => {
           }
         } else {
           if (
-            Number( amountPaid ).toFixed( 2 ) !== Number( totalAssigned ).toFixed( 2 )
+            safeAmountPaidValue.toFixed( 2 ) !==
+            Number( totalAssigned ).toFixed( 2 )
           ) {
             throw new Error(
               "El monto abonado debe coincidir exactamente con la suma de los cargos asignados."
@@ -512,7 +543,7 @@ const PaymentForm = ( { open, setOpen }: FormParcelReceptionProps ) => {
         userId: selectedUser?.uid || selectedRecipientUid || "",
         email,
         numberCondominium,
-        amountPaid: Number( amountPaid ),
+        amountPaid: safeAmountPaidValue,
         amountPending: Number( amountPending ),
         comments,
         file,
@@ -919,9 +950,11 @@ const PaymentForm = ( { open, setOpen }: FormParcelReceptionProps ) => {
                                     setAmountPaidDisplay( amountPaid )
                                   }
                                   onBlur={ () => {
-                                    const num = parseFloat( amountPaid );
-                                    if ( !isNaN( num ) ) {
+                                    const num = parseCurrencyInput( amountPaid );
+                                    if ( Number.isFinite( num ) ) {
                                       setAmountPaidDisplay( formatCurrency( num ) );
+                                    } else {
+                                      setAmountPaidDisplay( amountPaid );
                                     }
                                   } }
                                 />
