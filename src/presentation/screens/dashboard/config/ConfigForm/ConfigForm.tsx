@@ -35,6 +35,7 @@ import CommitteeManagement from "../committee/CommitteeManagement";
 import ClientInvoicesTable from "../../client/invoices/ClientInvoicesTable";
 import AuditTrail from "../../audit/AuditTrail";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useCondominiumStore } from "../../../../../store/useCondominiumStore";
 
 type ConfigTabId =
   | "config"
@@ -73,13 +74,26 @@ const CONFIG_PATH_TO_TAB: Record<string, ConfigTabId> = {
 };
 
 const ConfigForm = () => {
-  const { config, loading, error, fetchConfig, updateConfig, hasMaintenanceApp, checkMaintenanceAppAccess } =
-    useConfigStore();
+  const {
+    config,
+    condominiumConfig,
+    loading,
+    error,
+    fetchConfig,
+    fetchCondominiumConfig,
+    updateConfig,
+    updateCondominiumConfig,
+    hasMaintenanceApp,
+    checkMaintenanceAppAccess,
+  } = useConfigStore();
   const { compressFile, isCompressing: isCompressingFile } = useFileCompression();
   const { isDarkMode, toggleDarkMode } = useTheme(); // <-- Valor del ThemeContext (debe ser boolean)
   const [ userRole, setUserRole ] = useState<string | null>( null );
   const location = useLocation();
   const navigate = useNavigate();
+  const fetchCondominiums = useCondominiumStore(
+    ( state ) => state.fetchCondominiums
+  );
 
   // Estados de la pestaña de configuración
   const [ companyName, setCompanyName ] = useState( "" );
@@ -100,6 +114,14 @@ const ConfigForm = () => {
   const [ logoReportsPreviewUrl, setLogoReportsPreviewUrl ] = useState<
     string | null
   >( null );
+  const [ condominiumName, setCondominiumName ] = useState( "" );
+  const [ condominiumAddress, setCondominiumAddress ] = useState( "" );
+  const [ condominiumManager, setCondominiumManager ] = useState( "" );
+  const [ condominiumUid, setCondominiumUid ] = useState( "" );
+  const [ condominiumLimit, setCondominiumLimit ] = useState<number>( 0 );
+  const [ condominiumCreatedDate, setCondominiumCreatedDate ] =
+    useState<Date | null>( null );
+  const [ isUpdatingCondominium, setIsUpdatingCondominium ] = useState( false );
 
   // Estados para la pestaña de pagos y facturas
   // const [selectedInvoice, setSelectedInvoice] = useState("");
@@ -111,8 +133,9 @@ const ConfigForm = () => {
 
   useEffect( () => {
     fetchConfig();
+    fetchCondominiumConfig().catch( () => undefined );
     checkMaintenanceAppAccess();
-  }, [ fetchConfig, checkMaintenanceAppAccess ] );
+  }, [ fetchConfig, fetchCondominiumConfig, checkMaintenanceAppAccess ] );
 
   useEffect( () => {
     if ( config ) {
@@ -133,6 +156,16 @@ const ConfigForm = () => {
       }
     }
   }, [ config ] );
+
+  useEffect( () => {
+    if ( !condominiumConfig ) return;
+    setCondominiumName( condominiumConfig.name || "" );
+    setCondominiumAddress( condominiumConfig.address || "" );
+    setCondominiumManager( condominiumConfig.condominiumManager || "" );
+    setCondominiumUid( condominiumConfig.uid || "" );
+    setCondominiumLimit( Number( condominiumConfig.condominiumLimit || 0 ) );
+    setCondominiumCreatedDate( condominiumConfig.createdDate || null );
+  }, [ condominiumConfig ] );
 
   useEffect( () => {
     if ( logoFile ) {
@@ -196,6 +229,32 @@ const ConfigForm = () => {
       toast.success( "Configuración actualizada correctamente" );
     } catch ( error: any ) {
       toast.error( error.message || "Error al actualizar la configuración" );
+    }
+  };
+
+  const handleCondominiumSubmit = async () => {
+    if ( !condominiumName.trim() ) {
+      toast.error( "El nombre del condominio es obligatorio." );
+      return;
+    }
+
+    try {
+      setIsUpdatingCondominium( true );
+      await updateCondominiumConfig( {
+        name: condominiumName.trim(),
+        address: condominiumAddress.trim(),
+        condominiumManager: condominiumManager.trim(),
+      } );
+      await fetchCondominiumConfig();
+      await fetchCondominiums();
+      toast.success( "Datos del condominio actualizados correctamente" );
+    } catch ( updateCondominiumError: any ) {
+      toast.error(
+        updateCondominiumError.message ||
+        "Error al actualizar los datos del condominio"
+      );
+    } finally {
+      setIsUpdatingCondominium( false );
     }
   };
 
@@ -474,6 +533,127 @@ const ConfigForm = () => {
                         ) ) }
                       </select>
                     </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Datos del condominio actual */ }
+              <div className="mb-10">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="h-10 w-10 bg-indigo-500 dark:bg-indigo-700 rounded-xl flex items-center justify-center">
+                    <BuildingOffice2Icon className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">
+                      Información del condominio
+                    </h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      Esta sección administra únicamente datos del condominio seleccionado, no de la empresa administradora.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-indigo-200 dark:border-indigo-800 shadow-sm space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="group">
+                      <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                        Nombre del condominio
+                      </label>
+                      <div className="relative">
+                        <BuildingOffice2Icon className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 transition-colors group-focus-within:text-indigo-500" />
+                        <input
+                          type="text"
+                          value={ condominiumName }
+                          onChange={ ( e ) => setCondominiumName( e.target.value ) }
+                          className="w-full pl-12 pr-4 py-4 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-300 text-gray-900 dark:text-gray-100"
+                          placeholder="Nombre del condominio"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="group">
+                      <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                        Administrador del condominio
+                      </label>
+                      <div className="relative">
+                        <UsersIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 transition-colors group-focus-within:text-indigo-500" />
+                        <input
+                          type="text"
+                          value={ condominiumManager }
+                          onChange={ ( e ) => setCondominiumManager( e.target.value ) }
+                          className="w-full pl-12 pr-4 py-4 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-300 text-gray-900 dark:text-gray-100"
+                          placeholder="Nombre del administrador del condominio"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="group md:col-span-2">
+                      <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                        Dirección del condominio
+                      </label>
+                      <div className="relative">
+                        <MapPinIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 transition-colors group-focus-within:text-indigo-500" />
+                        <input
+                          type="text"
+                          value={ condominiumAddress }
+                          onChange={ ( e ) => setCondominiumAddress( e.target.value ) }
+                          className="w-full pl-12 pr-4 py-4 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-300 text-gray-900 dark:text-gray-100"
+                          placeholder="Dirección del condominio"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40 p-4">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                        UID del condominio
+                      </p>
+                      <p className="mt-2 text-sm font-mono text-gray-900 dark:text-gray-100 break-all">
+                        { condominiumUid || "-" }
+                      </p>
+                    </div>
+                    <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40 p-4">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                        Límite de condóminos
+                      </p>
+                      <p className="mt-2 text-sm text-gray-900 dark:text-gray-100">
+                        { Number.isFinite( condominiumLimit )
+                          ? condominiumLimit
+                          : "-" }
+                      </p>
+                    </div>
+                    <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40 p-4 md:col-span-2">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                        Fecha de creación
+                      </p>
+                      <p className="mt-2 text-sm text-gray-900 dark:text-gray-100">
+                        { condominiumCreatedDate
+                          ? condominiumCreatedDate.toLocaleString( "es-MX" )
+                          : "-" }
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end">
+                    <button
+                      type="button"
+                      onClick={ handleCondominiumSubmit }
+                      disabled={ isUpdatingCondominium || loading }
+                      className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                    >
+                      { isUpdatingCondominium || loading ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                          Guardando condominio...
+                        </>
+                      ) : (
+                        <>
+                          <CheckIcon className="h-4 w-4" />
+                          Guardar Datos Del Condominio
+                        </>
+                      ) }
+                    </button>
                   </div>
                 </div>
               </div>

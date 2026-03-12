@@ -37,6 +37,19 @@ export type Config = {
   hasMaintenanceApp?: boolean;
 };
 
+/** Configuración del condominio actual en clients/{clientId}/condominiums/{condominiumId} */
+export type CondominiumConfig = {
+  uid: string;
+  name: string;
+  address: string;
+  plan: string;
+  status: string;
+  condominiumLimit: number;
+  createdDate: Date | null;
+  proFunctions: string[];
+  condominiumManager?: string;
+};
+
 /** Información del mensaje de pago para clientes */
 export interface PaymentMessageInfo {
   bankAccount: string;
@@ -60,6 +73,7 @@ export interface PublicDocument {
 
 type ConfigState = {
   config: Config | null;
+  condominiumConfig: CondominiumConfig | null;
   paymentMessageInfo: PaymentMessageInfo | null;
   publicDocuments: Record<string, PublicDocument>;
   loading: boolean;
@@ -67,11 +81,15 @@ type ConfigState = {
   error: string | null;
   hasMaintenanceApp: boolean;
   fetchConfig: () => Promise<void>;
+  fetchCondominiumConfig: () => Promise<void>;
   updateConfig: (
     data: Partial<Config> & { darkMode?: boolean },
     logoFile?: File,
     signatureFile?: File,
     logoReportsFile?: File
+  ) => Promise<void>;
+  updateCondominiumConfig: (
+    data: Partial<Pick<CondominiumConfig, "name" | "address" | "condominiumManager">>
   ) => Promise<void>;
   updatePaymentMessageInfo: (
     data: Omit<PaymentMessageInfo, "updatedAt">
@@ -90,6 +108,7 @@ type ConfigState = {
 
 export const useConfigStore = create<ConfigState>()((set, get) => ({
   config: null,
+  condominiumConfig: null,
   paymentMessageInfo: null,
   publicDocuments: {},
   loading: false,
@@ -243,6 +262,133 @@ export const useConfigStore = create<ConfigState>()((set, get) => ({
       // Éxito: recargar config general
       set({ loading: false });
       await get().fetchConfig();
+    } catch (err: any) {
+      set({ error: err.message, loading: false });
+      Sentry.captureException(err);
+      throw err;
+    }
+  },
+
+  fetchCondominiumConfig: async () => {
+    set({ loading: true, error: null });
+    try {
+      const condominiumId = localStorage.getItem("condominiumId");
+      if (!condominiumId) {
+        set({ error: "Condominio no seleccionado", loading: false });
+        return;
+      }
+
+      const auth = getAuth();
+      const user = auth.currentUser;
+      if (!user) throw new Error("Usuario no autenticado");
+
+      const tokenResult = await getIdTokenResult(user);
+      const clientId = tokenResult.claims["clientId"] as string;
+      if (!clientId) throw new Error("clientId no disponible en el token");
+
+      const db = getFirestore();
+      const condominiumDocRef = doc(
+        db,
+        "clients",
+        clientId,
+        "condominiums",
+        condominiumId
+      );
+      const condominiumDocSnap = await getDoc(condominiumDocRef);
+
+      if (!condominiumDocSnap.exists()) {
+        throw new Error("No se encontró la configuración del condominio");
+      }
+
+      const data = condominiumDocSnap.data() as Record<string, any>;
+      const rawCreatedDate = data.createdDate;
+      const createdDate =
+        rawCreatedDate?.toDate && typeof rawCreatedDate.toDate === "function"
+          ? rawCreatedDate.toDate()
+          : rawCreatedDate
+          ? new Date(rawCreatedDate)
+          : null;
+
+      set({
+        condominiumConfig: {
+          uid: condominiumDocSnap.id,
+          name: String(data.name || ""),
+          address: String(data.address || ""),
+          plan: String(data.plan || ""),
+          status: String(data.status || ""),
+          condominiumLimit: Number(data.condominiumLimit || 0),
+          createdDate:
+            createdDate && !Number.isNaN(createdDate.getTime())
+              ? createdDate
+              : null,
+          proFunctions: Array.isArray(data.proFunctions)
+            ? data.proFunctions
+            : [],
+          condominiumManager: String(
+            data.condominiumManager ||
+              data.condominiumAdministrator ||
+              data.administrator ||
+              ""
+          ),
+        },
+        loading: false,
+      });
+    } catch (err: any) {
+      set({ error: err.message, loading: false });
+      Sentry.captureException(err);
+      throw err;
+    }
+  },
+
+  updateCondominiumConfig: async (data) => {
+    set({ loading: true, error: null });
+    try {
+      const condominiumId = localStorage.getItem("condominiumId");
+      if (!condominiumId) {
+        set({ error: "Condominio no seleccionado", loading: false });
+        return;
+      }
+
+      const auth = getAuth();
+      const user = auth.currentUser;
+      if (!user) throw new Error("Usuario no autenticado");
+
+      const tokenResult = await getIdTokenResult(user);
+      const clientId = tokenResult.claims["clientId"] as string;
+      if (!clientId) throw new Error("clientId no disponible en el token");
+
+      const db = getFirestore();
+      const condominiumDocRef = doc(
+        db,
+        "clients",
+        clientId,
+        "condominiums",
+        condominiumId
+      );
+
+      const updatePayload: Record<string, any> = {};
+      if (data.name !== undefined) updatePayload.name = String(data.name).trim();
+      if (data.address !== undefined)
+        updatePayload.address = String(data.address).trim();
+      if (data.condominiumManager !== undefined) {
+        updatePayload.condominiumManager = String(data.condominiumManager).trim();
+      }
+
+      if (Object.keys(updatePayload).length === 0) {
+        set({ loading: false });
+        return;
+      }
+
+      await updateDoc(condominiumDocRef, updatePayload);
+      set({
+        condominiumConfig: get().condominiumConfig
+          ? {
+              ...get().condominiumConfig!,
+              ...updatePayload,
+            }
+          : get().condominiumConfig,
+        loading: false,
+      });
     } catch (err: any) {
       set({ error: err.message, loading: false });
       Sentry.captureException(err);
