@@ -36,6 +36,8 @@ export interface ClientInvoice {
   clientId: string;
   condominiumId: string;
   condominiumName?: string;
+  nextBillingDate?: any;
+  message?: string;
 }
 
 interface ClientInvoicesState {
@@ -67,7 +69,9 @@ interface ClientInvoicesState {
 
   // Iniciar pago con Stripe
   initiateStripePayment: (
-    invoice: ClientInvoice
+    invoice: ClientInvoice,
+    customSuccessUrl?: string,
+    customCancelUrl?: string
   ) => Promise<{ id: string; url: string }>;
 
   // Verificar estado de pago
@@ -184,6 +188,8 @@ const useClientInvoicesStore = create<ClientInvoicesState>()((set, get) => ({
           clientId,
           condominiumId,
           condominiumName: data.condominiumName,
+          nextBillingDate: data.nextBillingDate,
+          message: data.message,
         };
 
         invoiceRecords.push(invoice);
@@ -273,6 +279,8 @@ const useClientInvoicesStore = create<ClientInvoicesState>()((set, get) => ({
           clientId,
           condominiumId,
           condominiumName: data.condominiumName,
+          nextBillingDate: data.nextBillingDate,
+          message: data.message,
         };
 
         invoiceRecords.push(invoice);
@@ -378,7 +386,11 @@ const useClientInvoicesStore = create<ClientInvoicesState>()((set, get) => ({
     });
   },
 
-  initiateStripePayment: async (invoice: ClientInvoice) => {
+  initiateStripePayment: async (
+    invoice: ClientInvoice,
+    customSuccessUrl?: string,
+    customCancelUrl?: string
+  ) => {
     set({ loading: true, error: null });
     try {
       // Obtener datos del usuario actual
@@ -392,9 +404,9 @@ const useClientInvoicesStore = create<ClientInvoicesState>()((set, get) => ({
       const currentDomain = window.location.origin || "http://localhost:3000";
 
       // URLs para redireccionamiento después del pago
-      // Incluir invoice_id como parámetro para poder identificar la factura
-      const successUrl = `${currentDomain}/dashboard/payment-success?invoice_id=${invoice.id}`;
-      const cancelUrl = `${currentDomain}/dashboard/payment-cancel?invoice_id=${invoice.id}`;
+      // Incluir invoice_id como parámetro para poder identificar la factura en rutas genéricas
+      const successUrl = customSuccessUrl || `${currentDomain}/dashboard/payment-success?invoice_id=${invoice.id}`;
+      const cancelUrl = customCancelUrl || `${currentDomain}/dashboard/payment-cancel?invoice_id=${invoice.id}`;
 
       // Llamar al endpoint del backend para crear la sesión de checkout
       const response = await fetch(

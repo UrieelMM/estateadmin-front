@@ -37,9 +37,11 @@ interface Client {
   lastName?: string;
   phoneNumber?: string;
   responsiblePersonName?: string;
-  responsiblePersonPosition?: string;
   condominiums?: any[]; // Lista de condominios asociados al cliente
   totalRegularUsers?: number;
+  billingDelinquent?: boolean;
+  nextBillingDate?: any;
+  lastOverdueInvoice?: string;
 }
 
 const statusColors = {
@@ -212,7 +214,11 @@ const ClientsManagement: React.FC = () => {
       setLoading( true );
       const result = await createClient( clientData );
       if ( result.success ) {
-        toast.success( "Cliente creado exitosamente" );
+        if ( result.billing && result.billing.message ) {
+          toast.success( result.billing.message, { duration: 5000 } );
+        } else {
+          toast.success( "Cliente creado exitosamente" );
+        }
         setIsCreateModalOpen( false );
         loadClients();
         // Mostrar credenciales desde el padre — NewClientForm se desmonta al cerrarse
@@ -435,6 +441,34 @@ const ClientsManagement: React.FC = () => {
                               Resp: { client.responsiblePersonName }
                             </div>
                           ) }
+                          <div className="mt-2 flex flex-col gap-1 items-start">
+                            <span
+                              className={ `inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${ statusColors[ client.status ] || statusColors.pending
+                                }` }
+                            >
+                              { client.status === "active" && "Activo" }
+                              { client.status === "inactive" && "Inactivo" }
+                              { client.status === "pending" && "Pendiente" }
+                              { client.status === "blocked" && "Bloqueado" }
+                            </span>
+
+                            { client.billingDelinquent && (
+                              <span className="inline-flex items-center rounded-md bg-red-100 px-2 py-1 text-xs font-bold text-red-800 ring-1 ring-inset ring-red-600/20 dark:bg-red-900/40 dark:text-red-300">
+                                ⚠️ Pago Atrasado
+                              </span>
+                            ) }
+
+                            { ( client.nextBillingDate || client.lastOverdueInvoice ) && (
+                              <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 flex flex-col">
+                                { client.nextBillingDate && (
+                                  <span>Próximo cobro: { ( client.nextBillingDate.toDate ? client.nextBillingDate.toDate() : new Date( client.nextBillingDate ) ).toLocaleDateString( "es-MX" ) }</span>
+                                ) }
+                                { client.lastOverdueInvoice && (
+                                  <span className="text-red-500" title="Ultima factura vencida">Folio Vencido: { client.lastOverdueInvoice }</span>
+                                ) }
+                              </div>
+                            ) }
+                          </div>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">

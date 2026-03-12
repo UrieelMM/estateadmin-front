@@ -126,6 +126,13 @@ const useAuthStore = create<AuthStore>()((set, get) => {
         if (!response.user) {
           throw new Error("No se obtuvo usuario de la autenticación");
         }
+        // Obtener claims
+        const tokenResult = await response.user.getIdTokenResult();
+        if (tokenResult.claims.accountSuspended === true) {
+          await signOut(auth);
+          throw new Error("Su cuenta ha sido suspendida por falta de pago. Favor de contactar a facturación.");
+        }
+
         const loggedUser: User = {
           email: response.user.email || "",
           name: response.user.displayName || "",
@@ -242,6 +249,19 @@ const useAuthStore = create<AuthStore>()((set, get) => {
     initializeAuthListener: () => {
       onAuthStateChanged(auth, async (user) => {
         if (user) {
+          const tokenResult = await user.getIdTokenResult();
+          if (tokenResult.claims.accountSuspended === true) {
+            await signOut(auth);
+            set({ user: null, authError: "Su cuenta ha sido suspendida por falta de pago. Favor de contactar a facturación." });
+            localStorage.removeItem("dataUserActive");
+            removeActivityListeners();
+            if (inactivityTimeout) {
+              clearTimeout(inactivityTimeout);
+              inactivityTimeout = null;
+            }
+            return;
+          }
+
           const loggedUser: User = {
             email: user.email || "",
             name: user.displayName || "",

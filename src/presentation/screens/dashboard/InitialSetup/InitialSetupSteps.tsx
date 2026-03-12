@@ -5,6 +5,7 @@ import { useFileCompression } from "../../../../hooks/useFileCompression";
 import { useFinancialAccountsStore } from "../../../../store/useAccountsStore";
 import { useTheme } from "../../../../context/Theme/ThemeContext";
 import { useCondominiumStore } from "../../../../store/useCondominiumStore";
+import useClientInvoicesStore from "../../../../store/useClientInvoicesStore";
 import {
   CheckIcon,
   CreditCardIcon,
@@ -27,6 +28,8 @@ import {
   ArrowDownTrayIcon,
   TableCellsIcon,
   InformationCircleIcon,
+  ShieldCheckIcon,
+  LockClosedIcon,
 } from "@heroicons/react/24/solid";
 import { motion, AnimatePresence } from "framer-motion";
 import logo from "../../../../assets/logo.png";
@@ -37,6 +40,8 @@ import {
   collection,
   query,
   where,
+  orderBy,
+  limit,
   getDocs,
   addDoc,
   serverTimestamp,
@@ -72,7 +77,7 @@ const InfoTooltip = ( { text }: { text: string; } ) => {
 };
 
 const InitialSetupSteps = () => {
-  const TOTAL_STEPS = 6;
+  const TOTAL_STEPS = 7;
   const USERS_IMPORT_TEMPLATE_URL =
     "https://res.cloudinary.com/dz5tntwl1/raw/upload/v1772080563/OmniPixel/plantilla_ejemplo_g7mtmu.xlsx";
   const [ currentStep, setCurrentStep ] = useState( 1 );
@@ -107,10 +112,60 @@ const InitialSetupSteps = () => {
   } );
   const [ isSubmitting, setIsSubmitting ] = useState( false );
 
+  // Estado para la factura pendiente del paso 7
+  const [ paymentInvoice, setPaymentInvoice ] = useState<{
+    id?: string;
+    amount: number;
+    concept: string;
+    invoiceNumber: string;
+    dueDate: any;
+    nextBillingDate?: any;
+    plan?: string;
+    status: string;
+    message?: string;
+    invoiceURL?: string;
+  } | null>( null );
+  const [ loadingInvoice, setLoadingInvoice ] = useState( false );
+
   const { config, fetchConfig, updateConfig } = useConfigStore();
   const { createAccount } = useFinancialAccountsStore();
+  const { initiateStripePayment, checkPaymentStatus } = useClientInvoicesStore();
 
   const { compressFile, isCompressing } = useFileCompression();
+
+  // Escuchar respuesta de Stripe (redirect de vuelta)
+  useEffect( () => {
+    const queryParams = new URLSearchParams( window.location.search );
+    const paymentStatus = queryParams.get( "payment" );
+    const sessionId = queryParams.get( "session_id" );
+
+    if ( paymentStatus === "success" && sessionId ) {
+      setCurrentStep( 7 ); // Ir directo al paso de pago
+      const verifyAndFinish = async () => {
+        setIsSubmitting( true );
+        try {
+          const paymentInfo = await checkPaymentStatus( sessionId );
+          if ( paymentInfo.status === "paid" ) {
+            toast.success( "¡Pago procesado exitosamente!" );
+            // Ejecutar finalización
+            await handleFinish();
+          } else {
+            toast.error( "El pago no ha sido completado correctamente" );
+            setIsSubmitting( false );
+          }
+        } catch ( error ) {
+          console.error( "Error al verificar el pago:", error );
+          toast.error( "Error al verificar el pago con Stripe." );
+          setIsSubmitting( false );
+        }
+      };
+      // Pequeño timeout para permitir cargar datos de auth y config inicial
+      setTimeout( () => verifyAndFinish(), 1000 );
+    } else if ( paymentStatus === "cancel" ) {
+      setCurrentStep( 7 ); // Ir directo al paso de pago
+      toast.error( "Has cancelado el proceso de pago." );
+    }
+  }, [] );
 
   // Cargar configuración inicial y condominios
   useEffect( () => {
@@ -143,6 +198,54 @@ const InitialSetupSteps = () => {
       } );
     }
   }, [ config ] );
+  // Función para cargar la factura pendiente del cliente
+  const loadPaymentInvoice = async () => {
+    setLoadingInvoice( true );
+    try {
+      const auth = getAuth();
+      const user = auth.currentUser;
+      if ( !user ) return;
+      const tokenResult = await getIdTokenResult( user );
+      const clientId = tokenResult.claims[ "clientId" ] as string;
+      const condominiumId = localStorage.getItem( "condominiumId" );
+      if ( !clientId || !condominiumId ) return;
+
+      const db = getFirestore();
+      const invoicesRef = collection(
+        db,
+        `clients/${ clientId }/condominiums/${ condominiumId }/invoicesGenerated`
+      );
+      const q = query(
+        invoicesRef,
+        where( "paymentStatus", "in", [ "pending", "overdue" ] ),
+        orderBy( "createdAt", "desc" ),
+        limit( 1 )
+      );
+      const snap = await getDocs( q );
+      if ( !snap.empty ) {
+        const data = snap.docs[ 0 ].data();
+        setPaymentInvoice( {
+          id: snap.docs[ 0 ].id,
+          amount: data.amount ?? 0,
+          concept: data.concept ?? "Suscripción EstateAdmin",
+          invoiceNumber: data.invoiceNumber ?? "",
+          dueDate: data.dueDate,
+          nextBillingDate: data.nextBillingDate,
+          plan: data.plan,
+          status: data.paymentStatus ?? "pending",
+          message: data.message,
+          invoiceURL: data.invoiceURL,
+        } );
+      } else {
+        // No hay factura pendiente aún (posible si aún no se generó)
+        setPaymentInvoice( null );
+      }
+    } catch ( err ) {
+      console.error( "Error al cargar factura pendiente:", err );
+    } finally {
+      setLoadingInvoice( false );
+    }
+  };
 
   // Función para avanzar pasos con validaciones
   const nextStep = () => {
@@ -178,6 +281,9 @@ const InitialSetupSteps = () => {
         toast.error( "Debes crear al menos una cuenta financiera." );
         return;
       }
+    } else if ( currentStep === 6 ) {
+      // Al llegar al paso 7 (pago), cargar la factura
+      loadPaymentInvoice();
     }
     setCurrentStep( ( prev ) => prev + 1 );
   };
@@ -332,6 +438,52 @@ const InitialSetupSteps = () => {
     }
   };
 
+  // Handler para pagar la factura con Stripe enviando URLs customizadas
+  const handlePayInvoice = async () => {
+    if ( !paymentInvoice ) return;
+
+    try {
+      setIsSubmitting( true );
+
+      const currentDomain = window.location.origin || "http://localhost:3000";
+      const customSuccessUrl = `${ currentDomain }/dashboard/initial-setup?payment=success`;
+      const customCancelUrl = `${ currentDomain }/dashboard/initial-setup?payment=cancel`;
+
+      // Necesitamos pasarle el ID real (document id de Firestore) a initiateStripePayment
+      // Como paymentInvoice actualmente no tiene "id", usamos la búsqueda si es necesario o asumimos que lo tenemos.
+      // OJO: Modifica loadPaymentInvoice arriba para que incluya `id: doc.id` al obj paymentInvoice
+      if ( !paymentInvoice.id ) {
+        toast.error( "Error: ID de factura no encontrado" );
+        setIsSubmitting( false );
+        return;
+      }
+
+      // Requerimos que paymentInvoice de InitialSetup cumpla con la interfaz ClientInvoice
+      const invoiceDataToPay: any = {
+        ...paymentInvoice,
+        clientId: ( await getIdTokenResult( ( getAuth() ).currentUser! ) ).claims[ "clientId" ],
+        condominiumId: localStorage.getItem( "condominiumId" ),
+      };
+
+      const { url } = await initiateStripePayment(
+        invoiceDataToPay,
+        customSuccessUrl,
+        customCancelUrl
+      );
+
+      if ( url ) {
+        window.location.href = url;
+      } else {
+        toast.error( "No se pudo iniciar el pago" );
+        setIsSubmitting( false );
+      }
+    } catch ( error ) {
+      console.error( "Error al iniciar pago:", error );
+      toast.error( "Error al iniciar el proceso de pago." );
+      setIsSubmitting( false );
+    }
+  };
+
   // Header (título e ícono) según el paso actual
   const getHeaderData = () => {
     switch ( currentStep ) {
@@ -369,6 +521,11 @@ const InitialSetupSteps = () => {
           title: "Plantilla de importación",
           icon: <TableCellsIcon className="h-8 w-8 text-indigo-400" />,
         };
+      case 7:
+        return {
+          title: "Completa tu pago",
+          icon: <CreditCardIcon className="h-8 w-8 text-indigo-400" />,
+        };
       default:
         return { title: "", icon: null };
     }
@@ -388,9 +545,10 @@ const InitialSetupSteps = () => {
     { label: "Bienvenido" },
     { label: "Datos" },
     { label: "Imágenes" },
-    { label: "Cuenta Financiera" },
+    { label: "Cuenta" },
     { label: "Tema" },
     { label: "Plantilla" },
+    { label: "Pago" },
   ];
 
   // Renderizado de los pasos en formato vertical (desktop)
@@ -790,6 +948,163 @@ const InitialSetupSteps = () => {
             </div>
           </div>
         );
+      case 7: {
+        const formatMXN = ( n: number ) =>
+          n.toLocaleString( "es-MX", { style: "currency", currency: "MXN" } );
+        const dueLabel = paymentInvoice?.dueDate
+          ? ( paymentInvoice.dueDate.toDate
+            ? paymentInvoice.dueDate.toDate()
+            : new Date( paymentInvoice.dueDate )
+          ).toLocaleDateString( "es-MX", { dateStyle: "long" } )
+          : null;
+
+        const nextBillingLabel = paymentInvoice?.nextBillingDate
+          ? ( paymentInvoice.nextBillingDate.toDate
+            ? paymentInvoice.nextBillingDate.toDate()
+            : new Date( paymentInvoice.nextBillingDate )
+          ).toLocaleDateString( "es-MX", { dateStyle: "long" } )
+          : null;
+
+        return (
+          <div className="space-y-5">
+            {/* Hero amigable */ }
+            <div className="rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 p-5 text-white">
+              <p className="text-sm font-bold uppercase tracking-widest text-indigo-200">
+                ¡Ya casi terminas!
+              </p>
+              <p className="mt-1 text-sm leading-snug">
+                Solo falta un último paso: <span className="font-bold">completa tu pago</span> para comenzar a vivir la experiencia EstateAdmin.
+              </p>
+              <p className="mt-1 text-sm text-indigo-100">
+                Una vez confirmado tu pago, tendrás acceso completo a todas
+                las funciones de la plataforma.
+              </p>
+            </div>
+
+            {/* Tarjeta de factura */ }
+            { loadingInvoice ? (
+              <div className="animate-pulse space-y-2 rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-800">
+                <div className="h-4 w-1/3 rounded bg-gray-200 dark:bg-gray-700" />
+                <div className="h-8 w-1/2 rounded bg-gray-200 dark:bg-gray-700" />
+                <div className="h-4 w-2/3 rounded bg-gray-200 dark:bg-gray-700" />
+              </div>
+            ) : paymentInvoice ? (
+              <div className="overflow-hidden rounded-xl border border-indigo-100 bg-white shadow-lg dark:border-indigo-900 dark:bg-gray-800">
+                {/* Header de la tarjeta */ }
+                <div className="flex items-center justify-between border-b border-indigo-50 bg-indigo-50/50 px-5 py-3 dark:border-indigo-900/50 dark:bg-indigo-900/20">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
+                    Factura { paymentInvoice.invoiceNumber }
+                  </span>
+                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+                    Pendiente de pago
+                  </span>
+                </div>
+
+                {/* Monto prominente */ }
+                <div className="px-5 py-5">
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Total a pagar</p>
+                  <p className="mt-1 text-4xl font-extrabold tracking-tight text-gray-900 dark:text-white">
+                    { formatMXN( paymentInvoice.amount ) }
+                    <span className="ml-2 text-base font-normal text-gray-400">MXN</span>
+                  </p>
+
+                  {/* Detalle del concepto */ }
+                  <div className="mt-4 space-y-2 border-t border-gray-100 pt-4 dark:border-gray-700">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-500 dark:text-gray-400">Concepto</span>
+                      <span className="font-medium text-gray-800 dark:text-gray-200">
+                        { paymentInvoice.concept }
+                      </span>
+                    </div>
+                    { paymentInvoice.plan && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-500 dark:text-gray-400">Plan / Unidades</span>
+                        <span className="font-medium text-gray-800 dark:text-gray-200">
+                          { paymentInvoice.plan } uds.
+                        </span>
+                      </div>
+                    ) }
+                    { dueLabel && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-500 dark:text-gray-400">Fecha límite</span>
+                        <span className="font-medium text-rose-600 dark:text-rose-400">
+                          { dueLabel }
+                        </span>
+                      </div>
+                    ) }
+                    { nextBillingLabel && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-500 dark:text-gray-400">Próximo cobro</span>
+                        <span className="font-medium text-gray-800 dark:text-gray-200">
+                          { nextBillingLabel }
+                        </span>
+                      </div>
+                    ) }
+                  </div>
+
+                  { paymentInvoice.message && (
+                    <div className="mt-4 rounded bg-blue-50 p-3 text-sm text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
+                      <InformationCircleIcon className="mb-0.5 inline h-4 w-4 mr-1" />
+                      { paymentInvoice.message }
+                    </div>
+                  ) }
+
+                  {/* Botones */ }
+                  <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+                    <button
+                      onClick={ handlePayInvoice }
+                      disabled={ isSubmitting }
+                      className="inline-flex items-center justify-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-green-700 disabled:opacity-50"
+                    >
+                      <CreditCardIcon className="h-4 w-4" />
+                      Pagar factura
+                    </button>
+                    { paymentInvoice.invoiceURL && (
+                      <a
+                        href={ paymentInvoice.invoiceURL }
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center justify-center gap-2 rounded-lg border border-indigo-600 px-4 py-2 text-sm font-semibold text-indigo-600 transition hover:bg-indigo-50 dark:border-indigo-400 dark:text-indigo-400 dark:hover:bg-indigo-900/30"
+                      >
+                        <ArrowDownTrayIcon className="h-4 w-4" />
+                        Descargar factura
+                      </a>
+                    ) }
+                    <a
+                      href="mailto:soporte@estate-admin.com?subject=Problemas%20con%20el%20pago%20de%20suscripción"
+                      className="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+                    >
+                      <EnvelopeIcon className="h-4 w-4" />
+                      Contactar para asistencia
+                    </a>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              /* Sin factura pendiente */
+              <div className="rounded-xl border border-green-200 bg-green-50 p-5 dark:border-green-800 dark:bg-green-900/20">
+                <div className="flex items-center gap-3">
+                  <ShieldCheckIcon className="h-8 w-8 text-green-500" />
+                  <div>
+                    <p className="font-semibold text-green-800 dark:text-green-300">
+                      ¡Sin pagos pendientes!
+                    </p>
+                    <p className="text-sm text-green-700 dark:text-green-400">
+                      Tu cuenta está al corriente. Puedes finalizar tu configuración.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ) }
+
+            {/* Sello de seguridad */ }
+            <div className="flex items-center gap-2 text-xs text-gray-400 dark:text-gray-500">
+              <LockClosedIcon className="h-3.5 w-3.5" />
+              Tus datos de pago están protegidos con cifrado de extremo a extremo.
+            </div>
+          </div>
+        );
+      }
       default:
         return null;
     }

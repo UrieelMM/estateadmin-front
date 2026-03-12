@@ -15,32 +15,32 @@ import LoadingApp from "../../shared/loaders/LoadingApp";
 import toast from "react-hot-toast";
 
 interface InvoicesTableProps {
-  onViewInvoice?: (invoice: InvoiceRecord) => void;
-  onMarkAsPaid?: (invoice: InvoiceRecord) => void;
+  onViewInvoice?: ( invoice: InvoiceRecord ) => void;
+  onMarkAsPaid?: ( invoice: InvoiceRecord ) => void;
 }
 
 const ITEMS_PER_PAGE = 20;
 
-const formatDate = (timestamp: any): string => {
-  if (!timestamp) return "N/A";
+const formatDate = ( timestamp: any ): string => {
+  if ( !timestamp ) return "N/A";
   try {
-    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
-    return date.toLocaleDateString("es-MX");
-  } catch (error) {
+    const date = timestamp.toDate ? timestamp.toDate() : new Date( timestamp );
+    return date.toLocaleDateString( "es-MX" );
+  } catch ( error ) {
     return "Fecha inválida";
   }
 };
 
-const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat("es-MX", {
+const formatCurrency = ( amount: number ) => {
+  return new Intl.NumberFormat( "es-MX", {
     style: "currency",
     currency: "MXN",
-  }).format(amount);
+  } ).format( amount );
 };
 
-const truncateText = (text: string | undefined, maxLength: number = 15) => {
-  if (!text) return "N/A";
-  return text.length > maxLength ? `${text.substring(0, maxLength)}...` : text;
+const truncateText = ( text: string | undefined, maxLength: number = 15 ) => {
+  if ( !text ) return "N/A";
+  return text.length > maxLength ? `${ text.substring( 0, maxLength ) }...` : text;
 };
 
 const statusColors = {
@@ -51,8 +51,8 @@ const statusColors = {
   canceled: "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300",
 };
 
-const formatStatus = (status: string) => {
-  switch (status) {
+const formatStatus = ( status: string ) => {
+  switch ( status ) {
     case "paid":
       return "Pagado";
     case "pending":
@@ -66,10 +66,10 @@ const formatStatus = (status: string) => {
   }
 };
 
-const InvoicesTable: React.FC<InvoicesTableProps> = ({
+const InvoicesTable: React.FC<InvoicesTableProps> = ( {
   onViewInvoice,
   onMarkAsPaid,
-}) => {
+} ) => {
   const {
     fetchInvoices,
     invoices,
@@ -79,28 +79,28 @@ const InvoicesTable: React.FC<InvoicesTableProps> = ({
     searchInvoiceByFolio,
   } = useBillingStore();
 
-  const [currentPage, setCurrentPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
-  const [folio, setFolio] = useState("");
-  const [showFilters, setShowFilters] = useState(false);
-  const [filters, setFilters] = useState<{
+  const [ currentPage, setCurrentPage ] = useState( 1 );
+  const [ hasMore, setHasMore ] = useState( true );
+  const [ folio, setFolio ] = useState( "" );
+  const [ showFilters, setShowFilters ] = useState( false );
+  const [ filters, setFilters ] = useState<{
     status?: string;
     clientId?: string;
-  }>({});
-  const [showSearchModal, setShowSearchModal] = useState(false);
-  const [searchResults, setSearchResults] = useState<InvoiceRecord[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
+  }>( {} );
+  const [ showSearchModal, setShowSearchModal ] = useState( false );
+  const [ searchResults, setSearchResults ] = useState<InvoiceRecord[]>( [] );
+  const [ isSearching, setIsSearching ] = useState( false );
 
   // Cargar facturas iniciales
-  useEffect(() => {
+  useEffect( () => {
     const loadInitialInvoices = async () => {
       try {
-        const count = await fetchInvoices(ITEMS_PER_PAGE, null, filters);
-        setHasMore(count === ITEMS_PER_PAGE);
-        setCurrentPage(1);
-      } catch (error) {
-        console.error("Error al cargar facturas iniciales:", error);
-        toast.error("Error al cargar las facturas");
+        const count = await fetchInvoices( ITEMS_PER_PAGE, null, filters );
+        setHasMore( count === ITEMS_PER_PAGE );
+        setCurrentPage( 1 );
+      } catch ( error ) {
+        console.error( "Error al cargar facturas iniciales:", error );
+        toast.error( "Error al cargar las facturas" );
       }
     };
 
@@ -110,65 +110,65 @@ const InvoicesTable: React.FC<InvoicesTableProps> = ({
     return () => {
       resetInvoicesState();
     };
-  }, [fetchInvoices, resetInvoicesState, filters]);
+  }, [ fetchInvoices, resetInvoicesState, filters ] );
 
   // Manejar búsqueda por folio
-  const handleFolioChange = async (value: string) => {
-    setFolio(value);
+  const handleFolioChange = async ( value: string ) => {
+    setFolio( value );
 
-    if (value.trim()) {
-      setIsSearching(true);
+    if ( value.trim() ) {
+      setIsSearching( true );
       try {
-        const results = await searchInvoiceByFolio(value.trim());
-        setSearchResults(results);
-        setShowSearchModal(true);
-      } catch (error) {
-        console.error("Error al buscar por folio:", error);
+        const results = await searchInvoiceByFolio( value.trim() );
+        setSearchResults( results );
+        setShowSearchModal( true );
+      } catch ( error ) {
+        console.error( "Error al buscar por folio:", error );
       } finally {
-        setIsSearching(false);
+        setIsSearching( false );
       }
     } else {
-      setShowSearchModal(false);
-      setSearchResults([]);
+      setShowSearchModal( false );
+      setSearchResults( [] );
     }
   };
 
   // Manejar cambio de filtros
-  const handleFilterChange = (key: string, value: string) => {
-    if (loadingInvoices) return;
+  const handleFilterChange = ( key: string, value: string ) => {
+    if ( loadingInvoices ) return;
 
-    const newFilters = { ...filters, [key]: value };
-    if (!value) {
-      delete newFilters[key as keyof typeof newFilters];
+    const newFilters = { ...filters, [ key ]: value };
+    if ( !value ) {
+      delete newFilters[ key as keyof typeof newFilters ];
     }
 
-    setFilters(newFilters);
-    setCurrentPage(1);
-    setHasMore(true);
+    setFilters( newFilters );
+    setCurrentPage( 1 );
+    setHasMore( true );
   };
 
   // Manejar cambio de página
-  const handlePageChange = async (newPage: number) => {
-    if (loadingInvoices || newPage === currentPage) return;
+  const handlePageChange = async ( newPage: number ) => {
+    if ( loadingInvoices || newPage === currentPage ) return;
 
     try {
-      if (newPage > currentPage) {
+      if ( newPage > currentPage ) {
         // Avanzar a la siguiente página
         const count = await fetchInvoices(
           ITEMS_PER_PAGE,
           lastInvoiceDoc,
           filters
         );
-        setHasMore(count === ITEMS_PER_PAGE);
+        setHasMore( count === ITEMS_PER_PAGE );
       } else {
         // Volver a la primera página
-        const count = await fetchInvoices(ITEMS_PER_PAGE, null, filters);
-        setHasMore(count === ITEMS_PER_PAGE);
+        const count = await fetchInvoices( ITEMS_PER_PAGE, null, filters );
+        setHasMore( count === ITEMS_PER_PAGE );
       }
 
-      setCurrentPage(newPage);
-    } catch (error) {
-      console.error("Error al cambiar de página:", error);
+      setCurrentPage( newPage );
+    } catch ( error ) {
+      console.error( "Error al cambiar de página:", error );
     }
   };
 
@@ -186,7 +186,7 @@ const InvoicesTable: React.FC<InvoicesTableProps> = ({
           </p>
         </div>
         <div className="mt-4 sm:ml-16 sm:mt-0 sm:flex gap-4">
-          {/* Barra de búsqueda por folio */}
+          {/* Barra de búsqueda por folio */ }
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <MagnifyingGlassIcon
@@ -196,15 +196,15 @@ const InvoicesTable: React.FC<InvoicesTableProps> = ({
             </div>
             <input
               type="text"
-              value={folio}
-              onChange={(e) => handleFolioChange(e.target.value)}
+              value={ folio }
+              onChange={ ( e ) => handleFolioChange( e.target.value ) }
               placeholder="Buscar por folio..."
               className="block w-full rounded-md border border-gray-300 bg-white py-2 pl-10 pr-3 text-sm placeholder-gray-500 focus:border-indigo-500 focus:text-gray-900 focus:placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300"
             />
           </div>
           <button
             type="button"
-            onClick={() => setShowFilters(!showFilters)}
+            onClick={ () => setShowFilters( !showFilters ) }
             className="flex items-center rounded-md bg-indigo-600 px-3 py-2 text-center text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
           >
             <FunnelIcon className="h-5 w-5 mr-2" />
@@ -213,8 +213,8 @@ const InvoicesTable: React.FC<InvoicesTableProps> = ({
         </div>
       </div>
 
-      {/* Filtros */}
-      {showFilters && (
+      {/* Filtros */ }
+      { showFilters && (
         <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="shadow-lg rounded p-4">
             <label
@@ -224,8 +224,8 @@ const InvoicesTable: React.FC<InvoicesTableProps> = ({
               Estado
             </label>
             <select
-              value={filters.status || ""}
-              onChange={(e) => handleFilterChange("status", e.target.value)}
+              value={ filters.status || "" }
+              onChange={ ( e ) => handleFilterChange( "status", e.target.value ) }
               className="block w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm dark:bg-gray-900 dark:border-gray-900 cursor-pointer"
             >
               <option value="">Todos los estados</option>
@@ -236,10 +236,10 @@ const InvoicesTable: React.FC<InvoicesTableProps> = ({
             </select>
           </div>
         </div>
-      )}
+      ) }
 
-      {/* Tabla */}
-      {invoices.length > 0 ? (
+      {/* Tabla */ }
+      { invoices.length > 0 ? (
         <div className="mt-8 flow-root">
           <div className="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
             <div className="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
@@ -306,52 +306,63 @@ const InvoicesTable: React.FC<InvoicesTableProps> = ({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-900">
-                    {invoices.map((invoice) => (
+                    { invoices.map( ( invoice ) => (
                       <tr
-                        key={invoice.id}
+                        key={ invoice.id }
                         className="hover:bg-gray-50 transition-colors dark:hover:bg-gray-700"
                       >
                         <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm text-gray-900 dark:text-gray-200 sm:pl-6">
                           <div className="flex flex-col">
                             <span className="font-medium">
-                              {invoice.invoiceNumber}
+                              { invoice.invoiceNumber }
                             </span>
                             <span className="text-gray-500 dark:text-gray-400">
-                              {invoice.concept}
+                              { invoice.concept }
                             </span>
                           </div>
                         </td>
                         <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 dark:text-gray-200">
-                          {invoice.companyName || "Cliente sin nombre"}
+                          { invoice.companyName || "Cliente sin nombre" }
                         </td>
                         <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 dark:text-gray-200">
-                          {truncateText(invoice.condominiumName)}
+                          { truncateText( invoice.condominiumName ) }
                         </td>
                         <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 dark:text-gray-200">
-                          {formatCurrency(invoice.amount)}
+                          { formatCurrency( invoice.amount ) }
                         </td>
                         <td className="whitespace-nowrap px-3 py-4 text-sm">
                           <span
-                            className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                              statusColors[invoice.paymentStatus || "pending"]
-                            }`}
+                            className={ `px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${ statusColors[ invoice.paymentStatus || "pending" ]
+                              }` }
                           >
-                            {formatStatus(invoice.paymentStatus || "pending")}
+                            { formatStatus( invoice.paymentStatus || "pending" ) }
                           </span>
+                          { invoice.message && (
+                            <div className="text-xs text-indigo-600 dark:text-indigo-400 mt-1 max-w-[150px] truncate" title={ invoice.message }>
+                              { invoice.message }
+                            </div>
+                          ) }
                         </td>
                         <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 dark:text-gray-200">
-                          {formatDate(invoice.createdAt)}
+                          { formatDate( invoice.createdAt ) }
                         </td>
                         <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 dark:text-gray-200">
-                          {formatDate(invoice.dueDate)}
+                          <div className="flex flex-col">
+                            <span>{ formatDate( invoice.dueDate ) }</span>
+                            { invoice.nextBillingDate && (
+                              <span className="text-xs text-gray-500 mt-1">
+                                Próximo: { formatDate( invoice.nextBillingDate ) }
+                              </span>
+                            ) }
+                          </div>
                         </td>
                         <td className="whitespace-nowrap px-3 py-4 text-sm text-right font-medium">
                           <div className="flex justify-end space-x-2">
                             <button
                               className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300"
                               title="Ver detalles"
-                              onClick={() =>
-                                onViewInvoice && onViewInvoice(invoice)
+                              onClick={ () =>
+                                onViewInvoice && onViewInvoice( invoice )
                               }
                             >
                               <EyeIcon className="h-5 w-5" />
@@ -359,33 +370,33 @@ const InvoicesTable: React.FC<InvoicesTableProps> = ({
                             <button
                               className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300"
                               title="Descargar PDF"
-                              onClick={() => {
-                                if (invoice.invoiceURL) {
-                                  window.open(invoice.invoiceURL, "_blank");
+                              onClick={ () => {
+                                if ( invoice.invoiceURL ) {
+                                  window.open( invoice.invoiceURL, "_blank" );
                                 } else {
                                   toast.error(
                                     "No hay factura disponible para descargar"
                                   );
                                 }
-                              }}
+                              } }
                             >
                               <ArrowDownTrayIcon className="h-5 w-5" />
                             </button>
-                            {invoice.paymentStatus === "pending" && (
+                            { invoice.paymentStatus === "pending" && (
                               <button
                                 className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
                                 title="Marcar como pagado"
-                                onClick={() =>
-                                  onMarkAsPaid && onMarkAsPaid(invoice)
+                                onClick={ () =>
+                                  onMarkAsPaid && onMarkAsPaid( invoice )
                                 }
                               >
                                 <ArrowPathIcon className="h-5 w-5" />
                               </button>
-                            )}
+                            ) }
                           </div>
                         </td>
                       </tr>
-                    ))}
+                    ) ) }
                   </tbody>
                 </table>
               </div>
@@ -394,7 +405,7 @@ const InvoicesTable: React.FC<InvoicesTableProps> = ({
         </div>
       ) : (
         <div className="text-center py-8 mt-8 bg-white dark:bg-gray-800 rounded-lg shadow">
-          {loadingInvoices ? (
+          { loadingInvoices ? (
             <div className="flex justify-center">
               <LoadingApp />
             </div>
@@ -402,18 +413,18 @@ const InvoicesTable: React.FC<InvoicesTableProps> = ({
             <p className="text-gray-500 dark:text-gray-400">
               No se encontraron facturas
             </p>
-          )}
+          ) }
         </div>
-      )}
+      ) }
 
-      {/* Paginación */}
-      {invoices.length > 0 && (
+      {/* Paginación */ }
+      { invoices.length > 0 && (
         <div className="mt-4 flex items-center justify-between">
           <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
             <div>
               <p className="text-sm text-gray-700 dark:text-gray-300">
-                Página <span className="font-medium">{currentPage}</span> de{" "}
-                <span className="font-medium">{totalPages}</span>
+                Página <span className="font-medium">{ currentPage }</span> de{ " " }
+                <span className="font-medium">{ totalPages }</span>
               </p>
             </div>
             <div>
@@ -422,30 +433,29 @@ const InvoicesTable: React.FC<InvoicesTableProps> = ({
                 aria-label="Pagination"
               >
                 <button
-                  onClick={() => handlePageChange(1)}
-                  disabled={currentPage === 1 || loadingInvoices}
+                  onClick={ () => handlePageChange( 1 ) }
+                  disabled={ currentPage === 1 || loadingInvoices }
                   className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 disabled:opacity-50 mr-2 cursor-pointer"
                 >
                   Anterior
                 </button>
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                  (page) => (
+                { Array.from( { length: totalPages }, ( _, i ) => i + 1 ).map(
+                  ( page ) => (
                     <button
-                      key={page}
-                      onClick={() => handlePageChange(page)}
-                      className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${
-                        page === currentPage
+                      key={ page }
+                      onClick={ () => handlePageChange( page ) }
+                      className={ `relative inline-flex items-center px-4 py-2 text-sm font-semibold ${ page === currentPage
                           ? "z-10 bg-indigo-700 border-2 text-white border-indigo-700 rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 dark:text-gray-100"
                           : "z-10 border-2 border-indigo-700 rounded-md text-indigo-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 dark:text-gray-100"
-                      }`}
+                        }` }
                     >
-                      {page}
+                      { page }
                     </button>
                   )
-                )}
+                ) }
                 <button
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={loadingInvoices || !hasMore}
+                  onClick={ () => handlePageChange( currentPage + 1 ) }
+                  disabled={ loadingInvoices || !hasMore }
                   className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 disabled:opacity-50 ml-2 cursor-pointer"
                 >
                   Siguiente
@@ -454,10 +464,10 @@ const InvoicesTable: React.FC<InvoicesTableProps> = ({
             </div>
           </div>
         </div>
-      )}
+      ) }
 
-      {/* Modal de búsqueda por folio */}
-      {showSearchModal && (
+      {/* Modal de búsqueda por folio */ }
+      { showSearchModal && (
         <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity z-50">
           <div className="fixed inset-0 z-50 overflow-y-auto">
             <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
@@ -466,10 +476,10 @@ const InvoicesTable: React.FC<InvoicesTableProps> = ({
                   <button
                     type="button"
                     className="rounded-md bg-white dark:bg-gray-800 text-gray-400 hover:text-gray-500 focus:outline-none"
-                    onClick={() => {
-                      setShowSearchModal(false);
-                      setFolio("");
-                    }}
+                    onClick={ () => {
+                      setShowSearchModal( false );
+                      setFolio( "" );
+                    } }
                   >
                     <XMarkIcon className="h-6 w-6" />
                   </button>
@@ -480,7 +490,7 @@ const InvoicesTable: React.FC<InvoicesTableProps> = ({
                     Resultados de búsqueda por folio
                   </h3>
 
-                  {isSearching ? (
+                  { isSearching ? (
                     <div className="flex justify-center items-center py-8">
                       <LoadingApp />
                     </div>
@@ -540,55 +550,54 @@ const InvoicesTable: React.FC<InvoicesTableProps> = ({
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-900">
-                              {searchResults.map((invoice) => (
+                              { searchResults.map( ( invoice ) => (
                                 <tr
-                                  key={invoice.id}
+                                  key={ invoice.id }
                                   className="hover:bg-gray-50 dark:hover:bg-gray-700"
                                 >
                                   <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm text-gray-900 dark:text-gray-200 sm:pl-6">
                                     <div className="flex flex-col">
                                       <span className="font-medium">
-                                        {invoice.invoiceNumber}
+                                        { invoice.invoiceNumber }
                                       </span>
                                       <span className="text-gray-500 dark:text-gray-400">
-                                        {invoice.concept}
+                                        { invoice.concept }
                                       </span>
                                     </div>
                                   </td>
                                   <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 dark:text-gray-200">
-                                    {invoice.companyName ||
-                                      "Cliente sin nombre"}
+                                    { invoice.companyName ||
+                                      "Cliente sin nombre" }
                                   </td>
                                   <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 dark:text-gray-200">
-                                    {truncateText(invoice.condominiumName)}
+                                    { truncateText( invoice.condominiumName ) }
                                   </td>
                                   <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 dark:text-gray-200">
-                                    {formatCurrency(invoice.amount)}
+                                    { formatCurrency( invoice.amount ) }
                                   </td>
                                   <td className="whitespace-nowrap px-3 py-4 text-sm">
                                     <span
-                                      className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                        statusColors[
-                                          invoice.paymentStatus || "pending"
-                                        ]
-                                      }`}
-                                    >
-                                      {formatStatus(
+                                      className={ `px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${ statusColors[
                                         invoice.paymentStatus || "pending"
-                                      )}
+                                        ]
+                                        }` }
+                                    >
+                                      { formatStatus(
+                                        invoice.paymentStatus || "pending"
+                                      ) }
                                     </span>
                                   </td>
                                   <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 dark:text-gray-200">
-                                    {formatDate(invoice.createdAt)}
+                                    { formatDate( invoice.createdAt ) }
                                   </td>
                                   <td className="whitespace-nowrap px-3 py-4 text-sm text-right font-medium">
                                     <div className="flex justify-end space-x-2">
                                       <button
                                         className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300"
                                         title="Ver detalles"
-                                        onClick={() =>
+                                        onClick={ () =>
                                           onViewInvoice &&
-                                          onViewInvoice(invoice)
+                                          onViewInvoice( invoice )
                                         }
                                       >
                                         <EyeIcon className="h-5 w-5" />
@@ -596,8 +605,8 @@ const InvoicesTable: React.FC<InvoicesTableProps> = ({
                                       <button
                                         className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300"
                                         title="Descargar PDF"
-                                        onClick={() => {
-                                          if (invoice.invoiceURL) {
+                                        onClick={ () => {
+                                          if ( invoice.invoiceURL ) {
                                             window.open(
                                               invoice.invoiceURL,
                                               "_blank"
@@ -607,38 +616,38 @@ const InvoicesTable: React.FC<InvoicesTableProps> = ({
                                               "No hay factura disponible para descargar"
                                             );
                                           }
-                                        }}
+                                        } }
                                       >
                                         <ArrowDownTrayIcon className="h-5 w-5" />
                                       </button>
-                                      {invoice.paymentStatus === "pending" && (
+                                      { invoice.paymentStatus === "pending" && (
                                         <button
                                           className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
                                           title="Marcar como pagado"
-                                          onClick={() =>
+                                          onClick={ () =>
                                             onMarkAsPaid &&
-                                            onMarkAsPaid(invoice)
+                                            onMarkAsPaid( invoice )
                                           }
                                         >
                                           <ArrowPathIcon className="h-5 w-5" />
                                         </button>
-                                      )}
+                                      ) }
                                     </div>
                                   </td>
                                 </tr>
-                              ))}
+                              ) ) }
                             </tbody>
                           </table>
                         </div>
                       </div>
                     </div>
-                  )}
+                  ) }
                 </div>
               </div>
             </div>
           </div>
         </div>
-      )}
+      ) }
     </div>
   );
 };

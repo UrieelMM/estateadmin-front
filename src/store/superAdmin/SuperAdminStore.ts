@@ -80,6 +80,9 @@ interface NewClientData {
   billingFrequency?: "monthly" | "quarterly" | "biannual" | "annual";
   termsAccepted?: boolean;
   address?: string; // Mantenido por compatibilidad
+  billingDelinquent?: boolean;
+  nextBillingDate?: any;
+  lastOverdueInvoice?: string;
 }
 
 interface ClientCredentials {
@@ -99,7 +102,7 @@ interface SuperAdminStore {
   fetchRecentAudits: () => Promise<void>;
   createClient: (
     clientData: NewClientData
-  ) => Promise<{ success: boolean; credentials?: ClientCredentials }>;
+  ) => Promise<{ success: boolean; credentials?: ClientCredentials; billing?: { message?: string; invoiceId?: string; nextBillingDate?: any } }>;
 }
 
 const db = getFirestore();
@@ -164,6 +167,9 @@ const useSuperAdminStore = create<SuperAdminStore>()((set, _get) => ({
           currency: data.currency || "",
           language: data.language || "",
           hasMaintenanceApp: data.hasMaintenanceApp || false,
+          billingDelinquent: data.billingDelinquent || false,
+          nextBillingDate: data.nextBillingDate || null,
+          lastOverdueInvoice: data.lastOverdueInvoice || "",
         };
       });
 
@@ -247,6 +253,7 @@ const useSuperAdminStore = create<SuperAdminStore>()((set, _get) => ({
             email: clientData.email,
             password: clientData.password,
           },
+          billing: responseData.billing,
         };
       } else {
         toast.error(responseData.message || "Error al crear el cliente");

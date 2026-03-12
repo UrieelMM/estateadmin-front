@@ -38,6 +38,8 @@ export interface InvoiceData {
   clientId: string;
   condominiumId: string;
   condominiumName: string;
+  nextBillingDate?: any;
+  message?: string;
 }
 
 export interface InvoiceRecord {
@@ -62,6 +64,8 @@ export interface InvoiceRecord {
   userEmail: string;
   userUID: string;
   optionalMessage: string;
+  nextBillingDate?: any;
+  message?: string;
 }
 
 interface BillingStore {
