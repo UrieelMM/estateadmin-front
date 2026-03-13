@@ -261,7 +261,7 @@ const InitialSetupSteps = () => {
   };
 
   // Función para avanzar pasos con validaciones
-  const nextStep = () => {
+  const nextStep = async () => {
     if ( currentStep === 2 ) {
       const {
         businessName,
@@ -300,13 +300,16 @@ const InitialSetupSteps = () => {
       }
     } else if ( currentStep === 6 ) {
       // Al llegar al paso 7 (pago), guardar datos previos y luego cargar la factura
-      saveDataBeforePayment();
+      const saved = await saveDataBeforePayment();
+      if ( !saved ) {
+        return;
+      }
     }
     setCurrentStep( ( prev ) => prev + 1 );
   };
 
   // Guardar toda la información de los pasos anteriores antes de ir a pago
-  const saveDataBeforePayment = async () => {
+  const saveDataBeforePayment = async (): Promise<boolean> => {
     setSavingBeforePayment( true );
     try {
       const auth = getAuth();
@@ -373,9 +376,11 @@ const InitialSetupSteps = () => {
 
       // 4. Cargar la factura pendiente
       await loadPaymentInvoice();
+      return true;
     } catch ( error: any ) {
       console.error( "Error al guardar datos antes de pago:", error );
       toast.error( error.message || "Error al guardar los datos previos" );
+      return false;
     } finally {
       setSavingBeforePayment( false );
     }
@@ -486,20 +491,11 @@ const InitialSetupSteps = () => {
         } );
       }
 
-      // 2. Actualizar configuración general y darkMode
-      await updateConfig(
-        {
-          ...userData,
-          darkMode: isDarkMode,
-        },
-        logoFile || undefined,
-        signReportsFile || undefined,
-        logoReportsFile || undefined
-      );
+      // 2. No volvemos a escribir la configuración general aquí para evitar
+      // sobrescribir accidentalmente los datos confirmados en pasos previos.
+      // La info de empresa e imágenes ya se guarda en saveDataBeforePayment.
 
-      // 3. La cuenta financiera ya fue creada en saveDataBeforePayment; no se crea de nuevo aquí
-
-      // 4. Marcar configuración inicial como completada
+      // 3. Marcar configuración inicial como completada
       const configDocRef = doc( db, "clients", clientId );
       await setDoc(
         configDocRef,
@@ -511,7 +507,7 @@ const InitialSetupSteps = () => {
 
       toast.success( "¡Configuración inicial completada!" );
 
-      // 5. Redirigir después de un breve delay
+      // 4. Redirigir después de un breve delay
       setTimeout( () => {
         window.location.href = "/dashboard/home";
       }, 1500 );
