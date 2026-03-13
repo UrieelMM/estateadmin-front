@@ -36,10 +36,34 @@ export interface ClientInvoice {
   clientId: string;
   condominiumId: string;
   condominiumName?: string;
+  plan?: string;
+  userEmail?: string;
+  userUID?: string;
   nextBillingDate?: any;
   message?: string;
   invoicePdfStoragePath?: string;
   invoicePdfStorageUrl?: string;
+  billingDedupeKey?: string;
+  billingFrequency?: string;
+  currency?: string;
+  issueDate?: any;
+  periodKey?: string;
+  pricingBaseSnapshot?: number;
+  pricingSnapshot?: number;
+  source?: string;
+  stripeCustomerId?: string;
+  stripeHostedInvoiceUrl?: string;
+  stripeInvoiceId?: string;
+  stripeInvoicePdf?: string;
+  stripeInvoiceStatus?: string;
+  stripeTaxRateId?: string;
+  subtotalAmount?: number;
+  taxAmount?: number;
+  taxBreakdownApplied?: boolean;
+  taxMode?: string;
+  taxRatePercent?: number;
+  updatedAt?: any;
+  condominiumLimitSnapshot?: number;
 }
 
 interface ClientInvoicesState {
@@ -190,8 +214,34 @@ const useClientInvoicesStore = create<ClientInvoicesState>()((set, get) => ({
           clientId,
           condominiumId,
           condominiumName: data.condominiumName,
+          plan: data.plan,
+          userEmail: data.userEmail || "",
+          userUID: data.userUID || "",
           nextBillingDate: data.nextBillingDate,
           message: data.message,
+          invoicePdfStoragePath: data.invoicePdfStoragePath,
+          invoicePdfStorageUrl: data.invoicePdfStorageUrl,
+          billingDedupeKey: data.billingDedupeKey,
+          billingFrequency: data.billingFrequency,
+          currency: data.currency || "MXN",
+          issueDate: data.issueDate,
+          periodKey: data.periodKey,
+          pricingBaseSnapshot: data.pricingBaseSnapshot,
+          pricingSnapshot: data.pricingSnapshot,
+          source: data.source,
+          stripeCustomerId: data.stripeCustomerId,
+          stripeHostedInvoiceUrl: data.stripeHostedInvoiceUrl,
+          stripeInvoiceId: data.stripeInvoiceId,
+          stripeInvoicePdf: data.stripeInvoicePdf,
+          stripeInvoiceStatus: data.stripeInvoiceStatus,
+          stripeTaxRateId: data.stripeTaxRateId,
+          subtotalAmount: data.subtotalAmount,
+          taxAmount: data.taxAmount,
+          taxBreakdownApplied: data.taxBreakdownApplied,
+          taxMode: data.taxMode,
+          taxRatePercent: data.taxRatePercent,
+          updatedAt: data.updatedAt,
+          condominiumLimitSnapshot: data.condominiumLimitSnapshot,
         };
 
         invoiceRecords.push(invoice);
@@ -281,8 +331,34 @@ const useClientInvoicesStore = create<ClientInvoicesState>()((set, get) => ({
           clientId,
           condominiumId,
           condominiumName: data.condominiumName,
+          plan: data.plan,
+          userEmail: data.userEmail || "",
+          userUID: data.userUID || "",
           nextBillingDate: data.nextBillingDate,
           message: data.message,
+          invoicePdfStoragePath: data.invoicePdfStoragePath,
+          invoicePdfStorageUrl: data.invoicePdfStorageUrl,
+          billingDedupeKey: data.billingDedupeKey,
+          billingFrequency: data.billingFrequency,
+          currency: data.currency || "MXN",
+          issueDate: data.issueDate,
+          periodKey: data.periodKey,
+          pricingBaseSnapshot: data.pricingBaseSnapshot,
+          pricingSnapshot: data.pricingSnapshot,
+          source: data.source,
+          stripeCustomerId: data.stripeCustomerId,
+          stripeHostedInvoiceUrl: data.stripeHostedInvoiceUrl,
+          stripeInvoiceId: data.stripeInvoiceId,
+          stripeInvoicePdf: data.stripeInvoicePdf,
+          stripeInvoiceStatus: data.stripeInvoiceStatus,
+          stripeTaxRateId: data.stripeTaxRateId,
+          subtotalAmount: data.subtotalAmount,
+          taxAmount: data.taxAmount,
+          taxBreakdownApplied: data.taxBreakdownApplied,
+          taxMode: data.taxMode,
+          taxRatePercent: data.taxRatePercent,
+          updatedAt: data.updatedAt,
+          condominiumLimitSnapshot: data.condominiumLimitSnapshot,
         };
 
         invoiceRecords.push(invoice);

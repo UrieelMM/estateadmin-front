@@ -38,6 +38,22 @@ const formatCurrency = ( amount: number ) => {
   } ).format( amount );
 };
 
+const formatDateTime = ( timestamp: any ): string => {
+  if ( !timestamp ) return "N/A";
+  try {
+    const date = timestamp.toDate ? timestamp.toDate() : new Date( timestamp );
+    return date.toLocaleString( "es-MX" );
+  } catch ( error ) {
+    return "Fecha inválida";
+  }
+};
+
+const getInvoicePdfUrl = ( invoice: InvoiceRecord ) =>
+  invoice.invoicePdfStorageUrl ||
+  invoice.stripeInvoicePdf ||
+  invoice.invoiceURL ||
+  "";
+
 const truncateText = ( text: string | undefined, maxLength: number = 15 ) => {
   if ( !text ) return "N/A";
   return text.length > maxLength ? `${ text.substring( 0, maxLength ) }...` : text;
@@ -90,6 +106,9 @@ const InvoicesTable: React.FC<InvoicesTableProps> = ( {
   const [ showSearchModal, setShowSearchModal ] = useState( false );
   const [ searchResults, setSearchResults ] = useState<InvoiceRecord[]>( [] );
   const [ isSearching, setIsSearching ] = useState( false );
+  const [ selectedInvoice, setSelectedInvoice ] = useState<InvoiceRecord | null>(
+    null
+  );
 
   // Cargar facturas iniciales
   useEffect( () => {
@@ -173,6 +192,13 @@ const InvoicesTable: React.FC<InvoicesTableProps> = ( {
   };
 
   const totalPages = hasMore ? currentPage + 1 : currentPage;
+
+  const openInvoiceDetail = ( invoice: InvoiceRecord ) => {
+    setSelectedInvoice( invoice );
+    if ( onViewInvoice ) {
+      onViewInvoice( invoice );
+    }
+  };
 
   return (
     <div className="px-4 sm:px-6 lg:px-8 dark:bg-gray-900 p-4 rounded-lg">
@@ -309,7 +335,8 @@ const InvoicesTable: React.FC<InvoicesTableProps> = ( {
                     { invoices.map( ( invoice ) => (
                       <tr
                         key={ invoice.id }
-                        className="hover:bg-gray-50 transition-colors dark:hover:bg-gray-700"
+                        className="hover:bg-gray-50 transition-colors dark:hover:bg-gray-700 cursor-pointer"
+                        onClick={ () => openInvoiceDetail( invoice ) }
                       >
                         <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm text-gray-900 dark:text-gray-200 sm:pl-6">
                           <div className="flex flex-col">
@@ -361,17 +388,19 @@ const InvoicesTable: React.FC<InvoicesTableProps> = ( {
                             <button
                               className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300"
                               title="Ver detalles"
-                              onClick={ () =>
-                                onViewInvoice && onViewInvoice( invoice )
-                              }
+                              onClick={ ( e ) => {
+                                e.stopPropagation();
+                                openInvoiceDetail( invoice );
+                              } }
                             >
                               <EyeIcon className="h-5 w-5" />
                             </button>
                             <button
                               className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300"
                               title="Descargar PDF"
-                              onClick={ () => {
-                                const pdfUrl = invoice.invoicePdfStorageUrl || invoice.invoiceURL;
+                              onClick={ ( e ) => {
+                                e.stopPropagation();
+                                const pdfUrl = getInvoicePdfUrl( invoice );
                                 if ( pdfUrl ) {
                                   window.open( pdfUrl, "_blank" );
                                 } else {
@@ -387,9 +416,10 @@ const InvoicesTable: React.FC<InvoicesTableProps> = ( {
                               <button
                                 className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
                                 title="Marcar como pagado"
-                                onClick={ () =>
-                                  onMarkAsPaid && onMarkAsPaid( invoice )
-                                }
+                                onClick={ ( e ) => {
+                                  e.stopPropagation();
+                                  onMarkAsPaid && onMarkAsPaid( invoice );
+                                } }
                               >
                                 <ArrowPathIcon className="h-5 w-5" />
                               </button>
@@ -554,7 +584,8 @@ const InvoicesTable: React.FC<InvoicesTableProps> = ( {
                               { searchResults.map( ( invoice ) => (
                                 <tr
                                   key={ invoice.id }
-                                  className="hover:bg-gray-50 dark:hover:bg-gray-700"
+                                  className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
+                                  onClick={ () => openInvoiceDetail( invoice ) }
                                 >
                                   <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm text-gray-900 dark:text-gray-200 sm:pl-6">
                                     <div className="flex flex-col">
@@ -596,20 +627,22 @@ const InvoicesTable: React.FC<InvoicesTableProps> = ( {
                                       <button
                                         className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300"
                                         title="Ver detalles"
-                                        onClick={ () =>
-                                          onViewInvoice &&
-                                          onViewInvoice( invoice )
-                                        }
+                                        onClick={ ( e ) => {
+                                          e.stopPropagation();
+                                          openInvoiceDetail( invoice );
+                                        } }
                                       >
                                         <EyeIcon className="h-5 w-5" />
                                       </button>
                                       <button
                                         className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300"
                                         title="Descargar PDF"
-                                        onClick={ () => {
-                                          if ( invoice.invoiceURL ) {
+                                        onClick={ ( e ) => {
+                                          e.stopPropagation();
+                                          const pdfUrl = getInvoicePdfUrl( invoice );
+                                          if ( pdfUrl ) {
                                             window.open(
-                                              invoice.invoiceURL,
+                                              pdfUrl,
                                               "_blank"
                                             );
                                           } else {
@@ -625,10 +658,11 @@ const InvoicesTable: React.FC<InvoicesTableProps> = ( {
                                         <button
                                           className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
                                           title="Marcar como pagado"
-                                          onClick={ () =>
+                                          onClick={ ( e ) => {
+                                            e.stopPropagation();
                                             onMarkAsPaid &&
-                                            onMarkAsPaid( invoice )
-                                          }
+                                              onMarkAsPaid( invoice );
+                                          } }
                                         >
                                           <ArrowPathIcon className="h-5 w-5" />
                                         </button>
@@ -645,6 +679,129 @@ const InvoicesTable: React.FC<InvoicesTableProps> = ( {
                   ) }
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      ) }
+
+      { selectedInvoice && (
+        <div className="fixed inset-0 z-[60] bg-black/50 p-4">
+          <div className="mx-auto mt-8 max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-xl bg-white p-6 shadow-xl dark:bg-gray-900">
+            <div className="mb-4 flex items-start justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                  Detalle de factura
+                </h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  { selectedInvoice.invoiceNumber || selectedInvoice.id }
+                </p>
+              </div>
+              <button
+                className="rounded-md p-1 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800"
+                onClick={ () => setSelectedInvoice( null ) }
+              >
+                <XMarkIcon className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 gap-3 text-sm md:grid-cols-2">
+              <div><strong>Monto:</strong> { formatCurrency( selectedInvoice.amount || 0 ) }</div>
+              <div><strong>Moneda:</strong> { selectedInvoice.currency || "MXN" }</div>
+              <div><strong>Concepto:</strong> { selectedInvoice.concept || "N/A" }</div>
+              <div><strong>Estado:</strong> { formatStatus( selectedInvoice.paymentStatus || selectedInvoice.status || "pending" ) }</div>
+              <div><strong>Cliente:</strong> { selectedInvoice.companyName || selectedInvoice.clientName || "N/A" }</div>
+              <div><strong>Condominio:</strong> { selectedInvoice.condominiumName || selectedInvoice.condominiumId || "N/A" }</div>
+              <div><strong>Fecha emisión:</strong> { formatDateTime( selectedInvoice.createdAt || selectedInvoice.issueDate ) }</div>
+              <div><strong>Fecha vencimiento:</strong> { formatDateTime( selectedInvoice.dueDate ) }</div>
+              <div><strong>Actualizado:</strong> { formatDateTime( selectedInvoice.updatedAt ) }</div>
+              <div><strong>Próximo cobro:</strong> { formatDateTime( selectedInvoice.nextBillingDate ) }</div>
+              <div><strong>Plan:</strong> { selectedInvoice.plan || "N/A" }</div>
+              <div><strong>Límite condóminos:</strong> { selectedInvoice.condominiumLimitSnapshot ?? "N/A" }</div>
+              <div><strong>Subtotal:</strong> { selectedInvoice.subtotalAmount != null ? formatCurrency( selectedInvoice.subtotalAmount ) : "N/A" }</div>
+              <div><strong>Impuesto:</strong> { selectedInvoice.taxAmount != null ? formatCurrency( selectedInvoice.taxAmount ) : "N/A" }</div>
+              <div><strong>Tasa impuesto:</strong> { selectedInvoice.taxRatePercent != null ? `${ selectedInvoice.taxRatePercent }%` : "N/A" }</div>
+              <div><strong>Modo impuesto:</strong> { selectedInvoice.taxMode || "N/A" }</div>
+              <div><strong>Periodo:</strong> { selectedInvoice.periodKey || "N/A" }</div>
+              <div><strong>Frecuencia:</strong> { selectedInvoice.billingFrequency || "N/A" }</div>
+              <div><strong>Origen:</strong> { selectedInvoice.source || "N/A" }</div>
+              <div><strong>Dedupe key:</strong> { selectedInvoice.billingDedupeKey || "N/A" }</div>
+              <div><strong>Email usuario:</strong> { selectedInvoice.userEmail || "N/A" }</div>
+              <div><strong>User UID:</strong> { selectedInvoice.userUID || "N/A" }</div>
+              <div><strong>Stripe Invoice ID:</strong> { selectedInvoice.stripeInvoiceId || "N/A" }</div>
+              <div><strong>Stripe Customer:</strong> { selectedInvoice.stripeCustomerId || "N/A" }</div>
+            </div>
+
+            <div className="mt-5 grid grid-cols-1 gap-2 text-sm">
+              <div className="break-all"><strong>PDF sistema:</strong> { selectedInvoice.invoicePdfStorageUrl || "N/A" }</div>
+              <div className="break-all"><strong>PDF Stripe:</strong> { selectedInvoice.stripeInvoicePdf || "N/A" }</div>
+              <div className="break-all"><strong>Hosted invoice Stripe:</strong> { selectedInvoice.stripeHostedInvoiceUrl || "N/A" }</div>
+              <div className="break-all"><strong>Storage path:</strong> { selectedInvoice.invoicePdfStoragePath || "N/A" }</div>
+            </div>
+
+            <div className="mt-5 rounded-lg border border-gray-200 p-3 dark:border-gray-700">
+              <p className="mb-2 text-sm font-semibold text-gray-800 dark:text-gray-100">
+                Acciones rápidas
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  className="rounded-md border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-700 hover:bg-indigo-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-300"
+                  disabled={ !selectedInvoice.invoicePdfStorageUrl }
+                  onClick={ () => {
+                    if ( selectedInvoice.invoicePdfStorageUrl ) {
+                      window.open( selectedInvoice.invoicePdfStorageUrl, "_blank" );
+                    }
+                  } }
+                >
+                  Abrir PDF sistema
+                </button>
+                <button
+                  className="rounded-md border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-700 hover:bg-indigo-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-300"
+                  disabled={ !selectedInvoice.stripeInvoicePdf }
+                  onClick={ () => {
+                    if ( selectedInvoice.stripeInvoicePdf ) {
+                      window.open( selectedInvoice.stripeInvoicePdf, "_blank" );
+                    }
+                  } }
+                >
+                  Abrir PDF Stripe
+                </button>
+                <button
+                  className="rounded-md border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-700 hover:bg-indigo-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-300"
+                  disabled={ !selectedInvoice.stripeHostedInvoiceUrl }
+                  onClick={ () => {
+                    if ( selectedInvoice.stripeHostedInvoiceUrl ) {
+                      window.open(
+                        selectedInvoice.stripeHostedInvoiceUrl,
+                        "_blank"
+                      );
+                    }
+                  } }
+                >
+                  Abrir Hosted Invoice
+                </button>
+              </div>
+            </div>
+
+            <div className="mt-6 flex flex-wrap justify-end gap-2">
+              <button
+                className="rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-800"
+                onClick={ () => setSelectedInvoice( null ) }
+              >
+                Cerrar
+              </button>
+              <button
+                className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
+                onClick={ () => {
+                  const pdfUrl = getInvoicePdfUrl( selectedInvoice );
+                  if ( pdfUrl ) {
+                    window.open( pdfUrl, "_blank" );
+                    return;
+                  }
+                  toast.error( "No hay PDF disponible para esta factura" );
+                } }
+              >
+                Descargar PDF
+              </button>
             </div>
           </div>
         </div>
