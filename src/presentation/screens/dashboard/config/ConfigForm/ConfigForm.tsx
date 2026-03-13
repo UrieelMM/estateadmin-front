@@ -46,6 +46,8 @@ type ConfigTabId =
   | "audit"
   | "committee";
 
+type ConfigSectionTabId = "company" | "condominium";
+
 const CONFIG_TAB_PATHS: Record<ConfigTabId, string> = {
   config: "/dashboard/client-config/general",
   payments: "/dashboard/client-config/payments-invoices",
@@ -122,6 +124,8 @@ const ConfigForm = () => {
   const [ condominiumCreatedDate, setCondominiumCreatedDate ] =
     useState<Date | null>( null );
   const [ isUpdatingCondominium, setIsUpdatingCondominium ] = useState( false );
+  const [ configSectionTab, setConfigSectionTab ] =
+    useState<ConfigSectionTabId>( "company" );
 
   // Estados para la pestaña de pagos y facturas
   // const [selectedInvoice, setSelectedInvoice] = useState("");
@@ -387,9 +391,9 @@ const ConfigForm = () => {
             {/* Header del card con logo */ }
             <div className="relative p-4 bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 dark:from-indigo-800 dark:via-purple-700 dark:to-indigo-800">
               <div className="absolute inset-0 bg-black/10"></div>
-              <div className="relative flex items-center gap-6">
-                <div className="group">
-                  <div className="h-24 w-24 bg-white rounded-2xl p-3 shadow-lg transition-transform duration-300 group-hover:scale-105">
+            <div className="relative flex items-center gap-6">
+              <div className="group">
+                <div className="h-24 w-24 bg-white rounded-2xl p-3 shadow-lg transition-transform duration-300 group-hover:scale-105">
                     { logoPreviewUrl ? (
                       <img
                         src={ logoPreviewUrl }
@@ -412,9 +416,36 @@ const ConfigForm = () => {
               </div>
             </div>
 
+            <div className="px-8 pt-6">
+              <div className="inline-flex rounded-xl border border-gray-200 bg-gray-50 p-1 dark:border-gray-700 dark:bg-gray-800">
+                <button
+                  type="button"
+                  onClick={ () => setConfigSectionTab( "company" ) }
+                  className={ `rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${ configSectionTab === "company"
+                    ? "bg-indigo-600 text-white"
+                    : "text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+                    }` }
+                >
+                  Configuración de la empresa
+                </button>
+                <button
+                  type="button"
+                  onClick={ () => setConfigSectionTab( "condominium" ) }
+                  className={ `rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${ configSectionTab === "condominium"
+                    ? "bg-indigo-600 text-white"
+                    : "text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+                    }` }
+                >
+                  Información del condominio
+                </button>
+              </div>
+            </div>
+
             <form onSubmit={ handleSubmit } className="p-8">
-              {/* Datos de la empresa */ }
-              <div className="mb-10">
+              { configSectionTab === "company" && (
+                <>
+                  {/* Datos de la empresa */ }
+                  <div className="mb-10">
                 <div className="flex items-center gap-3 mb-6">
                   <div className="h-10 w-10 bg-indigo-500 dark:bg-indigo-700 rounded-xl flex items-center justify-center">
                     <BuildingOffice2Icon className="h-5 w-5 text-white" />
@@ -535,10 +566,13 @@ const ConfigForm = () => {
                     </div>
                   </div>
                 </div>
-              </div>
+                  </div>
+                </>
+              ) }
 
               {/* Datos del condominio actual */ }
-              <div className="mb-10">
+              { configSectionTab === "condominium" && (
+                <div className="mb-10">
                 <div className="flex items-center gap-3 mb-6">
                   <div className="h-10 w-10 bg-indigo-500 dark:bg-indigo-700 rounded-xl flex items-center justify-center">
                     <BuildingOffice2Icon className="h-5 w-5 text-white" />
@@ -656,10 +690,12 @@ const ConfigForm = () => {
                     </button>
                   </div>
                 </div>
-              </div>
+                </div>
+              ) }
 
               {/* Archivos */ }
-              <div className="mb-10">
+              { configSectionTab === "company" && (
+                <div className="mb-10">
                 <div className="flex items-center gap-3 mb-6">
                   <div className="h-10 w-10 bg-indigo-500 dark:bg-indigo-700 rounded-xl flex items-center justify-center">
                     <PhotoIcon className="h-5 w-5 text-white" />
@@ -880,10 +916,12 @@ const ConfigForm = () => {
                     </div>
                   </div>
                 </div>
-              </div>
+                </div>
+              ) }
 
               {/* Toggle de tema */ }
-              <div className="mb-10">
+              { configSectionTab === "company" && (
+                <div className="mb-10">
                 <div className="flex items-center gap-3 mb-6">
                   <div
                     className={ `h-10 w-10 rounded-xl flex items-center justify-center transition-all duration-300 ${ isDarkMode ? "bg-indigo-700" : "bg-yellow-500"
@@ -965,28 +1003,31 @@ const ConfigForm = () => {
                     </p>
                   </div>
                 </div>
-              </div>
+                </div>
+              ) }
 
               {/* Botón de guardar */ }
-              <div className="flex justify-end">
-                <button
-                  type="submit"
-                  disabled={ loading }
-                  className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                >
-                  { loading || isCompressingFile ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                      Actualizando...
-                    </>
-                  ) : (
-                    <>
-                      <CheckIcon className="h-4 w-4" />
-                      Guardar Configuración
-                    </>
-                  ) }
-                </button>
-              </div>
+              { configSectionTab === "company" && (
+                <div className="flex justify-end">
+                  <button
+                    type="submit"
+                    disabled={ loading }
+                    className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  >
+                    { loading || isCompressingFile ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        Actualizando...
+                      </>
+                    ) : (
+                      <>
+                        <CheckIcon className="h-4 w-4" />
+                        Guardar Configuración
+                      </>
+                    ) }
+                  </button>
+                </div>
+              ) }
             </form>
           </div>
         </div>

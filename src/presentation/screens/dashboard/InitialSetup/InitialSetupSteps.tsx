@@ -262,6 +262,8 @@ const InitialSetupSteps = () => {
 
   // Función para avanzar pasos con validaciones
   const nextStep = async () => {
+    if ( savingBeforePayment ) return;
+
     if ( currentStep === 2 ) {
       const {
         businessName,
@@ -290,11 +292,20 @@ const InitialSetupSteps = () => {
         return;
       }
     } else if ( currentStep === 4 ) {
-      if ( !accountData.name ) {
-        toast.error( "Debes crear al menos una cuenta financiera." );
+      const hasName = !!accountData.name.trim();
+      const hasType = !!accountData.type.trim();
+      const hasDescription = !!accountData.description.trim();
+      const hasInitialBalance = Number( accountData.initialBalance || 0 ) > 0;
+      const hasAnyAccountInput =
+        hasName || hasType || hasDescription || hasInitialBalance;
+
+      if ( hasAnyAccountInput && !hasName ) {
+        toast.error(
+          "Si deseas registrar una cuenta bancaria, primero captura el nombre."
+        );
         return;
       }
-      if ( accountData.name && !accountData.type ) {
+      if ( hasName && !hasType ) {
         toast.error( "El tipo de cuenta bancaria es obligatorio." );
         return;
       }
@@ -351,9 +362,17 @@ const InitialSetupSteps = () => {
       }
 
       // 2. Guardar configuración general + imágenes
+      const resolvedCompanyAddress = (
+        userData.address ||
+        config?.address ||
+        userData.fullFiscalAddress ||
+        ""
+      ).trim();
+
       await updateConfig(
         {
           ...userData,
+          address: resolvedCompanyAddress,
           darkMode: isDarkMode,
         },
         logoFile || undefined,
@@ -361,15 +380,36 @@ const InitialSetupSteps = () => {
         logoReportsFile || undefined
       );
 
-      // 3. Crear cuenta financiera si se proporcionaron datos
-      if ( accountData.name ) {
-        await createAccount( {
-          name: accountData.name,
-          type: accountData.type,
-          description: accountData.description,
-          initialBalance: accountData.initialBalance,
-          active: true,
+      // 3. Crear cuenta financiera solo si viene nombre + tipo y no existe duplicada
+      if ( accountData.name.trim() && accountData.type.trim() ) {
+        const accountsRef = collection(
+          db,
+          "clients",
+          clientId,
+          "condominiums",
+          condominiumId,
+          "financialAccounts"
+        );
+        const accountsSnap = await getDocs( accountsRef );
+        const normalizedName = accountData.name.trim().toLowerCase();
+        const normalizedType = accountData.type.trim().toLowerCase();
+        const duplicatedAccount = accountsSnap.docs.some( ( accountDoc ) => {
+          const account = accountDoc.data() as Record<string, any>;
+          return (
+            String( account.name || "" ).trim().toLowerCase() === normalizedName &&
+            String( account.type || "" ).trim().toLowerCase() === normalizedType
+          );
         } );
+
+        if ( !duplicatedAccount ) {
+          await createAccount( {
+            name: accountData.name.trim(),
+            type: accountData.type.trim(),
+            description: accountData.description.trim(),
+            initialBalance: Number( accountData.initialBalance || 0 ),
+            active: true,
+          } );
+        }
       }
 
       toast.success( "Datos guardados correctamente" );
@@ -584,7 +624,7 @@ const InitialSetupSteps = () => {
         };
       case 4:
         return {
-          title: "Crea al menos una cuenta financiera",
+          title: "Cuenta financiera (opcional)",
           icon: <CurrencyDollarIcon className="h-8 w-8 text-indigo-400" />,
         };
       case 5:
@@ -1307,7 +1347,8 @@ const InitialSetupSteps = () => {
             { currentStep < TOTAL_STEPS ? (
               <button
                 onClick={ nextStep }
-                className="flex items-center bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-700 dark:hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded transition-colors"
+                disabled={ savingBeforePayment || isSubmitting }
+                className="flex items-center bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-700 dark:hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Siguiente
                 <ChevronRightIcon className="h-5 w-5 ml-1" />

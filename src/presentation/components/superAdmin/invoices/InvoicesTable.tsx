@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import {
   FunnelIcon,
   InformationCircleIcon,
@@ -684,9 +685,18 @@ const InvoicesTable: React.FC<InvoicesTableProps> = ( {
         </div>
       ) }
 
-      { selectedInvoice && (
-        <div className="fixed inset-0 z-[60] bg-black/50 p-4">
-          <div className="mx-auto mt-8 max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-xl bg-white p-6 shadow-xl dark:bg-gray-900">
+      { selectedInvoice &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-[1200] bg-black/50"
+            onClick={ () => setSelectedInvoice( null ) }
+          >
+            <div className="flex min-h-full items-center justify-center overflow-y-auto p-4 sm:p-6">
+              <div
+                className="max-h-[92vh] w-full max-w-4xl overflow-y-auto rounded-xl bg-white p-6 shadow-xl dark:bg-gray-900"
+                onClick={ ( e ) => e.stopPropagation() }
+              >
             <div className="mb-4 flex items-start justify-between">
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
@@ -731,11 +741,48 @@ const InvoicesTable: React.FC<InvoicesTableProps> = ( {
               <div><strong>Stripe Customer:</strong> { selectedInvoice.stripeCustomerId || "N/A" }</div>
             </div>
 
-            <div className="mt-5 grid grid-cols-1 gap-2 text-sm">
-              <div className="break-all"><strong>PDF sistema:</strong> { selectedInvoice.invoicePdfStorageUrl || "N/A" }</div>
-              <div className="break-all"><strong>PDF Stripe:</strong> { selectedInvoice.stripeInvoicePdf || "N/A" }</div>
-              <div className="break-all"><strong>Hosted invoice Stripe:</strong> { selectedInvoice.stripeHostedInvoiceUrl || "N/A" }</div>
-              <div className="break-all"><strong>Storage path:</strong> { selectedInvoice.invoicePdfStoragePath || "N/A" }</div>
+            <div className="mt-5 rounded-lg border border-gray-200 p-3 dark:border-gray-700">
+              <p className="mb-2 text-sm font-semibold text-gray-800 dark:text-gray-100">
+                Enlaces de factura
+              </p>
+              <div className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
+                { [
+                  {
+                    label: "PDF sistema",
+                    url: selectedInvoice.invoicePdfStorageUrl,
+                  },
+                  {
+                    label: "PDF Stripe",
+                    url: selectedInvoice.stripeInvoicePdf,
+                  },
+                  {
+                    label: "Hosted invoice Stripe",
+                    url: selectedInvoice.stripeHostedInvoiceUrl,
+                  },
+                ].map( ( linkItem ) => (
+                  <button
+                    key={ linkItem.label }
+                    type="button"
+                    disabled={ !linkItem.url }
+                    className="rounded-md border border-indigo-200 bg-indigo-50 px-3 py-2 text-left text-xs font-semibold text-indigo-700 hover:bg-indigo-100 disabled:cursor-not-allowed disabled:border-gray-200 disabled:bg-gray-50 disabled:text-gray-400 dark:border-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-300 dark:hover:bg-indigo-900/30 dark:disabled:border-gray-700 dark:disabled:bg-gray-800 dark:disabled:text-gray-500"
+                    onClick={ () => {
+                      if ( linkItem.url ) {
+                        window.open( linkItem.url, "_blank" );
+                      }
+                    } }
+                  >
+                    { linkItem.url
+                      ? `Abrir ${ linkItem.label }`
+                      : `${ linkItem.label } no disponible` }
+                  </button>
+                ) ) }
+              </div>
+              <div className="mt-3 rounded-md border border-gray-200 bg-gray-50 p-2 text-xs text-gray-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
+                <span className="font-semibold">Storage path:</span>{ " " }
+                <span className="break-all">
+                  { selectedInvoice.invoicePdfStoragePath || "N/A" }
+                </span>
+              </div>
             </div>
 
             <div className="mt-5 rounded-lg border border-gray-200 p-3 dark:border-gray-700">
@@ -804,8 +851,10 @@ const InvoicesTable: React.FC<InvoicesTableProps> = ( {
               </button>
             </div>
           </div>
-        </div>
-      ) }
+            </div>
+          </div>,
+          document.body
+        ) }
     </div>
   );
 };
