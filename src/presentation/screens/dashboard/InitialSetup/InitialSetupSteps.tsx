@@ -147,16 +147,6 @@ const InitialSetupSteps = () => {
       setCurrentStep( 7 ); // Ir directo al paso de pago
       setPaymentState( "success" );
 
-      // Recuperar datos temporales almacenados antes del pago
-      const storedUserData = localStorage.getItem( "tempSetupUserData" );
-      const storedAccountData = localStorage.getItem( "tempSetupAccountData" );
-      if ( storedUserData ) {
-        setUserData( JSON.parse( storedUserData ) );
-      }
-      if ( storedAccountData ) {
-        setAccountData( JSON.parse( storedAccountData ) );
-      }
-
       const verifyAndFinish = async () => {
         setIsSubmitting( true );
         try {
@@ -177,11 +167,8 @@ const InitialSetupSteps = () => {
           setIsSubmitting( false );
         }
       };
-      // Remover variables temporales tras intentar finalizar (éxito o error)
-      localStorage.removeItem( "tempSetupUserData" );
-      localStorage.removeItem( "tempSetupAccountData" );
 
-      // Pequeño timeout (2.5s) para asegurar que el state de userData y accountData se haya actualizado 
+      // Pequeño timeout (2.5s) para dar tiempo a que la config se cargue
       setTimeout( () => verifyAndFinish(), 2500 );
     } else if ( status === "cancel" ) {
       setCurrentStep( 7 ); // Ir directo al paso de pago
@@ -273,23 +260,6 @@ const InitialSetupSteps = () => {
     }
   };
 
-  // Guardar solo la configuración general (paso 2)
-  const saveStep2Data = async () => {
-    try {
-      await updateConfig(
-        {
-          ...userData,
-          darkMode: isDarkMode,
-        },
-        undefined,
-        undefined,
-        undefined
-      );
-    } catch ( error ) {
-      console.error( "Error al guardar datos del paso 2:", error );
-    }
-  };
-
   // Función para avanzar pasos con validaciones
   const nextStep = () => {
     if ( currentStep === 2 ) {
@@ -314,8 +284,6 @@ const InitialSetupSteps = () => {
         toast.error( "Datos incompletos. Comunícate con soporte." );
         return;
       }
-      // Guardar datos confirmados en Firestore al avanzar del paso 2
-      saveStep2Data();
     } else if ( currentStep === 3 ) {
       if ( !signReportsFile ) {
         toast.error( "La firma para reportes es obligatoria." );
@@ -564,10 +532,6 @@ const InitialSetupSteps = () => {
       const currentDomain = window.location.origin || "http://localhost:3000";
       const customSuccessUrl = `${ currentDomain }${ window.location.pathname }?payment=success`;
       const customCancelUrl = `${ currentDomain }${ window.location.pathname }?payment=cancel`;
-
-      // Guardar el estado actual del formulario antes de salir a Stripe (imágenes no se guardan por localStorage por tamaño, pero userData y accountData sí)
-      localStorage.setItem( "tempSetupUserData", JSON.stringify( userData ) );
-      localStorage.setItem( "tempSetupAccountData", JSON.stringify( accountData ) );
 
       // Necesitamos pasarle el ID real (document id de Firestore) a initiateStripePayment
       // Como paymentInvoice actualmente no tiene "id", usamos la búsqueda si es necesario o asumimos que lo tenemos.
