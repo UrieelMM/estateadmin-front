@@ -273,6 +273,23 @@ const InitialSetupSteps = () => {
     }
   };
 
+  // Guardar solo la configuración general (paso 2)
+  const saveStep2Data = async () => {
+    try {
+      await updateConfig(
+        {
+          ...userData,
+          darkMode: isDarkMode,
+        },
+        undefined,
+        undefined,
+        undefined
+      );
+    } catch ( error ) {
+      console.error( "Error al guardar datos del paso 2:", error );
+    }
+  };
+
   // Función para avanzar pasos con validaciones
   const nextStep = () => {
     if ( currentStep === 2 ) {
@@ -297,6 +314,8 @@ const InitialSetupSteps = () => {
         toast.error( "Datos incompletos. Comunícate con soporte." );
         return;
       }
+      // Guardar datos confirmados en Firestore al avanzar del paso 2
+      saveStep2Data();
     } else if ( currentStep === 3 ) {
       if ( !signReportsFile ) {
         toast.error( "La firma para reportes es obligatoria." );
@@ -305,6 +324,10 @@ const InitialSetupSteps = () => {
     } else if ( currentStep === 4 ) {
       if ( !accountData.name ) {
         toast.error( "Debes crear al menos una cuenta financiera." );
+        return;
+      }
+      if ( accountData.name && !accountData.type ) {
+        toast.error( "El tipo de cuenta bancaria es obligatorio." );
         return;
       }
     } else if ( currentStep === 6 ) {
@@ -506,16 +529,7 @@ const InitialSetupSteps = () => {
         logoReportsFile || undefined
       );
 
-      // 3. Crear cuenta financiera si se proporcionaron datos
-      if ( accountData.name ) {
-        await createAccount( {
-          name: accountData.name,
-          type: accountData.type,
-          description: accountData.description,
-          initialBalance: accountData.initialBalance,
-          active: true,
-        } );
-      }
+      // 3. La cuenta financiera ya fue creada en saveDataBeforePayment; no se crea de nuevo aquí
 
       // 4. Marcar configuración inicial como completada
       const configDocRef = doc( db, "clients", clientId );
@@ -928,7 +942,7 @@ const InitialSetupSteps = () => {
               {/* Tipo */ }
               <div>
                 <label className="block text-gray-700 dark:text-gray-300 font-medium mb-1">
-                  Tipo
+                  Tipo { accountData.name && <span className="text-red-500">*</span> }
                 </label>
                 <div className="relative">
                   <BanknotesIcon className="h-5 w-5 text-gray-300 absolute left-2 top-1/2 -translate-y-1/2" />

@@ -1267,15 +1267,10 @@ const NewCustomerInformationForm = () => {
 
     setSubmitting( true );
     try {
-      // Usar el formId de la URL directamente sin generar un nuevo recordId
-      // Calcular pricingWithoutTax a partir de pricing
-      const pricingWithoutTax = formData.pricing
-        ? Math.round( ( formData.pricing / ( 1 + IVA_RATE ) ) * 100 ) / 100
-        : undefined;
-
+      // pricing = total con IVA, pricingWithoutTax = subtotal sin IVA
+      // Ambos valores ya están correctamente calculados en formData por la calculadora de unidades
       const dataToSubmit = {
         ...formData,
-        pricingWithoutTax,
         recordId: formId, // Usar el formId de la URL como recordId
       } as NewCustomerInfo;
 
