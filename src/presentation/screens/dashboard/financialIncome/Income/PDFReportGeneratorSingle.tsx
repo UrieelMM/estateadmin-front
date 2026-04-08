@@ -21,7 +21,7 @@ export interface PaymentRecord {
 
 export interface PDFReportGeneratorSingleProps {
   year: string;
-  condominium: { number: string; name: string; };
+  condominium: { number: string; name: string; tower?: string };
   // Estructura: { '2025-01': [PaymentRecord, ...], '2025-02': [...], ... }
   detailed: Record<string, PaymentRecord[]>;
   // Estructura por concepto: { "Mantenimiento": { '2025-01': [PaymentRecord...], '2025-02': [...], ...}, ... }
@@ -175,8 +175,9 @@ const PDFReportGeneratorSingle: React.FC<PDFReportGeneratorSingleProps> = ( {
     doc.setFont( "helvetica", "bold" );
     doc.text( "Condómino:", 14, yPos );
     doc.setFont( "helvetica", "normal" );
+    const towerInfo = condominium.tower ? ` - ${condominium.tower}` : "";
     doc.text(
-      `${ condominium.number } - ${ condominium.name }`,
+      `${ condominium.number }${towerInfo} - ${ condominium.name }`,
       14 + doc.getTextWidth( "Condómino:" ) + 4,
       yPos
     );

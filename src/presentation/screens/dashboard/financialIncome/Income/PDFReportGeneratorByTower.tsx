@@ -720,8 +720,9 @@ const PDFReportGeneratorByTower: React.FC<PDFReportGeneratorByTowerProps> = ({
         ]);
         doc.setFontSize(12);
         doc.setFont("helvetica", "bold");
+        const towerInfo = cond.tower ? ` - ${cond.tower}` : "";
         doc.text(
-          `Detalle del Condomino: ${cond.number}${
+          `Detalle del Condomino: ${cond.number}${towerInfo}${
             cond.name ? " - " + cond.name : ""
           }`,
           14,

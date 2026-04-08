@@ -364,10 +364,7 @@ const PDFReportMaintenanceByTower: React.FC<PDFReportMaintenanceByTowerProps> = 
               groupedLines.set( key, [] );
             }
 
-            const netAmount =
-              Number( record.amountPaid || 0 ) +
-              Math.max( 0, Number( record.creditBalance || 0 ) ) -
-              Math.max( 0, Number( record.creditUsed || 0 ) );
+            const netAmount = Number( record.amountPaid || 0 );
 
             groupedLines.get( key )!.push( {
               date: String( record.paymentDate || "" ),
@@ -491,8 +488,9 @@ const PDFReportMaintenanceByTower: React.FC<PDFReportMaintenanceByTowerProps> = 
     );
     const row = [];
     // Columna A: Nombre y Número de Condomino
+    const towerInfo = cond.tower ? ` - ${cond.tower}` : "";
     row.push( {
-      content: `${ cond.number }`,
+      content: `${ cond.number }${towerInfo}`,
       styles: { fontStyle: "bold" },
     } );
     let totalPendingForCondo = 0;
@@ -513,15 +511,7 @@ const PDFReportMaintenanceByTower: React.FC<PDFReportMaintenanceByTowerProps> = 
         0
       );
       const monthPaid = monthRecords.reduce( ( sum, rec ) => sum + rec.amountPaid, 0 );
-      const monthCreditGenerated = monthRecords.reduce(
-        ( sum, rec ) => sum + Math.max( 0, rec.creditBalance || 0 ),
-        0
-      );
-      const monthCreditUsed = monthRecords.reduce(
-        ( sum, rec ) => sum + ( rec.creditUsed || 0 ),
-        0
-      );
-      const paidFromChargeSummary = monthPaid + monthCreditGenerated - monthCreditUsed;
+      const paidFromChargeSummary = monthPaid;
       const paidSum =
         relevantMappedLines.length > 0 ? paidFromLines : paidFromChargeSummary;
       const pendingSum = monthRecords.reduce(

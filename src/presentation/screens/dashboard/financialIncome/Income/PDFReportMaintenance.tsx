@@ -76,6 +76,7 @@ async function getBase64FromUrl( url: string ): Promise<string> {
 interface Condominium {
   number: string;
   name?: string;
+  tower?: string;
 }
 
 export interface PDFReportGeneratorProps {
@@ -121,6 +122,7 @@ const PDFReportGeneratorMaintenance: React.FC<PDFReportGeneratorProps> = ( {
   const allCondominiums: Condominium[] = condominiumsUsers.map( ( user ) => ( {
     number: String( user.number ),
     name: user.name,
+    tower: user.tower,
   } ) );
 
   const reportConcept = concept ? concept : "Cuota de mantenimiento";
@@ -216,10 +218,7 @@ const PDFReportGeneratorMaintenance: React.FC<PDFReportGeneratorProps> = ( {
               groupedLines.set( key, [] );
             }
 
-            const netAmount =
-              Number( record.amountPaid || 0 ) +
-              Math.max( 0, Number( record.creditBalance || 0 ) ) -
-              Math.max( 0, Number( record.creditUsed || 0 ) );
+            const netAmount = Number( record.amountPaid || 0 );
 
             groupedLines.get( key )!.push( {
               date: String( record.paymentDate || "" ),
@@ -343,8 +342,9 @@ const PDFReportGeneratorMaintenance: React.FC<PDFReportGeneratorProps> = ( {
     );
     const row = [];
     // Columna A: Nombre y Número de Condomino
+    const towerInfo = cond.tower ? ` - ${cond.tower}` : "";
     row.push( {
-      content: `${ cond.number }`,
+      content: `${ cond.number }${towerInfo}`,
       styles: { fontStyle: "bold" },
     } );
     let totalPendingForCondo = 0;
@@ -365,15 +365,7 @@ const PDFReportGeneratorMaintenance: React.FC<PDFReportGeneratorProps> = ( {
         0
       );
       const monthPaid = monthRecords.reduce( ( sum, rec ) => sum + rec.amountPaid, 0 );
-      const monthCreditGenerated = monthRecords.reduce(
-        ( sum, rec ) => sum + Math.max( 0, rec.creditBalance || 0 ),
-        0
-      );
-      const monthCreditUsed = monthRecords.reduce(
-        ( sum, rec ) => sum + ( rec.creditUsed || 0 ),
-        0
-      );
-      const paidFromChargeSummary = monthPaid + monthCreditGenerated - monthCreditUsed;
+      const paidFromChargeSummary = monthPaid;
       const paidSum =
         relevantMappedLines.length > 0 ? paidFromLines : paidFromChargeSummary;
       const pendingSum = monthRecords.reduce(
@@ -451,14 +443,19 @@ const PDFReportGeneratorMaintenance: React.FC<PDFReportGeneratorProps> = ( {
 
     // --- Encabezado del reporte ---
     if ( logoBase64 ) {
-      doc.addImage(
-        logoBase64,
-        "PNG",
-        doc.internal.pageSize.getWidth() - 50,
-        10,
-        30,
-        30
-      );
+      try {
+        const isJpeg = typeof logoBase64 === "string" && (logoBase64.includes("image/jpeg") || logoBase64.includes("image/jpg"));
+        doc.addImage(
+          logoBase64,
+          isJpeg ? "JPEG" : "PNG",
+          doc.internal.pageSize.getWidth() - 50,
+          10,
+          30,
+          30
+        );
+      } catch (error) {
+        console.error("Error al cargar el logo:", error);
+      }
     }
     doc.setFontSize( 14 );
     doc.text( `Reporte de Ingresos - ${ reportConcept }`, 14, 20 );

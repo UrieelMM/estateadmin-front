@@ -9,6 +9,7 @@ import {
 import { useSignaturesStore } from "../../../../../store/useSignaturesStore";
 import { DocumentChartBarIcon } from "@heroicons/react/16/solid";
 import toast from "react-hot-toast";
+import useUserStore from "../../../../../store/UserDataStore";
 
 /**
  * Pequeño mapeo de "01" -> "Enero", etc.
@@ -51,6 +52,9 @@ const MorosidadPDFReport: React.FC = () => {
 
   // Obtenemos la firma optimizada del store de firmas
   const { signatureBase64, ensureSignaturesLoaded } = useSignaturesStore();
+
+  // Obtenemos la lista de usuarios para sacar el nombre de la torre
+  const condominiumsUsers = useUserStore( ( state ) => state.condominiumsUsers );
 
   // Estados para controlar la carga de datos
   const [ historicalDataLoaded, setHistoricalDataLoaded ] = useState( false );
@@ -198,6 +202,10 @@ const MorosidadPDFReport: React.FC = () => {
         );
         grandTotal += userDebt;
 
+        // Buscar torre del usuario
+        const userProfile = condominiumsUsers.find((condo) => String(condo.number) === user);
+        const towerInfo = userProfile?.tower ? ` - ${userProfile.tower}` : "";
+
         // Título: "Usuario #101"
         doc.setFontSize( 12 );
         doc.setFont( "helvetica", "bold" );
@@ -206,7 +214,7 @@ const MorosidadPDFReport: React.FC = () => {
           currentY += 5;
         }
         doc.text(
-          `Condómino #${ user } - Total: ${ formatCurrency( userDebt ) }`,
+          `Condómino #${ user }${towerInfo} - Total: ${ formatCurrency( userDebt ) }`,
           14,
           currentY
         );

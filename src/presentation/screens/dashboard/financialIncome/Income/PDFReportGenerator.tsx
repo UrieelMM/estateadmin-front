@@ -13,6 +13,7 @@ import useUserStore from "../../../../../store/UserDataStore";
 interface Condominium {
   number: string;
   name?: string;
+  tower?: string;
 }
 
 export interface PDFReportGeneratorProps {
@@ -140,6 +141,7 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({
   const allCondominiums: Condominium[] = condominiumsUsers.map((user) => ({
     number: String(user.number),
     name: user.name,
+    tower: user.tower,
   }));
 
   // Si se pasa un concepto, obtener la data correspondiente del store
@@ -214,7 +216,14 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({
     const saldoActualConsolidado = saldoInicialHistorico + flujoNetoPeriodo;
 
     // --- Encabezado: Logo y Datos Generales ---
-    doc.addImage(logoBase64, "PNG", 160, 10, 30, 30);
+    if (logoBase64) {
+      try {
+        const isJpeg = typeof logoBase64 === "string" && (logoBase64.includes("image/jpeg") || logoBase64.includes("image/jpg"));
+        doc.addImage(logoBase64, isJpeg ? "JPEG" : "PNG", 160, 10, 30, 30);
+      } catch (error) {
+        console.error("Error al cargar el logo:", error);
+      }
+    }
     doc.setFontSize(14);
     if (concept) {
       doc.text(`Reporte de ingresos - Concepto: ${concept}`, 14, 20);
@@ -499,8 +508,9 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({
         ]);
         doc.setFontSize(12);
         doc.setFont("helvetica", "bold");
+        const towerInfo = cond.tower ? ` - ${cond.tower}` : "";
         doc.text(
-          `Detalle del Condomino: ${cond.number}${
+          `Detalle del Condomino: ${cond.number}${towerInfo}${
             cond.name ? " - " + cond.name : ""
           }`,
           14,
