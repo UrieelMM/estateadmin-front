@@ -16,7 +16,7 @@ const Footer = () => {
           fetchPriority="low"
         />
 
-        <ul className="grid grid-cols-2 gap-x-8 gap-y-4 mt-8 sm:grid-cols-4 sm:gap-x-12 sm:mt-14 justify-items-center">
+        <ul className="grid grid-cols-2 gap-x-8 gap-y-4 mt-8 sm:grid-cols-4 sm:gap-x-12 sm:mt-14 justify-items-center sm:text-center lg:text-left">
           <li>
             <a
               href="#features"
