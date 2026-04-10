@@ -242,6 +242,7 @@ const ContactForm = () => {
           { label: "Inicio", to: "/" },
           { label: "Contacto" },
         ]}
+        className="absolute top-0 left-0 w-full z-10 lg:w-1/2 lg:pt-8"
       />
 
       <div className="flex flex-col lg:flex-row h-screen">

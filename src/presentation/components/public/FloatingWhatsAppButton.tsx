@@ -37,7 +37,7 @@ const FloatingWhatsAppButton = () => {
     };
 
     timeoutId = window.setTimeout( triggerAttention, 2000 );
-    const intervalId = window.setInterval( triggerAttention, 18000 );
+    const intervalId = window.setInterval( triggerAttention, 60000 );
 
     return () => {
       if ( timeoutId ) window.clearTimeout( timeoutId );

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog } from "@headlessui/react";
 import {
   Bars3Icon,
@@ -8,6 +8,7 @@ import {
   BoltIcon,
   SunIcon,
   MoonIcon,
+  EnvelopeIcon,
 } from "@heroicons/react/24/solid";
 import { useLocalDarkMode } from "../../../hooks/useLocalDarkMode";
 import { Helmet } from "react-helmet-async";
@@ -34,7 +35,16 @@ const navigation = [
 
 const Hero = () => {
   const [ mobileMenuOpen, setMobileMenuOpen ] = useState( false );
+  const [ isScrolled, setIsScrolled ] = useState( false );
   const { isDarkMode, toggleDarkMode } = useLocalDarkMode();
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 20);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
   const seoCopy = getSeoExperimentCopy( "home" );
   const seoUrl = "https://estate-admin.com";
   const seoImage =
@@ -211,7 +221,13 @@ const Hero = () => {
         </script>
       </Helmet>
 
-      <header className="absolute inset-x-0 top-0 z-50">
+      <header
+        className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ${
+          isScrolled
+            ? "bg-white/90 dark:bg-gray-900/90 backdrop-blur-md shadow-sm border-b border-gray-200 dark:border-gray-800"
+            : "bg-transparent border-b border-transparent"
+        }`}
+      >
         <nav
           className="flex items-center justify-between p-6 lg:px-8"
           aria-label="Global"
@@ -355,9 +371,34 @@ const Hero = () => {
             </div>
           </Dialog.Panel>
         </Dialog>
+        {/* Menú Adicional Móvil */}
+        <div
+          className={`lg:hidden flex items-center justify-between px-6 py-3 border-t transition-colors duration-300 ${
+            isScrolled
+              ? "bg-gray-50/90 dark:bg-gray-800/90 border-gray-200 dark:border-gray-700"
+              : "bg-transparent border-transparent"
+          }`}
+        >
+          <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">Contáctanos:</span>
+          <div className="flex items-center gap-3">
+            <a
+              href="mailto:info@estate-admin.com"
+              className="flex items-center text-xs font-semibold bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300 px-3 py-1.5 rounded-md hover:bg-indigo-200 dark:hover:bg-indigo-900/70 transition-colors"
+            >
+              <EnvelopeIcon className="w-4 h-4 mr-1" />
+              Email
+            </a>
+            <a
+              href="/contacto"
+              className="text-xs font-semibold bg-indigo-600 text-white px-3 py-1.5 rounded-md hover:bg-indigo-700 transition-colors"
+            >
+              Hablemos
+            </a>
+          </div>
+        </div>
       </header>
 
-      <div className="relative px-6 pt-14 lg:px-8">
+      <div className="relative px-6 pt-32 lg:pt-20 lg:px-8">
         <div className="mx-auto max-w-[1920px] py-24 sm:py-32 lg:pt-56 lg:pb-4">
           <div className="hidden sm:mb-8 sm:flex sm:justify-center">
             <div className="relative group">

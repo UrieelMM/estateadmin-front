@@ -258,7 +258,7 @@ const PricingPage = () => {
               <CurrencyDollarIcon className="h-8 w-8 text-white opacity-80" />
               <div className="text-left">
                 <div className="text-2xl font-black text-white">
-                  Desde $599 <span className="text-base font-semibold opacity-80">/ mes</span>
+                  Desde solo $619 <span className="text-base font-semibold opacity-80">/ mes</span>
                 </div>
                 <div className="text-indigo-200 text-sm font-medium">+ IVA · Acceso completo a la plataforma incluido</div>
               </div>
