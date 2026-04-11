@@ -14,27 +14,27 @@ export default defineConfig({
           return code
             .replace(
               "FIREBASE_API_KEY",
-              JSON.stringify(process.env.VITE_FIREBASE_APIKEY)
+              JSON.stringify(process.env.VITE_FIREBASE_APIKEY),
             )
             .replace(
               "FIREBASE_AUTH_DOMAIN",
-              JSON.stringify(process.env.VITE_FIREBASE_AUTHDOMAIN)
+              JSON.stringify(process.env.VITE_FIREBASE_AUTHDOMAIN),
             )
             .replace(
               "FIREBASE_PROJECT_ID",
-              JSON.stringify(process.env.VITE_FIREBASE_PROJECTID)
+              JSON.stringify(process.env.VITE_FIREBASE_PROJECTID),
             )
             .replace(
               "FIREBASE_STORAGE_BUCKET",
-              JSON.stringify(process.env.VITE_FIREBASE_STORAGEBUCKET)
+              JSON.stringify(process.env.VITE_FIREBASE_STORAGEBUCKET),
             )
             .replace(
               "FIREBASE_MESSAGING_SENDER_ID",
-              JSON.stringify(process.env.VITE_FIREBASE_MESSAGINGSENDERID)
+              JSON.stringify(process.env.VITE_FIREBASE_MESSAGINGSENDERID),
             )
             .replace(
               "FIREBASE_APP_ID",
-              JSON.stringify(process.env.VITE_FIREBASE_APPID)
+              JSON.stringify(process.env.VITE_FIREBASE_APPID),
             );
         }
       },
@@ -53,5 +53,6 @@ export default defineConfig({
 
   build: {
     sourcemap: true,
+    target: ["chrome64", "firefox67", "safari13", "edge79"],
   },
 });

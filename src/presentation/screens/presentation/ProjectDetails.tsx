@@ -138,11 +138,14 @@ const ProjectDetails = () => {
               <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-2xl blur opacity-25 group-hover:opacity-40 transition duration-300"></div>
               <img
                 className="relative w-full rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700"
-                src={isDarkMode ? PROJECT_PREVIEW_DARK_URL : PROJECT_PREVIEW_LIGHT_URL}
+                src={
+                  isDarkMode
+                    ? PROJECT_PREVIEW_DARK_URL
+                    : PROJECT_PREVIEW_LIGHT_URL
+                }
                 alt="Panel de gestión de proyectos"
                 loading="lazy"
                 decoding="async"
-                fetchPriority="low"
               />
             </div>
           </motion.div>

@@ -12,16 +12,13 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const [isDarkMode, setIsDarkMode] = useState(false);
-  const [isThemeLoaded, setIsThemeLoaded] = useState(false);
 
   useEffect(() => {
     const auth = getAuth();
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      // Si no hay usuario, establecer tema claro por defecto
+      // Si no hay usuario (página pública/landing), no modificar el dark mode.
+      // La landing usa useLocalDarkMode con localStorage para gestionarlo.
       if (!user) {
-        setIsDarkMode(false);
-        document.documentElement.classList.remove("dark");
-        setIsThemeLoaded(true);
         return;
       }
 
@@ -31,10 +28,8 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
         const clientId = tokenResult.claims["clientId"];
 
         if (!clientId) {
-          // Si no hay clientId, usar tema claro por defecto
           setIsDarkMode(false);
           document.documentElement.classList.remove("dark");
-          setIsThemeLoaded(true);
           return;
         }
 
@@ -75,9 +70,6 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
         setIsDarkMode(false);
         document.documentElement.classList.remove("dark");
       }
-
-      // Marcar como cargado después del timeout
-      setTimeout(() => setIsThemeLoaded(true), 100);
     });
 
     return () => unsubscribe();
@@ -116,11 +108,6 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
       document.documentElement.classList.toggle("dark", !newTheme);
     }
   };
-
-  // No renderizar hasta que el tema esté listo
-  if (!isThemeLoaded) {
-    return null; // O un componente de carga
-  }
 
   return (
     <ThemeContext.Provider value={{ isDarkMode, toggleDarkMode }}>

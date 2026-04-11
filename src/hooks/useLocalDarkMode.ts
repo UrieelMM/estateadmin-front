@@ -3,6 +3,33 @@ import { useState, useEffect } from "react";
 const DARK_MODE_KEY = "estateadmin-dark-mode";
 const DARK_MODE_EVENT = "estateadmin-dark-mode-change";
 
+const safeStorage = {
+  getItem: (key: string): string | null => {
+    try {
+      return localStorage.getItem(key);
+    } catch {
+      return null;
+    }
+  },
+  setItem: (key: string, value: string): void => {
+    try {
+      localStorage.setItem(key, value);
+    } catch {
+      // silently fail in restricted environments (e.g. Facebook IAB)
+    }
+  },
+};
+
+const safeMatchMedia = (query: string): boolean => {
+  try {
+    return typeof window !== "undefined" && window.matchMedia
+      ? window.matchMedia(query).matches
+      : false;
+  } catch {
+    return false;
+  }
+};
+
 /**
  * Hook personalizado para manejar el dark mode en localStorage
  * Diseñado para páginas públicas que no requieren autenticación
@@ -10,12 +37,12 @@ const DARK_MODE_EVENT = "estateadmin-dark-mode-change";
 export const useLocalDarkMode = () => {
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
     // Leer el estado inicial desde localStorage
-    const savedMode = localStorage.getItem(DARK_MODE_KEY);
+    const savedMode = safeStorage.getItem(DARK_MODE_KEY);
     if (savedMode !== null) {
       return savedMode === "true";
     }
     // Si no hay valor guardado, usar preferencia del sistema
-    return window.matchMedia("(prefers-color-scheme: light)").matches;
+    return safeMatchMedia("(prefers-color-scheme: light)");
   });
 
   useEffect(() => {
@@ -27,12 +54,16 @@ export const useLocalDarkMode = () => {
     }
 
     // Guardar en localStorage
-    localStorage.setItem(DARK_MODE_KEY, isDarkMode.toString());
+    safeStorage.setItem(DARK_MODE_KEY, isDarkMode.toString());
 
     // Sincronizar otras instancias del hook en la misma pestaña
-    window.dispatchEvent(
-      new CustomEvent(DARK_MODE_EVENT, { detail: { isDarkMode } })
-    );
+    try {
+      window.dispatchEvent(
+        new CustomEvent(DARK_MODE_EVENT, { detail: { isDarkMode } }),
+      );
+    } catch {
+      // silently fail in environments that don't support CustomEvent
+    }
   }, [isDarkMode]);
 
   useEffect(() => {

@@ -99,7 +99,6 @@ const DataControl = () => {
                 alt="Control de datos"
                 loading="lazy"
                 decoding="async"
-                fetchPriority="low"
               />
               <div className="absolute -bottom-10 -left-16 rounded-lg">
                 <div className="bg-indigo-600 rounded-lg">

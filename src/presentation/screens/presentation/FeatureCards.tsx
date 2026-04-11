@@ -225,11 +225,14 @@ const FeatureCards = () => {
               <div className="absolute -inset-1 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl blur opacity-25 group-hover:opacity-40 transition duration-300"></div>
               <img
                 className="relative w-full rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700"
-                src={isDarkMode ? FEATURE_PREVIEW_DARK_URL : FEATURE_PREVIEW_LIGHT_URL}
+                src={
+                  isDarkMode
+                    ? FEATURE_PREVIEW_DARK_URL
+                    : FEATURE_PREVIEW_LIGHT_URL
+                }
                 alt="Panel de administración del sistema de gestión de condominios"
                 loading="lazy"
                 decoding="async"
-                fetchPriority="low"
               />
             </div>
           </motion.div>

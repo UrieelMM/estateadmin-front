@@ -125,7 +125,6 @@ const AboutUs = () => {
               alt="EstateAdmin Logo"
               loading="eager"
               decoding="async"
-              fetchPriority="high"
             />
             <span className="ml-3 text-xl font-bold text-indigo-600 dark:text-indigo-400">
               EstateAdmin
@@ -212,7 +211,6 @@ const AboutUs = () => {
                   className="rounded-xl shadow-xl w-full h-auto object-cover"
                   loading="lazy"
                   decoding="async"
-                  fetchPriority="low"
                 />
               </motion.div>
               <motion.div
@@ -260,7 +258,6 @@ const AboutUs = () => {
                   className="rounded-xl shadow-xl w-full h-auto object-cover"
                   loading="lazy"
                   decoding="async"
-                  fetchPriority="low"
                 />
               </motion.div>
               <motion.div variants={itemVariants} className="mt-10 lg:mt-0">
@@ -311,7 +308,6 @@ const AboutUs = () => {
                   className="rounded-xl shadow-xl w-full h-auto object-cover"
                   loading="lazy"
                   decoding="async"
-                  fetchPriority="low"
                 />
               </motion.div>
               <motion.div

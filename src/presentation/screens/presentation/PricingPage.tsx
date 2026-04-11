@@ -185,7 +185,6 @@ const PricingPage = () => {
               alt="EstateAdmin Logo"
               loading="eager"
               decoding="async"
-              fetchPriority="high"
             />
             <span className="text-lg font-bold text-indigo-600 dark:text-indigo-400 hidden sm:inline">
               EstateAdmin

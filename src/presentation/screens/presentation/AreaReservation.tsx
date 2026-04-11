@@ -46,7 +46,6 @@ const AreaReservation = () => {
               alt="Reserva de áreas comunes"
               loading="lazy"
               decoding="async"
-              fetchPriority="low"
             />
           </motion.div>
 

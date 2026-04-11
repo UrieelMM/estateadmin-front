@@ -455,7 +455,6 @@ const ContactForm = () => {
               alt="Imagen de contacto"
               loading="eager"
               decoding="async"
-              fetchPriority="high"
             />
           </div>
         </motion.div>

@@ -2,36 +2,37 @@
 import { useEffect, useState } from "react";
 import { getToken, onMessage } from "firebase/messaging";
 import { messaging } from "../../../../firebase/firebase";
+import { getAuth } from "firebase/auth";
 import useAuthStore from "../../../../store/AuthStore";
 
 const Notifications = () => {
   const { user, updateNotificationToken } = useAuthStore();
   const [fcmToken, setFcmToken] = useState<string | null>(null);
 
-  // Efecto para obtener el token FCM una sola vez
+  // Efecto para obtener el token FCM una sola vez (solo si hay usuario autenticado)
   useEffect(() => {
+    const auth = getAuth();
+    if (!auth.currentUser) return;
+
     const vapidKey = import.meta.env.VITE_FIREBASE_VAPIDKEY;
     getToken(messaging, { vapidKey })
       .then((currentToken) => {
         if (currentToken) {
           setFcmToken(currentToken);
-          // Si el usuario ya está autenticado, actualizamos el token de inmediato
           if (user) {
             updateNotificationToken(currentToken);
           }
-        } else {
-          // No se obtuvo token; es posible que el usuario no haya otorgado permiso.
         }
       })
-      .catch((err) => {
-        console.error("Error al obtener token:", err);
+      .catch(() => {
+        // silently fail - permisos no otorgados o usuario sin autenticar
       });
   }, []);
 
   // Efecto que se dispara cuando el usuario cambia o cuando ya tenemos el token
   useEffect(() => {
-    if (user && fcmToken) {
-      // Se llama a la función del store para actualizar el token en el perfil del usuario
+    const auth = getAuth();
+    if (user && fcmToken && auth.currentUser) {
       updateNotificationToken(fcmToken);
     }
   }, [user, fcmToken, updateNotificationToken]);
