@@ -9,6 +9,7 @@ import {
   BuildingOffice2Icon,
   PhotoIcon,
   ClipboardDocumentIcon,
+  WrenchScrewdriverIcon,
 } from "@heroicons/react/24/solid";
 import { toast } from "react-hot-toast";
 import {
@@ -22,6 +23,8 @@ import {
 } from "firebase/firestore";
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
 import { useFileCompression } from "../../../../../hooks/useFileCompression";
+import { useMaintenanceAppAccess } from "../../../../../hooks/useMaintenanceAppAccess";
+import MaintenanceAppUsers from "../MaintenanceAppUsers/MaintenanceAppUsers";
 
 const MAX_ADMIN_USERS = 3;
 
@@ -609,6 +612,8 @@ const AdminUsers = () => {
     toggleUserActive,
   } = useAdminUsersStore();
 
+  const { hasMaintenanceApp, loadingMaintenanceAccess } = useMaintenanceAppAccess();
+
   const [ selectedCondominium, setSelectedCondominium ] = useState( "" );
   const [ showCreateForm, setShowCreateForm ] = useState( false );
   const [ editingUser, setEditingUser ] = useState<any>( null );
@@ -735,15 +740,20 @@ const AdminUsers = () => {
   return (
     <div className="space-y-6 bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-          Usuarios Administrativos
-        </h2>
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+            Usuarios Administrativos
+          </h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            Roles: Administrador y Asistente del sistema de gestión
+          </p>
+        </div>
         { selectedCondominium && users.length < MAX_ADMIN_USERS && (
           <button
             onClick={ () => setShowCreateForm( true ) }
-            className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition-colors"
+            className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition-colors text-sm font-medium"
           >
-            Nuevo Usuario
+            + Nuevo Administrador
           </button>
         ) }
       </div>
@@ -1022,6 +1032,29 @@ const AdminUsers = () => {
           onClose={ () => setShowPasswordModal( false ) }
           password={ generatedPassword }
         />
+      ) }
+
+      { /* ── Sección App de Mantenimiento ── */ }
+      { !loadingMaintenanceAccess && hasMaintenanceApp && (
+        <>
+          <div className="border-t border-gray-200 dark:border-gray-700 my-8" />
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="h-9 w-9 bg-emerald-500 dark:bg-emerald-600 rounded-xl flex items-center justify-center">
+                <WrenchScrewdriverIcon className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                  Usuarios App de Mantenimiento
+                </h2>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Administra los usuarios que acceden a la aplicación de mantenimiento
+                </p>
+              </div>
+            </div>
+            <MaintenanceAppUsers />
+          </div>
+        </>
       ) }
     </div>
   );

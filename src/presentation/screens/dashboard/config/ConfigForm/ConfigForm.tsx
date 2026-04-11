@@ -26,7 +26,6 @@ import {
 import FinancialAccounts from "../FinancialAccounts";
 import { useTheme } from "../../../../../context/Theme/ThemeContext";
 import AdminUsers from "../AdminUsers/AdminUsers";
-import MaintenanceAppUsers from "../MaintenanceAppUsers/MaintenanceAppUsers";
 import { getAuth } from "firebase/auth";
 import { ClientInvoice } from "../../../../../store/useClientInvoicesStore";
 import useClientInvoicesStore from "../../../../../store/useClientInvoicesStore";
@@ -85,7 +84,6 @@ const ConfigForm = () => {
     fetchCondominiumConfig,
     updateConfig,
     updateCondominiumConfig,
-    hasMaintenanceApp,
     checkMaintenanceAppAccess,
   } = useConfigStore();
   const { compressFile, isCompressing: isCompressingFile } = useFileCompression();
@@ -1143,17 +1141,6 @@ const ConfigForm = () => {
           </div>
           <div className="p-6 space-y-8">
             <AdminUsers />
-
-            {/* Usuarios de App de Mantenimiento - Solo visible si hasMaintenanceApp es true */ }
-            { hasMaintenanceApp && (
-              <>
-                {/* Separador */ }
-                <div className="border-t border-gray-200 dark:border-gray-700 my-8"></div>
-
-                {/* Usuarios de App de Mantenimiento */ }
-                <MaintenanceAppUsers />
-              </>
-            ) }
           </div>
         </div>
       ) }
