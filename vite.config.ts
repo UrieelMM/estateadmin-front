@@ -53,6 +53,53 @@ export default defineConfig({
 
   build: {
     sourcemap: true,
-    target: ["chrome64", "firefox67", "safari13", "edge79"],
+    target: "es2020",
+    rollupOptions: {
+      output: {
+        manualChunks: (id: string) => {
+          if (!id.includes("node_modules")) return;
+          if (id.includes("firebase")) return "vendor-firebase";
+          if (id.includes("@sentry")) return "vendor-sentry";
+          if (
+            id.includes("echarts") ||
+            id.includes("recharts") ||
+            id.includes("chart.js") ||
+            id.includes("react-chartjs") ||
+            id.includes("echarts-for-react")
+          )
+            return "vendor-charts";
+          if (
+            id.includes("jspdf") ||
+            id.includes("jspdf-autotable") ||
+            id.includes("exceljs") ||
+            id.includes("xlsx") ||
+            id.includes("file-saver")
+          )
+            return "vendor-docs";
+          if (id.includes("framer-motion") || id.includes("/motion/"))
+            return "vendor-motion";
+          if (
+            id.includes("@headlessui") ||
+            id.includes("@heroicons") ||
+            id.includes("@heroui") ||
+            id.includes("swiper")
+          )
+            return "vendor-ui";
+          if (
+            id.includes("react-dom") ||
+            id.includes("react-router") ||
+            id.includes("react-hot-toast") ||
+            id.includes("react-helmet")
+          )
+            return "vendor-react";
+          if (
+            id.includes("zustand") ||
+            id.includes("immer") ||
+            id.includes("axios")
+          )
+            return "vendor-state";
+        },
+      },
+    },
   },
 });

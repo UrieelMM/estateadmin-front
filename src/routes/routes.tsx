@@ -1,30 +1,100 @@
-import Calendar from "../presentation/screens/dashboard/calendar/Calendar";
-import ClientConfig from "../presentation/screens/dashboard/config/ClientConfig";
-import Balance from "../presentation/screens/dashboard/financialIncome/Balance/Balance";
-import Charges from "../presentation/screens/dashboard/financialIncome/Charges/Charges";
-import Expenses from "../presentation/screens/dashboard/financialIncome/Expenses/Expenses";
-import Income from "../presentation/screens/dashboard/financialIncome/Income/Income";
-import FinancialReconciliation from "../presentation/screens/dashboard/financialIncome/Reconciliation/FinancialReconciliation";
-import DashboardHome from "../presentation/screens/dashboard/home/DashboardHome";
-import Maintenance from "../presentation/screens/dashboard/maintenance/Maintenance";
-import ParcelReception from "../presentation/screens/dashboard/parcel-reception/ParcelReception";
-import Projects from "../presentation/screens/dashboard/projects/Projects";
-import ProviderList from "../presentation/screens/dashboard/providers/ProvidersList";
-import Publications from "../presentation/screens/dashboard/publications/Publications";
-import UsersRegistration from "../presentation/screens/dashboard/users/UsersRegistration";
-import UsersScreen from "../presentation/screens/dashboard/users/UsersScreen";
-import PaymentSuccess from "../presentation/screens/dashboard/client/redirects/PaymentSuccess";
-import PaymentCancel from "../presentation/screens/dashboard/client/redirects/PaymentCancel";
-import ReceiptsAndInvoices from "../presentation/screens/dashboard/financialIncome/ReceiptsAndInvoices/ReceiptsAndInvoices";
-import PettyCash from "../presentation/screens/dashboard/financialIncome/PettyCash/PettyCash";
-import InventoryCategories from "../presentation/screens/dashboard/inventory/InventoryCategories";
-import InventoryItemDetail from "../presentation/screens/dashboard/inventory/InventoryItemDetail";
-import InventoryList from "../presentation/screens/dashboard/inventory/InventoryList";
-import InventoryMovements from "../presentation/screens/dashboard/inventory/InventoryMovements";
-import InventoryAlerts from "../presentation/screens/dashboard/inventory/InventoryAlerts";
-import CommonAreas from "../presentation/screens/dashboard/commonAreas/CommonAreas";
-import PersonalDashboard from "../presentation/screens/dashboard/PersonalAdministration/PersonalDashboard";
-import AuditTrail from "../presentation/screens/dashboard/audit/AuditTrail";
+import React from "react";
+
+const Calendar = React.lazy(
+  () => import("../presentation/screens/dashboard/calendar/Calendar"),
+);
+const ClientConfig = React.lazy(
+  () => import("../presentation/screens/dashboard/config/ClientConfig"),
+);
+const Balance = React.lazy(
+  () =>
+    import("../presentation/screens/dashboard/financialIncome/Balance/Balance"),
+);
+const Charges = React.lazy(
+  () =>
+    import("../presentation/screens/dashboard/financialIncome/Charges/Charges"),
+);
+const Expenses = React.lazy(
+  () =>
+    import("../presentation/screens/dashboard/financialIncome/Expenses/Expenses"),
+);
+const Income = React.lazy(
+  () =>
+    import("../presentation/screens/dashboard/financialIncome/Income/Income"),
+);
+const FinancialReconciliation = React.lazy(
+  () =>
+    import("../presentation/screens/dashboard/financialIncome/Reconciliation/FinancialReconciliation"),
+);
+const DashboardHome = React.lazy(
+  () => import("../presentation/screens/dashboard/home/DashboardHome"),
+);
+const Maintenance = React.lazy(
+  () => import("../presentation/screens/dashboard/maintenance/Maintenance"),
+);
+const ParcelReception = React.lazy(
+  () =>
+    import("../presentation/screens/dashboard/parcel-reception/ParcelReception"),
+);
+const Projects = React.lazy(
+  () => import("../presentation/screens/dashboard/projects/Projects"),
+);
+const ProviderList = React.lazy(
+  () => import("../presentation/screens/dashboard/providers/ProvidersList"),
+);
+const Publications = React.lazy(
+  () => import("../presentation/screens/dashboard/publications/Publications"),
+);
+const UsersRegistration = React.lazy(
+  () => import("../presentation/screens/dashboard/users/UsersRegistration"),
+);
+const UsersScreen = React.lazy(
+  () => import("../presentation/screens/dashboard/users/UsersScreen"),
+);
+const PaymentSuccess = React.lazy(
+  () =>
+    import("../presentation/screens/dashboard/client/redirects/PaymentSuccess"),
+);
+const PaymentCancel = React.lazy(
+  () =>
+    import("../presentation/screens/dashboard/client/redirects/PaymentCancel"),
+);
+const ReceiptsAndInvoices = React.lazy(
+  () =>
+    import("../presentation/screens/dashboard/financialIncome/ReceiptsAndInvoices/ReceiptsAndInvoices"),
+);
+const PettyCash = React.lazy(
+  () =>
+    import("../presentation/screens/dashboard/financialIncome/PettyCash/PettyCash"),
+);
+const InventoryCategories = React.lazy(
+  () =>
+    import("../presentation/screens/dashboard/inventory/InventoryCategories"),
+);
+const InventoryItemDetail = React.lazy(
+  () =>
+    import("../presentation/screens/dashboard/inventory/InventoryItemDetail"),
+);
+const InventoryList = React.lazy(
+  () => import("../presentation/screens/dashboard/inventory/InventoryList"),
+);
+const InventoryMovements = React.lazy(
+  () =>
+    import("../presentation/screens/dashboard/inventory/InventoryMovements"),
+);
+const InventoryAlerts = React.lazy(
+  () => import("../presentation/screens/dashboard/inventory/InventoryAlerts"),
+);
+const CommonAreas = React.lazy(
+  () => import("../presentation/screens/dashboard/commonAreas/CommonAreas"),
+);
+const PersonalDashboard = React.lazy(
+  () =>
+    import("../presentation/screens/dashboard/PersonalAdministration/PersonalDashboard"),
+);
+const AuditTrail = React.lazy(
+  () => import("../presentation/screens/dashboard/audit/AuditTrail"),
+);
 
 export const routesApp = [
   {

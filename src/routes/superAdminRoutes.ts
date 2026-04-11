@@ -1,11 +1,28 @@
 import React from "react";
-import BillingManagement from "../presentation/screens/superAdmin/BillingManagement";
-import ClientsManagement from "../presentation/screens/superAdmin/ClientsManagement";
-import SuperAdminDashboard from "../presentation/screens/superAdmin/SuperAdminDashboard";
-import NewsAndGuides from "../presentation/screens/superAdmin/NewsAndGuides";
-import { NewCustomerFormManager } from "../presentation/screens/superAdmin/newCustomerInformationForm";
-import EmailManagement from "../presentation/screens/superAdmin/emails/EmailManagement";
-import SupportTicketsManagement from "../presentation/screens/superAdmin/SupportTicketsManagement";
+
+const BillingManagement = React.lazy(
+  () => import("../presentation/screens/superAdmin/BillingManagement"),
+);
+const ClientsManagement = React.lazy(
+  () => import("../presentation/screens/superAdmin/ClientsManagement"),
+);
+const SuperAdminDashboard = React.lazy(
+  () => import("../presentation/screens/superAdmin/SuperAdminDashboard"),
+);
+const NewsAndGuides = React.lazy(
+  () => import("../presentation/screens/superAdmin/NewsAndGuides"),
+);
+const NewCustomerFormManager = React.lazy(() =>
+  import("../presentation/screens/superAdmin/newCustomerInformationForm").then(
+    (m) => ({ default: m.NewCustomerFormManager }),
+  ),
+);
+const EmailManagement = React.lazy(
+  () => import("../presentation/screens/superAdmin/emails/EmailManagement"),
+);
+const SupportTicketsManagement = React.lazy(
+  () => import("../presentation/screens/superAdmin/SupportTicketsManagement"),
+);
 
 interface Route {
   to: string;
