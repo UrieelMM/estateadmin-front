@@ -85,19 +85,6 @@ export default defineConfig({
             id.includes("swiper")
           )
             return "vendor-ui";
-          if (
-            id.includes("react-dom") ||
-            id.includes("react-router") ||
-            id.includes("react-hot-toast") ||
-            id.includes("react-helmet")
-          )
-            return "vendor-react";
-          if (
-            id.includes("zustand") ||
-            id.includes("immer") ||
-            id.includes("axios")
-          )
-            return "vendor-state";
         },
       },
     },
