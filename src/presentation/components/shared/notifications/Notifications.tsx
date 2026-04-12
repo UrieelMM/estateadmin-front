@@ -12,7 +12,7 @@ const Notifications = () => {
   // Efecto para obtener el token FCM una sola vez (solo si hay usuario autenticado)
   useEffect(() => {
     const auth = getAuth();
-    if (!auth.currentUser) return;
+    if (!auth.currentUser || !messaging) return;
 
     const vapidKey = import.meta.env.VITE_FIREBASE_VAPIDKEY;
     getToken(messaging, { vapidKey })
@@ -37,8 +37,9 @@ const Notifications = () => {
     }
   }, [user, fcmToken, updateNotificationToken]);
 
-  // Escucha mensajes en primer plano
+  // Escucha mensajes en primer plano (solo si messaging está disponible)
   useEffect(() => {
+    if (!messaging) return;
     const unsubscribe = onMessage(messaging, (_payload) => {
       // Aquí puedes agregar lógica para mostrar la notificación en la UI si lo deseas
     });
