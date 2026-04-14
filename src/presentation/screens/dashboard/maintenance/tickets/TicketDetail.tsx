@@ -29,23 +29,117 @@ const TicketDetail: React.FC = () => {
 
     // Primero buscar en empleados
     const employee = employees.find(
-      (emp: PersonalProfile) => emp.id === assignedTo
+      (emp: PersonalProfile) => emp.id === assignedTo,
     );
 
     if (employee) {
-      return `${employee.personalInfo.firstName} ${employee.personalInfo.lastName}`;
+      const fullName =
+        `${employee.personalInfo.firstName} ${employee.personalInfo.lastName}`.trim();
+      const email = employee.personalInfo.email || "";
+      return email ? `${fullName} (${email})` : fullName;
     }
 
     // Si no es un empleado, buscar en proveedores
     const provider = providers.find((prov) => prov.id === assignedTo);
 
     if (provider) {
-      return `${provider.name} (Proveedor)`;
+      return provider.email
+        ? `${provider.name} (${provider.email})`
+        : `${provider.name} (Proveedor)`;
     }
 
     // Si no se encuentra ni como empleado ni como proveedor, mostrar el valor original
     // (podría ser un email o nombre ya formateado)
     return assignedTo;
+  };
+
+  const formatAssignedHistoryComment = (item: any) => {
+    if (item.action !== "assigned") {
+      return item.comment;
+    }
+
+    const extractAssignedIdFromComment = (comment: string) => {
+      const initialMatch = comment.match(/Asignado inicialmente a:\s*(.+)$/i);
+      if (initialMatch?.[1]) return initialMatch[1].trim();
+
+      const assignedMatch = comment.match(/Ticket asignado a\s*(.+)$/i);
+      if (assignedMatch?.[1]) return assignedMatch[1].trim();
+
+      const genericMatch = comment.match(/Asignado a:\s*(.+)$/i);
+      if (genericMatch?.[1]) return genericMatch[1].trim();
+
+      return "";
+    };
+
+    const rawAssignee =
+      typeof item.newValue === "string" && item.newValue
+        ? item.newValue
+        : extractAssignedIdFromComment(item.comment || "");
+
+    const displayAssignee = rawAssignee
+      ? getAssignedEmployeeName(rawAssignee)
+      : "No asignado";
+
+    if (item.comment?.includes("Asignado inicialmente a:")) {
+      return `Asignado inicialmente a: ${displayAssignee}`;
+    }
+
+    if (item.comment?.includes("Ticket asignado a")) {
+      return `Ticket asignado a ${displayAssignee}`;
+    }
+
+    return `Asignado a: ${displayAssignee}`;
+  };
+
+  const isEvidenceVideo = (url: string): boolean => {
+    let normalized = url.toLowerCase();
+    try {
+      normalized = decodeURIComponent(url).toLowerCase();
+    } catch {
+      normalized = url.toLowerCase();
+    }
+    return (
+      normalized.includes(".mp4") ||
+      normalized.includes(".mov") ||
+      normalized.includes(".webm") ||
+      normalized.includes(".m4v") ||
+      normalized.includes(".avi") ||
+      normalized.includes(".mkv") ||
+      normalized.includes("video")
+    );
+  };
+
+  const isImageUrl = (url: string): boolean => {
+    const normalized = url.toLowerCase();
+    return (
+      normalized.includes(".jpg") ||
+      normalized.includes(".jpeg") ||
+      normalized.includes(".png") ||
+      normalized.includes(".gif") ||
+      normalized.includes(".webp") ||
+      normalized.includes(".heic") ||
+      normalized.includes("image")
+    );
+  };
+
+  const getFileNameFromUrl = (url: string, fallback: string): string => {
+    if (url.includes("/o/")) {
+      const encodedPath = url.split("/o/")[1]?.split("?")[0] || "";
+      try {
+        const decodedPath = decodeURIComponent(encodedPath);
+        return decodedPath.split("/").pop() || fallback;
+      } catch {
+        return encodedPath.split("/").pop() || fallback;
+      }
+    }
+
+    const rawName = url.split("/").pop()?.split("?")[0] || fallback;
+    try {
+      const decoded = decodeURIComponent(rawName);
+      return decoded.split("/").pop() || decoded;
+    } catch {
+      return rawName;
+    }
   };
 
   // Cargar empleados y proveedores al montar el componente
@@ -92,7 +186,7 @@ const TicketDetail: React.FC = () => {
           if (mergedTicket.history && mergedTicket.history.length > 0) {
             console.log(
               `Añadiendo historial del ticket fusionado ${mergedId}:`,
-              mergedTicket.history
+              mergedTicket.history,
             );
             mergedHistory = mergedHistory.concat(mergedTicket.history);
           }
@@ -105,10 +199,11 @@ const TicketDetail: React.FC = () => {
 
     // Asegurarse de que todas las fechas sean objetos Date para ordenar correctamente
     mergedHistory = mergedHistory.map((item) => {
+      const normalizedComment = formatAssignedHistoryComment(item);
       if (typeof item.date === "string") {
-        return { ...item, date: new Date(item.date) };
+        return { ...item, comment: normalizedComment, date: new Date(item.date) };
       }
-      return item;
+      return { ...item, comment: normalizedComment };
     });
 
     // Ordenar por fecha
@@ -239,7 +334,7 @@ const TicketDetail: React.FC = () => {
     }
   }, [activeTicket?.history]);
   const [status, setStatus] = useState<Ticket["status"]>(
-    activeTicket?.status || "abierto"
+    activeTicket?.status || "abierto",
   );
 
   // Sincronizar el estado local con el ticket activo
@@ -345,7 +440,7 @@ const TicketDetail: React.FC = () => {
   }
 
   const handleStatusChange = async (
-    e: React.ChangeEvent<HTMLSelectElement>
+    e: React.ChangeEvent<HTMLSelectElement>,
   ) => {
     const newStatus = e.target.value as Ticket["status"];
     setStatus(newStatus);
@@ -521,56 +616,144 @@ const TicketDetail: React.FC = () => {
                     Archivos adjuntos ({activeTicket.attachments.length})
                   </h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {activeTicket.attachments.map((url, idx) => (
-                      <motion.a
-                        key={idx}
-                        whileHover={{ scale: 1.03 }}
-                        whileTap={{ scale: 0.98 }}
-                        href={url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-indigo-600 dark:text-indigo-300 text-sm font-medium hover:border-indigo-300 dark:hover:border-indigo-500 hover:shadow-md"
-                      >
-                        <div className="bg-indigo-100 dark:bg-indigo-900/50 p-2 rounded-lg mr-3">
-                          <svg
-                            className="w-5 h-5"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                            xmlns="http://www.w3.org/2000/svg"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth="2"
-                              d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
-                            ></path>
-                          </svg>
-                        </div>
-                        <div className="flex-1 truncate">
-                          <div className="text-gray-700 dark:text-gray-300 font-medium">
-                            Archivo {idx + 1}
-                          </div>
-                          <div className="text-gray-500 dark:text-gray-400 text-xs truncate">
-                            {url.split("/").pop()}
-                          </div>
-                        </div>
-                        <svg
-                          className="w-4 h-4 ml-2 text-gray-400 dark:text-gray-500"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                          xmlns="http://www.w3.org/2000/svg"
+                    {activeTicket.attachments.map((url, idx) => {
+                      const isVideo = isEvidenceVideo(url);
+                      const isImage = isImageUrl(url);
+                      const fileName = getFileNameFromUrl(
+                        url,
+                        `Archivo ${idx + 1}`,
+                      );
+
+                      return (
+                        <motion.div
+                          key={idx}
+                          whileHover={{ scale: 1.01 }}
+                          className="p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl"
                         >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                          ></path>
-                        </svg>
-                      </motion.a>
-                    ))}
+                          {isVideo ? (
+                            <video
+                              src={url}
+                              controls
+                              preload="metadata"
+                              className="w-full h-44 rounded-lg bg-black"
+                            />
+                          ) : isImage ? (
+                            <a
+                              href={url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="block"
+                            >
+                              <img
+                                src={url}
+                                alt={`Adjunto ${idx + 1}`}
+                                loading="lazy"
+                                className="w-full h-44 object-cover rounded-lg"
+                              />
+                            </a>
+                          ) : (
+                            <a
+                              href={url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="w-full h-44 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center"
+                            >
+                              <svg
+                                className="w-10 h-10 text-indigo-500 dark:text-indigo-300"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                                xmlns="http://www.w3.org/2000/svg"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth="2"
+                                  d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
+                                ></path>
+                              </svg>
+                            </a>
+                          )}
+
+                          <a
+                            href={url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="mt-2 block text-sm text-indigo-600 dark:text-indigo-300 truncate hover:underline"
+                            title={url}
+                          >
+                            {fileName}
+                          </a>
+                        </motion.div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+            {activeTicket.evidenceUrls &&
+              activeTicket.evidenceUrls.length > 0 && (
+                <div className="mt-6">
+                  <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 flex items-center">
+                    <svg
+                      className="w-4 h-4 mr-1.5 text-indigo-500 dark:text-indigo-400"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"
+                      ></path>
+                    </svg>
+                    Evidencias del personal de mantenimiento (
+                    {activeTicket.evidenceUrls.length})
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {activeTicket.evidenceUrls.map((url, idx) => {
+                      const isVideo = isEvidenceVideo(url);
+                      return (
+                        <div
+                          key={idx}
+                          className="p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl"
+                        >
+                          {isVideo ? (
+                            <video
+                              src={url}
+                              controls
+                              preload="metadata"
+                              className="w-full h-44 rounded-lg bg-black"
+                            />
+                          ) : (
+                            <a
+                              href={url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="block"
+                            >
+                              <img
+                                src={url}
+                                alt={`Evidencia ${idx + 1}`}
+                                loading="lazy"
+                                className="w-full h-44 object-cover rounded-lg"
+                              />
+                            </a>
+                          )}
+                          <a
+                            href={url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="mt-2 block text-xs text-indigo-600 dark:text-indigo-300 truncate hover:underline"
+                            title={url}
+                          >
+                            Evidencia {idx + 1}
+                          </a>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}

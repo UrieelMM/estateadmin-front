@@ -82,6 +82,87 @@ service cloud.firestore {
         'updatedAt'
       ]);
     }
+    function canMaintenanceUpdateInventoryItem() {
+      let changedKeys = request.resource.data.diff(resource.data).changedKeys();
+      return isMaintenanceUser()
+             && resource.data.managedByMaintenanceApp == true
+             && request.resource.data.managedByMaintenanceApp == true
+             && !changedKeys.hasAny([
+               'category',
+               'categoryName',
+               'type',
+               'images',
+               'createdAt',
+               'createdBy',
+               'managedByMaintenanceApp'
+             ])
+             && request.resource.data.updatedAt is timestamp
+             && request.resource.data.updatedBy == request.auth.uid
+             && (!changedKeys.hasAny(['name']) || (request.resource.data.name is string && request.resource.data.name.size() > 0))
+             && (!changedKeys.hasAny(['description']) || request.resource.data.description is string)
+             && (!changedKeys.hasAny(['location']) || request.resource.data.location is string)
+             && (!changedKeys.hasAny(['supplier']) || request.resource.data.supplier is string)
+             && (!changedKeys.hasAny(['brand']) || request.resource.data.brand is string)
+             && (!changedKeys.hasAny(['model']) || request.resource.data.model is string)
+             && (!changedKeys.hasAny(['serialNumber']) || request.resource.data.serialNumber is string)
+             && (!changedKeys.hasAny(['notes']) || request.resource.data.notes is string)
+             && (!changedKeys.hasAny(['stock']) || (request.resource.data.stock is number && request.resource.data.stock >= 0))
+             && (!changedKeys.hasAny(['minStock']) || (request.resource.data.minStock is number && request.resource.data.minStock >= 0))
+             && (!changedKeys.hasAny(['price']) || request.resource.data.price == null || (request.resource.data.price is number && request.resource.data.price >= 0))
+             && (!changedKeys.hasAny(['status']) || [
+               'active',
+               'inactive',
+               'maintenance',
+               'retired',
+               'discontinued'
+             ].hasAny([request.resource.data.status]));
+    }
+    function canMaintenanceCreateInventoryMovement() {
+      return isMaintenanceUser()
+             && request.resource.data.keys().hasAll([
+               'itemId',
+               'itemName',
+               'type',
+               'createdAt',
+               'createdBy',
+               'createdByName'
+             ])
+             && request.resource.data.itemId is string
+             && request.resource.data.itemName is string
+             && request.resource.data.createdAt is timestamp
+             && request.resource.data.createdBy == request.auth.uid
+             && request.resource.data.createdByName is string
+             && [
+               'created',
+               'updated',
+               'consumed',
+               'transferred',
+               'added',
+               'removed',
+               'maintenance',
+               'status_change'
+             ].hasAny([request.resource.data.type])
+             && (!request.resource.data.keys().hasAny(['quantity']) || request.resource.data.quantity == null || request.resource.data.quantity is number)
+             && (!request.resource.data.keys().hasAny(['previousQuantity']) || request.resource.data.previousQuantity == null || request.resource.data.previousQuantity is number)
+             && (!request.resource.data.keys().hasAny(['newQuantity']) || request.resource.data.newQuantity == null || request.resource.data.newQuantity is number)
+             && (!request.resource.data.keys().hasAny(['location']) || request.resource.data.location == null || request.resource.data.location is string)
+             && (!request.resource.data.keys().hasAny(['newLocation']) || request.resource.data.newLocation == null || request.resource.data.newLocation is string)
+             && (!request.resource.data.keys().hasAny(['notes']) || request.resource.data.notes == null || request.resource.data.notes is string)
+             && (!request.resource.data.keys().hasAny(['previousStatus']) || request.resource.data.previousStatus == null || [
+               'active',
+               'inactive',
+               'maintenance',
+               'retired',
+               'discontinued'
+             ].hasAny([request.resource.data.previousStatus]))
+             && (!request.resource.data.keys().hasAny(['newStatus']) || request.resource.data.newStatus == null || [
+               'active',
+               'inactive',
+               'maintenance',
+               'retired',
+               'discontinued'
+             ].hasAny([request.resource.data.newStatus]));
+    }
     
     // ─── Colección de Links de Noticias y Guías (ahora lectura pública) ───
     match /linksNewsAndGuides/{docId} {
@@ -137,6 +218,34 @@ service cloud.firestore {
                         || (isMaintenanceUser() && belongsToClient(clientId));
           allow create: if (isAdminOrAssistant() && belongsToClient(clientId)) || isSuperAdmin();
           allow delete: if (isAdmin() && belongsToClient(clientId)) || isSuperAdmin();
+        }
+
+        // ─── Inventario ───
+        match /inventory_items/{itemId} {
+          // Lectura: admin, assistant, super-admin o mantenimiento del cliente
+          allow read: if belongsToClientOrSuperAdmin(clientId)
+                      || (isMaintenanceUser() && belongsToClient(clientId));
+          // Creación: solo admin/assistant/super-admin
+          allow create: if (isAdminOrAssistant() && belongsToClient(clientId)) || isSuperAdmin();
+          // Actualización: admin/assistant/super-admin, o mantenimiento con restricciones
+          allow update: if (isAdminOrAssistant() && belongsToClient(clientId))
+                        || isSuperAdmin()
+                        || (belongsToClient(clientId) && canMaintenanceUpdateInventoryItem());
+          // Eliminación: solo admin/super-admin
+          allow delete: if (isAdmin() && belongsToClient(clientId)) || isSuperAdmin();
+        }
+
+        // ─── Movimientos de Inventario ───
+        match /inventory_movements/{movementId} {
+          // Lectura: admin, assistant, super-admin o mantenimiento del cliente
+          allow read: if belongsToClientOrSuperAdmin(clientId)
+                      || (isMaintenanceUser() && belongsToClient(clientId));
+          // Creación: admin/assistant/super-admin o mantenimiento con payload validado
+          allow create: if (isAdminOrAssistant() && belongsToClient(clientId))
+                        || isSuperAdmin()
+                        || (belongsToClient(clientId) && canMaintenanceCreateInventoryMovement());
+          // Actualización/eliminación: solo admin/super-admin
+          allow update, delete: if (isAdmin() && belongsToClient(clientId)) || isSuperAdmin();
         }
         
         // ─── Reportes de App de Mantenimiento ───

@@ -153,7 +153,7 @@ const tagIcons = {
 const statusIcons = {
   abierto: (
     <svg
-      className="w-4 h-4 mr-1.5 text-blue-500"
+      className="w-4 h-4 mr-1.5 text-yellow-500"
       fill="none"
       stroke="currentColor"
       viewBox="0 0 24 24"
@@ -168,7 +168,7 @@ const statusIcons = {
   ),
   en_progreso: (
     <svg
-      className="w-4 h-4 mr-1.5 text-amber-500"
+      className="w-4 h-4 mr-1.5 text-blue-500"
       fill="none"
       stroke="currentColor"
       viewBox="0 0 24 24"

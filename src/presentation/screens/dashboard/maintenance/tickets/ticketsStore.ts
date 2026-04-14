@@ -3,6 +3,7 @@ import {
   getFirestore,
   collection,
   addDoc,
+  getDoc,
   getDocs,
   doc,
   updateDoc,
@@ -46,6 +47,64 @@ const formatPriority = (priority: string): string => {
     default:
       return priority.charAt(0).toUpperCase() + priority.slice(1);
   }
+};
+
+const resolveAssigneeLabel = async (
+  db: ReturnType<typeof getFirestore>,
+  clientId: string,
+  condominiumId: string,
+  assigneeId: string
+): Promise<string> => {
+  if (!assigneeId) return "";
+
+  try {
+    const employeeRef = doc(
+      db,
+      "clients",
+      clientId,
+      "condominiums",
+      condominiumId,
+      "employees",
+      assigneeId
+    );
+    const employeeSnap = await getDoc(employeeRef);
+    if (employeeSnap.exists()) {
+      const employeeData: any = employeeSnap.data();
+      const firstName = employeeData?.personalInfo?.firstName || "";
+      const lastName = employeeData?.personalInfo?.lastName || "";
+      const email = employeeData?.personalInfo?.email || "";
+      const fullName = [firstName, lastName].filter(Boolean).join(" ").trim();
+      const nameOrId = fullName || assigneeId;
+      return email ? `${nameOrId} (${email})` : nameOrId;
+    }
+  } catch (_) {
+    // Continue to next source
+  }
+
+  try {
+    const providerRef = doc(
+      db,
+      "clients",
+      clientId,
+      "condominiums",
+      condominiumId,
+      "providersList",
+      assigneeId
+    );
+    const providerSnap = await getDoc(providerRef);
+    if (providerSnap.exists()) {
+      const providerData: any = providerSnap.data();
+      const providerName = providerData?.name || assigneeId;
+      const providerEmail = providerData?.email || "";
+      return providerEmail
+        ? `${providerName} (${providerEmail})`
+        : providerName;
+    }
+  } catch (_) {
+    // Fallback to raw id
+  }
+
+  return assigneeId;
 };
 
 export type TicketHistoryAction =
@@ -93,6 +152,7 @@ export type Ticket = {
   assignedTo?: string;
   priority?: "baja" | "media" | "alta";
   attachments?: string[];
+  evidenceUrls?: string[];
   tags?: string[];
   providerId?: string;
   commonAreaId?: string;
@@ -216,6 +276,12 @@ export const useTicketsStore = create<TicketState>()((set, get) => ({
         ...(main.attachments ?? []),
         ...merged.flatMap((t) => t.attachments ?? []),
       ];
+      const mergedEvidenceUrls = Array.from(
+        new Set([
+          ...(main.evidenceUrls ?? []),
+          ...merged.flatMap((t) => t.evidenceUrls ?? []),
+        ])
+      );
       const mergedTags = Array.from(
         new Set([...(main.tags ?? []), ...merged.flatMap((t) => t.tags ?? [])])
       );
@@ -252,6 +318,7 @@ export const useTicketsStore = create<TicketState>()((set, get) => ({
       const updateData: any = {
         history: mergedHistories,
         attachments: mergedAttachments,
+        evidenceUrls: mergedEvidenceUrls,
         tags: mergedTags,
         mergedFrom,
         updatedAt: new Date(),
@@ -378,6 +445,7 @@ export const useTicketsStore = create<TicketState>()((set, get) => ({
           assignedTo: data.assignedTo,
           priority: data.priority,
           attachments: data.attachments || [],
+          evidenceUrls: data.evidenceUrls || [],
           history: data.history || [],
           mergedFrom: data.mergedFrom || [],
           area: data.area,
@@ -486,12 +554,18 @@ export const useTicketsStore = create<TicketState>()((set, get) => ({
 
       // Si hay asignado inicial
       if (ticket.assignedTo) {
+        const assignedLabel = await resolveAssigneeLabel(
+          db,
+          clientId,
+          condominiumId,
+          ticket.assignedTo
+        );
         initialHistory.push({
           date: now,
           action: "assigned",
           user: userName,
           newValue: ticket.assignedTo,
-          comment: `Asignado inicialmente a: ${ticket.assignedTo}`,
+          comment: `Asignado inicialmente a: ${assignedLabel}`,
         });
       }
 
@@ -732,13 +806,29 @@ export const useTicketsStore = create<TicketState>()((set, get) => ({
 
       // Registrar cambio de asignación
       if (data.assignedTo && data.assignedTo !== currentTicket.assignedTo) {
+        const previousAssigneeLabel = currentTicket.assignedTo
+          ? await resolveAssigneeLabel(
+              db,
+              clientId,
+              condominiumId,
+              currentTicket.assignedTo
+            )
+          : "nadie";
+
+        const newAssigneeLabel = await resolveAssigneeLabel(
+          db,
+          clientId,
+          condominiumId,
+          data.assignedTo
+        );
+
         historyUpdates.push({
           date: now,
           action: "assigned",
           user: userName,
-          previousValue: currentTicket.assignedTo || "nadie",
+          previousValue: previousAssigneeLabel,
           newValue: data.assignedTo,
-          comment: `Ticket asignado a ${data.assignedTo}`,
+          comment: `Ticket asignado a ${newAssigneeLabel}`,
         });
       }
 
@@ -1089,6 +1179,7 @@ export const useTicketsStore = create<TicketState>()((set, get) => ({
           assignedTo: data.assignedTo,
           priority: data.priority,
           attachments: data.attachments || [],
+          evidenceUrls: data.evidenceUrls || [],
           history: data.history || [],
           mergedFrom: data.mergedFrom || [],
           area: data.area,

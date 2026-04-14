@@ -69,20 +69,20 @@ export const formStyles = {
     },
     status: {
       open: {
+        bg: "#fefce8", // yellow-50
+        bgDark: "rgba(113, 63, 18, 0.2)", // yellow-900 with opacity
+        text: "#ca8a04", // yellow-600
+        textDark: "#facc15", // yellow-400
+        border: "#fef08a", // yellow-200
+        borderDark: "#854d0e", // yellow-800
+      },
+      inProgress: {
         bg: "#eff6ff", // blue-50
         bgDark: "rgba(30, 58, 138, 0.2)", // blue-900 with opacity
         text: "#2563eb", // blue-600
         textDark: "#60a5fa", // blue-400
         border: "#bfdbfe", // blue-200
         borderDark: "#1e40af", // blue-800
-      },
-      inProgress: {
-        bg: "#f5f3ff", // violet-50
-        bgDark: "rgba(76, 29, 149, 0.2)", // violet-900 with opacity
-        text: "#7c3aed", // violet-600
-        textDark: "#a78bfa", // violet-400
-        border: "#ddd6fe", // violet-200
-        borderDark: "#5b21b6", // violet-800
       },
       closed: {
         bg: "#f0fdf4", // green-50

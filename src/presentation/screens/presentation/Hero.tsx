@@ -9,6 +9,7 @@ import {
   SunIcon,
   MoonIcon,
   EnvelopeIcon,
+  DevicePhoneMobileIcon,
 } from "@heroicons/react/24/solid";
 import { useLocalDarkMode } from "../../../hooks/useLocalDarkMode";
 import { Helmet } from "react-helmet-async";
@@ -26,6 +27,7 @@ import { getSeoExperimentCopy } from "../../seo/seoExperiments";
 
 const navigation = [
   { name: "Características", href: "#features" },
+  { name: "EstateFix", href: "/app-mantenimiento" },
   { name: "¿Para quién es?", href: "/para-quien-es" },
   { name: "Precios", href: "/precios" },
   { name: "FAQ", href: "/preguntas-frecuentes" },
@@ -76,7 +78,7 @@ const Hero = () => {
       "@type": "ContactPoint",
       contactType: "customer support",
       email: "info@estate-admin.com",
-      telephone: "+52-771-195-3837",
+      telephone: "+52-5531139560",
       areaServed: "MX",
       availableLanguage: ["es"],
     },
@@ -545,6 +547,51 @@ const Hero = () => {
       <ProjectDetails />
       <AreaReservation />
       <MaintenanceTickets />
+
+      {/* ── App de Mantenimiento promo banner ── */}
+      <section className="py-12 sm:py-16 px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl">
+          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-600 via-purple-600 to-indigo-800 dark:from-indigo-700 dark:via-purple-700 dark:to-indigo-900 p-8 sm:p-10 lg:p-12">
+            <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff08_1px,transparent_1px),linear-gradient(to_bottom,#ffffff08_1px,transparent_1px)] bg-[size:20px_20px]" />
+            <div className="absolute -top-24 -right-24 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
+            <div className="absolute -bottom-16 -left-16 w-48 h-48 bg-purple-400/20 rounded-full blur-2xl" />
+            <div className="relative flex flex-col lg:flex-row items-center justify-between gap-8">
+              <div className="text-center lg:text-left max-w-2xl">
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 mb-4 rounded-full bg-white/15 text-white text-sm font-semibold">
+                  <DevicePhoneMobileIcon className="h-4 w-4" />
+                  EstateFix · App Móvil
+                </div>
+                <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white mb-3 leading-tight">
+                  <span className="text-white/90">EstateFix</span> — la app de
+                  mantenimiento para tu personal de campo
+                </h2>
+                <p className="text-white/80 text-base sm:text-lg leading-relaxed">
+                  Tu equipo técnico gestiona tickets asignados, consulta
+                  inventario y crea reportes directamente desde su celular —
+                  sincronizado en tiempo real con el dashboard del
+                  administrador.
+                </p>
+              </div>
+              <div className="flex flex-col sm:flex-row lg:flex-col gap-3 flex-shrink-0">
+                <a
+                  href="/app-mantenimiento"
+                  className="inline-flex items-center justify-center gap-2 px-7 py-3.5 text-sm font-bold bg-white text-indigo-700 rounded-xl hover:bg-gray-50 transition-all duration-300 hover:shadow-xl whitespace-nowrap"
+                >
+                  Conocer EstateFix
+                  <span aria-hidden="true">→</span>
+                </a>
+                <a
+                  href="/contacto"
+                  className="inline-flex items-center justify-center gap-2 px-7 py-3.5 text-sm font-semibold text-white/90 border border-white/30 rounded-xl hover:bg-white/10 transition-all duration-300 whitespace-nowrap"
+                >
+                  Solicitar demo
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <DataControl />
       <FeatureDetails />
       <Contact />

@@ -6,7 +6,7 @@ const TicketMetrics: React.FC = () => {
 
   const metrics = useMemo(() => {
     const total = tickets.length;
-    const abiertos = tickets.filter((t) => t.status !== "cerrado").length;
+    const abiertos = tickets.filter((t) => t.status === "abierto").length;
     const enProgreso = tickets.filter((t) => t.status === "en_progreso").length;
     const cerrados = tickets.filter((t) => t.status === "cerrado").length;
     

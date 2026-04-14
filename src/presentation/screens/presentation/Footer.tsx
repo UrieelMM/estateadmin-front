@@ -105,6 +105,16 @@ const Footer = () => {
               Guías y tutoriales
             </a>
           </li>
+
+          <li>
+            <a
+              href="/app-mantenimiento"
+              title="EstateFix - App de Mantenimiento para personal de campo"
+              className="inline-flex text-lg font-medium text-gray-900 dark:text-gray-100 transition-all duration-200 transform font-pj hover:-translate-y-1 hover:text-gray-600 dark:hover:text-gray-400"
+            >
+              EstateFix
+            </a>
+          </li>
         </ul>
 
         <div className="mt-8 sm:mt-12">

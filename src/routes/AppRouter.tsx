@@ -75,6 +75,9 @@ const GuidePage = React.lazy(() =>
     default: m.GuidePage,
   })),
 );
+const MaintenanceAppLanding = React.lazy(
+  () => import("../presentation/screens/presentation/MaintenanceAppLanding"),
+);
 
 const PageLoader = () => (
   <div className="flex items-center justify-center min-h-screen bg-white dark:bg-gray-900">
@@ -122,6 +125,12 @@ export const AppRouterPage = () => {
           {/* Rutas para guías */}
           <Route path="/guias" element={<GuidesList />} />
           <Route path="/guias/:slug" element={<GuidePage />} />
+
+          {/* App de Mantenimiento - landing page */}
+          <Route
+            path="/app-mantenimiento"
+            element={<MaintenanceAppLanding />}
+          />
 
           {/* Rutas protegidas para usuarios normales */}
           <Route element={<ProtectedRoute />}>

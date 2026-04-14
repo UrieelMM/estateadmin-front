@@ -1,4 +1,4 @@
-type SeoRouteKey = "home" | "contact" | "ai";
+type SeoRouteKey = "home" | "contact" | "ai" | "maintenance-app";
 type SeoVariant = "A" | "B";
 
 type SeoCopy = {
@@ -17,8 +17,7 @@ const SEO_EXPERIMENTS: Record<SeoRouteKey, Record<SeoVariant, SeoCopy>> = {
         "software para administracion de condominios, administracion de condominios, sistema de gestion de condominios, cuotas de mantenimiento, cobranza condominal, egresos de condominio, mantenimiento de condominios, app para administradores de condominios",
     },
     B: {
-      title:
-        "Sistema de Gestión de Condominios y Cobranza | EstateAdmin",
+      title: "Sistema de Gestión de Condominios y Cobranza | EstateAdmin",
       description:
         "Reduce morosidad y ordena la operación de tu condominio con módulos de cobranza, egresos, mantenimiento, proyectos e inventario.",
       keywords:
@@ -58,13 +57,32 @@ const SEO_EXPERIMENTS: Record<SeoRouteKey, Record<SeoVariant, SeoCopy>> = {
         "ia para administracion de condominios, analisis de cobranza con ia, reportes ejecutivos condominio, automatizacion operativa condominal",
     },
   },
+  "maintenance-app": {
+    A: {
+      title:
+        "EstateFix: App de Mantenimiento para Personal de Campo | EstateAdmin",
+      description:
+        "EstateFix es la app móvil de EstateAdmin para el personal de mantenimiento. Gestiona tickets asignados, inventario, reportes y mantenimiento programado desde cualquier lugar por $99/mes.",
+      keywords:
+        "EstateFix, app mantenimiento condominios, app personal mantenimiento, tickets mantenimiento movil, control inventario mantenimiento, reportes campo condominio, ordenes de trabajo mantenimiento, EstateAdmin mantenimiento",
+    },
+    B: {
+      title:
+        "EstateFix: App Móvil para Técnicos de Mantenimiento | EstateAdmin",
+      description:
+        "EstateFix digitaliza las operaciones de mantenimiento de tu condominio. El personal gestiona tickets, inventario y reportes desde su celular. Solo $99/mes adicional a tu plan.",
+      keywords:
+        "EstateFix app mantenimiento, app movil mantenimiento condominio, gestion tickets mantenimiento, inventario mantenimiento condominio, personal mantenimiento digital, app tecnicos mantenimiento",
+    },
+  },
 };
 
-const rawVariant =
-  (import.meta.env.VITE_SEO_VARIANT || "A").toString().trim().toUpperCase();
+const rawVariant = (import.meta.env.VITE_SEO_VARIANT || "A")
+  .toString()
+  .trim()
+  .toUpperCase();
 
-export const ACTIVE_SEO_VARIANT: SeoVariant =
-  rawVariant === "B" ? "B" : "A";
+export const ACTIVE_SEO_VARIANT: SeoVariant = rawVariant === "B" ? "B" : "A";
 
 export const getSeoExperimentCopy = (route: SeoRouteKey): SeoCopy =>
   SEO_EXPERIMENTS[route][ACTIVE_SEO_VARIANT];
