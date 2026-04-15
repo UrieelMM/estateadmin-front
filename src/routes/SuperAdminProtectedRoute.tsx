@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Navigate, Outlet } from "react-router-dom";
-import { getAuth, getIdTokenResult } from "firebase/auth";
+import { getAuth, getIdTokenResult, onAuthStateChanged } from "firebase/auth";
 import Loading from "../presentation/components/shared/loaders/Loading";
 import toast from "react-hot-toast";
 
@@ -9,22 +9,17 @@ const SuperAdminProtectedRoute = () => {
   const auth = getAuth();
 
   useEffect(() => {
-    const checkSuperAdminRole = async () => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        setIsSuperAdmin(false);
+        return;
+      }
+
       try {
-        const currentUser = auth.currentUser;
-
-        if (!currentUser) {
-          setIsSuperAdmin(false);
-          return;
-        }
-
-        // Obtener los claims personalizados del token
-        const tokenResult = await getIdTokenResult(currentUser, true);
+        const tokenResult = await getIdTokenResult(user, true);
         const role = tokenResult.claims.role;
 
-        // Verificar si tiene el rol de super-provider-admin
         const hasSuperAdminRole = role === "super-provider-admin";
-
         setIsSuperAdmin(hasSuperAdminRole);
 
         if (!hasSuperAdminRole) {
@@ -35,9 +30,9 @@ const SuperAdminProtectedRoute = () => {
         setIsSuperAdmin(false);
         toast.error("Error al verificar permisos. Redirigiendo...");
       }
-    };
+    });
 
-    checkSuperAdminRole();
+    return () => unsubscribe();
   }, [auth]);
 
   // Mientras verificamos, mostramos un loading
@@ -45,9 +40,9 @@ const SuperAdminProtectedRoute = () => {
     return <Loading />;
   }
 
-  // Si no es super admin, redireccionar
+  // Si no es super admin, redireccionar al login
   if (isSuperAdmin === false) {
-    return <Navigate to="/dashboard/home" replace />;
+    return <Navigate to="/login" replace />;
   }
 
   // Si es super admin, mostrar la ruta

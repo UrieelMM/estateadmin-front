@@ -49,9 +49,26 @@ export const useCondominiumStore = create<CondominiumStore>()((set, get) => ({
         throw new Error("Usuario no autenticado");
       }
 
-      const tokenResult = await getIdTokenResult(user);
-      const clientId = tokenResult.claims["clientId"] as string;
-      const role = tokenResult.claims["role"] as string;
+      let tokenResult = await getIdTokenResult(user);
+      let clientId = tokenResult.claims["clientId"] as string;
+      let role = tokenResult.claims["role"] as string;
+
+      if (!role) {
+        tokenResult = await getIdTokenResult(user, true);
+        clientId = tokenResult.claims["clientId"] as string;
+        role = tokenResult.claims["role"] as string;
+      }
+
+      if (role === "super-provider-admin" && !clientId) {
+        set({ isLoading: false, error: null });
+        return;
+      }
+
+      if (!clientId) {
+        tokenResult = await getIdTokenResult(user, true);
+        clientId = tokenResult.claims["clientId"] as string;
+        role = tokenResult.claims["role"] as string;
+      }
 
       if (!clientId) {
         throw new Error("clientId no disponible");
@@ -67,7 +84,7 @@ export const useCondominiumStore = create<CondominiumStore>()((set, get) => ({
       if (role === "super-provider-admin") {
         const condominiumsRef = collection(
           db,
-          `clients/${clientId}/condominiums`
+          `clients/${clientId}/condominiums`,
         );
         const snapshot = await getDocs(condominiumsRef);
 
@@ -90,7 +107,7 @@ export const useCondominiumStore = create<CondominiumStore>()((set, get) => ({
         // Para otros roles, buscar el documento del usuario para obtener condominiumUids
         const usersRef = collection(
           db,
-          `clients/${clientId}/condominiums/${condominiumId}/users`
+          `clients/${clientId}/condominiums/${condominiumId}/users`,
         );
 
         const q = query(usersRef, where("uid", "==", user.uid));
@@ -106,7 +123,7 @@ export const useCondominiumStore = create<CondominiumStore>()((set, get) => ({
         if (assignedCondominiums.length === 0) {
           // Si no hay condominios asignados, usar solo el condominio actual
           const currentCondominiumDoc = await getDoc(
-            doc(db, `clients/${clientId}/condominiums/${condominiumId}`)
+            doc(db, `clients/${clientId}/condominiums/${condominiumId}`),
           );
 
           if (currentCondominiumDoc.exists()) {
@@ -122,7 +139,7 @@ export const useCondominiumStore = create<CondominiumStore>()((set, get) => ({
           // Obtener información de cada condominio asignado
           for (const condId of assignedCondominiums) {
             const condDoc = await getDoc(
-              doc(db, `clients/${clientId}/condominiums/${condId}`)
+              doc(db, `clients/${clientId}/condominiums/${condId}`),
             );
 
             if (condDoc.exists()) {
@@ -149,7 +166,7 @@ export const useCondominiumStore = create<CondominiumStore>()((set, get) => ({
 
       if (savedCondominiumId) {
         selectedCondominium = availableCondominiums.find(
-          (c) => c.id === savedCondominiumId
+          (c) => c.id === savedCondominiumId,
         );
       }
 
