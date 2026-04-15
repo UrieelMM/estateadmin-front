@@ -29,6 +29,7 @@ interface Client {
   condominiumsCount?: number;
   businessName?: string;
   fullFiscalAddress?: string;
+  CP?: string;
   taxRegime?: string;
   businessActivity?: string;
   condominiumLimit?: number;
@@ -130,6 +131,8 @@ const ClientsManagement: React.FC = () => {
           .includes( searchQuery.toLowerCase() ) ) ||
       ( client.RFC &&
         client.RFC.toLowerCase().includes( searchQuery.toLowerCase() ) ) ||
+      ( client.CP &&
+        client.CP.toLowerCase().includes( searchQuery.toLowerCase() ) ) ||
       ( client.plan &&
         client.plan.toLowerCase().includes( searchQuery.toLowerCase() ) ) ||
       ( client.name &&
@@ -475,6 +478,9 @@ const ClientsManagement: React.FC = () => {
                         <div className="flex flex-col">
                           <div className="text-sm text-gray-900 dark:text-gray-100">
                             RFC: { client.RFC || "-" }
+                          </div>
+                          <div className="text-sm text-gray-500 dark:text-gray-400">
+                            CP: { client.CP || "-" }
                           </div>
                           <div className="text-sm text-gray-500 dark:text-gray-400">
                             País: { client.country || "-" }

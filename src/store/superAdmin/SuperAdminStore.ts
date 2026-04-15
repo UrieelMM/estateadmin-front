@@ -27,6 +27,7 @@ interface Client {
   condominiumsCount?: number;
   businessName?: string;
   fullFiscalAddress?: string;
+  CP?: string;
   taxRegime?: string;
   businessActivity?: string;
   condominiumLimit?: number;
@@ -54,6 +55,7 @@ interface NewClientData {
   phoneNumber: string;
   companyName: string;
   fullFiscalAddress: string;
+  CP: string;
   RFC: string;
   country: string;
   businessName: string;
@@ -68,13 +70,14 @@ interface NewClientData {
     name: string;
     address: string;
     status: CondominiumStatus;
+    hasMaintenanceApp?: boolean;
+    maintenanceAppContractedAt?: string | null;
   };
 
   // Campos opcionales con valores predeterminados
   photoURL?: string;
   plan: string; // Número de unidades contratadas (ej. "50")
   proFunctions?: string[];
-  hasMaintenanceApp?: boolean; // App de Mantenimiento
   cfdiUse?: string;
   serviceStartDate?: Date;
   billingFrequency?: "monthly" | "quarterly" | "biannual" | "annual";
@@ -149,6 +152,7 @@ const useSuperAdminStore = create<SuperAdminStore>()((set, _get) => ({
           // Datos adicionales
           businessName: data.businessName || "",
           fullFiscalAddress: data.fullFiscalAddress || "",
+          CP: data.CP || "",
           taxRegime: data.taxRegime || "",
           businessActivity: data.businessActivity || "",
           condominiumLimit: data.condominiumLimit || 0,

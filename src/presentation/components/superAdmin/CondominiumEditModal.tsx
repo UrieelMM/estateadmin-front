@@ -82,6 +82,19 @@ const CondominiumEditModal: React.FC<CondominiumEditModalProps> = ({
 
   const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, checked } = e.target;
+
+    if (name === "hasMaintenanceApp") {
+      updateCondominiumForm("hasMaintenanceApp", checked);
+      updateCondominiumForm(
+        "maintenanceAppContractedAt",
+        checked
+          ? currentCondominium.maintenanceAppContractedAt ||
+              new Date().toISOString()
+          : null
+      );
+      return;
+    }
+
     const currentProFunctions = currentCondominium.proFunctions || [];
 
     if (checked) {
@@ -238,6 +251,37 @@ const CondominiumEditModal: React.FC<CondominiumEditModalProps> = ({
               Rango permitido para este plan: {selectedPlanLimits.min} -{" "}
               {selectedPlanLimits.max}
             </p>
+          </div>
+
+          <div>
+            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              App de Mantenimiento
+            </h4>
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id="hasMaintenanceApp"
+                name="hasMaintenanceApp"
+                checked={currentCondominium.hasMaintenanceApp || false}
+                onChange={handleCheckboxChange}
+                className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+              />
+              <label
+                htmlFor="hasMaintenanceApp"
+                className="ml-2 text-sm text-gray-700 dark:text-gray-300"
+              >
+                Este condominio contrató la App de Mantenimiento
+              </label>
+            </div>
+            {currentCondominium.hasMaintenanceApp &&
+              currentCondominium.maintenanceAppContractedAt && (
+                <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                  Fecha de contratación registrada:{" "}
+                  {new Date(
+                    currentCondominium.maintenanceAppContractedAt
+                  ).toLocaleString("es-MX")}
+                </p>
+              )}
           </div>
 
           <div>

@@ -100,6 +100,7 @@ const ConfigForm = () => {
   const [ email, setEmail ] = useState( "" );
   const [ phoneNumber, setPhoneNumber ] = useState( "" );
   const [ address, setAddress ] = useState( "" );
+  const [ CP, setCP ] = useState( "" );
   const [ RFC, setRFC ] = useState( "" );
   const [ country, setCountry ] = useState( "" );
   const [ logoFile, setLogoFile ] = useState<File | null>( null );
@@ -145,6 +146,7 @@ const ConfigForm = () => {
       setEmail( config.email || "" );
       setPhoneNumber( config.phoneNumber || "" );
       setAddress( config.address || "" );
+      setCP( config.CP || "" );
       setRFC( config.RFC || "" );
       setCountry( config.country || "" );
       if ( config.logo ) {
@@ -219,6 +221,7 @@ const ConfigForm = () => {
           email,
           phoneNumber,
           address,
+          CP,
           RFC,
           country,
           darkMode: !!isDarkMode, // <-- Asegura que sea un boolean
@@ -521,6 +524,23 @@ const ConfigForm = () => {
                         onChange={ ( e ) => setAddress( e.target.value ) }
                         className="w-full pl-12 pr-4 py-4 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-300 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
                         placeholder="Calle, número, colonia, ciudad"
+                      />
+                    </div>
+                  </div>
+
+                  {/* RFC */ }
+                  <div className="group">
+                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                      Código Postal (CP)
+                    </label>
+                    <div className="relative">
+                      <MapPinIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 transition-colors group-focus-within:text-indigo-500" />
+                      <input
+                        type="text"
+                        value={ CP }
+                        onChange={ ( e ) => setCP( e.target.value ) }
+                        className="w-full pl-12 pr-4 py-4 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-300 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
+                        placeholder="Ej. 01234"
                       />
                     </div>
                   </div>

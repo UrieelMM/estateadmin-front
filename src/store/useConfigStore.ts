@@ -26,6 +26,7 @@ export type Config = {
   phoneNumber: string;
   address: string;
   fullFiscalAddress?: string;
+  CP?: string;
   RFC: string;
   country: string;
   businessActivity?: string;
@@ -48,6 +49,8 @@ export type CondominiumConfig = {
   createdDate: Date | null;
   proFunctions: string[];
   condominiumManager?: string;
+  hasMaintenanceApp?: boolean;
+  maintenanceAppContractedAt?: Date | null;
 };
 
 /** Información del mensaje de pago para clientes */
@@ -172,10 +175,22 @@ export const useConfigStore = create<ConfigState>()((set, get) => ({
         );
       }
 
-      // Actualizamos el state incluyendo hasMaintenanceApp
+      const condominiumDocRef = doc(
+        db,
+        "clients",
+        clientId,
+        "condominiums",
+        condominiumId
+      );
+      const condominiumDocSnap = await getDoc(condominiumDocRef);
+      const condominiumData = condominiumDocSnap.exists()
+        ? condominiumDocSnap.data()
+        : null;
+
+      // Actualizamos el state incluyendo hasMaintenanceApp por condominio
       set({ 
         config: data, 
-        hasMaintenanceApp: data.hasMaintenanceApp || false,
+        hasMaintenanceApp: Boolean(condominiumData?.hasMaintenanceApp),
         loading: false 
       });
     } catch (err: any) {
@@ -330,6 +345,14 @@ export const useConfigStore = create<ConfigState>()((set, get) => ({
               data.administrator ||
               ""
           ),
+          hasMaintenanceApp: Boolean(data.hasMaintenanceApp),
+          maintenanceAppContractedAt:
+            data.maintenanceAppContractedAt?.toDate &&
+            typeof data.maintenanceAppContractedAt.toDate === "function"
+              ? data.maintenanceAppContractedAt.toDate()
+              : data.maintenanceAppContractedAt
+              ? new Date(data.maintenanceAppContractedAt)
+              : null,
         },
         loading: false,
       });
@@ -793,7 +816,7 @@ export const useConfigStore = create<ConfigState>()((set, get) => ({
 
   /**
    * Verifica si el cliente tiene acceso a la App de Mantenimiento
-   * Lee el campo hasMaintenanceApp de clients/{clientId}
+   * Lee el campo hasMaintenanceApp de clients/{clientId}/condominiums/{condominiumId}
    */
   checkMaintenanceAppAccess: async () => {
     try {
@@ -801,18 +824,27 @@ export const useConfigStore = create<ConfigState>()((set, get) => ({
       const user = auth.currentUser;
       if (!user) return false;
 
+      const condominiumId = localStorage.getItem("condominiumId");
+      if (!condominiumId) return false;
+
       const tokenResult = await getIdTokenResult(user);
       const clientId = tokenResult.claims["clientId"] as string;
       if (!clientId) return false;
 
       const db = getFirestore();
-      const configDocRef = doc(db, "clients", clientId);
-      const configDocSnap = await getDoc(configDocRef);
+      const condominiumDocRef = doc(
+        db,
+        "clients",
+        clientId,
+        "condominiums",
+        condominiumId
+      );
+      const configDocSnap = await getDoc(condominiumDocRef);
       
       if (!configDocSnap.exists()) return false;
       
       const data = configDocSnap.data();
-      const hasAccess = data.hasMaintenanceApp || false;
+      const hasAccess = Boolean(data.hasMaintenanceApp);
       
       set({ hasMaintenanceApp: hasAccess });
       return hasAccess;

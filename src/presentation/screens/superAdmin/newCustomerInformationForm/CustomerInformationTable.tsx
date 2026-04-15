@@ -16,6 +16,7 @@ interface CustomerInfo {
   phoneNumber: string;
   companyName: string;
   fullFiscalAddress: string;
+  CP: string;
   RFC: string;
   country: string;
   businessName: string;
@@ -160,6 +161,12 @@ const CustomerInformationTable: React.FC = () => {
                     scope="col"
                     className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
                   >
+                    CP
+                  </th>
+                  <th
+                    scope="col"
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                  >
                     Unidades / Precio
                   </th>
                   <th
@@ -196,6 +203,9 @@ const CustomerInformationTable: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                       { customer.RFC }
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                      { customer.CP || "-" }
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                       <span className="font-medium">{ customer.plan ?? "—" }</span> uds.
@@ -377,6 +387,10 @@ const CustomerInformationTable: React.FC = () => {
                           <p className="text-sm text-gray-700 dark:text-gray-300">
                             <span className="font-medium">RFC:</span>{ " " }
                             { selectedCustomer.RFC }
+                          </p>
+                          <p className="text-sm text-gray-700 dark:text-gray-300">
+                            <span className="font-medium">CP:</span>{ " " }
+                            { selectedCustomer.CP || "-" }
                           </p>
                           <p className="text-sm text-gray-700 dark:text-gray-300">
                             <span className="font-medium">

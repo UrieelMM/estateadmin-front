@@ -16,6 +16,7 @@ export interface NewCustomerInfo {
   phoneNumber: string;
   companyName: string;
   fullFiscalAddress: string;
+  CP: string;
   RFC: string;
   country: string;
   businessName: string;

@@ -250,9 +250,21 @@ const SuperAdminDashboard: React.FC = () => {
         0
       );
 
-    const clientsWithMaintenanceApp = clientsData.filter(
-      (client) => client.hasMaintenanceApp
-    ).length;
+    const condominiumsWithMaintenanceApp = clientsData.reduce(
+      (total, client) => {
+        if (Array.isArray(client?.condominiums)) {
+          return (
+            total +
+            client.condominiums.filter(
+              (condominium: any) => condominium?.hasMaintenanceApp
+            ).length
+          );
+        }
+
+        return total + (client?.hasMaintenanceApp ? 1 : 0);
+      },
+      0
+    );
 
     const currentMonthBilling = invoices
       .filter((invoice) => {
@@ -292,7 +304,7 @@ const SuperAdminDashboard: React.FC = () => {
         value: formatNumber(totalCondominiums),
         icon: UsersIcon,
         color: "bg-emerald-500",
-        detail: `${formatNumber(clientsWithMaintenanceApp)} con app de mantenimiento`,
+        detail: `${formatNumber(condominiumsWithMaintenanceApp)} con app de mantenimiento`,
       },
       {
         name: "Facturación del mes",

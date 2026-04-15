@@ -376,7 +376,7 @@ const FiscalInfoStep: React.FC<StepProps> = ( {
           value={ currentData.fullFiscalAddress || "" }
           onChange={ ( e ) => updateField( "fullFiscalAddress", e.target.value ) }
           onBlur={ () => setTouched( "fullFiscalAddress", true ) }
-          placeholder="Calle, número, colonia, municipio, estado, CP"
+          placeholder="Calle, número, colonia, municipio y estado"
           className={ getFieldClass(
             !!( errors.fullFiscalAddress && touched.fullFiscalAddress )
           ) }
@@ -390,6 +390,33 @@ const FiscalInfoStep: React.FC<StepProps> = ( {
     </div>
 
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div>
+        <label
+          htmlFor="CP"
+          className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+        >
+          <span className="inline-flex items-center gap-1">
+            <MapPinIcon className="h-4 w-4 text-indigo-500" />
+            Código Postal (CP)*
+          </span>
+        </label>
+        <input
+          type="text"
+          id="CP"
+          name="CP"
+          value={ currentData.CP || "" }
+          onChange={ ( e ) => updateField( "CP", e.target.value ) }
+          onBlur={ () => setTouched( "CP", true ) }
+          placeholder="Ej. 01234"
+          className={ getFieldClass( !!( errors.CP && touched.CP ) ) }
+        />
+        { errors.CP && touched.CP && (
+          <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+            { errors.CP }
+          </p>
+        ) }
+      </div>
+
       <div>
         <label
           htmlFor="RFC"
@@ -1034,6 +1061,10 @@ const NewCustomerInformationForm = () => {
           newErrors.fullFiscalAddress = "El domicilio fiscal es obligatorio";
           isValid = false;
         }
+        if ( !formData.CP?.trim() ) {
+          newErrors.CP = "El código postal (CP) es obligatorio";
+          isValid = false;
+        }
         if ( !formData.RFC?.trim() ) {
           newErrors.RFC = "El RFC es obligatorio";
           isValid = false;
@@ -1092,7 +1123,7 @@ const NewCustomerInformationForm = () => {
       case 1:
         return [ "companyName", "businessName", "country", "businessActivity" ];
       case 2:
-        return [ "fullFiscalAddress", "RFC", "taxRegime" ];
+        return [ "fullFiscalAddress", "CP", "RFC", "taxRegime" ];
       case 3:
         return [ "responsiblePersonName", "responsiblePersonPosition" ];
       case 4:
@@ -1158,6 +1189,11 @@ const NewCustomerInformationForm = () => {
       allFieldsValid = false;
     }
 
+    if ( !formData.CP?.trim() ) {
+      newErrors.CP = "El código postal (CP) es obligatorio";
+      allFieldsValid = false;
+    }
+
     if ( !formData.RFC?.trim() ) {
       newErrors.RFC = "El RFC es obligatorio";
       allFieldsValid = false;
@@ -1213,6 +1249,7 @@ const NewCustomerInformationForm = () => {
       "country",
       "businessActivity",
       "fullFiscalAddress",
+      "CP",
       "RFC",
       "taxRegime",
       "responsiblePersonName",

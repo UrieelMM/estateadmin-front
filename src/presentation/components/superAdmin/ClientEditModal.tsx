@@ -86,6 +86,9 @@ const ClientEditModal: React.FC<ClientEditModalProps> = ( {
   const condoSliderPct = ( ( condoUnits - MIN_UNITS ) / ( MAX_UNITS - MIN_UNITS ) ) * 100;
 
   const fmt = ( v: number ) => v.toLocaleString( "es-MX", { style: "currency", currency: "MXN" } );
+  const maintenanceDateLabel = condominiumForm.maintenanceAppContractedAt
+    ? new Date( condominiumForm.maintenanceAppContractedAt ).toLocaleString( "es-MX" )
+    : null;
 
   const handleInputChange = (
     e: React.ChangeEvent<
@@ -108,7 +111,13 @@ const ClientEditModal: React.FC<ClientEditModalProps> = ( {
     const currentProFunctions = condominiumForm.proFunctions || [];
 
     if ( name === "hasMaintenanceApp" ) {
-      updateClientForm( "hasMaintenanceApp", checked );
+      updateCondominiumForm( "hasMaintenanceApp", checked );
+      updateCondominiumForm(
+        "maintenanceAppContractedAt",
+        checked
+          ? condominiumForm.maintenanceAppContractedAt || new Date().toISOString()
+          : null
+      );
       return;
     }
 
@@ -298,6 +307,23 @@ const ClientEditModal: React.FC<ClientEditModalProps> = ( {
                   value={ currentClient.fullFiscalAddress || "" }
                   onChange={ handleInputChange }
                   rows={ 2 }
+                  className="px-2 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="CP"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                >
+                  Código Postal (CP)
+                </label>
+                <input
+                  type="text"
+                  name="CP"
+                  id="CP"
+                  value={ currentClient.CP || "" }
+                  onChange={ handleInputChange }
                   className="px-2 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
                 />
               </div>
@@ -540,29 +566,6 @@ const ClientEditModal: React.FC<ClientEditModalProps> = ( {
               </div>
             </div>
 
-            {/* App de Mantenimiento */ }
-            <div className="mt-4">
-              <h4 className="text-md font-medium mb-3 text-gray-800 dark:text-gray-200 border-b pb-1">
-                App de Mantenimiento
-              </h4>
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  id="hasMaintenanceApp"
-                  name="hasMaintenanceApp"
-                  checked={ currentClient.hasMaintenanceApp || false }
-                  onChange={ handleCheckboxChange }
-                  className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                />
-                <label
-                  htmlFor="hasMaintenanceApp"
-                  className="ml-2 block text-sm text-gray-700 dark:text-gray-300"
-                >
-                  El cliente contrató la App de Mantenimiento
-                </label>
-              </div>
-            </div>
-
             <div className="mt-6 flex justify-end space-x-3">
               <button
                 type="button"
@@ -774,6 +777,33 @@ const ClientEditModal: React.FC<ClientEditModalProps> = ( {
                     </div>
                   ) ) }
                 </div>
+              </div>
+
+              <div>
+                <h4 className="text-md font-medium mb-3 text-gray-800 dark:text-gray-200 border-b pb-1">
+                  App de Mantenimiento
+                </h4>
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="hasMaintenanceApp"
+                    name="hasMaintenanceApp"
+                    checked={ condominiumForm.hasMaintenanceApp || false }
+                    onChange={ handleCheckboxChange }
+                    className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                  />
+                  <label
+                    htmlFor="hasMaintenanceApp"
+                    className="ml-2 text-sm text-gray-700 dark:text-gray-300"
+                  >
+                    Este condominio contrató la App de Mantenimiento
+                  </label>
+                </div>
+                { maintenanceDateLabel && ( condominiumForm.hasMaintenanceApp || false ) && (
+                  <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                    Fecha de contratación registrada: { maintenanceDateLabel }
+                  </p>
+                ) }
               </div>
 
               <div className="pt-2">

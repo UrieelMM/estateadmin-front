@@ -5,6 +5,7 @@ import {
   getDocs,
   doc,
   updateDoc,
+  serverTimestamp,
 } from "firebase/firestore";
 import { executeSuperAdminOperation } from "../../services/superAdminService";
 import toast from "react-hot-toast";
@@ -23,6 +24,7 @@ export interface Client {
   condominiumsCount?: number;
   businessName?: string;
   fullFiscalAddress?: string;
+  CP?: string;
   taxRegime?: string;
   businessActivity?: string;
   condominiumLimit?: number;
@@ -33,7 +35,6 @@ export interface Client {
   responsiblePersonName?: string;
   responsiblePersonPosition?: string;
   billingFrequency?: string;
-  hasMaintenanceApp?: boolean;
   pricing?: number;
   condominiumManager?: string;
 }
@@ -48,6 +49,7 @@ export interface ClientFormData {
   plan: string;
   businessName?: string;
   fullFiscalAddress?: string;
+  CP?: string;
   taxRegime?: string;
   businessActivity?: string;
   condominiumLimit?: number;
@@ -72,6 +74,8 @@ export interface CondominiumFormData {
   clientId?: string;
   condominiumLimit?: number;
   condominiumManager?: string;
+  hasMaintenanceApp?: boolean;
+  maintenanceAppContractedAt?: string | null;
 }
 
 export interface ClientCredentials {
@@ -125,9 +129,36 @@ const initialCondominiumForm: CondominiumFormData = {
   proFunctions: [],
   status: CondominiumStatus.Pending,
   condominiumManager: "",
+  hasMaintenanceApp: false,
+  maintenanceAppContractedAt: null,
 };
 
 const db = getFirestore();
+
+const toIsoDateString = (value: unknown): string | null => {
+  if (!value) return null;
+
+  if (typeof value === "string") {
+    const asDate = new Date(value);
+    return Number.isNaN(asDate.getTime()) ? null : asDate.toISOString();
+  }
+
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value.toISOString();
+  }
+
+  if (
+    typeof value === "object" &&
+    value !== null &&
+    "toDate" in value &&
+    typeof (value as { toDate: () => Date }).toDate === "function"
+  ) {
+    const converted = (value as { toDate: () => Date }).toDate();
+    return Number.isNaN(converted.getTime()) ? null : converted.toISOString();
+  }
+
+  return null;
+};
 
 // Store para gestión de clientes y condominios
 const useClientsConfig = create<ClientsConfigStore>()((set, get) => ({
@@ -252,6 +283,7 @@ const useClientsConfig = create<ClientsConfigStore>()((set, get) => ({
         plan: client.plan || "Free",
         businessName: client.businessName || "",
         fullFiscalAddress: client.fullFiscalAddress || "",
+        CP: client.CP || "",
         taxRegime: client.taxRegime || "",
         businessActivity: client.businessActivity || "",
         condominiumLimit: client.condominiumLimit || 50,
@@ -261,7 +293,6 @@ const useClientsConfig = create<ClientsConfigStore>()((set, get) => ({
         responsiblePersonName: client.responsiblePersonName || "",
         responsiblePersonPosition: client.responsiblePersonPosition || "",
         billingFrequency: client.billingFrequency || "monthly",
-        hasMaintenanceApp: client.hasMaintenanceApp || false,
         pricing: client.pricing,
         condominiumManager: client.condominiumManager || "",
       },
@@ -290,6 +321,10 @@ const useClientsConfig = create<ClientsConfigStore>()((set, get) => ({
         status: condominium.status || CondominiumStatus.Pending,
         clientId: condominium.clientId || get().currentClient?.id,
         condominiumLimit: condominium.condominiumLimit || 1,
+        hasMaintenanceApp: Boolean(condominium.hasMaintenanceApp),
+        maintenanceAppContractedAt: toIsoDateString(
+          condominium.maintenanceAppContractedAt
+        ),
       },
     });
   },
@@ -366,6 +401,7 @@ const useClientsConfig = create<ClientsConfigStore>()((set, get) => ({
           pricing: currentClient.pricing,
           businessName: currentClient.businessName,
           fullFiscalAddress: currentClient.fullFiscalAddress,
+          CP: currentClient.CP,
           taxRegime: currentClient.taxRegime,
           businessActivity: currentClient.businessActivity,
           condominiumLimit: currentClient.condominiumLimit,
@@ -376,7 +412,6 @@ const useClientsConfig = create<ClientsConfigStore>()((set, get) => ({
           responsiblePersonName: currentClient.responsiblePersonName,
           responsiblePersonPosition: currentClient.responsiblePersonPosition,
           billingFrequency: currentClient.billingFrequency,
-          hasMaintenanceApp: currentClient.hasMaintenanceApp,
           condominiumManager: currentClient.condominiumManager,
         }
       );
@@ -421,6 +456,12 @@ const useClientsConfig = create<ClientsConfigStore>()((set, get) => ({
     set({ updatingCondominium: true });
 
     try {
+      const hasMaintenanceApp = Boolean(currentCondominium.hasMaintenanceApp);
+      const maintenanceAppContractedAt = hasMaintenanceApp
+        ? toIsoDateString(currentCondominium.maintenanceAppContractedAt) ||
+          new Date().toISOString()
+        : null;
+
       const payload = {
         clientId: currentClient.id,
         name: currentCondominium.name,
@@ -429,6 +470,8 @@ const useClientsConfig = create<ClientsConfigStore>()((set, get) => ({
         proFunctions: currentCondominium.proFunctions || [],
         status: currentCondominium.status,
         condominiumLimit: Number(currentCondominium.condominiumLimit || 1),
+        hasMaintenanceApp,
+        maintenanceAppContractedAt,
       };
 
       // Intento primario: Cloud Function de super admin
@@ -463,6 +506,12 @@ const useClientsConfig = create<ClientsConfigStore>()((set, get) => ({
         proFunctions: payload.proFunctions,
         status: payload.status || CondominiumStatus.Pending,
         condominiumLimit: payload.condominiumLimit,
+        hasMaintenanceApp: payload.hasMaintenanceApp,
+        maintenanceAppContractedAt: payload.hasMaintenanceApp
+          ? payload.maintenanceAppContractedAt
+            ? new Date(payload.maintenanceAppContractedAt)
+            : serverTimestamp()
+          : null,
       });
 
       toast.success("Condominio actualizado con éxito");
@@ -497,6 +546,12 @@ const useClientsConfig = create<ClientsConfigStore>()((set, get) => ({
     set({ addingCondominium: true });
 
     try {
+      const hasMaintenanceApp = Boolean(condominiumForm.hasMaintenanceApp);
+      const maintenanceAppContractedAt = hasMaintenanceApp
+        ? toIsoDateString(condominiumForm.maintenanceAppContractedAt) ||
+          new Date().toISOString()
+        : null;
+
       const response = await fetch(
         `${import.meta.env.VITE_URL_SERVER}/users-auth/register-condominium`,
         {
@@ -513,6 +568,8 @@ const useClientsConfig = create<ClientsConfigStore>()((set, get) => ({
             status: condominiumForm.status || CondominiumStatus.Pending,
             condominiumLimit: condominiumForm.condominiumLimit || 1,
             condominiumManager: condominiumForm.condominiumManager || "",
+            hasMaintenanceApp,
+            maintenanceAppContractedAt,
           }),
         }
       );

@@ -44,6 +44,7 @@ const NewClientForm: React.FC<NewClientFormProps> = ( {
     phoneNumber: "",
     companyName: "",
     fullFiscalAddress: "",
+    CP: "",
     RFC: "",
     country: "",
     businessName: "",
@@ -58,6 +59,8 @@ const NewClientForm: React.FC<NewClientFormProps> = ( {
       name: "",
       address: "",
       status: CondominiumStatus.Pending,
+      hasMaintenanceApp: false,
+      maintenanceAppContractedAt: null as string | null,
     },
     condominiumManager: "",
 
@@ -66,7 +69,6 @@ const NewClientForm: React.FC<NewClientFormProps> = ( {
     plan: "50", // Número de unidades contratadas
     pricing: Math.round( ( PLAN_BASE + 50 * COST_PER_UNIT ) * ( 1 + IVA_RATE ) * 100 ) / 100,
     proFunctions: [] as string[],
-    hasMaintenanceApp: false,
     cfdiUse: "G03",
     serviceStartDate: new Date(),
     billingFrequency: "monthly" as BillingFrequency,
@@ -254,6 +256,7 @@ const NewClientForm: React.FC<NewClientFormProps> = ( {
       "phoneNumber",
       "companyName",
       "fullFiscalAddress",
+      "CP",
       "RFC",
       "country",
       "businessName",
@@ -385,7 +388,14 @@ const NewClientForm: React.FC<NewClientFormProps> = ( {
     if ( name === "hasMaintenanceApp" ) {
       setFormData( ( prev ) => ( {
         ...prev,
-        hasMaintenanceApp: checked,
+        condominiumInfo: {
+          ...prev.condominiumInfo,
+          hasMaintenanceApp: checked,
+          maintenanceAppContractedAt: checked
+            ? prev.condominiumInfo.maintenanceAppContractedAt ||
+            new Date().toISOString()
+            : null,
+        },
       } ) );
       return;
     }
@@ -564,6 +574,20 @@ const NewClientForm: React.FC<NewClientFormProps> = ( {
                   type="text"
                   name="RFC"
                   value={ formData.RFC }
+                  onChange={ handleInputChange }
+                  required
+                  className="w-full px-2 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Código Postal (CP)*
+                </label>
+                <input
+                  type="text"
+                  name="CP"
+                  value={ formData.CP }
                   onChange={ handleInputChange }
                   required
                   className="w-full px-2 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
@@ -818,7 +842,7 @@ const NewClientForm: React.FC<NewClientFormProps> = ( {
                   type="checkbox"
                   id="hasMaintenanceApp"
                   name="hasMaintenanceApp"
-                  checked={ formData.hasMaintenanceApp }
+                  checked={ formData.condominiumInfo.hasMaintenanceApp }
                   onChange={ handleCheckboxChange }
                   className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
                 />
@@ -826,9 +850,18 @@ const NewClientForm: React.FC<NewClientFormProps> = ( {
                   htmlFor="hasMaintenanceApp"
                   className="ml-2 block text-sm text-gray-900 dark:text-gray-100"
                 >
-                  El cliente contrató la App de Mantenimiento
+                  El primer condominio contrató la App de Mantenimiento
                 </label>
               </div>
+              { formData.condominiumInfo.hasMaintenanceApp &&
+                formData.condominiumInfo.maintenanceAppContractedAt && (
+                  <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                    Fecha de contratación registrada: { " " }
+                    { new Date(
+                      formData.condominiumInfo.maintenanceAppContractedAt
+                    ).toLocaleString( "es-MX" ) }
+                  </p>
+                ) }
             </div>
           </div>
 
