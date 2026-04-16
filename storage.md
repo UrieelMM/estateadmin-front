@@ -1,6 +1,6 @@
 rules_version = '2';
 service firebase.storage {
-  match /b/{bucket}/o {
+match /b/{bucket}/o {
 
     /* ───────────── Funciones ───────────── */
     function isAuthenticated() {
@@ -222,7 +222,7 @@ service firebase.storage {
         || isSuperAdmin()
       );
     }
-    
+
      /* ─── Cotizaciones - Proyectos ─── */
     match /clients/{clientId}/condominiums/{condominiumId}/projects/{projectId}/quotes/{fileName} {
       // Leer cualquier cotización si pertenece al cliente o es superadmin
@@ -242,7 +242,7 @@ service firebase.storage {
         || isSuperAdmin()
       );
     }
-     
+
     /* ─── Publicaciones ─── */
     match /clients/{clientId}/condominiums/{condominiumId}/publications/{publicationId}/{fileName} {
       allow read:    if belongsToClient(clientId) || isSuperAdmin();
@@ -313,6 +313,21 @@ service firebase.storage {
       allow delete:          if ((isAdminOrAssistant() && belongsToClient(clientId)) || isSuperAdmin());
     }
 
+    /* ─── ZIPs temporales de recibos masivos ─── */
+    /* Nota: el backend (Admin SDK) escribe/borrar en esta ruta y envía Signed URLs.
+       Las Signed URLs no requieren regla allow read pública. */
+    match /receipts-deliveries/{clientId}/{condominiumId}/{datePath}/{fileName} {
+      allow read: if belongsToClient(clientId) || isSuperAdmin();
+      allow create, update, delete: if false;
+    }
+
+    /* ─── PDFs de facturas de Stripe ─── */
+    /* Escritura la hace backend con Admin SDK; el frontend solo lee por tenant. */
+    match /clients/{clientId}/condominiums/{condominiumId}/invoices/{fileName} {
+      allow read: if belongsToClient(clientId) || isSuperAdmin();
+      allow create, update, delete: if false;
+    }
+
     /* ─── Parcel Receptions ─── */
     /* ─── Parcel Receptions ─── */
     match /clients/{clientId}/condominiums/{condominiumId}/parcelReceptions/{datePath}/{fileName} {
@@ -334,7 +349,7 @@ service firebase.storage {
       allow delete:  if isSuperAdmin()
                         || (isAdmin() && belongsToClient(clientId));
     }
-    
+
     /* ─── Estados de cuenta temporales ─── */
     match /temp/account-statements/{allPaths=**} {
       allow read, write: if true;
@@ -344,5 +359,6 @@ service firebase.storage {
     match /{allPaths=**} {
       allow read, write: if isSuperAdmin();
     }
-  }
+
+}
 }

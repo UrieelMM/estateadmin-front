@@ -2,6 +2,7 @@ import { create } from "./createStore";
 import {
   getFirestore,
   collection,
+  collectionGroup,
   query,
   where,
   orderBy,
@@ -51,6 +52,7 @@ export interface ClientInvoice {
   pricingBaseSnapshot?: number;
   pricingSnapshot?: number;
   source?: string;
+  invoiceType?: string;
   stripeCustomerId?: string;
   stripeHostedInvoiceUrl?: string;
   stripeInvoiceId?: string;
@@ -77,7 +79,7 @@ interface ClientInvoicesState {
   fetchInvoices: (
     pageSize?: number,
     startAfter?: QueryDocumentSnapshot<DocumentData> | null,
-    filters?: { status?: string }
+    filters?: { status?: string; condominiumId?: string }
   ) => Promise<number>;
 
   // Buscar factura por número
@@ -115,6 +117,259 @@ const invoiceCache: Record<
   }
 > = {};
 
+const clearInvoiceCache = () => {
+  Object.keys(invoiceCache).forEach((key) => {
+    delete invoiceCache[key];
+  });
+};
+
+const extractCondominiumIdFromPath = (path: string): string => {
+  const pathSegments = String(path || "").split("/");
+  if (
+    pathSegments.length >= 4 &&
+    pathSegments[0] === "clients" &&
+    pathSegments[2] === "condominiums"
+  ) {
+    return pathSegments[3] || "";
+  }
+  return "";
+};
+
+const getCondominiumNamesByClient = async (
+  clientId: string
+): Promise<Record<string, string>> => {
+  const condominiumNames: Record<string, string> = {};
+
+  const condominiumsSnapshot = await getDocs(
+    collection(db, `clients/${clientId}/condominiums`)
+  );
+
+  condominiumsSnapshot.forEach((condominiumDoc) => {
+    const condominiumData = condominiumDoc.data() || {};
+    const condominiumName = String(
+      condominiumData.name ||
+        condominiumData.condominiumName ||
+        condominiumData.uid ||
+        condominiumDoc.id
+    ).trim();
+
+    condominiumNames[condominiumDoc.id] = condominiumName;
+  });
+
+  return condominiumNames;
+};
+
+const getTimestampMillis = (value: any): number => {
+  if (!value) return 0;
+  if (typeof value?.toMillis === "function") {
+    return Number(value.toMillis()) || 0;
+  }
+  if (typeof value?.toDate === "function") {
+    return Number(value.toDate().getTime()) || 0;
+  }
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? 0 : parsed.getTime();
+};
+
+const sortInvoicesByMostRecent = (invoices: ClientInvoice[]): ClientInvoice[] => {
+  return [ ...invoices ].sort((a, b) => {
+    const left =
+      getTimestampMillis(a.createdAt) ||
+      getTimestampMillis(a.issueDate) ||
+      getTimestampMillis(a.updatedAt) ||
+      getTimestampMillis(a.dueDate);
+    const right =
+      getTimestampMillis(b.createdAt) ||
+      getTimestampMillis(b.issueDate) ||
+      getTimestampMillis(b.updatedAt) ||
+      getTimestampMillis(b.dueDate);
+    return right - left;
+  });
+};
+
+const mapInvoiceRecord = (params: {
+  docId: string;
+  data: Record<string, any>;
+  defaultClientId: string;
+  fallbackCondominiumId?: string;
+  condominiumNamesById?: Record<string, string>;
+}): ClientInvoice => {
+  const {
+    docId,
+    data,
+    defaultClientId,
+    fallbackCondominiumId = "",
+    condominiumNamesById = {},
+  } = params;
+  const invoiceCondominiumId = String(
+    data.condominiumId || fallbackCondominiumId || ""
+  ).trim();
+  const invoiceCondominiumName =
+    String(data.condominiumName || "").trim() ||
+    condominiumNamesById[invoiceCondominiumId] ||
+    invoiceCondominiumId ||
+    "N/A";
+
+  return {
+    id: docId,
+    invoiceNumber: data.invoiceNumber || "",
+    concept: data.concept || "Suscripción Mensual",
+    amount: data.amount || 0,
+    status: data.status || "pending",
+    paymentStatus: data.paymentStatus || data.status || "pending",
+    paymentMethod: data.paymentMethod,
+    paymentIntentId: data.paymentIntentId,
+    createdAt: data.createdAt,
+    dueDate: data.dueDate,
+    paidDate: data.paidDate,
+    invoiceURL: data.invoiceURL,
+    xmlURL: data.xmlURL,
+    isPaid: data.isPaid || false,
+    optionalMessage: data.optionalMessage || "",
+    clientId: data.clientId || defaultClientId,
+    condominiumId: invoiceCondominiumId,
+    condominiumName: invoiceCondominiumName,
+    plan: data.plan,
+    userEmail: data.userEmail || "",
+    userUID: data.userUID || "",
+    nextBillingDate: data.nextBillingDate,
+    message: data.message,
+    invoicePdfStoragePath: data.invoicePdfStoragePath,
+    invoicePdfStorageUrl: data.invoicePdfStorageUrl,
+    billingDedupeKey: data.billingDedupeKey,
+    billingFrequency: data.billingFrequency,
+    currency: data.currency || "MXN",
+    issueDate: data.issueDate,
+    periodKey: data.periodKey,
+    pricingBaseSnapshot: data.pricingBaseSnapshot,
+    pricingSnapshot: data.pricingSnapshot,
+    source: data.source,
+    invoiceType: data.invoiceType,
+    stripeCustomerId: data.stripeCustomerId,
+    stripeHostedInvoiceUrl: data.stripeHostedInvoiceUrl,
+    stripeInvoiceId: data.stripeInvoiceId,
+    stripeInvoicePdf: data.stripeInvoicePdf,
+    stripeInvoiceStatus: data.stripeInvoiceStatus,
+    stripeTaxRateId: data.stripeTaxRateId,
+    subtotalAmount: data.subtotalAmount,
+    taxAmount: data.taxAmount,
+    taxBreakdownApplied: data.taxBreakdownApplied,
+    taxMode: data.taxMode,
+    taxRatePercent: data.taxRatePercent,
+    updatedAt: data.updatedAt,
+    condominiumLimitSnapshot: data.condominiumLimitSnapshot,
+  };
+};
+
+const fetchInvoicesFromCondominiumCollections = async (params: {
+  clientId: string;
+  status?: string;
+  condominiumId?: string;
+}): Promise<ClientInvoice[]> => {
+  const { clientId, status, condominiumId } = params;
+  let condominiumNamesById: Record<string, string> = {};
+  try {
+    condominiumNamesById = await getCondominiumNamesByClient(clientId);
+  } catch (error) {
+    console.warn(
+      "No se pudo leer la lista de condominios del cliente para fallback:",
+      error
+    );
+  }
+  const condominiumIds = condominiumId
+    ? [condominiumId]
+    : Object.keys(condominiumNamesById);
+
+  const snapshots = await Promise.all(
+    condominiumIds.map(async (condominiumId) => {
+      try {
+        const invoicesRef = collection(
+          db,
+          `clients/${clientId}/condominiums/${condominiumId}/invoicesGenerated`
+        );
+        let invoicesQuery = query(
+          invoicesRef,
+          where("clientId", "==", clientId)
+        );
+        if (status) {
+          invoicesQuery = query(
+            invoicesQuery,
+            where("paymentStatus", "==", status)
+          );
+        }
+        const invoicesSnapshot = await getDocs(invoicesQuery);
+
+        return invoicesSnapshot.docs.map((invoiceDoc) =>
+          mapInvoiceRecord({
+            docId: invoiceDoc.id,
+            data: invoiceDoc.data(),
+            defaultClientId: clientId,
+            fallbackCondominiumId: condominiumId,
+            condominiumNamesById,
+          })
+        );
+      } catch (error) {
+        console.warn(
+          `No se pudieron consultar facturas del condominio ${condominiumId} en fallback:`,
+          error
+        );
+        return [];
+      }
+    })
+  );
+
+  let legacyInvoices: ClientInvoice[] = [];
+  try {
+    let legacyQuery = query(
+      collection(db, `clients/${clientId}/invoicesGenerated`),
+      where("clientId", "==", clientId)
+    );
+    if (status) {
+      legacyQuery = query(legacyQuery, where("paymentStatus", "==", status));
+    }
+    if (condominiumId) {
+      legacyQuery = query(
+        legacyQuery,
+        where("condominiumId", "==", condominiumId)
+      );
+    }
+
+    const legacyInvoicesSnapshot = await getDocs(legacyQuery);
+    legacyInvoices = legacyInvoicesSnapshot.docs.map((invoiceDoc) =>
+      mapInvoiceRecord({
+        docId: invoiceDoc.id,
+        data: invoiceDoc.data(),
+        defaultClientId: clientId,
+        fallbackCondominiumId: extractCondominiumIdFromPath(invoiceDoc.ref.path),
+        condominiumNamesById,
+      })
+    );
+  } catch (error) {
+    console.warn("No se pudieron consultar facturas legacy en fallback:", error);
+  }
+
+  const mergedInvoices = sortInvoicesByMostRecent([
+    ...snapshots.flat(),
+    ...legacyInvoices,
+  ]);
+
+  if (!status && !condominiumId) {
+    return mergedInvoices;
+  }
+
+  return mergedInvoices.filter((invoice) => {
+    const paymentStatus = String(invoice.paymentStatus || "").toLowerCase();
+    const genericStatus = String(invoice.status || "").toLowerCase();
+    const targetStatus = String(status || "").toLowerCase();
+    const statusMatch =
+      !status || paymentStatus === targetStatus || genericStatus === targetStatus;
+    const condominiumMatch =
+      !condominiumId ||
+      String(invoice.condominiumId || "").trim() === condominiumId;
+    return statusMatch && condominiumMatch;
+  });
+};
+
 const useClientInvoicesStore = create<ClientInvoicesState>()((set, get) => ({
   invoices: [],
   lastInvoiceDoc: null,
@@ -133,19 +388,28 @@ const useClientInvoicesStore = create<ClientInvoicesState>()((set, get) => ({
       }
 
       const tokenResult = await getIdTokenResult(user);
-      const clientId = tokenResult.claims.clientId as string;
-      const condominiumId = localStorage.getItem("condominiumId");
+      const clientId =
+        (tokenResult.claims.clientId as string) ||
+        String(localStorage.getItem("clientId") || "");
 
-      if (!clientId || !condominiumId) {
-        throw new Error("No se encontró clientId o condominiumId");
+      if (!clientId) {
+        throw new Error("No se encontró clientId");
       }
 
       // Generar clave para caché basada en filtros y cursor
+      const startAfterOffset =
+        typeof (startAfter as any)?.__offset === "number"
+          ? Number((startAfter as any).__offset)
+          : null;
+      const hasOffsetCursor = startAfterOffset !== null;
       const cacheKey = JSON.stringify({
         clientId,
-        condominiumId,
         filters,
-        startAfter: startAfter ? startAfter.id : "first",
+        startAfter: hasOffsetCursor
+          ? `offset:${startAfterOffset}`
+          : startAfter
+          ? startAfter.id
+          : "first",
       });
 
       // Usar caché si está disponible y no hay filtros específicos
@@ -160,14 +424,11 @@ const useClientInvoicesStore = create<ClientInvoicesState>()((set, get) => ({
         return cached.invoices.length;
       }
 
-      // Construir la ruta a la colección de facturas del cliente
-      const invoicesRef = collection(
-        db,
-        `clients/${clientId}/condominiums/${condominiumId}/invoicesGenerated`
+      let invoicesQuery = query(
+        collectionGroup(db, "invoicesGenerated"),
+        where("clientId", "==", clientId),
+        orderBy("createdAt", "desc")
       );
-
-      // Construir la consulta
-      let invoicesQuery = query(invoicesRef, orderBy("createdAt", "desc"));
 
       // Aplicar filtros si existen
       if (filters.status) {
@@ -176,80 +437,78 @@ const useClientInvoicesStore = create<ClientInvoicesState>()((set, get) => ({
           where("paymentStatus", "==", filters.status)
         );
       }
+      if (filters.condominiumId) {
+        invoicesQuery = query(
+          invoicesQuery,
+          where("condominiumId", "==", filters.condominiumId)
+        );
+      }
 
       // Aplicar paginación
-      if (startAfter) {
+      if (startAfter && !hasOffsetCursor) {
         invoicesQuery = query(invoicesQuery, firestoreStartAfter(startAfter));
       }
 
       // Aplicar límite de página
       invoicesQuery = query(invoicesQuery, limit(pageSize));
 
-      // Ejecutar consulta
-      const invoicesSnapshot = await getDocs(invoicesQuery);
-
-      // Procesar resultados
-      const invoiceRecords: ClientInvoice[] = [];
+      let invoiceRecords: ClientInvoice[] = [];
       let lastDoc: QueryDocumentSnapshot<DocumentData> | null = null;
+      let queryFailed = false;
+      let fallbackTotalCount: number | null = null;
 
-      for (const doc of invoicesSnapshot.docs) {
-        const data = doc.data();
+      try {
+        const invoicesSnapshot = await getDocs(invoicesQuery);
+        const condominiumNamesById = await getCondominiumNamesByClient(clientId);
 
-        const invoice: ClientInvoice = {
-          id: doc.id,
-          invoiceNumber: data.invoiceNumber || "",
-          concept: data.concept || "Suscripción Mensual",
-          amount: data.amount || 0,
-          status: data.status || "pending",
-          paymentStatus: data.paymentStatus || data.status || "pending",
-          paymentMethod: data.paymentMethod,
-          paymentIntentId: data.paymentIntentId,
-          createdAt: data.createdAt,
-          dueDate: data.dueDate,
-          paidDate: data.paidDate,
-          invoiceURL: data.invoiceURL,
-          xmlURL: data.xmlURL,
-          isPaid: data.isPaid || false,
-          optionalMessage: data.optionalMessage || "",
+        for (const invoiceDoc of invoicesSnapshot.docs) {
+          const data = invoiceDoc.data();
+          const invoiceCondominiumId =
+            data.condominiumId ||
+            extractCondominiumIdFromPath(invoiceDoc.ref.path);
+          invoiceRecords.push(
+            mapInvoiceRecord({
+              docId: invoiceDoc.id,
+              data,
+              defaultClientId: clientId,
+              fallbackCondominiumId: invoiceCondominiumId,
+              condominiumNamesById,
+            })
+          );
+          lastDoc = invoiceDoc;
+        }
+      } catch (groupQueryError) {
+        queryFailed = true;
+        console.warn(
+          "No se pudo consultar facturas con collectionGroup, usando fallback por condominio:",
+          groupQueryError
+        );
+      }
+
+      const shouldUseFallback =
+        hasOffsetCursor || queryFailed || (invoiceRecords.length === 0 && !startAfter);
+      if (shouldUseFallback) {
+        const fallbackRecords = await fetchInvoicesFromCondominiumCollections({
           clientId,
-          condominiumId,
-          condominiumName: data.condominiumName,
-          plan: data.plan,
-          userEmail: data.userEmail || "",
-          userUID: data.userUID || "",
-          nextBillingDate: data.nextBillingDate,
-          message: data.message,
-          invoicePdfStoragePath: data.invoicePdfStoragePath,
-          invoicePdfStorageUrl: data.invoicePdfStorageUrl,
-          billingDedupeKey: data.billingDedupeKey,
-          billingFrequency: data.billingFrequency,
-          currency: data.currency || "MXN",
-          issueDate: data.issueDate,
-          periodKey: data.periodKey,
-          pricingBaseSnapshot: data.pricingBaseSnapshot,
-          pricingSnapshot: data.pricingSnapshot,
-          source: data.source,
-          stripeCustomerId: data.stripeCustomerId,
-          stripeHostedInvoiceUrl: data.stripeHostedInvoiceUrl,
-          stripeInvoiceId: data.stripeInvoiceId,
-          stripeInvoicePdf: data.stripeInvoicePdf,
-          stripeInvoiceStatus: data.stripeInvoiceStatus,
-          stripeTaxRateId: data.stripeTaxRateId,
-          subtotalAmount: data.subtotalAmount,
-          taxAmount: data.taxAmount,
-          taxBreakdownApplied: data.taxBreakdownApplied,
-          taxMode: data.taxMode,
-          taxRatePercent: data.taxRatePercent,
-          updatedAt: data.updatedAt,
-          condominiumLimitSnapshot: data.condominiumLimitSnapshot,
-        };
-
-        invoiceRecords.push(invoice);
-        lastDoc = doc;
+          status: filters.status,
+          condominiumId: filters.condominiumId,
+        });
+        fallbackTotalCount = fallbackRecords.length;
+        const startOffset = startAfterOffset || 0;
+        const paginatedFallbackRecords = fallbackRecords.slice(
+          startOffset,
+          startOffset + pageSize
+        );
+        const nextOffset = startOffset + paginatedFallbackRecords.length;
+        const hasMoreFallback = nextOffset < fallbackRecords.length;
+        lastDoc = hasMoreFallback
+          ? ({ __offset: nextOffset } as any as QueryDocumentSnapshot<DocumentData>)
+          : null;
+        invoiceRecords = paginatedFallbackRecords;
       }
 
       // Almacenar en caché si no hay filtros específicos
-      if (!filters.status) {
+      if (!filters.status && invoiceRecords.length > 0) {
         invoiceCache[cacheKey] = {
           invoices: invoiceRecords,
           lastDoc,
@@ -261,8 +520,16 @@ const useClientInvoicesStore = create<ClientInvoicesState>()((set, get) => ({
         invoices: invoiceRecords,
         lastInvoiceDoc: lastDoc,
         loading: false,
-        totalInvoices: invoiceRecords.length,
+        totalInvoices: fallbackTotalCount ?? invoiceRecords.length,
       });
+
+      if (shouldUseFallback && fallbackTotalCount !== null) {
+        const startOffset = startAfterOffset || 0;
+        const hasMore = startOffset + invoiceRecords.length < fallbackTotalCount;
+        if (!hasMore && invoiceRecords.length === pageSize) {
+          return Math.max(pageSize - 1, 0);
+        }
+      }
 
       return invoiceRecords.length;
     } catch (error: any) {
@@ -286,87 +553,60 @@ const useClientInvoicesStore = create<ClientInvoicesState>()((set, get) => ({
       }
 
       const tokenResult = await getIdTokenResult(user);
-      const clientId = tokenResult.claims.clientId as string;
-      const condominiumId = localStorage.getItem("condominiumId");
+      const clientId =
+        (tokenResult.claims.clientId as string) ||
+        String(localStorage.getItem("clientId") || "");
 
-      if (!clientId || !condominiumId) {
-        throw new Error("No se encontró clientId o condominiumId");
+      if (!clientId) {
+        throw new Error("No se encontró clientId");
       }
 
-      // Construir la ruta a la colección de facturas
-      const invoicesRef = collection(
-        db,
-        `clients/${clientId}/condominiums/${condominiumId}/invoicesGenerated`
-      );
+      let invoiceRecords: ClientInvoice[] = [];
 
-      // Construir consulta de búsqueda
-      const searchQuery = query(
-        invoicesRef,
-        where("invoiceNumber", "==", invoiceNumber)
-      );
+      try {
+        const searchQuery = query(
+          collectionGroup(db, "invoicesGenerated"),
+          where("clientId", "==", clientId),
+          where("invoiceNumber", "==", invoiceNumber)
+        );
 
-      const searchSnapshot = await getDocs(searchQuery);
+        const searchSnapshot = await getDocs(searchQuery);
+        const condominiumNamesById = await getCondominiumNamesByClient(clientId);
 
-      const invoiceRecords: ClientInvoice[] = [];
+        searchSnapshot.forEach((invoiceDoc) => {
+          const data = invoiceDoc.data();
+          const invoiceCondominiumId =
+            data.condominiumId ||
+            extractCondominiumIdFromPath(invoiceDoc.ref.path);
+          invoiceRecords.push(
+            mapInvoiceRecord({
+              docId: invoiceDoc.id,
+              data,
+              defaultClientId: clientId,
+              fallbackCondominiumId: invoiceCondominiumId,
+              condominiumNamesById,
+            })
+          );
+        });
+      } catch (searchError) {
+        console.warn(
+          "No se pudo buscar por collectionGroup, usando fallback por condominio:",
+          searchError
+        );
+      }
 
-      searchSnapshot.forEach((doc) => {
-        const data = doc.data();
-
-        const invoice: ClientInvoice = {
-          id: doc.id,
-          invoiceNumber: data.invoiceNumber || "",
-          concept: data.concept || "Suscripción Mensual",
-          amount: data.amount || 0,
-          status: data.status || "pending",
-          paymentStatus: data.paymentStatus || data.status || "pending",
-          paymentMethod: data.paymentMethod,
-          paymentIntentId: data.paymentIntentId,
-          createdAt: data.createdAt,
-          dueDate: data.dueDate,
-          paidDate: data.paidDate,
-          invoiceURL: data.invoiceURL,
-          xmlURL: data.xmlURL,
-          isPaid: data.isPaid || false,
-          optionalMessage: data.optionalMessage || "",
+      if (invoiceRecords.length === 0) {
+        const fallbackRecords = await fetchInvoicesFromCondominiumCollections({
           clientId,
-          condominiumId,
-          condominiumName: data.condominiumName,
-          plan: data.plan,
-          userEmail: data.userEmail || "",
-          userUID: data.userUID || "",
-          nextBillingDate: data.nextBillingDate,
-          message: data.message,
-          invoicePdfStoragePath: data.invoicePdfStoragePath,
-          invoicePdfStorageUrl: data.invoicePdfStorageUrl,
-          billingDedupeKey: data.billingDedupeKey,
-          billingFrequency: data.billingFrequency,
-          currency: data.currency || "MXN",
-          issueDate: data.issueDate,
-          periodKey: data.periodKey,
-          pricingBaseSnapshot: data.pricingBaseSnapshot,
-          pricingSnapshot: data.pricingSnapshot,
-          source: data.source,
-          stripeCustomerId: data.stripeCustomerId,
-          stripeHostedInvoiceUrl: data.stripeHostedInvoiceUrl,
-          stripeInvoiceId: data.stripeInvoiceId,
-          stripeInvoicePdf: data.stripeInvoicePdf,
-          stripeInvoiceStatus: data.stripeInvoiceStatus,
-          stripeTaxRateId: data.stripeTaxRateId,
-          subtotalAmount: data.subtotalAmount,
-          taxAmount: data.taxAmount,
-          taxBreakdownApplied: data.taxBreakdownApplied,
-          taxMode: data.taxMode,
-          taxRatePercent: data.taxRatePercent,
-          updatedAt: data.updatedAt,
-          condominiumLimitSnapshot: data.condominiumLimitSnapshot,
-        };
-
-        invoiceRecords.push(invoice);
-      });
+        });
+        invoiceRecords = fallbackRecords.filter(
+          (invoice) => invoice.invoiceNumber === invoiceNumber
+        );
+      }
 
       set({ loading: false });
 
-      return invoiceRecords;
+      return sortInvoicesByMostRecent(invoiceRecords);
     } catch (error: any) {
       console.error("Error al buscar factura:", error);
       set({
@@ -392,8 +632,15 @@ const useClientInvoicesStore = create<ClientInvoicesState>()((set, get) => ({
       }
 
       const tokenResult = await getIdTokenResult(user);
-      const clientId = tokenResult.claims.clientId as string;
-      const condominiumId = localStorage.getItem("condominiumId");
+      const clientId =
+        (tokenResult.claims.clientId as string) ||
+        String(localStorage.getItem("clientId") || "");
+      const localCondominiumId = localStorage.getItem("condominiumId");
+      const invoiceFromState = get().invoices.find(
+        (invoice) => invoice.id === invoiceId
+      );
+      const condominiumId =
+        invoiceFromState?.condominiumId || localCondominiumId || "";
 
       if (!clientId || !condominiumId) {
         throw new Error("No se encontró clientId o condominiumId");
@@ -455,6 +702,7 @@ const useClientInvoicesStore = create<ClientInvoicesState>()((set, get) => ({
   },
 
   resetInvoicesState: () => {
+    clearInvoiceCache();
     set({
       invoices: [],
       lastInvoiceDoc: null,

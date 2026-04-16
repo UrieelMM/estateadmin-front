@@ -574,8 +574,13 @@ const useClientsConfig = create<ClientsConfigStore>()((set, get) => ({
         }
       );
 
+      const responseData = await response.json().catch(() => ({}));
+
       if (response.ok) {
         toast.success("Condominio agregado con éxito");
+        if (responseData?.billing?.message) {
+          toast.success(responseData.billing.message, { duration: 5000 });
+        }
         // Limpiar formulario
         set({
           condominiumForm: initialCondominiumForm,
@@ -583,8 +588,9 @@ const useClientsConfig = create<ClientsConfigStore>()((set, get) => ({
         });
         return true;
       } else {
-        const errorData = await response.json();
-        toast.error(errorData.message || "No se pudo agregar el condominio");
+        toast.error(
+          responseData?.message || "No se pudo agregar el condominio"
+        );
         set({ addingCondominium: false });
         return false;
       }

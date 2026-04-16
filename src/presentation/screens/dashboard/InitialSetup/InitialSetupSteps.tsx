@@ -78,6 +78,7 @@ const InfoTooltip = ( { text }: { text: string; } ) => {
 
 const InitialSetupSteps = () => {
   const TOTAL_STEPS = 7;
+  const INITIAL_SETUP_STRIPE_PENDING_KEY = "initial_setup_stripe_pending";
   const USERS_IMPORT_TEMPLATE_URL =
     "https://res.cloudinary.com/dz5tntwl1/raw/upload/v1772080563/OmniPixel/plantilla_ejemplo_g7mtmu.xlsx";
   const [ currentStep, setCurrentStep ] = useState( 1 );
@@ -124,6 +125,20 @@ const InitialSetupSteps = () => {
     status: string;
     message?: string;
     invoiceURL?: string;
+    invoiceType?: string;
+  } | null>( null );
+  const [ maintenanceInvoice, setMaintenanceInvoice ] = useState<{
+    id?: string;
+    amount: number;
+    concept: string;
+    invoiceNumber: string;
+    dueDate: any;
+    nextBillingDate?: any;
+    plan?: string;
+    status: string;
+    message?: string;
+    invoiceURL?: string;
+    invoiceType?: string;
   } | null>( null );
   const [ loadingInvoice, setLoadingInvoice ] = useState( false );
   const [ savingBeforePayment, setSavingBeforePayment ] = useState( false );
@@ -137,11 +152,44 @@ const InitialSetupSteps = () => {
 
   const { compressFile, isCompressing } = useFileCompression();
 
+  const isSubscriptionInvoice = ( data: Record<string, any> ) => {
+    const invoiceType = String( data.invoiceType || "" ).toLowerCase();
+    const concept = String( data.concept || "" ).toLowerCase();
+    return invoiceType === "subscription" || concept.includes( "suscrip" );
+  };
+
+  const isMaintenanceInvoice = ( data: Record<string, any> ) => {
+    const invoiceType = String( data.invoiceType || "" ).toLowerCase();
+    const concept = String( data.concept || "" ).toLowerCase();
+    return (
+      invoiceType === "maintenance_app" ||
+      concept.includes( "app de mantenimiento" ) ||
+      concept.includes( "estatefix" )
+    );
+  };
+
+  const normalizeInvoiceForSetup = ( id: string, data: Record<string, any> ) => ( {
+    id,
+    amount: data.amount ?? 0,
+    concept: data.concept ?? "Suscripción EstateAdmin",
+    invoiceNumber: data.invoiceNumber ?? "",
+    dueDate: data.dueDate,
+    nextBillingDate: data.nextBillingDate,
+    plan: data.plan,
+    status: data.paymentStatus ?? "pending",
+    message: data.message,
+    invoiceURL: data.invoiceURL,
+    invoiceType: data.invoiceType,
+  } );
+
   // Escuchar respuesta de Stripe (redirect de vuelta)
   useEffect( () => {
     const queryParams = new URLSearchParams( window.location.search );
     const status = queryParams.get( "payment" );
     const sessionId = queryParams.get( "session_id" );
+    const pendingStripeCheckout = sessionStorage.getItem(
+      INITIAL_SETUP_STRIPE_PENDING_KEY
+    );
 
     if ( status === "success" && sessionId ) {
       setCurrentStep( 7 ); // Ir directo al paso de pago
@@ -152,8 +200,17 @@ const InitialSetupSteps = () => {
         try {
           const paymentInfo = await checkPaymentStatus( sessionId );
           if ( paymentInfo.status === "paid" ) {
+            sessionStorage.removeItem( INITIAL_SETUP_STRIPE_PENDING_KEY );
+            const hasRequiredInvoicePending = await loadPaymentInvoice();
+            if ( hasRequiredInvoicePending ) {
+              setPaymentState( "pending" );
+              toast.error(
+                "Aún falta pagar la suscripción de administración para finalizar la configuración."
+              );
+              setIsSubmitting( false );
+              return;
+            }
             toast.success( "¡Pago procesado exitosamente!" );
-            // Ejecutar finalización
             await handleFinish();
           } else {
             setPaymentState( "error" );
@@ -173,7 +230,15 @@ const InitialSetupSteps = () => {
     } else if ( status === "cancel" ) {
       setCurrentStep( 7 ); // Ir directo al paso de pago
       setPaymentState( "cancel" );
+      sessionStorage.removeItem( INITIAL_SETUP_STRIPE_PENDING_KEY );
       toast.error( "Has cancelado el proceso de pago." );
+    } else if ( pendingStripeCheckout ) {
+      setCurrentStep( 7 );
+      setPaymentState( "cancel" );
+      sessionStorage.removeItem( INITIAL_SETUP_STRIPE_PENDING_KEY );
+      toast.error(
+        "No se completó el pago de administración. Debes finalizarlo para continuar."
+      );
     }
   }, [] );
 
@@ -209,16 +274,16 @@ const InitialSetupSteps = () => {
     }
   }, [ config ] );
   // Función para cargar la factura pendiente del cliente
-  const loadPaymentInvoice = async () => {
+  const loadPaymentInvoice = async (): Promise<boolean> => {
     setLoadingInvoice( true );
     try {
       const auth = getAuth();
       const user = auth.currentUser;
-      if ( !user ) return;
+      if ( !user ) return false;
       const tokenResult = await getIdTokenResult( user );
       const clientId = tokenResult.claims[ "clientId" ] as string;
       const condominiumId = localStorage.getItem( "condominiumId" );
-      if ( !clientId || !condominiumId ) return;
+      if ( !clientId || !condominiumId ) return false;
 
       const db = getFirestore();
       const invoicesRef = collection(
@@ -229,32 +294,39 @@ const InitialSetupSteps = () => {
         invoicesRef,
         where( "paymentStatus", "in", [ "pending", "overdue" ] ),
         orderBy( "createdAt", "desc" ),
-        limit( 1 )
+        limit( 20 )
       );
       const snap = await getDocs( q );
-      if ( !snap.empty ) {
-        const data = snap.docs[ 0 ].data();
-        setPaymentInvoice( {
-          id: snap.docs[ 0 ].id,
-          amount: data.amount ?? 0,
-          concept: data.concept ?? "Suscripción EstateAdmin",
-          invoiceNumber: data.invoiceNumber ?? "",
-          dueDate: data.dueDate,
-          nextBillingDate: data.nextBillingDate,
-          plan: data.plan,
-          status: data.paymentStatus ?? "pending",
-          message: data.message,
-          invoiceURL: data.invoiceURL,
-        } );
-        setPaymentState( "pending" ); // Ensure state is pending if invoice found
-      } else {
-        // No hay factura pendiente aún (posible si aún no se generó)
-        setPaymentInvoice( null );
-        setPaymentState( "pending" ); // No invoice, but still "pending" for the user to proceed
-      }
+
+      const subscriptionDoc = snap.docs.find( ( invoiceDoc ) =>
+        isSubscriptionInvoice( invoiceDoc.data() || {} )
+      );
+      const maintenanceDoc = snap.docs.find( ( invoiceDoc ) =>
+        isMaintenanceInvoice( invoiceDoc.data() || {} )
+      );
+
+      setPaymentInvoice(
+        subscriptionDoc
+          ? normalizeInvoiceForSetup(
+            subscriptionDoc.id,
+            subscriptionDoc.data() as Record<string, any>
+          )
+          : null
+      );
+      setMaintenanceInvoice(
+        maintenanceDoc
+          ? normalizeInvoiceForSetup(
+            maintenanceDoc.id,
+            maintenanceDoc.data() as Record<string, any>
+          )
+          : null
+      );
+
+      return Boolean( subscriptionDoc );
     } catch ( err ) {
       console.error( "Error al cargar factura pendiente:", err );
       setPaymentState( "error" ); // Set error state if loading fails
+      return false;
     } finally {
       setLoadingInvoice( false );
     }
@@ -592,6 +664,13 @@ const InitialSetupSteps = () => {
       );
 
       if ( url ) {
+        sessionStorage.setItem(
+          INITIAL_SETUP_STRIPE_PENDING_KEY,
+          JSON.stringify( {
+            invoiceId: paymentInvoice.id || "",
+            checkoutStartedAt: Date.now(),
+          } )
+        );
         window.location.href = url;
       } else {
         toast.error( "No se pudo iniciar el pago" );
@@ -1273,6 +1352,14 @@ const InitialSetupSteps = () => {
                     <p className="text-gray-600 dark:text-gray-300">
                       Tu cuenta está al corriente. Puedes finalizar tu configuración.
                     </p>
+                    { maintenanceInvoice && (
+                      <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-left text-sm text-amber-800 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-300">
+                        Tienes pendiente la factura de App de Mantenimiento
+                        ({ " " }
+                        <strong>{ maintenanceInvoice.invoiceNumber }</strong> ).
+                        Puedes pagarla después desde tu historial de facturas.
+                      </div>
+                    ) }
                   </div>
                 ) }
 
@@ -1353,7 +1440,7 @@ const InitialSetupSteps = () => {
                 Siguiente
                 <ChevronRightIcon className="h-5 w-5 ml-1" />
               </button>
-            ) : ( !paymentInvoice || paymentState === "success" ) ? (
+            ) : ( !paymentInvoice ) ? (
               <button
                 onClick={ handleFinish }
                 disabled={ isSubmitting }

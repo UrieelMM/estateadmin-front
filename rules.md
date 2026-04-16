@@ -1,7 +1,7 @@
 rules_version = '2';
 service cloud.firestore {
-  match /databases/{database}/documents {
-    
+match /databases/{database}/documents {
+
     // ───────────── Funciones ─────────────
     function isAuthenticated() {
       return request.auth != null;
@@ -163,41 +163,41 @@ service cloud.firestore {
                'discontinued'
              ].hasAny([request.resource.data.newStatus]));
     }
-    
+
     // ─── Colección de Links de Noticias y Guías (ahora lectura pública) ───
     match /linksNewsAndGuides/{docId} {
       allow read:   if true;
       allow create, update, delete: if isSuperAdmin();
     }
-    
+
     // ─── Colección de tickets de soporte ───
     match /supportTickets/{ticketId} {
       allow create: if isAdminOrAssistant() && isValidSupportTicketCreate();
       allow read: if isSuperAdmin();
       allow update, delete: if false;
     }
-    
+
     // ─── Nivel Cliente ───
     match /clients/{clientId} {
       allow read:  if belongsToClientOrSuperAdmin(clientId);
       allow write: if (isAdmin() && belongsToClient(clientId)) || isSuperAdmin();
-      
+
       // ─── Usuarios de App de Mantenimiento ───
       match /maintenanceAppUsers/{userId} {
         // Lectura: admin, super-admin, o el propio usuario de mantenimiento
-        allow read: if (isAdmin() && belongsToClient(clientId)) 
+        allow read: if (isAdmin() && belongsToClient(clientId))
                     || isSuperAdmin()
                     || (isMaintenanceUser() && belongsToClient(clientId) && request.auth.uid == userId);
         allow create, update: if (isAdmin() && belongsToClient(clientId)) || isSuperAdmin();
         allow delete: if (isAdmin() && belongsToClient(clientId)) || isSuperAdmin();
       }
-      
+
       // ─── Nivel Condominios ───
       match /condominiums/{condominiumId} {
         allow read:  if belongsToClientOrSuperAdmin(clientId)
                      || (isMaintenanceUser() && belongsToClient(clientId));
         allow write: if (isAdmin() && belongsToClient(clientId)) || isSuperAdmin();
-        
+
         // ─── Empleados ───
         match /employees/{employeeId} {
           // Lectura: admin, assistant, super-admin, o usuario de mantenimiento vinculado
@@ -206,14 +206,14 @@ service cloud.firestore {
           allow create, update: if (isAdminOrAssistant() && belongsToClient(clientId)) || isSuperAdmin();
           allow delete: if (isAdmin() && belongsToClient(clientId)) || isSuperAdmin();
         }
-        
+
         // ─── Tickets de Mantenimiento ───
         match /ticketsMaintenance/{ticketId} {
           // Lectura: admin, assistant, super-admin, o usuario de mantenimiento del cliente
           allow read: if belongsToClientOrSuperAdmin(clientId)
                       || (isMaintenanceUser() && belongsToClient(clientId));
           // Actualización: admin, assistant, super-admin, o usuario de mantenimiento del cliente
-          allow update: if (isAdminOrAssistant() && belongsToClient(clientId)) 
+          allow update: if (isAdminOrAssistant() && belongsToClient(clientId))
                         || isSuperAdmin()
                         || (isMaintenanceUser() && belongsToClient(clientId));
           allow create: if (isAdminOrAssistant() && belongsToClient(clientId)) || isSuperAdmin();
@@ -247,7 +247,7 @@ service cloud.firestore {
           // Actualización/eliminación: solo admin/super-admin
           allow update, delete: if (isAdmin() && belongsToClient(clientId)) || isSuperAdmin();
         }
-        
+
         // ─── Reportes de App de Mantenimiento ───
         match /reportsMaintenanceApp/{reportId} {
           // Lectura: admin, assistant, super-admin, o usuario de mantenimiento del cliente
@@ -263,7 +263,7 @@ service cloud.firestore {
                         || isSuperAdmin();
           allow delete: if (isAdmin() && belongsToClient(clientId)) || isSuperAdmin();
         }
-        
+
         // ─── Mantenimiento Programado ───
         match /scheduledMaintenance/{taskId} {
           // Lectura: solo usuarios de mantenimiento del cliente
@@ -275,7 +275,7 @@ service cloud.firestore {
           // Eliminación: solo usuarios de mantenimiento del cliente
           allow delete: if (isMaintenanceUser() && belongsToClient(clientId));
         }
-        
+
         // ─── Tokens de Notificaciones Push ───
         match /pushTokens/{userId} {
           // Lectura: solo el propio usuario, admin o super-admin
@@ -289,7 +289,7 @@ service cloud.firestore {
                         || (isAdmin() && belongsToClient(clientId))
                         || isSuperAdmin();
         }
-        
+
         // ─── Subcolección: Áreas Comunes ───
         match /commonAreas/{areaId} {
           // Lectura: super-admin, admin y admin-assistant
@@ -370,7 +370,7 @@ service cloud.firestore {
           allow create: if (isAdminOrAssistant() && belongsToClient(clientId)) || isSuperAdmin();
           allow update, delete: if false;
         }
-        
+
         // ─── Subcolecciones genéricas de segundo nivel ───
         match /{collection}/{docId} {
           allow read:   if belongsToClientOrSuperAdmin(clientId);
@@ -378,14 +378,14 @@ service cloud.firestore {
                                   && ((isAdminOrAssistant() && belongsToClient(clientId)) || isSuperAdmin());
           allow delete: if !isProtectedCondominiumCollection(collection)
                          && ((isAdmin() && belongsToClient(clientId)) || isSuperAdmin());
-          
+
           // ─── Cargos ───
           match /charges/{chargeId} {
             allow read:   if belongsToClientOrSuperAdmin(clientId);
             allow create, update: if ((isAdminOrAssistant() && belongsToClient(clientId)) || isSuperAdmin())
                                    && isValidCharge();
             allow delete: if (isAdmin() && belongsToClient(clientId)) || isSuperAdmin();
-            
+
             // ─── Pagos dentro de Cargos ───
             match /payments/{paymentId} {
               allow read:   if belongsToClientOrSuperAdmin(clientId);
@@ -394,7 +394,7 @@ service cloud.firestore {
               allow delete: if (isAdmin() && belongsToClient(clientId)) || isSuperAdmin();
             }
           }
-          
+
           // ─── Otras subcolecciones de tercer nivel ───
           match /{subcollection}/{subdocId} {
             allow read:   if belongsToClientOrSuperAdmin(clientId);
@@ -425,13 +425,13 @@ service cloud.firestore {
         }
       }
     }
-    
+
     // ─── CollectionGroup: pagos (solo lectura para su propio clientId) ───
     match /{path=**}/payments/{paymentId} {
       allow read: if isSuperAdmin()
                   || (isAuthenticated() && resource.data.clientId == request.auth.token.clientId);
     }
-    
+
     // ─── CollectionGroup: cargos (solo lectura para su propio clientId) ───
     match /{path=**}/charges/{chargeId} {
       allow read: if isSuperAdmin()
@@ -455,7 +455,7 @@ service cloud.firestore {
       allow read: if isSuperAdmin()
                   || (isAuthenticated() && resource.data.clientId == request.auth.token.clientId);
     }
-    
+
     // ─── publicQRs en ruta específica ───
     match /clients/{clientId}/condominiums/{condominiumId}/publicQRs/{qrId} {
       allow read:   if true;
@@ -463,7 +463,7 @@ service cloud.firestore {
                     && (request.resource.data.clientId == request.auth.token.clientId || isSuperAdmin());
       allow update, delete: if false;
     }
-    
+
     // ─── CollectionGroup: publicQRs (solo lectura) ───
     match /{path=**}/publicQRs/{qrId} {
       allow read: if true;
@@ -492,7 +492,7 @@ service cloud.firestore {
     match /clients/{clientId}/condominiums/{condominiumId}/attendance/{attendanceId} {
       allow create: if true;
     }
-    
+
     // ─── Validaciones para "charges" y "payments" ───
     function isValidCharge() {
       return request.resource.data.keys().hasAll([
@@ -554,5 +554,6 @@ service cloud.firestore {
       && request.resource.data.userId.size() > 0
       && request.resource.data.yearMonth is string;
     }
-  }
+
+}
 }

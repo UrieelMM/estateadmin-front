@@ -14,10 +14,17 @@ import useClientInvoicesStore, {
   ClientInvoice,
 } from "../../../../../store/useClientInvoicesStore";
 import LoadingApp from "../../../../components/shared/loaders/LoadingApp";
+import { getAuth, getIdTokenResult } from "firebase/auth";
+import { collection, getDocs, getFirestore } from "firebase/firestore";
 
 interface ClientInvoicesTableProps {
   onViewInvoice?: ( invoice: ClientInvoice ) => void;
   onPayInvoice?: ( invoice: ClientInvoice ) => void;
+}
+
+interface CondominiumOption {
+  id: string;
+  name: string;
 }
 
 const ITEMS_PER_PAGE = 20;
@@ -58,6 +65,13 @@ const getInvoicePdfUrl = ( invoice: ClientInvoice ) =>
 const truncateText = ( text: string | undefined, maxLength: number = 25 ) => {
   if ( !text ) return "N/A";
   return text.length > maxLength ? `${ text.substring( 0, maxLength ) }...` : text;
+};
+
+const getCondominiumDisplayName = ( invoice: ClientInvoice ): string => {
+  const rawName = String( invoice.condominiumName || "" ).trim();
+  if ( rawName ) return rawName;
+  const rawId = String( invoice.condominiumId || "" ).trim();
+  return rawId || "N/A";
 };
 
 const statusColors = {
@@ -102,6 +116,7 @@ const ClientInvoicesTable: React.FC<ClientInvoicesTableProps> = ( {
   const [ showFilters, setShowFilters ] = useState( false );
   const [ filters, setFilters ] = useState<{
     status?: string;
+    condominiumId?: string;
   }>( {} );
   const [ showSearchModal, setShowSearchModal ] = useState( false );
   const [ searchResults, setSearchResults ] = useState<ClientInvoice[]>( [] );
@@ -109,6 +124,47 @@ const ClientInvoicesTable: React.FC<ClientInvoicesTableProps> = ( {
   const [ selectedInvoice, setSelectedInvoice ] = useState<ClientInvoice | null>(
     null
   );
+  const [ condominiumOptions, setCondominiumOptions ] = useState<CondominiumOption[]>( [] );
+
+  useEffect( () => {
+    const loadCondominiums = async () => {
+      try {
+        const auth = getAuth();
+        const user = auth.currentUser;
+        if ( !user ) return;
+
+        const tokenResult = await getIdTokenResult( user );
+        const clientId =
+          (tokenResult.claims.clientId as string) ||
+          String( localStorage.getItem( "clientId" ) || "" );
+
+        if ( !clientId ) return;
+
+        const snapshot = await getDocs(
+          collection( getFirestore(), `clients/${ clientId }/condominiums` )
+        );
+
+        const options = snapshot.docs
+          .map( ( condoDoc ) => {
+            const data = condoDoc.data() || {};
+            const name = String(
+              data.name || data.condominiumName || data.uid || condoDoc.id
+            ).trim();
+            return {
+              id: condoDoc.id,
+              name: name || condoDoc.id,
+            };
+          } )
+          .sort( ( a, b ) => a.name.localeCompare( b.name, "es-MX" ) );
+
+        setCondominiumOptions( options );
+      } catch ( error ) {
+        console.error( "Error al cargar lista de condominios:", error );
+      }
+    };
+
+    loadCondominiums();
+  }, [] );
 
   // Cargar facturas iniciales
   useEffect( () => {
@@ -287,6 +343,29 @@ const ClientInvoicesTable: React.FC<ClientInvoicesTableProps> = ( {
                 <option value="canceled">Cancelado</option>
               </select>
             </div>
+            <div>
+              <label
+                htmlFor="condominium-filter"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1"
+              >
+                Condominio
+              </label>
+              <select
+                id="condominium-filter"
+                value={ filters.condominiumId || "" }
+                onChange={ ( e ) =>
+                  handleFilterChange( "condominiumId", e.target.value )
+                }
+                className="block w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm dark:bg-gray-800 dark:border-gray-600 dark:text-white cursor-pointer"
+              >
+                <option value="">Todos los condominios</option>
+                { condominiumOptions.map( ( condominium ) => (
+                  <option key={ condominium.id } value={ condominium.id }>
+                    { condominium.name }
+                  </option>
+                ) ) }
+              </select>
+            </div>
           </div>
         </div>
       ) }
@@ -369,7 +448,7 @@ const ClientInvoicesTable: React.FC<ClientInvoicesTableProps> = ( {
                           { formatCurrency( invoice.amount ) }
                         </td>
                         <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 dark:text-gray-200">
-                          { truncateText( invoice.condominiumName ) }
+                          { truncateText( getCondominiumDisplayName( invoice ) ) }
                         </td>
                         <td className="whitespace-nowrap px-3 py-4 text-sm">
                           <span
@@ -611,7 +690,7 @@ const ClientInvoicesTable: React.FC<ClientInvoicesTableProps> = ( {
                                     { formatCurrency( invoice.amount ) }
                                   </td>
                                   <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 dark:text-gray-200">
-                                    { truncateText( invoice.condominiumName ) }
+                                    { truncateText( getCondominiumDisplayName( invoice ) ) }
                                   </td>
                                   <td className="whitespace-nowrap px-3 py-4 text-sm">
                                     <span
