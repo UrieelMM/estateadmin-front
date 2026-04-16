@@ -32,7 +32,7 @@ const EmployeeList: React.FC = () => {
 
   const [showModal, setShowModal] = useState(false);
   const [modalMode, setModalMode] = useState<"create" | "edit" | "view">(
-    "create"
+    "create",
   );
   const [selectedEmployee, setSelectedEmployeeLocal] =
     useState<PersonalProfile | null>(null);
@@ -307,7 +307,7 @@ const EmployeeList: React.FC = () => {
                   </span>
                   <span
                     className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(
-                      employee.employmentInfo.status
+                      employee.employmentInfo.status,
                     )}`}
                   >
                     {employee.employmentInfo.status.charAt(0).toUpperCase() +
@@ -375,7 +375,7 @@ const EmployeeList: React.FC = () => {
             <div className="mt-6">
               <button
                 onClick={handleCreateEmployee}
-                className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors duration-200"
+                className="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors duration-200"
               >
                 <PlusIcon className="h-4 w-4 mr-2" />
                 Agregar Empleado
