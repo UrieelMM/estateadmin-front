@@ -11,6 +11,7 @@ import MaintenancePaymentsTable from "./MaintenancePaymentsTable";
 import { usePaymentSummaryStore } from "../../../../../store/paymentSummaryStore";
 import useUserStore from "../../../../../store/UserDataStore";
 import TowerIncomeSummary from "./TowerIncomeSummary";
+import LoadingApp from "../../../../components/shared/loaders/LoadingApp";
 
 type IncomeTabId =
   | "summary"
@@ -62,6 +63,20 @@ const Income = () => {
         detailed: state.detailed,
       } )
     );
+
+  // Local flag: true only while the FIRST fetchSummary of this component instance is in flight.
+  // Using the store's `loading` flag causes a stuck spinner because:
+  //   1. useLayoutEffect → setSelectedYear("") fires before the useEffect
+  //   2. The useEffect has selectedYear as a dep, so it fires twice
+  //   3. A shared `loading` flag is set by other components too
+  // Instead we resolve immediately if the store already has fresh data (lastFetch),
+  // and otherwise wait for fetchSummary to finish.
+  const [ isInitializing, setIsInitializing ] = useState( () => {
+    // Lazy initializer: reads the store state at mount time ONCE.
+    // If data was already fetched (e.g. user navigated between tabs), skip the spinner.
+    const { lastFetch: lf, detailed: det } = usePaymentSummaryStore.getState();
+    return Object.keys( lf ).length === 0 && Object.keys( det ).length === 0;
+  } );
   const { fetchCondominiumsUsers, condominiumsUsers } = useUserStore(
     ( state ) => ( {
       fetchCondominiumsUsers: state.fetchCondominiumsUsers,
@@ -119,6 +134,9 @@ const Income = () => {
         }
       } catch ( error ) {
         console.error( "Error loading summary:", error );
+      } finally {
+        // Mark initialization done regardless of success/failure
+        if ( isMounted ) setIsInitializing( false );
       }
     };
 
@@ -128,7 +146,8 @@ const Income = () => {
       isMounted = false;
       cleanupListeners( selectedYear );
     };
-  }, [ fetchSummary, cleanupListeners, selectedYear ] );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [] ); // Only run once on mount — selectedYear is set via useLayoutEffect before this fires
 
   useEffect( () => {
     fetchCondominiumsUsers().catch( ( error ) => {
@@ -137,11 +156,6 @@ const Income = () => {
   }, [ fetchCondominiumsUsers ] );
 
   const handleTabChange = ( tab: IncomeTabId ) => {
-    if ( [ "summary", "accountSummary", "towers" ].includes( tab ) ) {
-      fetchSummary( selectedYear ).catch( ( error ) => {
-        console.error( "Error refreshing summary:", error );
-      } );
-    }
     navigate( INCOME_TAB_PATHS[ tab ] );
   };
 
@@ -305,45 +319,57 @@ const Income = () => {
         </div>
 
         <div className="-mx-4 sm:-mx-0 py-4">
-          { activeTab === "summary" && (
-            <>
-              <h2 className="text-2xl font-bold text-indigo-600 mb-4 dark:text-indigo-500">
-                Resumen General de Ingresos
-              </h2>
-              <PaymentSummary />
-            </>
-          ) }
-          { activeTab === "accountSummary" && (
-            <>
-              <h2 className="text-2xl font-bold text-indigo-600 mb-4 dark:text-indigo-500">
-                Resumen por Cuenta
-              </h2>
-              <PaymentSummaryByAccount />
-            </>
-          ) }
-          { activeTab === "maintenance" && (
-            <div className="py-2">
-              <MaintenancePaymentsTable />
+          { isInitializing ? (
+            /* ── Loading guard: visible en cualquier tab mientras fetchSummary no termina ── */
+            <div className="flex flex-col items-center justify-center gap-2 py-16">
+              <LoadingApp />
+              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                Cargando datos financieros…
+              </p>
             </div>
-          ) }
-          { activeTab === "history-by-condominium" && (
-            <div className="lg:px-4 flex mt-0 flex-col lg:flex-row gap-4">
-              <div className="w-full lg:w-[100%]">
-                <PaymentHistory />
-              </div>
-            </div>
-          ) }
-          { activeTab === "morosidad" && <MorosidadView /> }
-          { activeTab === "towers" && (
+          ) : (
             <>
-              <h2 className="text-2xl font-bold text-indigo-600 mb-4 dark:text-indigo-500">
-                Torres
-              </h2>
-              <TowerIncomeSummary />
+              { activeTab === "summary" && (
+                <>
+                  <h2 className="text-2xl font-bold text-indigo-600 mb-4 dark:text-indigo-500">
+                    Resumen General de Ingresos
+                  </h2>
+                  <PaymentSummary />
+                </>
+              ) }
+              { activeTab === "accountSummary" && (
+                <>
+                  <h2 className="text-2xl font-bold text-indigo-600 mb-4 dark:text-indigo-500">
+                    Resumen por Cuenta
+                  </h2>
+                  <PaymentSummaryByAccount />
+                </>
+              ) }
+              { activeTab === "maintenance" && (
+                <div className="py-2">
+                  <MaintenancePaymentsTable />
+                </div>
+              ) }
+              { activeTab === "history-by-condominium" && (
+                <div className="lg:px-4 flex mt-0 flex-col lg:flex-row gap-4">
+                  <div className="w-full lg:w-[100%]">
+                    <PaymentHistory />
+                  </div>
+                </div>
+              ) }
+              { activeTab === "morosidad" && <MorosidadView /> }
+              { activeTab === "towers" && (
+                <>
+                  <h2 className="text-2xl font-bold text-indigo-600 mb-4 dark:text-indigo-500">
+                    Torres
+                  </h2>
+                  <TowerIncomeSummary />
+                </>
+              ) }
+              { activeTab === "unidentified" && <UnidentifiedPaymentsTable /> }
+              { activeTab === "history" && <HistoryPaymentsTable /> }
             </>
           ) }
-          { activeTab === "unidentified" && <UnidentifiedPaymentsTable /> }
-          { activeTab === "history" && <HistoryPaymentsTable /> }
         </div>
       </div>
 

@@ -44,7 +44,7 @@ const MONTHS = [
   { value: "12", label: "Diciembre" },
 ];
 
-const YEARS = [2022, 2023, 2024, 2025, 2026, 2027, 2028, 2029, 2030].map(
+const YEARS = [ 2022, 2023, 2024, 2025, 2026, 2027, 2028, 2029, 2030 ].map(
   ( y ) => ( { value: String( y ), label: String( y ) } )
 );
 
@@ -74,7 +74,7 @@ const getPaymentTypeBadgeClass = ( type: string ) => {
 // Helpers
 // ────────────────────────────────────────────────────────────
 type SortField = "paymentDate" | "amount" | "condominiumNumber" | "tower" | "month" | "paymentType";
-type SortDir   = "asc" | "desc";
+type SortDir = "asc" | "desc";
 
 const normalizeTower = ( val: unknown ): string =>
   String( val ?? "" )
@@ -135,13 +135,13 @@ const buildRow = (
   userByNumber: Map<string, { name: string; lastName: string; tower: string; }>
 ): MaintenanceRow => {
   const condoNumber = String( rec.numberCondominium || "" ).trim();
-  const towerSnap   = normalizeTower( rec.towerSnapshot );
-  const userInfo    = userByNumber.get( condoNumber );
+  const towerSnap = normalizeTower( rec.towerSnapshot );
+  const userInfo = userByNumber.get( condoNumber );
   const name = userInfo
     ? `${ userInfo.name } ${ userInfo.lastName }`.trim()
     : "";
   const tower = towerSnap || normalizeTower( userInfo?.tower );
-  const parsedDate  = rec.paymentDate ? parseDateDMY( rec.paymentDate ) : null;
+  const parsedDate = rec.paymentDate ? parseDateDMY( rec.paymentDate ) : null;
   const month = String( rec.month || "" ).padStart( 2, "0" );
 
   return {
@@ -165,15 +165,13 @@ const buildRow = (
 const MaintenancePaymentsTable: React.FC = () => {
   // ── Store ────────────────────────────────────────────────
   const {
-    completedPayments,
     fetchPaymentHistory,
     resetPaymentsState,
-    lastPaymentDoc,
   } = usePaymentSummaryStore( ( s ) => ( {
-    completedPayments:  s.completedPayments,
+    completedPayments: s.completedPayments,
     fetchPaymentHistory: s.fetchPaymentHistory,
     resetPaymentsState: s.resetPaymentsState,
-    lastPaymentDoc:     s.lastPaymentDoc,
+    lastPaymentDoc: s.lastPaymentDoc,
   } ) );
   const condominiumsUsers = useUserStore( ( s ) => s.condominiumsUsers );
 
@@ -182,17 +180,17 @@ const MaintenancePaymentsTable: React.FC = () => {
   // We load ALL pages upfront (filtered server-side by date; concept filtered client-side)
   // because the concept filter is client-side. We fetch in batches of 300.
   const [ allFetched, setAllFetched ] = useState<PaymentRecord[]>( [] );
-  const [ fetchDone,  setFetchDone   ] = useState( false );
+  const [ fetchDone, setFetchDone ] = useState( false );
 
   // ── UI states ────────────────────────────────────────────
-  const [ search,      setSearch      ] = useState( "" );
+  const [ search, setSearch ] = useState( "" );
   const [ showFilters, setShowFilters ] = useState( false );
   const [ filterMonth, setFilterMonth ] = useState( "" );
-  const [ filterYear,  setFilterYear  ] = useState( "" );
+  const [ filterYear, setFilterYear ] = useState( "" );
   const [ filterTower, setFilterTower ] = useState( "" );
   const [ currentPage, setCurrentPage ] = useState( 1 );
   const [ sortField, setSortField ] = useState<SortField>( "paymentDate" );
-  const [ sortDir,   setSortDir   ] = useState<SortDir>( "desc" );
+  const [ sortDir, setSortDir ] = useState<SortDir>( "desc" );
 
   // ── Fetch ALL payments and keep only maintenance ones ────
   useEffect( () => {
@@ -210,7 +208,7 @@ const MaintenancePaymentsTable: React.FC = () => {
       try {
         while ( true ) {
           const count = await fetchPaymentHistory( batchSize, cursor, {} );
-          const page  = usePaymentSummaryStore.getState().completedPayments;
+          const page = usePaymentSummaryStore.getState().completedPayments;
 
           // Filter maintenance records from this batch
           page.forEach( ( rec ) => {
@@ -242,7 +240,7 @@ const MaintenancePaymentsTable: React.FC = () => {
       cancelled = true;
       resetPaymentsState();
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [] );
 
   // ── Build user-lookup map ────────────────────────────────
@@ -286,14 +284,14 @@ const MaintenancePaymentsTable: React.FC = () => {
   const [ filterPaymentType, setFilterPaymentType ] = useState( "" );
 
   const filtered = useMemo( () => {
-    const q  = normalizeSearch( search );
+    const q = normalizeSearch( search );
     const tw = normalizeSearch( filterTower );
 
     return allRows.filter( ( row ) => {
       // Text search: name, number, tower
       if ( q ) {
-        const numMatch   = row.condominiumNumber.toLowerCase().includes( q );
-        const nameMatch  = normalizeSearch( row.condominiumName ).includes( q );
+        const numMatch = row.condominiumNumber.toLowerCase().includes( q );
+        const nameMatch = normalizeSearch( row.condominiumName ).includes( q );
         const towerMatch = normalizeSearch( row.tower ).includes( q );
         if ( !numMatch && !nameMatch && !towerMatch ) return false;
       }
@@ -345,8 +343,8 @@ const MaintenancePaymentsTable: React.FC = () => {
 
   // ── Pagination ───────────────────────────────────────────
   const totalPages = Math.max( 1, Math.ceil( sorted.length / ITEMS_PER_PAGE ) );
-  const safePage   = Math.min( currentPage, totalPages );
-  const pageRows   = sorted.slice(
+  const safePage = Math.min( currentPage, totalPages );
+  const pageRows = sorted.slice(
     ( safePage - 1 ) * ITEMS_PER_PAGE,
     safePage * ITEMS_PER_PAGE
   );
@@ -354,11 +352,11 @@ const MaintenancePaymentsTable: React.FC = () => {
   const goToPage = ( p: number ) =>
     setCurrentPage( Math.max( 1, Math.min( totalPages, p ) ) );
 
-  const handleSearch       = ( v: string ) => { setSearch( v );            setCurrentPage( 1 ); };
-  const handleMonth        = ( v: string ) => { setFilterMonth( v );       setCurrentPage( 1 ); };
-  const handleYear         = ( v: string ) => { setFilterYear( v );        setCurrentPage( 1 ); };
-  const handleTower        = ( v: string ) => { setFilterTower( v );       setCurrentPage( 1 ); };
-  const handlePaymentType  = ( v: string ) => { setFilterPaymentType( v ); setCurrentPage( 1 ); };
+  const handleSearch = ( v: string ) => { setSearch( v ); setCurrentPage( 1 ); };
+  const handleMonth = ( v: string ) => { setFilterMonth( v ); setCurrentPage( 1 ); };
+  const handleYear = ( v: string ) => { setFilterYear( v ); setCurrentPage( 1 ); };
+  const handleTower = ( v: string ) => { setFilterTower( v ); setCurrentPage( 1 ); };
+  const handlePaymentType = ( v: string ) => { setFilterPaymentType( v ); setCurrentPage( 1 ); };
 
   const toggleSort = ( field: SortField ) => {
     if ( sortField === field ) {
@@ -387,7 +385,7 @@ const MaintenancePaymentsTable: React.FC = () => {
     if ( sortField !== field )
       return <ArrowsUpDownIcon className="h-3.5 w-3.5 ml-1 text-gray-400 opacity-60" />;
     return sortDir === "asc"
-      ? <ArrowUpIcon   className="h-3.5 w-3.5 ml-1 text-indigo-400" />
+      ? <ArrowUpIcon className="h-3.5 w-3.5 ml-1 text-indigo-400" />
       : <ArrowDownIcon className="h-3.5 w-3.5 ml-1 text-indigo-400" />;
   };
 
@@ -422,7 +420,7 @@ const MaintenancePaymentsTable: React.FC = () => {
   return (
     <div className="space-y-5">
 
-      {/* ── Header ─────────────────────────────────────── */}
+      {/* ── Header ─────────────────────────────────────── */ }
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-xl font-bold text-gray-900 dark:text-white">
@@ -431,19 +429,19 @@ const MaintenancePaymentsTable: React.FC = () => {
           <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
             { fetchDone
               ? <>
-                  <span className="font-semibold text-indigo-600 dark:text-indigo-400">{ sorted.length }</span>
-                  { " " }registro{ sorted.length !== 1 ? "s" : "" } encontrado{ sorted.length !== 1 ? "s" : "" }
-                  { " de " }
-                  <span className="font-medium text-gray-700 dark:text-gray-300">{ allRows.length }</span>
-                  { " total" }
-                </>
+                <span className="font-semibold text-indigo-600 dark:text-indigo-400">{ sorted.length }</span>
+                { " " }registro{ sorted.length !== 1 ? "s" : "" } encontrado{ sorted.length !== 1 ? "s" : "" }
+                { " de " }
+                <span className="font-medium text-gray-700 dark:text-gray-300">{ allRows.length }</span>
+                { " total" }
+              </>
               : "Cargando registros…"
             }
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {/* Search */}
+          {/* Search */ }
           <div className="relative">
             <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
             <input
@@ -469,16 +467,16 @@ const MaintenancePaymentsTable: React.FC = () => {
             ) }
           </div>
 
-          {/* Filters toggle */}
+          {/* Filters toggle */ }
           <button
             type="button"
             onClick={ () => setShowFilters( ( v ) => !v ) }
             className={
               `inline-flex items-center gap-2 rounded-xl border px-3.5 py-2 text-sm font-medium shadow-sm transition-all duration-200
                ${ showFilters
-                 ? "border-indigo-400 bg-indigo-50 text-indigo-700 dark:border-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-300"
-                 : "border-gray-200 bg-white/80 text-gray-600 hover:border-indigo-300 hover:text-indigo-600 dark:border-gray-700 dark:bg-gray-800/80 dark:text-gray-400 dark:hover:border-indigo-600 dark:hover:text-indigo-400"
-               }`
+                ? "border-indigo-400 bg-indigo-50 text-indigo-700 dark:border-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-300"
+                : "border-gray-200 bg-white/80 text-gray-600 hover:border-indigo-300 hover:text-indigo-600 dark:border-gray-700 dark:bg-gray-800/80 dark:text-gray-400 dark:hover:border-indigo-600 dark:hover:text-indigo-400"
+              }`
             }
           >
             <FunnelIcon className="h-4 w-4" />
@@ -503,7 +501,7 @@ const MaintenancePaymentsTable: React.FC = () => {
         </div>
       </div>
 
-      {/* ── Filter panel ───────────────────────────────── */}
+      {/* ── Filter panel ───────────────────────────────── */ }
       { showFilters && (
         <div
           className="
@@ -513,7 +511,7 @@ const MaintenancePaymentsTable: React.FC = () => {
           "
           style={ { animation: "fadeSlideDown 180ms cubic-bezier(0.23,1,0.32,1) both" } }
         >
-          {/* Tower */}
+          {/* Tower */ }
           <div>
             <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
               Torre
@@ -530,7 +528,7 @@ const MaintenancePaymentsTable: React.FC = () => {
             </select>
           </div>
 
-          {/* Month */}
+          {/* Month */ }
           <div>
             <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
               Mes
@@ -546,7 +544,7 @@ const MaintenancePaymentsTable: React.FC = () => {
             </select>
           </div>
 
-          {/* Year */}
+          {/* Year */ }
           <div>
             <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
               Año
@@ -563,7 +561,7 @@ const MaintenancePaymentsTable: React.FC = () => {
             </select>
           </div>
 
-          {/* Payment type */}
+          {/* Payment type */ }
           <div>
             <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
               Tipo de pago
@@ -582,7 +580,7 @@ const MaintenancePaymentsTable: React.FC = () => {
         </div>
       ) }
 
-      {/* ── Loading ────────────────────────────────────── */}
+      {/* ── Loading ────────────────────────────────────── */ }
       { loadingPayments && (
         <div className="flex flex-col items-center gap-3 py-12">
           <LoadingApp />
@@ -592,7 +590,7 @@ const MaintenancePaymentsTable: React.FC = () => {
         </div>
       ) }
 
-      {/* ── Table ──────────────────────────────────────── */}
+      {/* ── Table ──────────────────────────────────────── */ }
       { !loadingPayments && (
         <>
           { sorted.length === 0 ? (
@@ -611,20 +609,20 @@ const MaintenancePaymentsTable: React.FC = () => {
             <div className="overflow-hidden rounded-2xl border border-gray-200/60 shadow-sm dark:border-gray-700/60">
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                  {/* ── thead ─────────────────────────── */}
+                  {/* ── thead ─────────────────────────── */ }
                   <thead className="bg-gray-50/80 dark:bg-gray-800/80 backdrop-blur-sm">
                     <tr>
-                      <Th label="Condómino"    field="condominiumNumber" icon={ UserIcon } />
-                      <Th label="Torre"         field="tower"             icon={ BuildingOffice2Icon } />
-                      <Th label="Fecha de pago" field="paymentDate"       icon={ CalendarDaysIcon } />
-                      <Th label="Monto"         field="amount"            icon={ CurrencyDollarIcon } />
-                      <Th label="Referencia"                               icon={ ReceiptRefundIcon } />
-                      <Th label="Mes"           field="month"             icon={ TagIcon } />
-                      <Th label="Tipo de pago"  field="paymentType"       icon={ CreditCardIcon } />
+                      <Th label="Condómino" field="condominiumNumber" icon={ UserIcon } />
+                      <Th label="Torre" field="tower" icon={ BuildingOffice2Icon } />
+                      <Th label="Fecha de pago" field="paymentDate" icon={ CalendarDaysIcon } />
+                      <Th label="Monto" field="amount" icon={ CurrencyDollarIcon } />
+                      <Th label="Referencia" icon={ ReceiptRefundIcon } />
+                      <Th label="Mes" field="month" icon={ TagIcon } />
+                      <Th label="Tipo de pago" field="paymentType" icon={ CreditCardIcon } />
                     </tr>
                   </thead>
 
-                  {/* ── tbody ─────────────────────────── */}
+                  {/* ── tbody ─────────────────────────── */ }
                   <tbody className="divide-y divide-gray-100 dark:divide-gray-800 bg-white dark:bg-gray-900">
                     { pageRows.map( ( row, idx ) => (
                       <tr
@@ -634,7 +632,7 @@ const MaintenancePaymentsTable: React.FC = () => {
                           animation: `fadeSlideDown ${ 100 + idx * 15 }ms cubic-bezier(0.23,1,0.32,1) both`,
                         } }
                       >
-                        {/* Condómino */}
+                        {/* Condómino */ }
                         <td className="whitespace-nowrap px-4 py-3.5">
                           <div className="flex items-center gap-2.5">
                             <span className="inline-flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-indigo-100 text-xs font-bold text-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-300">
@@ -651,7 +649,7 @@ const MaintenancePaymentsTable: React.FC = () => {
                           </div>
                         </td>
 
-                        {/* Torre */}
+                        {/* Torre */ }
                         <td className="whitespace-nowrap px-4 py-3.5">
                           { row.tower ? (
                             <span className="inline-flex items-center gap-1 rounded-lg bg-purple-50 px-2.5 py-1 text-xs font-semibold text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">
@@ -663,7 +661,7 @@ const MaintenancePaymentsTable: React.FC = () => {
                           ) }
                         </td>
 
-                        {/* Fecha de pago */}
+                        {/* Fecha de pago */ }
                         <td className="whitespace-nowrap px-4 py-3.5">
                           { row.paymentDate ? (
                             <span className="inline-flex items-center gap-1.5 rounded-lg bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700 dark:bg-blue-900/20 dark:text-blue-300">
@@ -675,14 +673,14 @@ const MaintenancePaymentsTable: React.FC = () => {
                           ) }
                         </td>
 
-                        {/* Monto */}
+                        {/* Monto */ }
                         <td className="whitespace-nowrap px-4 py-3.5">
                           <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
                             { formatCurrency( row.amount ) }
                           </span>
                         </td>
 
-                        {/* Referencia */}
+                        {/* Referencia */ }
                         <td className="px-4 py-3.5 max-w-[180px]">
                           { row.reference ? (
                             <span
@@ -696,14 +694,14 @@ const MaintenancePaymentsTable: React.FC = () => {
                           ) }
                         </td>
 
-                        {/* Mes */}
+                        {/* Mes */ }
                         <td className="whitespace-nowrap px-4 py-3.5">
                           <span className="inline-flex items-center rounded-lg bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700 dark:bg-amber-900/20 dark:text-amber-300">
                             { formatMonthLabel( row.month ) }
                           </span>
                         </td>
 
-                        {/* Tipo de pago */}
+                        {/* Tipo de pago */ }
                         <td className="whitespace-nowrap px-4 py-3.5">
                           { row.paymentType ? (
                             <span className={ `inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold ${ getPaymentTypeBadgeClass( row.paymentType ) }` }>
@@ -722,7 +720,7 @@ const MaintenancePaymentsTable: React.FC = () => {
             </div>
           ) }
 
-          {/* ── Pagination ─────────────────────────────── */}
+          {/* ── Pagination ─────────────────────────────── */ }
           { totalPages > 1 && (
             <div className="flex flex-col items-center gap-3 pt-2 sm:flex-row sm:justify-between">
               <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -766,9 +764,9 @@ const MaintenancePaymentsTable: React.FC = () => {
                         className={
                           `inline-flex h-8 min-w-[2rem] items-center justify-center rounded-lg px-2 text-sm font-medium transition-colors
                            ${ item === safePage
-                             ? "bg-indigo-600 text-white shadow-sm shadow-indigo-500/30"
-                             : "border border-gray-200 text-gray-600 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-600 dark:border-gray-700 dark:text-gray-400 dark:hover:border-indigo-700 dark:hover:bg-indigo-900/20 dark:hover:text-indigo-400"
-                           }`
+                            ? "bg-indigo-600 text-white shadow-sm shadow-indigo-500/30"
+                            : "border border-gray-200 text-gray-600 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-600 dark:border-gray-700 dark:text-gray-400 dark:hover:border-indigo-700 dark:hover:bg-indigo-900/20 dark:hover:text-indigo-400"
+                          }`
                         }
                       >
                         { item }
@@ -790,7 +788,7 @@ const MaintenancePaymentsTable: React.FC = () => {
         </>
       ) }
 
-      {/* Animation keyframes */}
+      {/* Animation keyframes */ }
       <style>{ `
         @keyframes fadeSlideDown {
           from { opacity: 0; transform: translateY(-6px); }
