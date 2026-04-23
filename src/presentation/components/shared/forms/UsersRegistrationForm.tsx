@@ -582,7 +582,7 @@ const UsersRegistrationForm = () => {
           </p>
           { activeTab === "upsert" && (
             <p className="mt-2 text-xs text-amber-700 dark:text-amber-300">
-              Por seguridad, la edición masiva no permite cambiar <strong>correo</strong> ni <strong>rol</strong>.
+              Por seguridad, la edición masiva no permite cambiar <strong>correo</strong> ni <strong>role</strong>.
             </p>
           ) }
 

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
 import { Disclosure } from "@headlessui/react";
 import {
@@ -13,6 +13,7 @@ import {
   Bars3Icon,
   ShieldExclamationIcon,
 } from "@heroicons/react/16/solid";
+import { Helmet } from "react-helmet-async";
 import { navigation } from "./navigation";
 import Navbar from "../../components/shared/Navbar";
 import useAuthStore from "../../../store/AuthStore";
@@ -37,22 +38,32 @@ declare global {
   }
 }
 
-function classNames(...classes: string[]) {
+function classNames(...classes: (string | boolean | undefined | null | false)[]) {
   return classes.filter(Boolean).join(" ");
 }
 
-// ─── Animaciones ────────────────────────────────────────────────────────────
-const EASE_OUT = [0.16, 1, 0.3, 1] as const;
-const SPRING = { type: "spring", stiffness: 380, damping: 22 } as const;
+// ─── Tipos de navegación ─────────────────────────────────────────────────────
+type SubNavItem = { name: string; href: string };
+type NavItem = {
+  name: string;
+  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
+  current: boolean;
+  href?: string;
+  children?: SubNavItem[];
+};
 
-// Stagger para los items del nav — solo al montar
+// ─── Constantes de animación ─────────────────────────────────────────────────
+const EASE = [0.16, 1, 0.3, 1] as const;
+const SPRING = { type: "spring", stiffness: 380, damping: 24 } as const;
+const PANEL_EASE = [0.4, 0, 0.2, 1] as const;
+
 const navListVariants = {
   hidden: {},
-  show: { transition: { staggerChildren: 0.045, delayChildren: 0.18 } },
+  show: { transition: { staggerChildren: 0.04, delayChildren: 0.15 } },
 };
 const navItemVariants = {
-  hidden: { opacity: 0, x: -10 },
-  show:   { opacity: 1, x: 0, transition: { duration: 0.28, ease: EASE_OUT } },
+  hidden: { opacity: 0, x: -8 },
+  show:  { opacity: 1, x: 0, transition: { duration: 0.25, ease: EASE } },
 };
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -62,6 +73,7 @@ interface Props {
 
 const LayoutDashboard = ({ children }: Props) => {
   const navigate = useNavigate();
+  const { pathname } = useLocation();
 
   const { fetchUserData } = useUserStore((state) => ({
     user: state.user,
@@ -73,14 +85,20 @@ const LayoutDashboard = ({ children }: Props) => {
   const [isDesktopMenuCollapsed, setIsDesktopMenuCollapsed] = useState(false);
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [loadingSession, setLoadingSession] = useState(true);
-  const [showInitialSetup, setShowInitialSetup] = useState<boolean | null>(
-    null
-  );
+  const [showInitialSetup, setShowInitialSetup] = useState<boolean | null>(null);
   const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
 
   useSyncClientPlan();
 
-  // Configuramos las funciones de diagnóstico global
+  // ── Helpers de ruta activa ────────────────────────────────────────────────
+  const isRouteActive = (href: string) => {
+    if (href === "/dashboard/home") return pathname === href;
+    return pathname.startsWith(href);
+  };
+  const isParentActive = (children: SubNavItem[]) =>
+    children.some((c) => pathname.startsWith(c.href));
+
+  // ── Funciones de diagnóstico global ──────────────────────────────────────
   useEffect(() => {
     window.debugClientPlan = () => {
       const auth = getAuth();
@@ -93,13 +111,10 @@ const LayoutDashboard = ({ children }: Props) => {
         console.log("[LayoutDashboard] No hay usuario autenticado");
       }
     };
-
     window.forceUpdateClientPlan = () => {
       useClientPlanStore.getState().forceUpdate();
     };
-
     return () => {
-      // Limpiamos las funciones globales
       window.debugClientPlan = undefined;
       window.forceUpdateClientPlan = undefined;
     };
@@ -111,40 +126,26 @@ const LayoutDashboard = ({ children }: Props) => {
       try {
         const auth = getAuth();
         const user = auth.currentUser;
-        if (!user) {
-          setShowInitialSetup(false);
-          return;
-        }
-
+        if (!user) { setShowInitialSetup(false); return; }
         const tokenResult = await getIdTokenResult(user);
         const clientId = tokenResult.claims["clientId"] as string;
-        if (!clientId) {
-          setShowInitialSetup(false);
-          return;
-        }
-
+        if (!clientId) { setShowInitialSetup(false); return; }
         const db = getFirestore();
         const configDocRef = doc(db, "clients", clientId);
         const configDoc = await getDoc(configDocRef);
-
-        setShowInitialSetup(
-          !configDoc.exists() || !configDoc.data()?.initialSetupCompleted
-        );
+        setShowInitialSetup(!configDoc.exists() || !configDoc.data()?.initialSetupCompleted);
       } catch (error) {
         console.error("Error al verificar configuración inicial:", error);
         setShowInitialSetup(false);
       }
     };
-
     checkInitialSetup();
   }, []);
 
   useEffect(() => {
     setLoadingSession(true);
     const unsubscribe = auth.onAuthStateChanged((user) => {
-      if (!user) {
-        navigate("/login");
-      }
+      if (!user) navigate("/login");
     });
     setLoadingSession(false);
     return () => unsubscribe();
@@ -153,9 +154,7 @@ const LayoutDashboard = ({ children }: Props) => {
   useEffect(() => {
     setIsLoadingData(true);
     fetchUserData();
-    setTimeout(() => {
-      setIsLoadingData(false);
-    }, 2500);
+    setTimeout(() => setIsLoadingData(false), 2500);
   }, [fetchUserData]);
 
   const handleLogout = async () => {
@@ -169,463 +168,421 @@ const LayoutDashboard = ({ children }: Props) => {
     }
   };
 
-  // Mostrar loading mientras verificamos todo
   if (isLoadingData || loadingSession || showInitialSetup === null) {
     return <Loading />;
   }
-
-  // Si necesita configuración inicial, mostrar solo ese componente
   if (showInitialSetup) {
     return <InitialSetupSteps />;
   }
 
-  // Renderizar el layout normal
+  // ── Renderer de ítem de navegación (compartido desktop & mobile) ──────────
+  const renderNavItem = (item: NavItem, collapsed: boolean, onLinkClick?: () => void) => {
+    const itemId = `nav-${item.name.toLowerCase().replace(/\s+/g, "-")}`;
+
+    // Ítem simple sin hijos
+    if (!item.children) {
+      const active = isRouteActive(item.href!);
+      return (
+        <Link
+          to={item.href!}
+          id={itemId}
+          onClick={onLinkClick}
+          title={collapsed ? item.name : undefined}
+          className={classNames(
+            "group flex items-center w-full rounded-lg text-sm font-medium transition-colors duration-150",
+            collapsed ? "justify-center p-2.5" : "px-3 py-2",
+            active
+              ? "bg-indigo-50 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-300"
+              : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800/70 hover:text-gray-900 dark:hover:text-gray-100"
+          )}
+        >
+          <item.icon
+            className={classNames(
+              "flex-shrink-0 h-5 w-5 transition-colors duration-150",
+              !collapsed && "mr-3",
+              active
+                ? "text-indigo-600 dark:text-indigo-400"
+                : "text-gray-400 dark:text-gray-500 group-hover:text-gray-600 dark:group-hover:text-gray-300"
+            )}
+            aria-hidden="true"
+          />
+          {!collapsed && <span>{item.name}</span>}
+        </Link>
+      );
+    }
+
+    // Ítem con hijos (Disclosure)
+    const parentActive = isParentActive(item.children);
+    return (
+      <Disclosure as="div" defaultOpen={isParentActive(item.children)}>
+        {({ open }) => (
+          <>
+            <Disclosure.Button
+              id={itemId}
+              title={collapsed ? item.name : undefined}
+              onClick={() => {
+                if (collapsed) setIsDesktopMenuCollapsed(false);
+              }}
+              className={classNames(
+                "group w-full flex items-center rounded-lg text-sm font-medium transition-colors duration-150 focus:outline-none",
+                collapsed ? "justify-center p-2.5" : "px-3 py-2",
+                parentActive
+                  ? "bg-indigo-50 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-300"
+                  : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800/70 hover:text-gray-900 dark:hover:text-gray-100"
+              )}
+            >
+              <item.icon
+                className={classNames(
+                  "flex-shrink-0 h-5 w-5 transition-colors duration-150",
+                  !collapsed && "mr-3",
+                  parentActive
+                    ? "text-indigo-600 dark:text-indigo-400"
+                    : "text-gray-400 dark:text-gray-500 group-hover:text-gray-600 dark:group-hover:text-gray-300"
+                )}
+                aria-hidden="true"
+              />
+              {!collapsed && (
+                <>
+                  <span className="flex-1 text-left">{item.name}</span>
+                  <motion.span
+                    animate={{ rotate: open ? 90 : 0 }}
+                    transition={{ duration: 0.18, ease: "easeInOut" }}
+                    className="flex-shrink-0 flex items-center"
+                  >
+                    <ChevronRightIcon className="h-4 w-4" />
+                  </motion.span>
+                </>
+              )}
+            </Disclosure.Button>
+
+            {!collapsed && (
+              <AnimatePresence initial={false}>
+                {open && (
+                  <motion.div
+                    key="panel"
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.22, ease: PANEL_EASE }}
+                    style={{ overflow: "hidden" }}
+                  >
+                    <Disclosure.Panel static className="pt-1 pb-1">
+                      <div className="ml-5 pl-3 border-l border-gray-200 dark:border-gray-700/70 space-y-0.5">
+                        {item.children!.map((subItem) => {
+                          const subActive = pathname.startsWith(subItem.href);
+                          return (
+                            <Disclosure.Button
+                              key={subItem.name}
+                              as={Link}
+                              to={subItem.href}
+                              id={`nav-sub-${subItem.name
+                                .toLowerCase()
+                                .normalize("NFD")
+                                .replace(/[\u0300-\u036f]/g, "")
+                                .replace(/\s+/g, "-")}`}
+                              onClick={onLinkClick}
+                              className={classNames(
+                                "group w-full flex items-center gap-2.5 px-3 py-1.5 rounded-md text-sm transition-colors duration-150",
+                                subActive
+                                  ? "text-indigo-700 dark:text-indigo-300 font-medium"
+                                  : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100/70 dark:hover:bg-gray-800/50"
+                              )}
+                            >
+                              <span
+                                className={classNames(
+                                  "h-1.5 w-1.5 rounded-full flex-shrink-0 transition-colors duration-150",
+                                  subActive
+                                    ? "bg-indigo-500 dark:bg-indigo-400"
+                                    : "bg-gray-300 dark:bg-gray-600 group-hover:bg-gray-400 dark:group-hover:bg-gray-500"
+                                )}
+                              />
+                              {subItem.name}
+                            </Disclosure.Button>
+                          );
+                        })}
+                      </div>
+                    </Disclosure.Panel>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            )}
+          </>
+        )}
+      </Disclosure>
+    );
+  };
+
+  // ── Footer del sidebar (compartido desktop & mobile) ──────────────────────
+  const renderSidebarFooter = (collapsed: boolean, onLinkClick?: () => void) => (
+    <div className="flex-none border-t border-gray-100 dark:border-gray-800 pt-2 pb-3">
+      <div className="px-2 space-y-0.5">
+        {/* Menú de tutoriales */}
+        <div className={classNames(collapsed ? "flex justify-center" : "")}>
+          <TutorialsMenu collapsed={collapsed} />
+        </div>
+
+        {/* Widget de soporte */}
+        <div className="pt-1 pb-1">
+          <motion.div
+            whileHover={{ scale: collapsed ? 1.06 : 1.02 }}
+            transition={SPRING}
+            onClick={collapsed ? () => setIsSupportModalOpen(true) : undefined}
+            className={classNames(
+              "rounded-xl border transition-colors duration-150",
+              "bg-gradient-to-br from-indigo-50 to-purple-50/60 dark:from-indigo-900/20 dark:to-purple-900/10",
+              "border-indigo-100/80 dark:border-indigo-800/30",
+              collapsed ? "p-2.5 flex justify-center items-center cursor-pointer" : "p-3 flex flex-col items-center"
+            )}
+          >
+            <ShieldExclamationIcon
+              className="h-5 w-5 text-indigo-400 dark:text-indigo-500 flex-shrink-0"
+              aria-hidden="true"
+            />
+            {!collapsed && (
+              <>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 mb-2.5 text-center leading-relaxed">
+                  ¿Necesitas ayuda?
+                </p>
+                <button
+                  onClick={() => setIsSupportModalOpen(true)}
+                  className="w-full rounded-lg bg-indigo-500 hover:bg-indigo-600 active:bg-indigo-700 text-white text-xs font-medium py-1.5 transition-colors duration-150"
+                >
+                  Contactar soporte
+                </button>
+              </>
+            )}
+          </motion.div>
+        </div>
+
+        {/* Configuración */}
+        <Link
+          to="/dashboard/client-config/general"
+          id="nav-configuracion"
+          onClick={onLinkClick}
+          title={collapsed ? "Configuración" : undefined}
+          className={classNames(
+            "group flex items-center w-full rounded-lg text-sm font-medium transition-colors duration-150",
+            collapsed ? "justify-center p-2.5" : "px-3 py-2",
+            isRouteActive("/dashboard/client-config")
+              ? "bg-indigo-50 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-300"
+              : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800/70 hover:text-gray-900 dark:hover:text-gray-100"
+          )}
+        >
+          <Cog6ToothIcon
+            className={classNames(
+              "flex-shrink-0 h-5 w-5 transition-colors duration-150",
+              !collapsed && "mr-3",
+              isRouteActive("/dashboard/client-config")
+                ? "text-indigo-600 dark:text-indigo-400"
+                : "text-gray-400 dark:text-gray-500 group-hover:text-gray-600 dark:group-hover:text-gray-300"
+            )}
+            aria-hidden="true"
+          />
+          {!collapsed && <span>Configuración</span>}
+        </Link>
+
+        {/* Cerrar sesión */}
+        <button
+          type="button"
+          onClick={() => {
+            onLinkClick?.();
+            handleLogout();
+          }}
+          title={collapsed ? "Cerrar sesión" : undefined}
+          className={classNames(
+            "group flex items-center w-full rounded-lg text-sm font-medium transition-colors duration-150",
+            collapsed ? "justify-center p-2.5" : "px-3 py-2",
+            "text-gray-500 dark:text-gray-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400"
+          )}
+        >
+          <ArrowLeftEndOnRectangleIcon
+            className={classNames(
+              "flex-shrink-0 h-5 w-5 transition-colors duration-150",
+              !collapsed && "mr-3",
+              "text-gray-400 dark:text-gray-500 group-hover:text-red-500 dark:group-hover:text-red-400"
+            )}
+          />
+          {!collapsed && <span>Cerrar sesión</span>}
+        </button>
+      </div>
+    </div>
+  );
+
+  // ─────────────────────────────────────────────────────────────────────────────
+
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100 overflow-x-hidden">
+      <Helmet>
+        <title>EstateAdmin</title>
+      </Helmet>
       <ChatBot />
       <SupportModal
         isOpen={isSupportModalOpen}
         onClose={() => setIsSupportModalOpen(false)}
       />
 
-      {/* Botón móvil (arriba a la izquierda) para abrir/cerrar sidebar */}
-      <div className="xl:hidden px-1 py-4">
+      {/* Botón móvil para abrir/cerrar sidebar */}
+      <div className="xl:hidden px-3 py-3">
         <motion.button
-          whileTap={{ scale: 0.88, rotate: isMobileMenuOpen ? -10 : 10 }}
+          whileTap={{ scale: 0.88 }}
           transition={SPRING}
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          className="text-gray-500 hover:text-gray-600 focus:outline-none dark:text-gray-400 dark:hover:text-gray-300"
+          className="p-1.5 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 shadow-sm transition-colors duration-150 focus:outline-none"
         >
-          <span className="sr-only">Open main menu</span>
-          {isMobileMenuOpen ? (
-            <XMarkIcon className="block h-6 w-6" aria-hidden="true" />
-          ) : (
-            <Bars3Icon className="block h-6 w-6" aria-hidden="true" />
-          )}
+          <span className="sr-only">Abrir menú principal</span>
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={isMobileMenuOpen ? "close" : "open"}
+              initial={{ opacity: 0, rotate: -90 }}
+              animate={{ opacity: 1, rotate: 0 }}
+              exit={{ opacity: 0, rotate: 90 }}
+              transition={{ duration: 0.15 }}
+            >
+              {isMobileMenuOpen ? (
+                <XMarkIcon className="h-5 w-5" aria-hidden="true" />
+              ) : (
+                <Bars3Icon className="h-5 w-5" aria-hidden="true" />
+              )}
+            </motion.div>
+          </AnimatePresence>
         </motion.button>
       </div>
 
+      {/* Backdrop para sidebar móvil */}
+      <AnimatePresence>
+        {isMobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="xl:hidden fixed inset-0 z-40 bg-black/25 backdrop-blur-[2px]"
+            onClick={() => setIsMobileMenuOpen(false)}
+          />
+        )}
+      </AnimatePresence>
+
       {/*
-        SIDEBAR FIJO EN PANTALLAS GRANDES
-        ---------------------------------
-        En dispositivos grandes, lo hacemos "fixed" para que no se mueva al hacer scroll.
+        SIDEBAR FIJO — PANTALLAS GRANDES
       */}
       <div className="hidden xl:block">
         <motion.aside
           initial={{ x: -24, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
-          transition={{ duration: 0.4, ease: EASE_OUT }}
+          transition={{ duration: 0.4, ease: EASE }}
           className={classNames(
-            "fixed inset-y-0 left-0 border-r bg-gray-50 border-gray-200 dark:border-gray-700 dark:bg-gray-800 z-50",
-            "h-screen flex flex-col transition-all duration-300 ease-in-out",
+            "fixed inset-y-0 left-0 z-50 flex flex-col h-screen",
+            "bg-white dark:bg-gray-900 border-r border-gray-100 dark:border-gray-800",
+            "transition-[width] duration-300 ease-in-out",
             isDesktopMenuCollapsed ? "w-16" : "w-52 md:w-56"
           )}
         >
-          {/* Header fijo */}
-          <div className="flex-none h-16 border-b border-gray-200 dark:border-gray-700 p-4 flex items-center justify-between">
-            <motion.img
-              initial={{ opacity: 0 }}
-              animate={{ opacity: isDesktopMenuCollapsed ? 0 : 1 }}
-              transition={{ duration: 0.2 }}
-              className={classNames(
-                "h-8 w-auto",
-                isDesktopMenuCollapsed ? "hidden" : "block"
+          {/* Header */}
+          <div
+            className={classNames(
+              "flex-none h-14 border-b border-gray-100 dark:border-gray-800 flex items-center",
+              isDesktopMenuCollapsed ? "justify-center px-3" : "justify-between px-4"
+            )}
+          >
+            <AnimatePresence mode="wait">
+              {!isDesktopMenuCollapsed && (
+                <motion.img
+                  key="logo"
+                  initial={{ opacity: 0, x: -6 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -6 }}
+                  transition={{ duration: 0.18 }}
+                  className="h-7 w-auto"
+                  src={logo}
+                  alt="EstateAdmin"
+                />
               )}
-              src={logo}
-              alt="EstateAdmin"
-            />
+            </AnimatePresence>
             <motion.button
-              whileHover={{ scale: 1.12 }}
-              whileTap={{ scale: 0.88, rotate: -15 }}
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.88 }}
               transition={SPRING}
               onClick={() => setIsDesktopMenuCollapsed(!isDesktopMenuCollapsed)}
-              className="text-gray-500 hover:text-gray-600 focus:outline-none dark:text-gray-400 dark:hover:text-gray-300"
+              className="p-1.5 rounded-md text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-150 focus:outline-none"
             >
-              <span className="sr-only">Toggle menu</span>
-              <Bars3Icon className="h-6 w-6" aria-hidden="true" />
+              <span className="sr-only">Colapsar menú</span>
+              <Bars3Icon className="h-5 w-5" aria-hidden="true" />
             </motion.button>
           </div>
 
-          {/* Contenido con scroll */}
-          <nav
-            className="flex-1 overflow-y-auto custom-scrollbar"
-            aria-label="Sidebar"
-          >
+          {/* Navegación */}
+          <nav className="flex-1 overflow-y-auto custom-scrollbar py-3" aria-label="Sidebar">
             <motion.ul
               variants={navListVariants}
               initial="hidden"
               animate="show"
-              className="py-6 space-y-2"
+              className="px-2 space-y-0.5"
             >
-              {navigation.map((item) => {
-                const itemId = `nav-${item.name.toLowerCase().replace(/\s+/g, "-")}`;
-
-                return (
-                  <motion.li key={item.name} variants={navItemVariants}>
-                    {!item.children ? (
-                      <Link
-                        to={item.href}
-                        id={itemId}
-                        className={classNames(
-                          item.current
-                            ? "bg-indigo-100"
-                            : "hover:bg-indigo-100 dark:hover:bg-gray-700",
-                          "group flex items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md transition-colors duration-150",
-                          isDesktopMenuCollapsed ? "justify-center" : ""
-                        )}
-                        title={isDesktopMenuCollapsed ? item.name : undefined}
-                      >
-                        <item.icon
-                          className={classNames(
-                            "text-gray-400 dark:text-gray-300 transition-colors duration-150 group-hover:text-indigo-500 dark:group-hover:text-indigo-400",
-                            isDesktopMenuCollapsed ? "h-6 w-6" : "mr-3 h-6 w-6"
-                          )}
-                          aria-hidden="true"
-                        />
-                        {!isDesktopMenuCollapsed && item.name}
-                      </Link>
-                    ) : (
-                      <Disclosure as="div" className="space-y-1">
-                        {({ open }) => (
-                          <>
-                            <Disclosure.Button
-                              id={itemId}
-                              className={classNames(
-                                item.current
-                                  ? "bg-indigo-100"
-                                  : "hover:bg-indigo-100 dark:hover:bg-gray-700",
-                                "group w-full flex items-center px-4 py-2 text-left text-sm font-medium text-gray-600 dark:text-gray-100 rounded-md focus:outline-none transition-colors duration-150",
-                                isDesktopMenuCollapsed ? "justify-center" : ""
-                              )}
-                              title={isDesktopMenuCollapsed ? item.name : undefined}
-                              onClick={() => {
-                                if (isDesktopMenuCollapsed) {
-                                  setIsDesktopMenuCollapsed(false);
-                                }
-                              }}
-                            >
-                              <item.icon
-                                className={classNames(
-                                  "text-gray-400 dark:text-gray-300 transition-colors duration-150 group-hover:text-indigo-500 dark:group-hover:text-indigo-400",
-                                  isDesktopMenuCollapsed ? "h-6 w-6" : "mr-3 h-6 w-6"
-                                )}
-                                aria-hidden="true"
-                              />
-                              {!isDesktopMenuCollapsed && (
-                                <>
-                                  {item.name}
-                                  <ChevronRightIcon
-                                    className={classNames(
-                                      "ml-auto h-5 w-5 transition-transform duration-200",
-                                      open ? "rotate-90" : ""
-                                    )}
-                                  />
-                                </>
-                              )}
-                            </Disclosure.Button>
-                            {!isDesktopMenuCollapsed && (
-                              <Disclosure.Panel className="space-y-1">
-                                {item.children.map((subItem) => (
-                                  <Disclosure.Button
-                                    key={subItem.name}
-                                    as={Link}
-                                    to={subItem.href}
-                                    id={`nav-sub-desktop-${subItem.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "-")}`}
-                                    className="group w-full flex items-center pl-11 pr-2 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md hover:bg-indigo-100 dark:hover:bg-gray-700 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors duration-150"
-                                  >
-                                    {subItem.name}
-                                  </Disclosure.Button>
-                                ))}
-                              </Disclosure.Panel>
-                            )}
-                          </>
-                        )}
-                      </Disclosure>
-                    )}
-                  </motion.li>
-                );
-              })}
+              {navigation.map((item) => (
+                <motion.li key={item.name} variants={navItemVariants}>
+                  {renderNavItem(item as NavItem, isDesktopMenuCollapsed)}
+                </motion.li>
+              ))}
             </motion.ul>
           </nav>
 
-          {/* Footer fijo */}
-          <div className="flex-none py-6">
-            <ul className="space-y-2">
-              <li className={classNames(
-                "mx-auto",
-                isDesktopMenuCollapsed ? "w-full px-2" : "w-40"
-              )}>
-                <TutorialsMenu collapsed={isDesktopMenuCollapsed} />
-              </li>
-
-              {/* Support widget con hover sutil */}
-              <motion.li
-                whileHover={{ scale: 1.03, y: -1 }}
-                transition={SPRING}
-                className={classNames(
-                  "bg-gradient-to-tr from-[#9f86f81c] to-[#746dfc17] shadow-lg flex justify-center items-center rounded-lg mx-auto cursor-default",
-                  isDesktopMenuCollapsed ? "w-12 h-12" : "w-40 h-36 mb-8"
-                )}
-              >
-                <div
-                  className={classNames(
-                    "group flex-col justify-center items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md",
-                    isDesktopMenuCollapsed ? "p-0" : ""
-                  )}
-                >
-                  <div className="flex justify-center items-center">
-                    <ShieldExclamationIcon
-                      className="h-6 w-6 text-indigo-400"
-                      aria-hidden="true"
-                    />
-                  </div>
-                  {!isDesktopMenuCollapsed && (
-                    <>
-                      <p className="text-xs mt-2 mb-2 text-center">
-                        ¿Necesitas ayuda?
-                      </p>
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        transition={SPRING}
-                        className="bg-indigo-400 text-xs text-center m-0 text-white rounded-md p-1"
-                        onClick={() => setIsSupportModalOpen(true)}
-                      >
-                        <span className="block mb-0.5">Contacta a soporte</span>
-                      </motion.button>
-                    </>
-                  )}
-                </div>
-              </motion.li>
-
-              {/* Configuración */}
-              <motion.li
-                whileHover={{ x: isDesktopMenuCollapsed ? 0 : 3 }}
-                transition={SPRING}
-              >
-                <Link
-                  to="/dashboard/client-config/general"
-                  id="nav-configuracion"
-                  className={classNames(
-                    "group flex items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md hover:bg-indigo-100 dark:hover:bg-gray-700 transition-colors duration-150",
-                    isDesktopMenuCollapsed ? "justify-center" : ""
-                  )}
-                  title={isDesktopMenuCollapsed ? "Configuración" : undefined}
-                >
-                  <Cog6ToothIcon
-                    className={classNames(
-                      "text-gray-400 dark:text-gray-300 transition-colors duration-150 group-hover:text-indigo-500 dark:group-hover:text-indigo-400",
-                      isDesktopMenuCollapsed ? "h-6 w-6" : "mr-3 h-6 w-6"
-                    )}
-                    aria-hidden="true"
-                  />
-                  {!isDesktopMenuCollapsed && "Configuración"}
-                </Link>
-              </motion.li>
-
-              {/* Cerrar sesión */}
-              <motion.li
-                whileHover={{ x: isDesktopMenuCollapsed ? 0 : 3 }}
-                transition={SPRING}
-              >
-                <button
-                  type="button"
-                  onClick={handleLogout}
-                  className={classNames(
-                    "w-full group flex items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 transition-colors duration-150",
-                    isDesktopMenuCollapsed ? "justify-center" : ""
-                  )}
-                  title={isDesktopMenuCollapsed ? "Cerrar sesión" : undefined}
-                >
-                  <ArrowLeftEndOnRectangleIcon
-                    className={classNames(
-                      "text-gray-400 dark:text-gray-300 transition-colors duration-150 group-hover:text-red-500",
-                      isDesktopMenuCollapsed ? "h-6 w-6" : "mr-3 h-6 w-6"
-                    )}
-                  />
-                  {!isDesktopMenuCollapsed && "Cerrar sesión"}
-                </button>
-              </motion.li>
-            </ul>
-          </div>
+          {/* Footer */}
+          {renderSidebarFooter(isDesktopMenuCollapsed)}
         </motion.aside>
       </div>
 
       {/*
-        SIDEBAR PARA MÓVIL Y TABLET (usa 'fixed' también).
-        Cuando isMobileMenuOpen = true, lo mostramos;
-        caso contrario, se oculta a la izquierda.
+        SIDEBAR — MÓVIL Y TABLET
       */}
       <div className="xl:hidden">
-        <aside
+        <motion.aside
+          initial={false}
+          animate={{ x: isMobileMenuOpen ? 0 : "-100%" }}
+          transition={{ type: "spring", stiffness: 400, damping: 35 }}
           className={classNames(
-            "fixed inset-y-0 bg-gray-50 left-0 w-52 md:w-56 border-r border-gray-200 dark:border-gray-700 dark:bg-gray-800 transform transition-transform duration-300 ease-in-out",
-            "h-screen z-50 flex flex-col",
-            isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+            "fixed inset-y-0 left-0 z-50 flex flex-col h-screen w-56",
+            "bg-white dark:bg-gray-900 border-r border-gray-100 dark:border-gray-800"
           )}
         >
-          {/* Header fijo */}
-          <div className="flex-none flex items-center justify-between h-16 border-b border-gray-200 dark:border-gray-700 p-4">
-            <img className="h-8 w-auto" src={logo} alt="Your Company" />
+          {/* Header */}
+          <div className="flex-none h-14 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between px-4">
+            <img className="h-7 w-auto" src={logo} alt="EstateAdmin" />
             <button
               onClick={() => setIsMobileMenuOpen(false)}
-              className="text-gray-500 dark:text-gray-400"
+              className="p-1.5 rounded-md text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-150"
             >
-              <span className="sr-only">Close sidebar</span>
-              <XMarkIcon className="block h-6 w-6" aria-hidden="true" />
+              <span className="sr-only">Cerrar sidebar</span>
+              <XMarkIcon className="h-5 w-5" aria-hidden="true" />
             </button>
           </div>
 
-          {/* Contenido con scroll */}
-          <nav
-            className="flex-1 overflow-y-auto custom-scrollbar"
-            aria-label="Sidebar"
-          >
+          {/* Navegación */}
+          <nav className="flex-1 overflow-y-auto custom-scrollbar py-3" aria-label="Sidebar">
             <motion.ul
               variants={navListVariants}
               initial="hidden"
               animate={isMobileMenuOpen ? "show" : "hidden"}
-              className="py-6 space-y-2"
+              className="px-2 space-y-0.5"
             >
-              {navigation.map((item) => {
-                const itemId = `nav-${item.name.toLowerCase().replace(/\s+/g, "-")}`;
-
-                return (
-                  <motion.li key={item.name} variants={navItemVariants}>
-                    {!item.children ? (
-                      <Link
-                        to={item.href}
-                        id={itemId}
-                        onClick={() => setIsMobileMenuOpen(false)}
-                        className={classNames(
-                          item.current
-                            ? "bg-indigo-100"
-                            : "hover:bg-indigo-100",
-                          "group flex items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md transition-colors duration-150"
-                        )}
-                      >
-                        <item.icon
-                          className="mr-3 h-6 w-6 text-gray-400 dark:text-gray-300 transition-colors duration-150 group-hover:text-indigo-500"
-                          aria-hidden="true"
-                        />
-                        {item.name}
-                      </Link>
-                    ) : (
-                      <Disclosure as="div" className="space-y-1">
-                        {({ open }) => (
-                          <>
-                            <Disclosure.Button
-                              id={itemId}
-                              className={classNames(
-                                item.current
-                                  ? "bg-indigo-100"
-                                  : "hover:bg-indigo-100 dark:hover:bg-gray-700",
-                                "group w-full flex items-center px-4 py-2 text-left text-sm font-medium text-gray-600 dark:text-gray-100 rounded-md focus:outline-none transition-colors duration-150"
-                              )}
-                            >
-                              <item.icon
-                                className="mr-3 h-6 w-6 text-gray-400 dark:text-gray-300 transition-colors duration-150 group-hover:text-indigo-500"
-                                aria-hidden="true"
-                              />
-                              {item.name}
-                              <ChevronRightIcon
-                                className={classNames(
-                                  "ml-auto h-5 w-5 transition-transform duration-200",
-                                  open ? "rotate-90" : ""
-                                )}
-                              />
-                            </Disclosure.Button>
-                            <Disclosure.Panel className="space-y-1">
-                              {item.children.map((subItem) => (
-                                <Disclosure.Button
-                                  key={subItem.name}
-                                  as={Link}
-                                  to={subItem.href}
-                                  id={`nav-sub-mobile-${subItem.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "-")}`}
-                                  className="group w-full flex items-center pl-11 pr-2 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md hover:bg-indigo-100 dark:hover:bg-gray-700 hover:text-indigo-600 transition-colors duration-150"
-                                >
-                                  {subItem.name}
-                                </Disclosure.Button>
-                              ))}
-                            </Disclosure.Panel>
-                          </>
-                        )}
-                      </Disclosure>
-                    )}
-                  </motion.li>
-                );
-              })}
+              {navigation.map((item) => (
+                <motion.li key={item.name} variants={navItemVariants}>
+                  {renderNavItem(
+                    item as NavItem,
+                    false,
+                    () => setIsMobileMenuOpen(false)
+                  )}
+                </motion.li>
+              ))}
             </motion.ul>
           </nav>
 
-          {/* Footer fijo */}
-          <div className="flex-none py-6">
-            <ul className="space-y-2">
-              <li className="w-40 mx-auto">
-                <TutorialsMenu />
-              </li>
-              <motion.li
-                whileHover={{ scale: 1.03, y: -1 }}
-                transition={SPRING}
-                className="w-40 h-36 mb-8 bg-gradient-to-tr from-[#9f86f81c] to-[#746dfc17] shadow-lg flex justify-center items-center rounded-lg mx-auto cursor-default"
-              >
-                <div className="group flex-col justify-center items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md">
-                  <div className="flex justify-center items-center">
-                    <ShieldExclamationIcon
-                      className="h-6 w-6 text-indigo-400"
-                      aria-hidden="true"
-                    />
-                  </div>
-                  <p className="text-xs mt-2 mb-2 text-center">
-                    ¿Necesitas ayuda?
-                  </p>
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    transition={SPRING}
-                    className="bg-indigo-400 text-xs text-center m-0 text-white rounded-md p-1"
-                    onClick={() => setIsSupportModalOpen(true)}
-                  >
-                    <span className="block mb-0.5">Contacta a soporte</span>
-                  </motion.button>
-                </div>
-              </motion.li>
-              <motion.li whileHover={{ x: 3 }} transition={SPRING}>
-                <Link
-                  to="/dashboard/client-config/general"
-                  id="nav-configuracion"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className="group flex items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md hover:bg-indigo-100 dark:hover:bg-gray-700 transition-colors duration-150"
-                >
-                  <Cog6ToothIcon
-                    className="mr-3 h-6 w-6 text-gray-400 dark:text-gray-300 transition-colors duration-150 group-hover:text-indigo-500"
-                    aria-hidden="true"
-                  />
-                  Configuración
-                </Link>
-              </motion.li>
-              <motion.li whileHover={{ x: 3 }} transition={SPRING}>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsMobileMenuOpen(false);
-                    handleLogout();
-                  }}
-                  className="w-full group flex items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 transition-colors duration-150"
-                >
-                  <ArrowLeftEndOnRectangleIcon className="mr-3 h-6 w-6 text-gray-400 dark:text-gray-300 transition-colors duration-150 group-hover:text-red-500" />
-                  Cerrar sesión
-                </button>
-              </motion.li>
-            </ul>
-          </div>
-        </aside>
+          {/* Footer */}
+          {renderSidebarFooter(false, () => setIsMobileMenuOpen(false))}
+        </motion.aside>
       </div>
 
       {/*
         CONTENIDO PRINCIPAL
-        -------------------
-        - En pantallas grandes tiene margin-left para dejar espacio al sidebar fijo.
       */}
       <div
         className={classNames(

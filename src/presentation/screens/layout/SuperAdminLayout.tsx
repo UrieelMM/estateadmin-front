@@ -18,6 +18,7 @@ import {
   Bars3Icon,
   ShieldExclamationIcon,
 } from "@heroicons/react/16/solid";
+import { Helmet } from "react-helmet-async";
 import useAuthStore from "../../../store/AuthStore";
 import Loading from "../../components/shared/loaders/Loading";
 import { auth } from "../../../firebase/firebase";
@@ -99,6 +100,9 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ children }) => {
 
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
+      <Helmet>
+        <title>Admin Panel - EstateAdmin</title>
+      </Helmet>
       <Disclosure as="nav" className="bg-indigo-900 dark:bg-indigo-950">
         {({ open }) => (
           <>
