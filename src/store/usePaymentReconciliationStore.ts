@@ -11,12 +11,29 @@ import {
   query,
   serverTimestamp,
   updateDoc,
-  writeBatch,
   where,
 } from "firebase/firestore";
-import { getDownloadURL, getStorage, ref, uploadBytes } from "firebase/storage";
+import {
+  getDownloadURL,
+  getStorage,
+  ref,
+  uploadBytes,
+} from "firebase/storage";
+import { v4 as uuidv4 } from "uuid";
 import { writeAuditLog } from "../services/auditService";
 import { emitDomainNotificationEvent } from "../services/notificationCenterService";
+import {
+  parseBankFile,
+  ParseResult,
+  ParseWarning,
+} from "../services/reconciliation/bankFileParser";
+import { saveSnapshotToStorage } from "../services/reconciliation/reconciliationStorage";
+import { hydrateDraftData } from "../services/reconciliation/hybridPersistence";
+import {
+  runAutoMatchEngine,
+  MatchOptions,
+  DEFAULT_MATCH_OPTIONS,
+} from "../services/reconciliation/matchingEngine";
 
 type ReconciliationStatus = "pending" | "matched" | "manual_match" | "ignored";
 
@@ -39,7 +56,7 @@ export type BankMovement = {
   amount: number;
   description: string;
   reference: string;
-  source: "csv";
+  source: "csv" | "xlsx" | "xls";
   status: ReconciliationStatus;
   matchedPaymentId?: string;
   confidence?: number;
@@ -54,6 +71,20 @@ export type ReconciliationSummary = {
   unmatchedDifference: number;
 };
 
+export type ImportDiagnostics = {
+  fileKind: "csv" | "xlsx" | "xls" | "unknown";
+  fileName: string;
+  warnings: ParseWarning[];
+  errors: ParseWarning[];
+  stats: {
+    totalRows: number;
+    validRows: number;
+    skippedRows: number;
+    totalAmount: number;
+    dateRange: { from: Date | null; to: Date | null };
+  };
+};
+
 type ReconciliationSession = {
   id: string;
   name: string;
@@ -63,7 +94,10 @@ type ReconciliationSession = {
 
 type UsePaymentReconciliationState = {
   loading: boolean;
+  saving: boolean;
+  saveProgressLabel: string;
   error: string | null;
+  lastImport: ImportDiagnostics | null;
   internalPayments: InternalPaymentMovement[];
   bankMovements: BankMovement[];
   sessions: ReconciliationSession[];
@@ -71,16 +105,16 @@ type UsePaymentReconciliationState = {
   lastLoadedAt: Date | null;
   activeSessionId: string | null;
   loadInternalPayments: () => Promise<void>;
-  importBankCsv: (csvText: string) => void;
-  runAutoMatch: (
-    dateToleranceDays?: number,
-    amountTolerance?: number,
-    dateFrom?: string,
-    dateTo?: string
-  ) => void;
+  importBankFile: (file: File) => Promise<ParseResult | null>;
+  applyParseResult: (parseResult: ParseResult, file: File) => void;
+  runAutoMatch: (options?: Partial<MatchOptions>) => void;
   setManualMatch: (bankMovementId: string, internalPaymentId: string) => void;
   clearMatch: (bankMovementId: string) => void;
   ignoreMovement: (bankMovementId: string) => void;
+  bulkUpdateStatus: (
+    bankMovementIds: string[],
+    status: ReconciliationStatus
+  ) => void;
   saveProgressSession: (
     name: string,
     options?: { dateFrom?: string; dateTo?: string; csvFile?: File | null }
@@ -118,62 +152,35 @@ const EMPTY_SUMMARY: ReconciliationSummary = {
   unmatchedDifference: 0,
 };
 
-function normalizeText(value: string): string {
-  return (value || "")
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .trim();
-}
-
-function normalizeReference(value: string): string {
-  return normalizeText(value).replace(/[^a-z0-9]/g, "");
-}
-
-function parseAmount(raw: string): number {
-  if (!raw) return 0;
-  const cleaned = raw.replace(/[^\d,.-]/g, "").replace(/,/g, "");
-  const parsed = Number(cleaned);
-  return Number.isFinite(parsed) ? parsed : 0;
-}
-
-function parseDate(raw: string): Date | null {
-  if (!raw) return null;
-  const trimmed = raw.trim();
-  const direct = new Date(trimmed);
-  if (!Number.isNaN(direct.getTime())) return direct;
-
-  const slash = trimmed.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
-  if (slash) {
-    const day = Number(slash[1]);
-    const month = Number(slash[2]);
-    const yearRaw = Number(slash[3]);
-    const year = yearRaw < 100 ? 2000 + yearRaw : yearRaw;
-    const parsed = new Date(year, month - 1, day);
-    if (!Number.isNaN(parsed.getTime())) return parsed;
-  }
-
-  return null;
-}
-
 function toDateOrNull(value: any): Date | null {
   if (!value) return null;
   if (value instanceof Date) return value;
-  if (typeof value?.toDate === "function") return value.toDate();
+  if (typeof value?.toDate === "function") {
+    try {
+      return value.toDate();
+    } catch {
+      return null;
+    }
+  }
   const parsed = new Date(value);
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
 function hydrateBankMovement(raw: any): BankMovement {
+  const sourceValue = String(raw?.source || "csv");
+  const source: BankMovement["source"] =
+    sourceValue === "xlsx" || sourceValue === "xls" ? sourceValue : "csv";
   return {
-    id: String(raw?.id || ""),
+    id: String(raw?.id || `bank_${uuidv4()}`),
     date: toDateOrNull(raw?.date),
     amount: Number(raw?.amount || 0),
     description: String(raw?.description || ""),
     reference: String(raw?.reference || ""),
-    source: "csv",
+    source,
     status: (raw?.status || "pending") as ReconciliationStatus,
-    matchedPaymentId: raw?.matchedPaymentId ? String(raw.matchedPaymentId) : undefined,
+    matchedPaymentId: raw?.matchedPaymentId
+      ? String(raw.matchedPaymentId)
+      : undefined,
     confidence:
       typeof raw?.confidence === "number" ? Number(raw.confidence) : undefined,
   };
@@ -194,62 +201,15 @@ function hydrateInternalPayment(raw: any): InternalPaymentMovement {
   };
 }
 
-async function replaceSubcollectionDocs(
-  parentPath: string,
-  subcollectionName: string,
-  items: Record<string, any>[]
-) {
-  const db = getFirestore();
-  const subRef = collection(db, `${parentPath}/${subcollectionName}`);
-  const existingSnap = await getDocs(subRef);
-  const existingDocs = existingSnap.docs;
-
-  for (let i = 0; i < existingDocs.length; i += 400) {
-    const batch = writeBatch(db);
-    existingDocs.slice(i, i + 400).forEach((item) => batch.delete(item.ref));
-    await batch.commit();
-  }
-
-  for (let i = 0; i < items.length; i += 400) {
-    const batch = writeBatch(db);
-    items.slice(i, i + 400).forEach((item) => {
-      const newRef = doc(subRef);
-      batch.set(newRef, item);
-    });
-    await batch.commit();
-  }
-}
-
-async function loadSubcollectionDocs(parentPath: string, subcollectionName: string) {
-  const db = getFirestore();
-  const subRef = collection(db, `${parentPath}/${subcollectionName}`);
-  const snap = await getDocs(subRef);
-  return snap.docs.map((item) => item.data());
-}
-
-function daysDiff(a: Date | null, b: Date | null): number {
-  if (!a || !b) return Number.POSITIVE_INFINITY;
-  const ms = Math.abs(a.getTime() - b.getTime());
-  return ms / (1000 * 60 * 60 * 24);
-}
-
-function inDateRange(date: Date | null, dateFrom?: string, dateTo?: string): boolean {
-  if (!dateFrom && !dateTo) return true;
-  if (!date) return false;
-  const from = dateFrom ? new Date(`${dateFrom}T00:00:00`) : null;
-  const to = dateTo ? new Date(`${dateTo}T23:59:59`) : null;
-  if (from && date < from) return false;
-  if (to && date > to) return false;
-  return true;
-}
-
 function buildSummary(
   bankMovements: BankMovement[],
   internalPayments: InternalPaymentMovement[]
 ): ReconciliationSummary {
   const bankCredits = bankMovements.reduce((acc, item) => acc + item.amount, 0);
   const bankCreditsMatched = bankMovements
-    .filter((item) => item.status === "matched" || item.status === "manual_match")
+    .filter(
+      (item) => item.status === "matched" || item.status === "manual_match"
+    )
     .reduce((acc, item) => acc + item.amount, 0);
   const bankCreditsPending = bankMovements
     .filter((item) => item.status === "pending")
@@ -269,35 +229,13 @@ function buildSummary(
     bankCredits,
     bankCreditsMatched,
     bankCreditsPending,
-    internalPayments: internalPayments.reduce((acc, item) => acc + item.amount, 0),
+    internalPayments: internalPayments.reduce(
+      (acc, item) => acc + item.amount,
+      0
+    ),
     internalMatched,
     unmatchedDifference: bankCredits - internalMatched,
   };
-}
-
-function parseCsvRows(csvText: string): string[][] {
-  const lines = csvText
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean);
-  return lines.map((line) => {
-    const values: string[] = [];
-    let current = "";
-    let inQuotes = false;
-    for (let i = 0; i < line.length; i++) {
-      const char = line[i];
-      if (char === '"') {
-        inQuotes = !inQuotes;
-      } else if (char === "," && !inQuotes) {
-        values.push(current.trim());
-        current = "";
-      } else {
-        current += char;
-      }
-    }
-    values.push(current.trim());
-    return values.map((v) => v.replace(/^"|"$/g, "").trim());
-  });
 }
 
 function computeSimpleHash(input: string): string {
@@ -309,10 +247,13 @@ function computeSimpleHash(input: string): string {
   return `h${Math.abs(hash)}`;
 }
 
-export const usePaymentReconciliationStore = create<UsePaymentReconciliationState>()(
-  (set, get) => ({
+export const usePaymentReconciliationStore =
+  create<UsePaymentReconciliationState>()((set, get) => ({
     loading: false,
+    saving: false,
+    saveProgressLabel: "",
     error: null,
+    lastImport: null,
     internalPayments: [],
     bankMovements: [],
     sessions: [],
@@ -343,7 +284,9 @@ export const usePaymentReconciliationStore = create<UsePaymentReconciliationStat
         for (const userDoc of usersSnap.docs) {
           const userData = userDoc.data();
           const role = userData.role;
-          if (["admin", "super-admin", "admin-assistant", "security"].includes(role)) {
+          if (
+            ["admin", "super-admin", "admin-assistant", "security"].includes(role)
+          ) {
             continue;
           }
 
@@ -369,7 +312,8 @@ export const usePaymentReconciliationStore = create<UsePaymentReconciliationStat
               const amount = Number.isFinite(amountCents) ? amountCents / 100 : 0;
               const dateValue = paymentData.paymentDate;
               const paymentDate =
-                dateValue?.toDate?.() || (typeof dateValue === "string" ? parseDate(dateValue) : null);
+                dateValue?.toDate?.() ||
+                (typeof dateValue === "string" ? new Date(dateValue) : null);
 
               internalPayments.push({
                 id: `${userDoc.id}_${chargeDoc.id}_${paymentDoc.id}`,
@@ -378,13 +322,19 @@ export const usePaymentReconciliationStore = create<UsePaymentReconciliationStat
                 chargeId: chargeDoc.id,
                 paymentId: paymentDoc.id,
                 amount,
-                paymentDate,
+                paymentDate:
+                  paymentDate instanceof Date && !Number.isNaN(paymentDate.getTime())
+                    ? paymentDate
+                    : null,
                 paymentType: String(paymentData.paymentType || ""),
                 paymentReference: String(
                   paymentData.paymentReference || paymentData.reference || ""
                 ),
                 referenceText: String(
-                  paymentData.reference || paymentData.comments || paymentData.folio || ""
+                  paymentData.reference ||
+                    paymentData.comments ||
+                    paymentData.folio ||
+                    ""
                 ),
               });
             });
@@ -402,125 +352,116 @@ export const usePaymentReconciliationStore = create<UsePaymentReconciliationStat
         console.error("Error loading reconciliation payments:", error);
         set({
           loading: false,
-          error: error?.message || "No fue posible cargar pagos para conciliacion",
+          error:
+            error?.message || "No fue posible cargar pagos para conciliación",
         });
       }
     },
 
-    importBankCsv: (csvText: string) => {
+    importBankFile: async (file: File) => {
       try {
-        const rows = parseCsvRows(csvText);
-        if (rows.length < 2) {
-          set({ error: "Archivo CSV sin datos" });
-          return;
+        set({ loading: true, error: null });
+        const parseResult = await parseBankFile(file, "income");
+        if (parseResult.errors.length > 0) {
+          set({
+            loading: false,
+            error: parseResult.errors[0].message,
+            lastImport: {
+              fileKind: parseResult.fileKind,
+              fileName: file.name,
+              warnings: parseResult.warnings,
+              errors: parseResult.errors,
+              stats: parseResult.stats,
+            },
+          });
+          return parseResult;
         }
-
-        const headers = rows[0].map((h) => normalizeText(h));
-        const getIndex = (candidates: string[]) =>
-          headers.findIndex((h) => candidates.some((candidate) => h.includes(candidate)));
-
-        const dateIdx = getIndex(["fecha"]);
-        const descIdx = getIndex(["descripcion", "concepto", "detalle", "movimiento"]);
-        const refIdx = getIndex(["referencia", "folio", "ref"]);
-        const amountIdx = getIndex(["monto", "importe", "abono", "deposito", "credito"]);
-        const debitIdx = getIndex(["cargo", "debito"]);
-        const creditIdx = getIndex(["abono", "credito", "deposito"]);
-
-        const mapped: BankMovement[] = rows
-          .slice(1)
-          .map((row, index) => {
-            const creditAmount = creditIdx >= 0 ? parseAmount(row[creditIdx] || "") : 0;
-            const debitAmount = debitIdx >= 0 ? parseAmount(row[debitIdx] || "") : 0;
-            const fallbackAmount = amountIdx >= 0 ? parseAmount(row[amountIdx] || "") : 0;
-            const amount = creditAmount > 0 ? creditAmount : fallbackAmount - debitAmount;
-
-            return {
-              id: `bank_${Date.now()}_${index}`,
-              date: dateIdx >= 0 ? parseDate(row[dateIdx] || "") : null,
-              amount,
-              description: descIdx >= 0 ? row[descIdx] || "" : "",
-              reference: refIdx >= 0 ? row[refIdx] || "" : "",
-              source: "csv" as const,
-              status: "pending" as ReconciliationStatus,
-            };
-          })
-          .filter((row) => row.amount > 0);
-
-        const currentSummary = buildSummary(mapped, get().internalPayments);
-        set({ bankMovements: mapped, summary: currentSummary, error: null });
+        get().applyParseResult(parseResult, file);
+        set({ loading: false });
+        return parseResult;
       } catch (error: any) {
-        console.error("Error importing CSV for reconciliation:", error);
-        set({ error: error?.message || "No fue posible procesar el CSV" });
+        console.error("Error importing bank file:", error);
+        set({
+          loading: false,
+          error: error?.message || "No fue posible procesar el archivo",
+        });
+        return null;
       }
     },
 
-    runAutoMatch: (
-      dateToleranceDays = 3,
-      amountTolerance = 0.01,
-      dateFrom,
-      dateTo
-    ) => {
+    applyParseResult: (parseResult: ParseResult, file: File) => {
+      const sourceKind: BankMovement["source"] =
+        parseResult.fileKind === "xlsx"
+          ? "xlsx"
+          : parseResult.fileKind === "xls"
+          ? "xls"
+          : "csv";
+      const mapped: BankMovement[] = parseResult.rows.map((row) => ({
+        id: row.id,
+        date: row.date,
+        amount: row.amount,
+        description: row.description,
+        reference: row.reference,
+        source: sourceKind,
+        status: "pending" as ReconciliationStatus,
+      }));
+      const currentSummary = buildSummary(mapped, get().internalPayments);
+      set({
+        bankMovements: mapped,
+        summary: currentSummary,
+        lastImport: {
+          fileKind: parseResult.fileKind,
+          fileName: file.name,
+          warnings: parseResult.warnings,
+          errors: parseResult.errors,
+          stats: parseResult.stats,
+        },
+        error: null,
+      });
+    },
+
+    runAutoMatch: (options?: Partial<MatchOptions>) => {
       const { bankMovements, internalPayments } = get();
-      const usedInternal = new Set<string>();
+      const resolved: MatchOptions = {
+        ...DEFAULT_MATCH_OPTIONS,
+        ...options,
+      };
 
-      const updated: BankMovement[] = bankMovements.map((bankItem) => {
-        if (bankItem.status === "ignored") return bankItem;
-        if (!inDateRange(bankItem.date, dateFrom, dateTo)) return bankItem;
+      const engineResult = runAutoMatchEngine(
+        bankMovements.map((m) => ({
+          id: m.id,
+          date: m.date,
+          amount: m.amount,
+          description: m.description,
+          reference: m.reference,
+          status: m.status,
+          matchedId: m.matchedPaymentId,
+          confidence: m.confidence,
+        })),
+        internalPayments.map((p) => ({
+          id: p.id,
+          amount: p.amount,
+          date: p.paymentDate,
+          reference: p.paymentReference,
+          referenceText: p.referenceText,
+        })),
+        resolved
+      );
 
-        // Regla de precisión: para autoconciliar, se requiere referencia exacta (normalizada) + monto.
-        const bankRef = normalizeReference(bankItem.reference || bankItem.description || "");
-        if (!bankRef) {
-          return {
-            ...bankItem,
-            status: "pending" as ReconciliationStatus,
-            matchedPaymentId: undefined,
-            confidence: undefined,
-          };
-        }
-
-        let bestCandidate: InternalPaymentMovement | null = null;
-        let bestScore = -1;
-
-        for (const payment of internalPayments) {
-          if (usedInternal.has(payment.id)) continue;
-          if (!inDateRange(payment.paymentDate, dateFrom, dateTo)) continue;
-          const amountGap = Math.abs(payment.amount - bankItem.amount);
-          if (amountGap > amountTolerance) continue;
-          const paymentRef = normalizeReference(payment.paymentReference);
-          if (!paymentRef || paymentRef !== bankRef) continue;
-
-          // La fecha ya no es criterio de bloqueo; solo suma confianza auxiliar.
-          const dateGap = daysDiff(payment.paymentDate, bankItem.date);
-          const dateScore = Number.isFinite(dateGap)
-            ? Math.max(0, 1 - dateGap / Math.max(dateToleranceDays, 1))
-            : 0;
-          const score = 1 + dateScore;
-
-          if (score > bestScore) {
-            bestScore = score;
-            bestCandidate = payment;
-          }
-        }
-
-        if (!bestCandidate) {
-          return {
-            ...bankItem,
-            status: "pending" as ReconciliationStatus,
-            matchedPaymentId: undefined,
-            confidence: undefined,
-          };
-        }
-
-        usedInternal.add(bestCandidate.id);
+      const updated: BankMovement[] = bankMovements.map((bankItem, idx) => {
+        const engineItem = engineResult[idx];
         return {
           ...bankItem,
-          status: "matched" as ReconciliationStatus,
-          matchedPaymentId: bestCandidate.id,
-          confidence: Number(bestScore.toFixed(2)),
+          status: engineItem.status as ReconciliationStatus,
+          matchedPaymentId: engineItem.matchedId || undefined,
+          confidence: engineItem.confidence,
         };
       });
 
-      set({ bankMovements: updated, summary: buildSummary(updated, internalPayments) });
+      set({
+        bankMovements: updated,
+        summary: buildSummary(updated, internalPayments),
+      });
     },
 
     setManualMatch: (bankMovementId: string, internalPaymentId: string) => {
@@ -568,8 +509,29 @@ export const usePaymentReconciliationStore = create<UsePaymentReconciliationStat
       set({ bankMovements: updated, summary: buildSummary(updated, internalPayments) });
     },
 
+    bulkUpdateStatus: (bankMovementIds, status) => {
+      const { bankMovements, internalPayments } = get();
+      const idSet = new Set(bankMovementIds);
+      const updated = bankMovements.map((item) =>
+        idSet.has(item.id)
+          ? {
+              ...item,
+              status,
+              ...(status === "ignored" || status === "pending"
+                ? { matchedPaymentId: undefined, confidence: undefined }
+                : {}),
+            }
+          : item
+      );
+      set({ bankMovements: updated, summary: buildSummary(updated, internalPayments) });
+    },
+
     saveProgressSession: async (name, options) => {
-      set({ loading: true, error: null });
+      set({
+        saving: true,
+        saveProgressLabel: "Preparando borrador...",
+        error: null,
+      });
       try {
         const auth = getAuth();
         const currentUser = auth.currentUser;
@@ -582,34 +544,52 @@ export const usePaymentReconciliationStore = create<UsePaymentReconciliationStat
           throw new Error("Contexto de cliente/condominio no disponible");
         }
 
-        const { bankMovements, internalPayments, summary, activeSessionId } = get();
+        const { bankMovements, internalPayments, summary, activeSessionId } =
+          get();
         const db = getFirestore();
         const storage = getStorage();
+        const sessionIdForStorage = activeSessionId || `draft_${uuidv4()}`;
 
         let csvSource: Record<string, any> | null = null;
         if (options?.csvFile) {
-          const path = `clients/${clientId}/condominiums/${condominiumId}/reconciliations/income/${
-            activeSessionId || Date.now()
-          }/source.csv`;
+          set({ saveProgressLabel: "Subiendo archivo fuente..." });
+          const extension =
+            options.csvFile.name.split(".").pop()?.toLowerCase() || "csv";
+          const path = `clients/${clientId}/condominiums/${condominiumId}/reconciliations/income/${sessionIdForStorage}/source.${extension}`;
           const fileRef = ref(storage, path);
           await uploadBytes(fileRef, options.csvFile, {
-            contentType: options.csvFile.type || "text/csv",
+            contentType:
+              options.csvFile.type ||
+              (extension === "csv" ? "text/csv" : "application/octet-stream"),
           });
           const fileUrl = await getDownloadURL(fileRef);
           csvSource = {
             fileUrl,
             path,
-            fileName: options.csvFile.name || "source.csv",
+            fileName: options.csvFile.name || `source.${extension}`,
             size: options.csvFile.size || 0,
+            kind: extension,
           };
         }
+
+        set({ saveProgressLabel: "Subiendo snapshot a Storage..." });
+        const snapshotRef = await saveSnapshotToStorage({
+          clientId,
+          condominiumId,
+          direction: "income",
+          sessionId: sessionIdForStorage,
+          summary,
+          bankMovements,
+          internalMovements: internalPayments,
+        });
 
         const payload: Record<string, any> = {
           name: name.trim() || "Conciliación ingresos (borrador)",
           type: "income",
           status: "draft",
-          version: 1,
-          storageMode: "subcollections_v1",
+          version: 2,
+          storageMode: "storage_v2",
+          snapshotRef,
           clientId,
           condominiumId,
           summary,
@@ -631,22 +611,13 @@ export const usePaymentReconciliationStore = create<UsePaymentReconciliationStat
         };
         if (csvSource) payload.csvSource = csvSource;
 
+        set({ saveProgressLabel: "Guardando metadatos..." });
         if (activeSessionId) {
           const draftRef = doc(
             db,
             `clients/${clientId}/condominiums/${condominiumId}/paymentReconciliations/${activeSessionId}`
           );
           await updateDoc(draftRef, payload);
-          await replaceSubcollectionDocs(
-            `clients/${clientId}/condominiums/${condominiumId}/paymentReconciliations/${activeSessionId}`,
-            "bankMovements",
-            bankMovements
-          );
-          await replaceSubcollectionDocs(
-            `clients/${clientId}/condominiums/${condominiumId}/paymentReconciliations/${activeSessionId}`,
-            "internalMovements",
-            internalPayments
-          );
           await writeAuditLog({
             module: "ConciliacionIngresos",
             entityType: "payment_reconciliation",
@@ -658,6 +629,7 @@ export const usePaymentReconciliationStore = create<UsePaymentReconciliationStat
               internalPaymentsCount: internalPayments.length,
               dateFrom: options?.dateFrom || "",
               dateTo: options?.dateTo || "",
+              storageMode: "storage_v2",
             },
           });
         } else {
@@ -676,16 +648,6 @@ export const usePaymentReconciliationStore = create<UsePaymentReconciliationStat
             ),
             payload
           );
-          await replaceSubcollectionDocs(
-            `clients/${clientId}/condominiums/${condominiumId}/paymentReconciliations/${created.id}`,
-            "bankMovements",
-            bankMovements
-          );
-          await replaceSubcollectionDocs(
-            `clients/${clientId}/condominiums/${condominiumId}/paymentReconciliations/${created.id}`,
-            "internalMovements",
-            internalPayments
-          );
           await writeAuditLog({
             module: "ConciliacionIngresos",
             entityType: "payment_reconciliation",
@@ -697,16 +659,21 @@ export const usePaymentReconciliationStore = create<UsePaymentReconciliationStat
               internalPaymentsCount: internalPayments.length,
               dateFrom: options?.dateFrom || "",
               dateTo: options?.dateTo || "",
+              storageMode: "storage_v2",
             },
           });
           set({ activeSessionId: created.id });
         }
 
-        set({ loading: false });
+        set({ saving: false, saveProgressLabel: "" });
       } catch (error: any) {
-        console.error("Error al guardar borrador de conciliación ingresos:", error);
+        console.error(
+          "Error al guardar borrador de conciliación ingresos:",
+          error
+        );
         set({
-          loading: false,
+          saving: false,
+          saveProgressLabel: "",
           error: error?.message || "No fue posible guardar el progreso",
         });
       }
@@ -741,24 +708,13 @@ export const usePaymentReconciliationStore = create<UsePaymentReconciliationStat
         }
         const draftDoc = snap.docs[0];
         const draftData = draftDoc.data();
-        let resolvedBankMovements = Array.isArray(draftData.bankMovements)
-          ? draftData.bankMovements
-          : null;
-        let resolvedInternalPayments = Array.isArray(draftData.internalPayments)
-          ? draftData.internalPayments
-          : null;
-        if (!resolvedBankMovements || !resolvedInternalPayments) {
-          const parentPath = `clients/${clientId}/condominiums/${condominiumId}/paymentReconciliations/${draftDoc.id}`;
-          const [bankRows, internalRows] = await Promise.all([
-            loadSubcollectionDocs(parentPath, "bankMovements"),
-            loadSubcollectionDocs(parentPath, "internalMovements"),
-          ]);
-          resolvedBankMovements = bankRows;
-          resolvedInternalPayments = internalRows;
-        }
+        const hydrated = await hydrateDraftData(
+          `clients/${clientId}/condominiums/${condominiumId}/paymentReconciliations/${draftDoc.id}`,
+          draftData
+        );
         set({
-          bankMovements: (resolvedBankMovements || []).map(hydrateBankMovement),
-          internalPayments: (resolvedInternalPayments || []).map(hydrateInternalPayment),
+          bankMovements: hydrated.bankMovements.map(hydrateBankMovement),
+          internalPayments: hydrated.internalMovements.map(hydrateInternalPayment),
           summary: draftData.summary || EMPTY_SUMMARY,
           activeSessionId: draftDoc.id,
           loading: false,
@@ -770,7 +726,10 @@ export const usePaymentReconciliationStore = create<UsePaymentReconciliationStat
           dateTo: draftData?.dateRange?.to || "",
         };
       } catch (error: any) {
-        console.error("Error al reanudar borrador de conciliación ingresos:", error);
+        console.error(
+          "Error al reanudar borrador de conciliación ingresos:",
+          error
+        );
         set({
           loading: false,
           error: error?.message || "No fue posible reanudar el borrador",
@@ -811,24 +770,13 @@ export const usePaymentReconciliationStore = create<UsePaymentReconciliationStat
           set({ loading: false });
           return null;
         }
-        let resolvedBankMovements = Array.isArray(draftData.bankMovements)
-          ? draftData.bankMovements
-          : null;
-        let resolvedInternalPayments = Array.isArray(draftData.internalPayments)
-          ? draftData.internalPayments
-          : null;
-        if (!resolvedBankMovements || !resolvedInternalPayments) {
-          const parentPath = `clients/${clientId}/condominiums/${condominiumId}/paymentReconciliations/${draftDoc.id}`;
-          const [bankRows, internalRows] = await Promise.all([
-            loadSubcollectionDocs(parentPath, "bankMovements"),
-            loadSubcollectionDocs(parentPath, "internalMovements"),
-          ]);
-          resolvedBankMovements = bankRows;
-          resolvedInternalPayments = internalRows;
-        }
+        const hydrated = await hydrateDraftData(
+          `clients/${clientId}/condominiums/${condominiumId}/paymentReconciliations/${draftDoc.id}`,
+          draftData
+        );
         set({
-          bankMovements: (resolvedBankMovements || []).map(hydrateBankMovement),
-          internalPayments: (resolvedInternalPayments || []).map(hydrateInternalPayment),
+          bankMovements: hydrated.bankMovements.map(hydrateBankMovement),
+          internalPayments: hydrated.internalMovements.map(hydrateInternalPayment),
           summary: draftData.summary || EMPTY_SUMMARY,
           activeSessionId: draftDoc.id,
           loading: false,
@@ -857,11 +805,16 @@ export const usePaymentReconciliationStore = create<UsePaymentReconciliationStat
         summary: EMPTY_SUMMARY,
         lastLoadedAt: null,
         activeSessionId: null,
+        lastImport: null,
       });
     },
 
     saveSession: async (name: string) => {
-      set({ loading: true, error: null });
+      set({
+        saving: true,
+        saveProgressLabel: "Preparando sesión final...",
+        error: null,
+      });
       try {
         const auth = getAuth();
         const currentUser = auth.currentUser;
@@ -874,8 +827,13 @@ export const usePaymentReconciliationStore = create<UsePaymentReconciliationStat
           throw new Error("Contexto de cliente/condominio no disponible");
         }
 
-        const { bankMovements, internalPayments, summary, sessions, activeSessionId } =
-          get();
+        const {
+          bankMovements,
+          internalPayments,
+          summary,
+          sessions,
+          activeSessionId,
+        } = get();
         const sessionName =
           name.trim() || `Conciliacion ingresos ${new Date().toISOString()}`;
         const tracePayload = JSON.stringify({
@@ -889,61 +847,66 @@ export const usePaymentReconciliationStore = create<UsePaymentReconciliationStat
         });
         const snapshotHash = computeSimpleHash(tracePayload);
         const db = getFirestore();
+
+        const sessionIdForStorage = activeSessionId || `session_${uuidv4()}`;
+        set({ saveProgressLabel: "Subiendo snapshot a Storage..." });
+        const snapshotRef = await saveSnapshotToStorage({
+          clientId,
+          condominiumId,
+          direction: "income",
+          sessionId: sessionIdForStorage,
+          summary,
+          bankMovements,
+          internalMovements: internalPayments,
+        });
+
         const payload = {
-            name: sessionName,
-            type: "income",
-            status: "completed",
-            version: 1,
-            storageMode: "subcollections_v1",
-            clientId,
-            condominiumId,
-            summary,
-            createdAt: serverTimestamp(),
-            updatedAt: serverTimestamp(),
-            createdBy: {
-              uid: currentUser.uid,
-              role:
-                (tokenResult.claims["role"] as string) ||
-                (tokenResult.claims["userRole"] as string) ||
-                "",
+          name: sessionName,
+          type: "income",
+          status: "completed",
+          version: 2,
+          storageMode: "storage_v2" as const,
+          snapshotRef,
+          clientId,
+          condominiumId,
+          summary,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+          createdBy: {
+            uid: currentUser.uid,
+            role:
+              (tokenResult.claims["role"] as string) ||
+              (tokenResult.claims["userRole"] as string) ||
+              "",
+          },
+          traceability: {
+            snapshotHash,
+            bankMovementsCount: bankMovements.length,
+            internalMovementsCount: internalPayments.length,
+            matchedMovementsCount: bankMovements.filter(
+              (item) =>
+                item.status === "matched" || item.status === "manual_match"
+            ).length,
+            source: "manual_csv_reconciliation",
+            lastAction: "save_session",
+          },
+          auditTrail: [
+            {
+              action: "created",
+              by: currentUser.uid,
+              at: new Date(),
+              note: "Sesion de conciliacion guardada",
             },
-            traceability: {
-              snapshotHash,
-              bankMovementsCount: bankMovements.length,
-              internalMovementsCount: internalPayments.length,
-              matchedMovementsCount: bankMovements.filter(
-                (item) =>
-                  item.status === "matched" || item.status === "manual_match"
-              ).length,
-              source: "manual_csv_reconciliation",
-              lastAction: "save_session",
-            },
-            auditTrail: [
-              {
-                action: "created",
-                by: currentUser.uid,
-                at: new Date(),
-                note: "Sesion de conciliacion guardada",
-              },
-            ],
-          };
+          ],
+        };
         let savedId = activeSessionId || "";
+        set({ saveProgressLabel: "Guardando metadatos..." });
         if (activeSessionId) {
           const refDoc = doc(
             db,
             `clients/${clientId}/condominiums/${condominiumId}/paymentReconciliations/${activeSessionId}`
           );
           await updateDoc(refDoc, payload);
-          await replaceSubcollectionDocs(
-            `clients/${clientId}/condominiums/${condominiumId}/paymentReconciliations/${activeSessionId}`,
-            "bankMovements",
-            bankMovements
-          );
-          await replaceSubcollectionDocs(
-            `clients/${clientId}/condominiums/${condominiumId}/paymentReconciliations/${activeSessionId}`,
-            "internalMovements",
-            internalPayments
-          );
           await writeAuditLog({
             module: "ConciliacionIngresos",
             entityType: "payment_reconciliation",
@@ -957,6 +920,7 @@ export const usePaymentReconciliationStore = create<UsePaymentReconciliationStat
                 (item) =>
                   item.status === "matched" || item.status === "manual_match"
               ).length,
+              storageMode: "storage_v2",
             },
           });
         } else {
@@ -971,16 +935,6 @@ export const usePaymentReconciliationStore = create<UsePaymentReconciliationStat
             }
           );
           savedId = docRef.id;
-          await replaceSubcollectionDocs(
-            `clients/${clientId}/condominiums/${condominiumId}/paymentReconciliations/${savedId}`,
-            "bankMovements",
-            bankMovements
-          );
-          await replaceSubcollectionDocs(
-            `clients/${clientId}/condominiums/${condominiumId}/paymentReconciliations/${savedId}`,
-            "internalMovements",
-            internalPayments
-          );
           await writeAuditLog({
             module: "ConciliacionIngresos",
             entityType: "payment_reconciliation",
@@ -994,6 +948,7 @@ export const usePaymentReconciliationStore = create<UsePaymentReconciliationStat
                 (item) =>
                   item.status === "matched" || item.status === "manual_match"
               ).length,
+              storageMode: "storage_v2",
             },
           });
         }
@@ -1009,7 +964,8 @@ export const usePaymentReconciliationStore = create<UsePaymentReconciliationStat
             ...sessions,
           ],
           activeSessionId: null,
-          loading: false,
+          saving: false,
+          saveProgressLabel: "",
         });
 
         const netDifference = Number(summary.unmatchedDifference || 0);
@@ -1042,10 +998,11 @@ export const usePaymentReconciliationStore = create<UsePaymentReconciliationStat
       } catch (error: any) {
         console.error("Error saving reconciliation session:", error);
         set({
-          loading: false,
+          saving: false,
+          saveProgressLabel: "",
           error: error?.message || "No fue posible guardar la conciliacion",
         });
       }
     },
-  })
-);
+  }));
+

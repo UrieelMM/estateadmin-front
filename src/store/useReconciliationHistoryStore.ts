@@ -1,6 +1,7 @@
 import { create } from "./createStore";
 import { getAuth, getIdTokenResult } from "firebase/auth";
 import { collection, getDocs, getFirestore } from "firebase/firestore";
+import { hydrateDraftData } from "../services/reconciliation/hybridPersistence";
 
 export type ReconciliationHistoryType = "income" | "expenses";
 
@@ -60,13 +61,15 @@ function toDateOrNull(value: any): Date | null {
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
-async function loadSubcollection(
-  parentPath: string,
-  subcollectionName: string
-): Promise<Record<string, any>[]> {
-  const db = getFirestore();
-  const snap = await getDocs(collection(db, `${parentPath}/${subcollectionName}`));
-  return snap.docs.map((doc) => doc.data());
+function extractSnapshotCount(
+  raw: Record<string, any>,
+  key: "bankMovements" | "internalMovements"
+): number | null {
+  const counts = raw?.snapshotRef?.counts;
+  if (counts && typeof counts[key] === "number") {
+    return Number(counts[key]);
+  }
+  return null;
 }
 
 function applyFilters(
@@ -184,6 +187,8 @@ export const useReconciliationHistoryStore =
 
         const incomeSessions: ReconciliationHistoryItem[] = incomeSnap.docs.map((doc) => {
           const data = doc.data();
+          const snapshotBank = extractSnapshotCount(data, "bankMovements");
+          const snapshotInternal = extractSnapshotCount(data, "internalMovements");
           return {
             id: doc.id,
             type: "income",
@@ -202,16 +207,24 @@ export const useReconciliationHistoryStore =
             traceability: data.traceability || {},
             bankMovementsCount:
               Number(data?.traceability?.bankMovementsCount) ||
-              (Array.isArray(data.bankMovements) ? data.bankMovements.length : 0),
+              snapshotBank ||
+              (Array.isArray(data.bankMovements)
+                ? data.bankMovements.length
+                : 0),
             internalMovementsCount:
               Number(data?.traceability?.internalMovementsCount) ||
-              (Array.isArray(data.internalPayments) ? data.internalPayments.length : 0),
+              snapshotInternal ||
+              (Array.isArray(data.internalPayments)
+                ? data.internalPayments.length
+                : 0),
             raw: data,
           };
         });
 
         const expenseSessions: ReconciliationHistoryItem[] = expenseSnap.docs.map((doc) => {
           const data = doc.data();
+          const snapshotBank = extractSnapshotCount(data, "bankMovements");
+          const snapshotInternal = extractSnapshotCount(data, "internalMovements");
           return {
             id: doc.id,
             type: "expenses",
@@ -230,10 +243,16 @@ export const useReconciliationHistoryStore =
             traceability: data.traceability || {},
             bankMovementsCount:
               Number(data?.traceability?.bankMovementsCount) ||
-              (Array.isArray(data.bankMovements) ? data.bankMovements.length : 0),
+              snapshotBank ||
+              (Array.isArray(data.bankMovements)
+                ? data.bankMovements.length
+                : 0),
             internalMovementsCount:
               Number(data?.traceability?.internalMovementsCount) ||
-              (Array.isArray(data.internalExpenses) ? data.internalExpenses.length : 0),
+              snapshotInternal ||
+              (Array.isArray(data.internalExpenses)
+                ? data.internalExpenses.length
+                : 0),
             raw: data,
           };
         });
@@ -310,7 +329,14 @@ export const useReconciliationHistoryStore =
       const hasInlineData = isIncome
         ? Array.isArray(raw?.bankMovements) && Array.isArray(raw?.internalPayments)
         : Array.isArray(raw?.bankMovements) && Array.isArray(raw?.internalExpenses);
-      if (hasInlineData) return current;
+      const alreadyHasStorageSnapshot =
+        raw?.storageMode === "storage_v2" &&
+        Array.isArray(raw?.bankMovements) &&
+        (isIncome
+          ? Array.isArray(raw?.internalPayments)
+          : Array.isArray(raw?.internalExpenses));
+      if (hasInlineData && alreadyHasStorageSnapshot) return current;
+      if (hasInlineData && raw?.storageMode !== "storage_v2") return current;
 
       try {
         const auth = getAuth();
@@ -327,13 +353,18 @@ export const useReconciliationHistoryStore =
         const parentPath = `clients/${clientId}/condominiums/${condominiumId}/${
           isIncome ? "paymentReconciliations" : "expenseReconciliations"
         }/${id}`;
-        const [bankMovements, internalMovements] = await Promise.all([
-          loadSubcollection(parentPath, "bankMovements"),
-          loadSubcollection(parentPath, "internalMovements"),
-        ]);
+
+        // Hybrid reader — handles storage_v2, subcollections_v1 and inline_v0.
+        const { bankMovements, internalMovements } = await hydrateDraftData(
+          parentPath,
+          raw
+        );
 
         const hydrated: ReconciliationHistoryItem = {
           ...current,
+          bankMovementsCount: bankMovements.length || current.bankMovementsCount,
+          internalMovementsCount:
+            internalMovements.length || current.internalMovementsCount,
           raw: {
             ...raw,
             bankMovements,
