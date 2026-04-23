@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 import toast from "react-hot-toast";
 import { Disclosure } from "@headlessui/react";
 import {
@@ -39,6 +40,21 @@ declare global {
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(" ");
 }
+
+// ─── Animaciones ────────────────────────────────────────────────────────────
+const EASE_OUT = [0.16, 1, 0.3, 1] as const;
+const SPRING = { type: "spring", stiffness: 380, damping: 22 } as const;
+
+// Stagger para los items del nav — solo al montar
+const navListVariants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.045, delayChildren: 0.18 } },
+};
+const navItemVariants = {
+  hidden: { opacity: 0, x: -10 },
+  show:   { opacity: 1, x: 0, transition: { duration: 0.28, ease: EASE_OUT } },
+};
+// ─────────────────────────────────────────────────────────────────────────────
 
 interface Props {
   children: React.ReactNode;
@@ -174,7 +190,9 @@ const LayoutDashboard = ({ children }: Props) => {
 
       {/* Botón móvil (arriba a la izquierda) para abrir/cerrar sidebar */}
       <div className="xl:hidden px-1 py-4">
-        <button
+        <motion.button
+          whileTap={{ scale: 0.88, rotate: isMobileMenuOpen ? -10 : 10 }}
+          transition={SPRING}
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           className="text-gray-500 hover:text-gray-600 focus:outline-none dark:text-gray-400 dark:hover:text-gray-300"
         >
@@ -184,7 +202,7 @@ const LayoutDashboard = ({ children }: Props) => {
           ) : (
             <Bars3Icon className="block h-6 w-6" aria-hidden="true" />
           )}
-        </button>
+        </motion.button>
       </div>
 
       {/*
@@ -193,7 +211,10 @@ const LayoutDashboard = ({ children }: Props) => {
         En dispositivos grandes, lo hacemos "fixed" para que no se mueva al hacer scroll.
       */}
       <div className="hidden xl:block">
-        <aside
+        <motion.aside
+          initial={{ x: -24, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          transition={{ duration: 0.4, ease: EASE_OUT }}
           className={classNames(
             "fixed inset-y-0 left-0 border-r bg-gray-50 border-gray-200 dark:border-gray-700 dark:bg-gray-800 z-50",
             "h-screen flex flex-col transition-all duration-300 ease-in-out",
@@ -202,7 +223,10 @@ const LayoutDashboard = ({ children }: Props) => {
         >
           {/* Header fijo */}
           <div className="flex-none h-16 border-b border-gray-200 dark:border-gray-700 p-4 flex items-center justify-between">
-            <img
+            <motion.img
+              initial={{ opacity: 0 }}
+              animate={{ opacity: isDesktopMenuCollapsed ? 0 : 1 }}
+              transition={{ duration: 0.2 }}
               className={classNames(
                 "h-8 w-auto",
                 isDesktopMenuCollapsed ? "hidden" : "block"
@@ -210,13 +234,16 @@ const LayoutDashboard = ({ children }: Props) => {
               src={logo}
               alt="EstateAdmin"
             />
-            <button
+            <motion.button
+              whileHover={{ scale: 1.12 }}
+              whileTap={{ scale: 0.88, rotate: -15 }}
+              transition={SPRING}
               onClick={() => setIsDesktopMenuCollapsed(!isDesktopMenuCollapsed)}
               className="text-gray-500 hover:text-gray-600 focus:outline-none dark:text-gray-400 dark:hover:text-gray-300"
             >
               <span className="sr-only">Toggle menu</span>
               <Bars3Icon className="h-6 w-6" aria-hidden="true" />
-            </button>
+            </motion.button>
           </div>
 
           {/* Contenido con scroll */}
@@ -224,15 +251,17 @@ const LayoutDashboard = ({ children }: Props) => {
             className="flex-1 overflow-y-auto custom-scrollbar"
             aria-label="Sidebar"
           >
-            <ul className="py-6 space-y-2">
+            <motion.ul
+              variants={navListVariants}
+              initial="hidden"
+              animate="show"
+              className="py-6 space-y-2"
+            >
               {navigation.map((item) => {
-                // Generar ID para el tour basado en el nombre del item
-                const itemId = `nav-${item.name
-                  .toLowerCase()
-                  .replace(/\s+/g, "-")}`;
+                const itemId = `nav-${item.name.toLowerCase().replace(/\s+/g, "-")}`;
 
                 return (
-                  <li key={item.name}>
+                  <motion.li key={item.name} variants={navItemVariants}>
                     {!item.children ? (
                       <Link
                         to={item.href}
@@ -241,14 +270,14 @@ const LayoutDashboard = ({ children }: Props) => {
                           item.current
                             ? "bg-indigo-100"
                             : "hover:bg-indigo-100 dark:hover:bg-gray-700",
-                          "group flex items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md",
+                          "group flex items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md transition-colors duration-150",
                           isDesktopMenuCollapsed ? "justify-center" : ""
                         )}
                         title={isDesktopMenuCollapsed ? item.name : undefined}
                       >
                         <item.icon
                           className={classNames(
-                            "text-gray-400 dark:text-gray-300",
+                            "text-gray-400 dark:text-gray-300 transition-colors duration-150 group-hover:text-indigo-500 dark:group-hover:text-indigo-400",
                             isDesktopMenuCollapsed ? "h-6 w-6" : "mr-3 h-6 w-6"
                           )}
                           aria-hidden="true"
@@ -265,12 +294,10 @@ const LayoutDashboard = ({ children }: Props) => {
                                 item.current
                                   ? "bg-indigo-100"
                                   : "hover:bg-indigo-100 dark:hover:bg-gray-700",
-                                "group w-full flex items-center px-4 py-2 text-left text-sm font-medium text-gray-600 dark:text-gray-100 rounded-md focus:outline-none",
+                                "group w-full flex items-center px-4 py-2 text-left text-sm font-medium text-gray-600 dark:text-gray-100 rounded-md focus:outline-none transition-colors duration-150",
                                 isDesktopMenuCollapsed ? "justify-center" : ""
                               )}
-                              title={
-                                isDesktopMenuCollapsed ? item.name : undefined
-                              }
+                              title={isDesktopMenuCollapsed ? item.name : undefined}
                               onClick={() => {
                                 if (isDesktopMenuCollapsed) {
                                   setIsDesktopMenuCollapsed(false);
@@ -279,10 +306,8 @@ const LayoutDashboard = ({ children }: Props) => {
                             >
                               <item.icon
                                 className={classNames(
-                                  "text-gray-400 dark:text-gray-300",
-                                  isDesktopMenuCollapsed
-                                    ? "h-6 w-6"
-                                    : "mr-3 h-6 w-6"
+                                  "text-gray-400 dark:text-gray-300 transition-colors duration-150 group-hover:text-indigo-500 dark:group-hover:text-indigo-400",
+                                  isDesktopMenuCollapsed ? "h-6 w-6" : "mr-3 h-6 w-6"
                                 )}
                                 aria-hidden="true"
                               />
@@ -290,9 +315,10 @@ const LayoutDashboard = ({ children }: Props) => {
                                 <>
                                   {item.name}
                                   <ChevronRightIcon
-                                    className={`${
-                                      open ? "transform rotate-90" : ""
-                                    } ml-auto h-5 w-5 transition-transform`}
+                                    className={classNames(
+                                      "ml-auto h-5 w-5 transition-transform duration-200",
+                                      open ? "rotate-90" : ""
+                                    )}
                                   />
                                 </>
                               )}
@@ -305,7 +331,7 @@ const LayoutDashboard = ({ children }: Props) => {
                                     as={Link}
                                     to={subItem.href}
                                     id={`nav-sub-desktop-${subItem.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "-")}`}
-                                    className="group w-full flex items-center pl-11 pr-2 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md hover:bg-indigo-100 dark:hover:bg-gray-700"
+                                    className="group w-full flex items-center pl-11 pr-2 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md hover:bg-indigo-100 dark:hover:bg-gray-700 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors duration-150"
                                   >
                                     {subItem.name}
                                   </Disclosure.Button>
@@ -316,10 +342,10 @@ const LayoutDashboard = ({ children }: Props) => {
                         )}
                       </Disclosure>
                     )}
-                  </li>
+                  </motion.li>
                 );
               })}
-            </ul>
+            </motion.ul>
           </nav>
 
           {/* Footer fijo */}
@@ -329,11 +355,15 @@ const LayoutDashboard = ({ children }: Props) => {
                 "mx-auto",
                 isDesktopMenuCollapsed ? "w-full px-2" : "w-40"
               )}>
-                 <TutorialsMenu collapsed={isDesktopMenuCollapsed} />
+                <TutorialsMenu collapsed={isDesktopMenuCollapsed} />
               </li>
-              <li
+
+              {/* Support widget con hover sutil */}
+              <motion.li
+                whileHover={{ scale: 1.03, y: -1 }}
+                transition={SPRING}
                 className={classNames(
-                  "bg-gradient-to-tr from-[#9f86f81c] to-[#746dfc17] shadow-lg flex justify-center items-center rounded-lg mx-auto",
+                  "bg-gradient-to-tr from-[#9f86f81c] to-[#746dfc17] shadow-lg flex justify-center items-center rounded-lg mx-auto cursor-default",
                   isDesktopMenuCollapsed ? "w-12 h-12" : "w-40 h-36 mb-8"
                 )}
               >
@@ -354,58 +384,71 @@ const LayoutDashboard = ({ children }: Props) => {
                       <p className="text-xs mt-2 mb-2 text-center">
                         ¿Necesitas ayuda?
                       </p>
-                      <button
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        transition={SPRING}
                         className="bg-indigo-400 text-xs text-center m-0 text-white rounded-md p-1"
                         onClick={() => setIsSupportModalOpen(true)}
                       >
                         <span className="block mb-0.5">Contacta a soporte</span>
-                      </button>
+                      </motion.button>
                     </>
                   )}
                 </div>
-              </li>
-              <li>
+              </motion.li>
+
+              {/* Configuración */}
+              <motion.li
+                whileHover={{ x: isDesktopMenuCollapsed ? 0 : 3 }}
+                transition={SPRING}
+              >
                 <Link
                   to="/dashboard/client-config/general"
                   id="nav-configuracion"
                   className={classNames(
-                    "group flex items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md",
+                    "group flex items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md hover:bg-indigo-100 dark:hover:bg-gray-700 transition-colors duration-150",
                     isDesktopMenuCollapsed ? "justify-center" : ""
                   )}
                   title={isDesktopMenuCollapsed ? "Configuración" : undefined}
                 >
                   <Cog6ToothIcon
                     className={classNames(
-                      "text-gray-400 dark:text-gray-300",
+                      "text-gray-400 dark:text-gray-300 transition-colors duration-150 group-hover:text-indigo-500 dark:group-hover:text-indigo-400",
                       isDesktopMenuCollapsed ? "h-6 w-6" : "mr-3 h-6 w-6"
                     )}
                     aria-hidden="true"
                   />
                   {!isDesktopMenuCollapsed && "Configuración"}
                 </Link>
-              </li>
-              <li>
+              </motion.li>
+
+              {/* Cerrar sesión */}
+              <motion.li
+                whileHover={{ x: isDesktopMenuCollapsed ? 0 : 3 }}
+                transition={SPRING}
+              >
                 <button
                   type="button"
                   onClick={handleLogout}
                   className={classNames(
-                    "group flex items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md",
+                    "w-full group flex items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 transition-colors duration-150",
                     isDesktopMenuCollapsed ? "justify-center" : ""
                   )}
                   title={isDesktopMenuCollapsed ? "Cerrar sesión" : undefined}
                 >
                   <ArrowLeftEndOnRectangleIcon
                     className={classNames(
-                      "text-gray-400 dark:text-gray-300",
+                      "text-gray-400 dark:text-gray-300 transition-colors duration-150 group-hover:text-red-500",
                       isDesktopMenuCollapsed ? "h-6 w-6" : "mr-3 h-6 w-6"
                     )}
                   />
                   {!isDesktopMenuCollapsed && "Cerrar sesión"}
                 </button>
-              </li>
+              </motion.li>
             </ul>
           </div>
-        </aside>
+        </motion.aside>
       </div>
 
       {/*
@@ -438,15 +481,17 @@ const LayoutDashboard = ({ children }: Props) => {
             className="flex-1 overflow-y-auto custom-scrollbar"
             aria-label="Sidebar"
           >
-            <ul className="py-6 space-y-2">
+            <motion.ul
+              variants={navListVariants}
+              initial="hidden"
+              animate={isMobileMenuOpen ? "show" : "hidden"}
+              className="py-6 space-y-2"
+            >
               {navigation.map((item) => {
-                // Generar ID para el tour basado en el nombre del item
-                const itemId = `nav-${item.name
-                  .toLowerCase()
-                  .replace(/\s+/g, "-")}`;
+                const itemId = `nav-${item.name.toLowerCase().replace(/\s+/g, "-")}`;
 
                 return (
-                  <li key={item.name}>
+                  <motion.li key={item.name} variants={navItemVariants}>
                     {!item.children ? (
                       <Link
                         to={item.href}
@@ -456,11 +501,11 @@ const LayoutDashboard = ({ children }: Props) => {
                           item.current
                             ? "bg-indigo-100"
                             : "hover:bg-indigo-100",
-                          "group flex items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md"
+                          "group flex items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md transition-colors duration-150"
                         )}
                       >
                         <item.icon
-                          className="mr-3 h-6 w-6 text-gray-400 dark:text-gray-300"
+                          className="mr-3 h-6 w-6 text-gray-400 dark:text-gray-300 transition-colors duration-150 group-hover:text-indigo-500"
                           aria-hidden="true"
                         />
                         {item.name}
@@ -473,20 +518,21 @@ const LayoutDashboard = ({ children }: Props) => {
                               id={itemId}
                               className={classNames(
                                 item.current
-                                  ? "bg-indigo-100 "
+                                  ? "bg-indigo-100"
                                   : "hover:bg-indigo-100 dark:hover:bg-gray-700",
-                                "group w-full flex items-center px-4 py-2 text-left text-sm font-medium text-gray-600 dark:text-gray-100 rounded-md focus:outline-none"
+                                "group w-full flex items-center px-4 py-2 text-left text-sm font-medium text-gray-600 dark:text-gray-100 rounded-md focus:outline-none transition-colors duration-150"
                               )}
                             >
                               <item.icon
-                                className="mr-3 h-6 w-6 text-gray-400 dark:text-gray-300"
+                                className="mr-3 h-6 w-6 text-gray-400 dark:text-gray-300 transition-colors duration-150 group-hover:text-indigo-500"
                                 aria-hidden="true"
                               />
                               {item.name}
                               <ChevronRightIcon
-                                className={`${
-                                  open ? "transform rotate-90" : ""
-                                } ml-auto h-5 w-5 transition-transform`}
+                                className={classNames(
+                                  "ml-auto h-5 w-5 transition-transform duration-200",
+                                  open ? "rotate-90" : ""
+                                )}
                               />
                             </Disclosure.Button>
                             <Disclosure.Panel className="space-y-1">
@@ -495,8 +541,8 @@ const LayoutDashboard = ({ children }: Props) => {
                                   key={subItem.name}
                                   as={Link}
                                   to={subItem.href}
-                                   id={`nav-sub-mobile-${subItem.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "-")}`}
-                                  className="group w-full flex items-center pl-11 pr-2 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md hover:bg-indigo-100 dark:hover:bg-gray-700"
+                                  id={`nav-sub-mobile-${subItem.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "-")}`}
+                                  className="group w-full flex items-center pl-11 pr-2 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md hover:bg-indigo-100 dark:hover:bg-gray-700 hover:text-indigo-600 transition-colors duration-150"
                                 >
                                   {subItem.name}
                                 </Disclosure.Button>
@@ -506,19 +552,23 @@ const LayoutDashboard = ({ children }: Props) => {
                         )}
                       </Disclosure>
                     )}
-                  </li>
+                  </motion.li>
                 );
               })}
-            </ul>
+            </motion.ul>
           </nav>
 
           {/* Footer fijo */}
           <div className="flex-none py-6">
             <ul className="space-y-2">
-               <li className="w-40 mx-auto">
-                 <TutorialsMenu />
-               </li>
-              <li className="w-40 h-36 mb-8 bg-gradient-to-tr from-[#9f86f81c] to-[#746dfc17] shadow-lg flex justify-center items-center rounded-lg mx-auto">
+              <li className="w-40 mx-auto">
+                <TutorialsMenu />
+              </li>
+              <motion.li
+                whileHover={{ scale: 1.03, y: -1 }}
+                transition={SPRING}
+                className="w-40 h-36 mb-8 bg-gradient-to-tr from-[#9f86f81c] to-[#746dfc17] shadow-lg flex justify-center items-center rounded-lg mx-auto cursor-default"
+              >
                 <div className="group flex-col justify-center items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md">
                   <div className="flex justify-center items-center">
                     <ShieldExclamationIcon
@@ -529,41 +579,44 @@ const LayoutDashboard = ({ children }: Props) => {
                   <p className="text-xs mt-2 mb-2 text-center">
                     ¿Necesitas ayuda?
                   </p>
-                  <button
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    transition={SPRING}
                     className="bg-indigo-400 text-xs text-center m-0 text-white rounded-md p-1"
                     onClick={() => setIsSupportModalOpen(true)}
                   >
                     <span className="block mb-0.5">Contacta a soporte</span>
-                  </button>
+                  </motion.button>
                 </div>
-              </li>
-              <li>
+              </motion.li>
+              <motion.li whileHover={{ x: 3 }} transition={SPRING}>
                 <Link
                   to="/dashboard/client-config/general"
                   id="nav-configuracion"
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className="group flex items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md"
+                  className="group flex items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md hover:bg-indigo-100 dark:hover:bg-gray-700 transition-colors duration-150"
                 >
                   <Cog6ToothIcon
-                    className="mr-3 h-6 w-6 text-gray-400 dark:text-gray-300"
+                    className="mr-3 h-6 w-6 text-gray-400 dark:text-gray-300 transition-colors duration-150 group-hover:text-indigo-500"
                     aria-hidden="true"
                   />
                   Configuración
                 </Link>
-              </li>
-              <li>
+              </motion.li>
+              <motion.li whileHover={{ x: 3 }} transition={SPRING}>
                 <button
                   type="button"
                   onClick={() => {
                     setIsMobileMenuOpen(false);
                     handleLogout();
                   }}
-                  className="group flex items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md"
+                  className="w-full group flex items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-100 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 transition-colors duration-150"
                 >
-                  <ArrowLeftEndOnRectangleIcon className="mr-3 h-6 w-6 text-gray-400 dark:text-gray-300" />
+                  <ArrowLeftEndOnRectangleIcon className="mr-3 h-6 w-6 text-gray-400 dark:text-gray-300 transition-colors duration-150 group-hover:text-red-500" />
                   Cerrar sesión
                 </button>
-              </li>
+              </motion.li>
             </ul>
           </div>
         </aside>

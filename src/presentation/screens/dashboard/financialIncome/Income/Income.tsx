@@ -7,6 +7,7 @@ import MorosidadView from "../Summary/MorosidadView";
 import PaymentSummaryByAccount from "./PaymentSummaryByAccount";
 import UnidentifiedPaymentsTable from "./UnidentifiedPaymentsTable";
 import HistoryPaymentsTable from "./HistoryPaymentsTable";
+import MaintenancePaymentsTable from "./MaintenancePaymentsTable";
 import { usePaymentSummaryStore } from "../../../../../store/paymentSummaryStore";
 import useUserStore from "../../../../../store/UserDataStore";
 import TowerIncomeSummary from "./TowerIncomeSummary";
@@ -14,6 +15,7 @@ import TowerIncomeSummary from "./TowerIncomeSummary";
 type IncomeTabId =
   | "summary"
   | "accountSummary"
+  | "maintenance"
   | "towers"
   | "history-by-condominium"
   | "morosidad"
@@ -23,6 +25,7 @@ type IncomeTabId =
 const INCOME_TAB_PATHS: Record<IncomeTabId, string> = {
   summary: "/dashboard/income/summary",
   accountSummary: "/dashboard/income/account-summary",
+  maintenance: "/dashboard/income/maintenance",
   towers: "/dashboard/income/towers",
   "history-by-condominium": "/dashboard/income/by-condominium",
   morosidad: "/dashboard/income/delinquency",
@@ -33,6 +36,7 @@ const INCOME_TAB_PATHS: Record<IncomeTabId, string> = {
 const INCOME_PATH_TO_TAB: Record<string, IncomeTabId> = {
   summary: "summary",
   "account-summary": "accountSummary",
+  maintenance: "maintenance",
   towers: "towers",
   "by-condominium": "history-by-condominium",
   delinquency: "morosidad",
@@ -80,6 +84,7 @@ const Income = () => {
   const allowedTabs = new Set<IncomeTabId>( [
     "summary",
     "accountSummary",
+    "maintenance",
     "history-by-condominium",
     "morosidad",
     "unidentified",
@@ -169,7 +174,7 @@ const Income = () => {
               `}
               onClick={ () => handleTabChange( "summary" ) }
             >
-              <span className="whitespace-nowrap">Resumen General</span>
+              <span className="whitespace-nowrap">Resumen</span>
               { activeTab === "summary" && (
                 <div className="absolute inset-0 rounded-xl bg-white/20 animate-pulse" />
               ) }
@@ -186,8 +191,25 @@ const Income = () => {
               `}
               onClick={ () => handleTabChange( "accountSummary" ) }
             >
-              <span className="whitespace-nowrap">Resumen por Cuenta</span>
+              <span className="whitespace-nowrap">Resumen por cuenta</span>
               { activeTab === "accountSummary" && (
+                <div className="absolute inset-0 rounded-xl bg-white/20 animate-pulse" />
+              ) }
+            </button>
+
+            <button
+              className={ `
+                group relative flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm
+                transition-all duration-300 ease-out
+                ${ activeTab === "maintenance"
+                  ? "bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 dark:from-indigo-800 dark:via-purple-700 dark:to-indigo-800 text-white shadow-lg shadow-indigo-500/25"
+                  : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700/50"
+                }
+              `}
+              onClick={ () => handleTabChange( "maintenance" ) }
+            >
+              <span className="whitespace-nowrap">Mantenimiento</span>
+              { activeTab === "maintenance" && (
                 <div className="absolute inset-0 rounded-xl bg-white/20 animate-pulse" />
               ) }
             </button>
@@ -204,7 +226,7 @@ const Income = () => {
               `}
                 onClick={ () => handleTabChange( "towers" ) }
               >
-                <span className="whitespace-nowrap">Detalle por torres</span>
+                <span className="whitespace-nowrap">Torres</span>
                 { activeTab === "towers" && (
                   <div className="absolute inset-0 rounded-xl bg-white/20 animate-pulse" />
                 ) }
@@ -298,6 +320,11 @@ const Income = () => {
               </h2>
               <PaymentSummaryByAccount />
             </>
+          ) }
+          { activeTab === "maintenance" && (
+            <div className="py-2">
+              <MaintenancePaymentsTable />
+            </div>
           ) }
           { activeTab === "history-by-condominium" && (
             <div className="lg:px-4 flex mt-0 flex-col lg:flex-row gap-4">
