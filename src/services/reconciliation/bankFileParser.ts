@@ -78,13 +78,7 @@ const REFERENCE_HEADER_KEYWORDS = [
   "no. op",
 ];
 
-const AMOUNT_HEADER_KEYWORDS = [
-  "monto",
-  "importe",
-  "amount",
-  "valor",
-  "total",
-];
+const AMOUNT_HEADER_KEYWORDS = ["monto", "importe", "amount", "valor", "total"];
 
 const DEBIT_HEADER_KEYWORDS = [
   "cargo",
@@ -311,7 +305,7 @@ export function parseBankDate(raw: unknown): Date | null {
     dec: 11,
   };
   const textual = normalizeText(trimmed).match(
-    /^(\d{1,2})\s*(?:de)?\s*([a-z]+)\s*(?:de)?\s*(\d{2,4})$/
+    /^(\d{1,2})\s*(?:de)?\s*([a-z]+)\s*(?:de)?\s*(\d{2,4})$/,
   );
   if (textual) {
     const day = Number(textual[1]);
@@ -384,22 +378,22 @@ function headerIncludesAny(header: string, keywords: string[]): boolean {
 
 function detectColumnMapping(headers: string[]): ColumnMapping {
   const dateIdx = headers.findIndex((h) =>
-    headerIncludesAny(h, DATE_HEADER_KEYWORDS)
+    headerIncludesAny(h, DATE_HEADER_KEYWORDS),
   );
   const descIdx = headers.findIndex((h) =>
-    headerIncludesAny(h, DESCRIPTION_HEADER_KEYWORDS)
+    headerIncludesAny(h, DESCRIPTION_HEADER_KEYWORDS),
   );
   const refIdx = headers.findIndex((h) =>
-    headerIncludesAny(h, REFERENCE_HEADER_KEYWORDS)
+    headerIncludesAny(h, REFERENCE_HEADER_KEYWORDS),
   );
   const amountIdx = headers.findIndex((h) =>
-    headerIncludesAny(h, AMOUNT_HEADER_KEYWORDS)
+    headerIncludesAny(h, AMOUNT_HEADER_KEYWORDS),
   );
   const debitIdx = headers.findIndex((h) =>
-    headerIncludesAny(h, DEBIT_HEADER_KEYWORDS)
+    headerIncludesAny(h, DEBIT_HEADER_KEYWORDS),
   );
   const creditIdx = headers.findIndex((h) =>
-    headerIncludesAny(h, CREDIT_HEADER_KEYWORDS)
+    headerIncludesAny(h, CREDIT_HEADER_KEYWORDS),
   );
   return {
     date: dateIdx,
@@ -414,14 +408,11 @@ function detectColumnMapping(headers: string[]): ColumnMapping {
 function mergeAmounts(
   row: (string | number)[],
   mapping: ColumnMapping,
-  direction: BankFileDirection
+  direction: BankFileDirection,
 ): number {
-  const creditRaw =
-    mapping.credit >= 0 ? row[mapping.credit] ?? "" : "";
-  const debitRaw =
-    mapping.debit >= 0 ? row[mapping.debit] ?? "" : "";
-  const amountRaw =
-    mapping.amount >= 0 ? row[mapping.amount] ?? "" : "";
+  const creditRaw = mapping.credit >= 0 ? (row[mapping.credit] ?? "") : "";
+  const debitRaw = mapping.debit >= 0 ? (row[mapping.debit] ?? "") : "";
+  const amountRaw = mapping.amount >= 0 ? (row[mapping.amount] ?? "") : "";
   const credit = parseBankAmount(creditRaw);
   const debit = parseBankAmount(debitRaw);
   const amount = parseBankAmount(amountRaw);
@@ -445,7 +436,7 @@ function rowsToBankRows(
   rawRows: (string | number)[][],
   headers: string[],
   mapping: ColumnMapping,
-  direction: BankFileDirection
+  direction: BankFileDirection,
 ): { rows: ParsedBankRow[]; warnings: ParseWarning[] } {
   const warnings: ParseWarning[] = [];
   const rows: ParsedBankRow[] = [];
@@ -456,7 +447,8 @@ function rowsToBankRows(
     const rawRow: Record<string, string> = {};
     headerNormalized.forEach((header, idx) => {
       if (!header) return;
-      rawRow[header] = row[idx] !== undefined && row[idx] !== null ? String(row[idx]) : "";
+      rawRow[header] =
+        row[idx] !== undefined && row[idx] !== null ? String(row[idx]) : "";
     });
 
     const dateRaw = mapping.date >= 0 ? row[mapping.date] : null;
@@ -546,7 +538,7 @@ function computeStats(rows: ParsedBankRow[]) {
  */
 export async function parseBankFile(
   file: File,
-  direction: BankFileDirection
+  direction: BankFileDirection,
 ): Promise<ParseResult> {
   const kind = detectBankFileKind(file);
   if (kind === "unknown") {
@@ -574,7 +566,7 @@ export async function parseBankFile(
       headers,
       dataRows,
       direction,
-      detectDelimiter(text)
+      detectDelimiter(text),
     );
   }
 
@@ -605,7 +597,7 @@ export async function parseBankFile(
     }
   }
 
-  const rows = XLSX.utils.sheet_to_json<(string | number)[]>(chosenSheet, {
+  const rows = XLSX.utils.sheet_to_json<unknown[]>(chosenSheet, {
     header: 1,
     blankrows: false,
     defval: "",
@@ -620,9 +612,9 @@ export async function parseBankFile(
     ]);
   }
   const headers = (rows[0] || []).map((h) =>
-    h instanceof Date ? h.toISOString().slice(0, 10) : String(h ?? "").trim()
+    h instanceof Date ? h.toISOString().slice(0, 10) : String(h ?? "").trim(),
   );
-  const dataRows = rows.slice(1);
+  const dataRows = rows.slice(1) as (string | number)[][];
   return buildResultFromRows(kind, headers, dataRows, direction);
 }
 
@@ -631,7 +623,7 @@ function buildResultFromRows(
   headers: string[],
   dataRows: (string | number)[][],
   direction: BankFileDirection,
-  delimiter?: string
+  delimiter?: string,
 ): ParseResult {
   const mapping = detectColumnMapping(headers);
   const missingMappingErrors = assessMapping(mapping);
@@ -639,7 +631,7 @@ function buildResultFromRows(
     dataRows,
     headers,
     mapping,
-    direction
+    direction,
   );
   const stats = computeStats(rows);
   return {
@@ -693,14 +685,14 @@ export function recomputeWithMapping(
   result: ParseResult,
   mapping: ColumnMapping,
   direction: BankFileDirection,
-  dataRows: (string | number)[][]
+  dataRows: (string | number)[][],
 ): ParseResult {
   const missingMappingErrors = assessMapping(mapping);
   const { rows, warnings } = rowsToBankRows(
     dataRows,
     result.headers,
     mapping,
-    direction
+    direction,
   );
   const stats = computeStats(rows);
   return {
