@@ -339,6 +339,28 @@ match /databases/{database}/documents {
           allow delete: if (isAdmin() && belongsToClient(clientId)) || isSuperAdmin();
         }
 
+        // ─── Visitas programadas vía chatbot de WhatsApp ───
+        // Escritura: solo el backend (Admin SDK) crea las visitas — desde el
+        // panel únicamente admins pueden actualizar (cancelar) o leer.
+        // No exponemos lectura pública: la caseta valida vía endpoint HTTP
+        // que usa Admin SDK y verifica el `accessToken`.
+        match /scheduledVisits/{visitId} {
+          allow read: if belongsToClientOrSuperAdmin(clientId);
+          // Crear desde el panel está deshabilitado (lo hace el backend).
+          // Permitimos updates solo a admin/assistant para cancelar/cerrar visitas.
+          allow create: if isSuperAdmin();
+          allow update: if (isAdminOrAssistant() && belongsToClient(clientId)) || isSuperAdmin();
+          allow delete: if isSuperAdmin();
+
+          // Entradas/salidas de visitas recurrentes. El backend (Admin SDK) las
+          // crea cuando la caseta escanea el QR. Solo lectura para admin del
+          // tenant — son inmutables.
+          match /entries/{entryId} {
+            allow read: if belongsToClientOrSuperAdmin(clientId);
+            allow create, update, delete: if isSuperAdmin();
+          }
+        }
+
         // ─── Registros de asistencia (creación pública controlada por QR activo) ───
         match /attendance/{attendanceId} {
           allow read: if belongsToClientOrSuperAdmin(clientId);
@@ -472,6 +494,14 @@ match /databases/{database}/documents {
     // ─── CollectionGroup: attendanceQR (lectura pública para escaneo) ───
     match /{path=**}/attendanceQR/{qrId} {
       allow read: if true;
+    }
+
+    // ─── CollectionGroup: visitas programadas (lectura por tenant) ───
+    // Permite al panel admin consultar todas las visitas de su cliente
+    // a través de queries collectionGroup('scheduledVisits').
+    match /{path=**}/scheduledVisits/{visitId} {
+      allow read: if isSuperAdmin()
+                  || (isAuthenticated() && resource.data.clientId == request.auth.token.clientId);
     }
 
     // ─── CollectionGroup: attendance (registro público por QR) ───

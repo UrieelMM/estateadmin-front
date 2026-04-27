@@ -2,6 +2,7 @@ import React, { useEffect } from "react";
 import { useParams, Link, useLocation } from "react-router-dom";
 import { useNewsAndGuidesStore } from "../../../../store/useNewsAndGuidesStore";
 import moment from "moment";
+// @ts-ignore - moment no expone tipos para los archivos de locale
 import "moment/locale/es";
 import { Helmet } from "react-helmet-async";
 import "./GuidePage.css";
@@ -52,8 +53,10 @@ const GuidePage: React.FC = () => {
     moment.locale("es");
   }, [slug, getGuideBySlug, getRelatedGuides]);
 
-  // Mostrar indicador de carga
-  if (loading) {
+  // Mostrar indicador de carga solo en la carga inicial (sin guía previa).
+  // Al navegar entre guías mantenemos el contenido actual para evitar
+  // el parpadeo que aparenta un refresh completo de la página.
+  if (loading && !currentGuide) {
     return (
       <div className="flex justify-center items-center min-h-[500px]">
         <LoadingApp />
@@ -302,7 +305,7 @@ const GuidePage: React.FC = () => {
                           <Link
                             key={category}
                             to={`/guias?category=${encodeURIComponent(
-                              category
+                              category,
                             )}`}
                             className="px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full text-sm hover:bg-indigo-200"
                           >

@@ -13,6 +13,7 @@ import { superAdminRoutes } from "./superAdminRoutes";
 import ProtectedRoute from "./ProtectedRoute";
 import SuperAdminProtectedRoute from "./SuperAdminProtectedRoute";
 import FloatingWhatsAppButton from "../presentation/components/public/FloatingWhatsAppButton";
+import LoadingApp from "../presentation/components/shared/loaders/LoadingApp";
 
 const LayoutDashboard = React.lazy(
   () => import("../presentation/screens/layout/LayoutDashboard"),
@@ -37,6 +38,9 @@ const UnidentifiedPaymentsPublic = React.lazy(
 );
 const AttendancePublic = React.lazy(
   () => import("../presentation/screens/public/AttendancePublic"),
+);
+const ScheduledVisitPublic = React.lazy(
+  () => import("../presentation/screens/public/ScheduledVisitPublic"),
 );
 const NewCustomerInformationForm = React.lazy(
   () => import("../presentation/screens/public/NewCustomerInformationForm"),
@@ -81,7 +85,16 @@ const MaintenanceAppLanding = React.lazy(
 
 const PageLoader = () => (
   <div className="flex items-center justify-center min-h-screen bg-white dark:bg-gray-900">
-    <div className="w-8 h-8 border-4 border-gray-200 dark:border-gray-700 border-t-indigo-600 rounded-full animate-spin" />
+    <LoadingApp />
+  </div>
+);
+
+// Loader interno para el área de contenido dentro de un layout ya montado.
+// Evita que al suspender una ruta hija se desmonte todo el layout (sidebar/header),
+// lo que producía un efecto visual de "refresh completo" al navegar entre secciones.
+const ContentLoader = () => (
+  <div className="flex items-center justify-center w-full min-h-[60vh]">
+    <LoadingApp />
   </div>
 );
 
@@ -111,6 +124,10 @@ export const AppRouterPage = () => {
             element={<UnidentifiedPaymentsPublic />}
           />
           <Route path="/attendance/:qrId" element={<AttendancePublic />} />
+          <Route
+            path="/scheduled-visits/:qrId"
+            element={<ScheduledVisitPublic />}
+          />
 
           {/* Rutas para el formulario de nuevos clientes */}
           <Route
@@ -138,7 +155,9 @@ export const AppRouterPage = () => {
               path="/dashboard"
               element={
                 <LayoutDashboard>
-                  <Outlet />
+                  <Suspense fallback={<ContentLoader />}>
+                    <Outlet />
+                  </Suspense>
                 </LayoutDashboard>
               }
             >
@@ -159,7 +178,9 @@ export const AppRouterPage = () => {
               path="/super-admin"
               element={
                 <SuperAdminLayout>
-                  <Outlet />
+                  <Suspense fallback={<ContentLoader />}>
+                    <Outlet />
+                  </Suspense>
                 </SuperAdminLayout>
               }
             >

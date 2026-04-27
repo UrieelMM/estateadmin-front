@@ -48,6 +48,7 @@ export const navigation = [
       { name: "Áreas comunes", href: "/dashboard/common-areas" },
       { name: "Calendario", href: "/dashboard/calendar" },
       { name: "Publicaciones", href: "/dashboard/publications" },
+      { name: "Visitas", href: "/dashboard/scheduled-visits" },
     ],
   },
   {

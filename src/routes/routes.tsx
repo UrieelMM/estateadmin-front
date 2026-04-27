@@ -95,6 +95,10 @@ const PersonalDashboard = React.lazy(
 const AuditTrail = React.lazy(
   () => import("../presentation/screens/dashboard/audit/AuditTrail"),
 );
+const ScheduledVisits = React.lazy(
+  () =>
+    import("../presentation/screens/dashboard/scheduledVisits/ScheduledVisits"),
+);
 
 export const routesApp = [
   {
@@ -292,6 +296,13 @@ export const routesApp = [
     title: "Gestión de Personal",
     description: "Administración y control del personal del condominio",
     component: <PersonalDashboard />,
+  },
+  {
+    to: "/dashboard/scheduled-visits",
+    icon: "fa-solid fa-id-card",
+    title: "Visitas",
+    description: "Gestión de visitas agendadas con QR",
+    component: <ScheduledVisits />,
   },
   // {
   //   to: "/dashboard/planning",
