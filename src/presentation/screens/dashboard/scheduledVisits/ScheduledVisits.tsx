@@ -46,14 +46,8 @@ function classNames(...classes: (string | false | undefined)[]) {
 }
 
 const ScheduledVisits = () => {
-  const {
-    visits,
-    isLoading,
-    error,
-    filters,
-    fetchVisits,
-    setFilters,
-  } = useScheduledVisitsStore();
+  const { visits, isLoading, error, filters, fetchVisits, setFilters } =
+    useScheduledVisitsStore();
 
   const [selected, setSelected] = useState<ScheduledVisit | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
