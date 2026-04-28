@@ -42,6 +42,9 @@ const AttendancePublic = React.lazy(
 const ScheduledVisitPublic = React.lazy(
   () => import("../presentation/screens/public/ScheduledVisitPublic"),
 );
+const ScheduledVisitLegacyRedirect = React.lazy(
+  () => import("../presentation/screens/public/ScheduledVisitLegacyRedirect"),
+);
 const NewCustomerInformationForm = React.lazy(
   () => import("../presentation/screens/public/NewCustomerInformationForm"),
 );
@@ -89,9 +92,6 @@ const PageLoader = () => (
   </div>
 );
 
-// Loader interno para el área de contenido dentro de un layout ya montado.
-// Evita que al suspender una ruta hija se desmonte todo el layout (sidebar/header),
-// lo que producía un efecto visual de "refresh completo" al navegar entre secciones.
 const ContentLoader = () => (
   <div className="flex items-center justify-center w-full min-h-[60vh]">
     <LoadingApp />
@@ -127,6 +127,11 @@ export const AppRouterPage = () => {
           <Route
             path="/scheduled-visits/:qrId"
             element={<ScheduledVisitPublic />}
+          />
+          {/* Compat: QRs viejos generados con la ruta /scheduled-visits-qr/ */}
+          <Route
+            path="/scheduled-visits-qr/:qrId"
+            element={<ScheduledVisitLegacyRedirect />}
           />
 
           {/* Rutas para el formulario de nuevos clientes */}
