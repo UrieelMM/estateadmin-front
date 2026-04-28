@@ -687,7 +687,7 @@ const MaintenanceAppLanding = () => {
               <CurrencyDollarIcon className="h-6 w-6 text-indigo-600 dark:text-indigo-400 flex-shrink-0" />
               <div>
                 <p className="text-lg font-black text-indigo-600 dark:text-indigo-400 leading-none">
-                  $99{" "}
+                  $119{" "}
                   <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
                     / mes
                   </span>
@@ -1140,7 +1140,7 @@ const MaintenanceAppLanding = () => {
               },
               {
                 q: "¿Cuánto cuesta EstateFix?",
-                a: "EstateFix tiene un costo de $99 MXN al mes. Este precio es adicional al plan de administración EstateAdmin que ya tengas contratado. Contáctanos para activarlo en tu cuenta.",
+                a: "EstateFix tiene un costo de $119 MXN al mes. Este precio es adicional al plan de administración EstateAdmin que ya tengas contratado. Contáctanos para activarlo en tu cuenta.",
               },
             ].map((item, i) => (
               <details
@@ -1183,7 +1183,7 @@ const MaintenanceAppLanding = () => {
                 <CurrencyDollarIcon className="h-6 w-6 text-white/80" />
                 <div className="text-left">
                   <p className="text-white font-black text-lg leading-none">
-                    $99{" "}
+                    $119{" "}
                     <span className="font-semibold text-sm text-white/80">
                       / mes
                     </span>

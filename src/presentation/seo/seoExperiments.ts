@@ -62,7 +62,7 @@ const SEO_EXPERIMENTS: Record<SeoRouteKey, Record<SeoVariant, SeoCopy>> = {
       title:
         "EstateFix: App de Mantenimiento para Personal de Campo | EstateAdmin",
       description:
-        "EstateFix es la app móvil de EstateAdmin para el personal de mantenimiento. Gestiona tickets asignados, inventario, reportes y mantenimiento programado desde cualquier lugar por $99/mes.",
+        "EstateFix es la app móvil de EstateAdmin para el personal de mantenimiento. Gestiona tickets asignados, inventario, reportes y mantenimiento programado desde cualquier lugar por $119/mes.",
       keywords:
         "EstateFix, app mantenimiento condominios, app personal mantenimiento, tickets mantenimiento movil, control inventario mantenimiento, reportes campo condominio, ordenes de trabajo mantenimiento, EstateAdmin mantenimiento",
     },
@@ -70,7 +70,7 @@ const SEO_EXPERIMENTS: Record<SeoRouteKey, Record<SeoVariant, SeoCopy>> = {
       title:
         "EstateFix: App Móvil para Técnicos de Mantenimiento | EstateAdmin",
       description:
-        "EstateFix digitaliza las operaciones de mantenimiento de tu condominio. El personal gestiona tickets, inventario y reportes desde su celular. Solo $99/mes adicional a tu plan.",
+        "EstateFix digitaliza las operaciones de mantenimiento de tu condominio. El personal gestiona tickets, inventario y reportes desde su celular. Solo $119/mes adicional a tu plan.",
       keywords:
         "EstateFix app mantenimiento, app movil mantenimiento condominio, gestion tickets mantenimiento, inventario mantenimiento condominio, personal mantenimiento digital, app tecnicos mantenimiento",
     },
