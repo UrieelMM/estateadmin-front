@@ -7,6 +7,7 @@ import {
   ArrowPathIcon,
   CalendarDaysIcon,
   UserIcon,
+  ShieldCheckIcon,
 } from "@heroicons/react/24/outline";
 import { ChevronDownIcon, CheckIcon } from "@heroicons/react/20/solid";
 import { motion, AnimatePresence } from "framer-motion";
@@ -16,6 +17,7 @@ import {
   ScheduledVisit,
   StatusFilter,
   TypeFilter,
+  getCheckInAt,
   nextOccurrenceLabel,
   statusBadgeClasses,
   statusLabel,
@@ -23,14 +25,17 @@ import {
   useScheduledVisitsStore,
   visitTypeLabel,
 } from "../../../../store/useScheduledVisitsStore";
+import { useCasetaPinStore } from "../../../../store/useCasetaPinStore";
 import ScheduledVisitDetailModal from "./ScheduledVisitDetailModal";
+import CasetaPinModal from "./CasetaPinModal";
 
 moment.locale("es");
 
 const STATUS_OPTIONS: { value: StatusFilter; label: string }[] = [
   { value: "all", label: "Todos" },
   { value: "active", label: "Activas" },
-  { value: "used", label: "Usadas" },
+  { value: "used", label: "En curso" },
+  { value: "completed", label: "Completadas" },
   { value: "expired", label: "Expiradas" },
   { value: "cancelled", label: "Canceladas" },
 ];
@@ -48,13 +53,17 @@ function classNames(...classes: (string | false | undefined)[]) {
 const ScheduledVisits = () => {
   const { visits, isLoading, error, filters, fetchVisits, setFilters } =
     useScheduledVisitsStore();
+  const { status: pinStatus, fetchStatus: fetchPinStatus } =
+    useCasetaPinStore();
 
   const [selected, setSelected] = useState<ScheduledVisit | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
+  const [pinModalOpen, setPinModalOpen] = useState(false);
 
   useEffect(() => {
     fetchVisits();
-  }, [fetchVisits]);
+    fetchPinStatus();
+  }, [fetchVisits, fetchPinStatus]);
 
   const filteredVisits = useMemo(() => {
     return visits.filter((v) => {
@@ -132,19 +141,34 @@ const ScheduledVisits = () => {
                   WhatsApp.
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={() => fetchVisits()}
-                className="inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500"
-              >
-                <ArrowPathIcon
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setPinModalOpen(true)}
                   className={classNames(
-                    "h-4 w-4 mr-1",
-                    isLoading && "animate-spin",
+                    "inline-flex items-center rounded-md px-3 py-2 text-sm font-semibold shadow-sm ring-1 ring-inset",
+                    pinStatus?.configured
+                      ? "bg-green-50 text-green-700 ring-green-600/20 hover:bg-green-100 dark:bg-green-900/20 dark:text-green-300 dark:ring-green-500/30"
+                      : "bg-amber-50 text-amber-800 ring-amber-600/30 hover:bg-amber-100 dark:bg-amber-900/20 dark:text-amber-300 dark:ring-amber-500/30",
                   )}
-                />
-                Refrescar
-              </button>
+                >
+                  <ShieldCheckIcon className="h-4 w-4 mr-1" />
+                  {pinStatus?.configured ? "PIN configurado" : "Configurar PIN"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => fetchVisits()}
+                  className="inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500"
+                >
+                  <ArrowPathIcon
+                    className={classNames(
+                      "h-4 w-4 mr-1",
+                      isLoading && "animate-spin",
+                    )}
+                  />
+                  Refrescar
+                </button>
+              </div>
             </div>
           </div>
         </header>
@@ -356,9 +380,7 @@ const ScheduledVisits = () => {
                             </td>
                             <td className="whitespace-nowrap px-3 py-4 text-xs text-gray-500 dark:text-gray-400">
                               {(() => {
-                                const last = toDate(
-                                  v.lastUsedAt || v.usedAt || null,
-                                );
+                                const last = toDate(getCheckInAt(v));
                                 return last
                                   ? moment(last).format("D MMM, HH:mm")
                                   : "—";
@@ -393,6 +415,10 @@ const ScheduledVisits = () => {
         open={detailOpen}
         onClose={() => setDetailOpen(false)}
         visit={selected}
+      />
+      <CasetaPinModal
+        open={pinModalOpen}
+        onClose={() => setPinModalOpen(false)}
       />
     </>
   );

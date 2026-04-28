@@ -18,6 +18,8 @@ import {
   ScheduledVisit,
   ScheduledVisitEntry,
   formatDaysOfWeek,
+  getCheckInAt,
+  getCheckOutAt,
   statusBadgeClasses,
   statusLabel,
   toDate,
@@ -270,35 +272,65 @@ const ScheduledVisitDetailModal = ({ open, onClose, visit }: Props) => {
                       </div>
                     </section>
 
-                    {/* Registros (single) */}
+                    {/* Registros (single) — programado vs real */}
                     {visit.visitType === "single" && (
                       <section>
                         <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">
                           Registro de entrada / salida
                         </h4>
-                        <div className="bg-gray-50 dark:bg-gray-700/50 rounded-md p-3 space-y-2 text-sm">
-                          <Row
-                            icon={
-                              <ArrowRightOnRectangleIcon className="h-4 w-4 text-green-600" />
-                            }
-                            label="Check-in"
-                            value={
-                              visit.usedAt
-                                ? formatTimestamp(visit.usedAt)
-                                : "Sin registro"
-                            }
-                          />
-                          <Row
-                            icon={
-                              <ArrowLeftOnRectangleIcon className="h-4 w-4 text-red-600" />
-                            }
-                            label="Check-out"
-                            value={
-                              visit.exitAt
-                                ? formatTimestamp(visit.exitAt)
-                                : "Sin registro"
-                            }
-                          />
+                        <div className="bg-gray-50 dark:bg-gray-700/50 rounded-md p-3 space-y-3 text-sm">
+                          <div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                              Programada
+                            </div>
+                            <div className="flex flex-col gap-1">
+                              <Row
+                                icon={<ClockIcon className="h-4 w-4" />}
+                                label="Llegada"
+                                value={
+                                  visit.arrivalAtLabel ||
+                                  formatTimestamp(visit.arrivalAt)
+                                }
+                              />
+                              <Row
+                                icon={<ClockIcon className="h-4 w-4" />}
+                                label="Salida"
+                                value={
+                                  visit.departureAtLabel ||
+                                  formatTimestamp(visit.departureAt)
+                                }
+                              />
+                            </div>
+                          </div>
+                          <div className="border-t border-gray-200 dark:border-gray-600 pt-3">
+                            <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                              Real (caseta)
+                            </div>
+                            <div className="flex flex-col gap-1">
+                              <Row
+                                icon={
+                                  <ArrowRightOnRectangleIcon className="h-4 w-4 text-green-600" />
+                                }
+                                label="Check-in"
+                                value={
+                                  getCheckInAt(visit)
+                                    ? formatTimestamp(getCheckInAt(visit))
+                                    : "Sin registro"
+                                }
+                              />
+                              <Row
+                                icon={
+                                  <ArrowLeftOnRectangleIcon className="h-4 w-4 text-red-600" />
+                                }
+                                label="Check-out"
+                                value={
+                                  getCheckOutAt(visit)
+                                    ? formatTimestamp(getCheckOutAt(visit))
+                                    : "Sin registro"
+                                }
+                              />
+                            </div>
+                          </div>
                         </div>
                       </section>
                     )}

@@ -20,7 +20,12 @@ import toast from "react-hot-toast";
 
 // =========== Tipos ===========
 
-export type VisitStatus = "active" | "used" | "expired" | "cancelled";
+export type VisitStatus =
+  | "active"
+  | "used"
+  | "completed"
+  | "expired"
+  | "cancelled";
 export type VisitType = "single" | "recurring";
 
 export interface ScheduledVisitResident {
@@ -68,10 +73,14 @@ export interface ScheduledVisit {
   qrImageUrl: string;
 
   status: VisitStatus;
-  usedAt: Timestamp | null;
-  exitAt: Timestamp | null;
-  lastUsedAt?: Timestamp | null;
-  lastExitAt?: Timestamp | null;
+
+  // Single — campos del documento Firestore.
+  // El backend escribe `usedAt`/`exitAt`. En la respuesta del endpoint
+  // público se exponen como `checkInAt`/`checkOutAt` (helpers más abajo).
+  usedAt: Timestamp | null; // = check-in real
+  exitAt: Timestamp | null; // = check-out real
+  lastUsedAt?: Timestamp | null; // recurring: último check-in
+  lastExitAt?: Timestamp | null; // recurring: último check-out
 
   createdVia: "whatsapp_chatbot" | string;
   createdAt: Timestamp;
@@ -348,6 +357,8 @@ export function statusBadgeClasses(status: VisitStatus): string {
       return "bg-green-50 text-green-700 ring-green-600/20 dark:bg-green-900/20 dark:text-green-400 dark:ring-green-500/30";
     case "used":
       return "bg-blue-50 text-blue-700 ring-blue-600/20 dark:bg-blue-900/20 dark:text-blue-400 dark:ring-blue-500/30";
+    case "completed":
+      return "bg-emerald-50 text-emerald-700 ring-emerald-600/20 dark:bg-emerald-900/20 dark:text-emerald-400 dark:ring-emerald-500/30";
     case "expired":
       return "bg-gray-100 text-gray-700 ring-gray-600/20 dark:bg-gray-800 dark:text-gray-300 dark:ring-gray-500/30";
     case "cancelled":
@@ -362,12 +373,26 @@ export function statusLabel(status: VisitStatus): string {
     case "active":
       return "Activa";
     case "used":
-      return "Usada";
+      return "En curso";
+    case "completed":
+      return "Completada";
     case "expired":
       return "Expirada";
     case "cancelled":
       return "Cancelada";
   }
+}
+
+// Helpers que aplanan las dos formas que existen en el sistema:
+// - Doc Firestore  → usedAt / exitAt
+// - Endpoint público → checkInAt / checkOutAt
+// Permite que la UI lea siempre el mismo nombre.
+export function getCheckInAt(visit: ScheduledVisit): Timestamp | null {
+  return visit.usedAt ?? visit.lastUsedAt ?? null;
+}
+
+export function getCheckOutAt(visit: ScheduledVisit): Timestamp | null {
+  return visit.exitAt ?? visit.lastExitAt ?? null;
 }
 
 export function visitTypeLabel(type: VisitType): string {

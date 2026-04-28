@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Helmet } from "react-helmet-async";
@@ -14,6 +14,7 @@ import {
   ArrowLeftOnRectangleIcon,
   ShieldCheckIcon,
   ArrowPathIcon,
+  LockClosedIcon,
 } from "@heroicons/react/24/outline";
 import LoadingApp from "../../components/shared/loaders/LoadingApp";
 
@@ -38,12 +39,30 @@ function formatDaysOfWeek(days?: number[]): string {
     .join(" · ");
 }
 
+type ActionType = "check-in" | "check-out" | null;
+type VisitStatus = "active" | "used" | "completed" | "expired" | "cancelled";
+
 interface VisitPayload {
   id: string;
   visitType: "single" | "recurring";
   visitorName: string;
-  arrivalAt?: string;
-  departureAt?: string;
+  visitorVehicle?: { plates?: string; description?: string } | null;
+
+  // Programadas
+  scheduledArrival?: string;
+  scheduledDeparture?: string;
+  scheduledArrivalAt?: any;
+  scheduledDepartureAt?: any;
+
+  // Reales (caseta)
+  checkInAt?: any;
+  checkOutAt?: any;
+
+  // Booleans para UI
+  needsCheckIn?: boolean;
+  needsCheckOut?: boolean;
+  isComplete?: boolean;
+
   recurrence?: {
     daysOfWeek: number[];
     dailyArrivalTime: string;
@@ -51,10 +70,8 @@ interface VisitPayload {
     startDate: any;
     endDate: any;
   } | null;
-  status: "active" | "used" | "expired" | "cancelled";
-  usedAt?: any;
-  exitAt?: any;
-  visitorVehicle?: { plates?: string; description?: string } | null;
+
+  status: VisitStatus;
   resident?: {
     userId: string;
     email?: string;
@@ -67,21 +84,17 @@ interface VisitPayload {
   condominiumName?: string;
 }
 
-const extractErrorMessage = async (response: Response, fallback: string) => {
-  try {
-    const payload = await response.json();
-    if (payload?.reason && typeof payload.reason === "string")
-      return payload.reason;
-    if (payload?.message && typeof payload.message === "string")
-      return payload.message;
-  } catch (_e) {}
-  return fallback;
-};
+interface ValidateResponse {
+  valid: boolean;
+  reason?: string;
+  action?: ActionType;
+  requiresPin?: boolean;
+  visit?: VisitPayload;
+}
 
 const formatTimestampLike = (value: any): string | null => {
   if (!value) return null;
   if (typeof value === "string") return value;
-  // Firestore-like { _seconds, _nanoseconds }
   if (typeof value?._seconds === "number") {
     return new Date(value._seconds * 1000).toLocaleString("es-MX");
   }
@@ -106,11 +119,18 @@ const ScheduledVisitPublic = () => {
   const [loading, setLoading] = useState(true);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [visit, setVisit] = useState<VisitPayload | null>(null);
+  const [suggestedAction, setSuggestedAction] = useState<ActionType>(null);
+  const [requiresPin, setRequiresPin] = useState<boolean>(false);
+
   const [submitting, setSubmitting] = useState<"check-in" | "check-out" | null>(
     null,
   );
   const [actionError, setActionError] = useState<string | null>(null);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
+
+  const [pin, setPin] = useState("");
+  // Refs por dígito para mover focus automático
+  const pinRefs = useRef<Array<HTMLInputElement | null>>([]);
 
   const seoHead = (
     <Helmet>
@@ -142,23 +162,29 @@ const ScheduledVisitPublic = () => {
         qrId,
       )}?${params.toString()}`;
       const response = await fetch(url, { method: "GET" });
-      const payload = await response.json().catch(() => ({}));
+      const payload = (await response.json().catch(() => ({}))) as
+        | ValidateResponse
+        | Record<string, any>;
 
-      if (!response.ok || payload?.valid === false) {
+      if (!response.ok || (payload as ValidateResponse).valid === false) {
         const reason =
-          payload?.reason ||
-          payload?.message ||
-          (await extractErrorMessage(response, "QR no válido"));
+          (payload as any)?.reason ||
+          (payload as any)?.message ||
+          `Error ${response.status}`;
         throw new Error(reason);
       }
 
-      const v: VisitPayload | undefined = payload?.visit || payload?.data;
+      const v = (payload as ValidateResponse).visit;
       if (!v) throw new Error("Respuesta del servidor incompleta");
       setVisit(v);
+      setSuggestedAction((payload as ValidateResponse).action ?? null);
+      setRequiresPin(!!(payload as ValidateResponse).requiresPin);
     } catch (err: any) {
       console.error("Error validating QR:", err);
       setValidationError(err?.message || "Error al validar el QR");
       setVisit(null);
+      setSuggestedAction(null);
+      setRequiresPin(false);
     } finally {
       setLoading(false);
     }
@@ -169,8 +195,43 @@ const ScheduledVisitPublic = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [qrId, token, clientId, condominiumId]);
 
+  const handlePinDigitChange = (index: number, value: string) => {
+    const digit = value.replace(/\D/g, "").slice(-1); // último char numérico
+    const arr = pin.padEnd(6, " ").split("");
+    arr[index] = digit || " ";
+    const next = arr.join("").trimEnd();
+    setPin(next);
+    if (digit && index < 5) {
+      pinRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handlePinKeyDown = (
+    index: number,
+    e: React.KeyboardEvent<HTMLInputElement>,
+  ) => {
+    if (e.key === "Backspace" && !pin[index] && index > 0) {
+      pinRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handlePinPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+    if (pasted) {
+      e.preventDefault();
+      setPin(pasted);
+      const focusIdx = Math.min(pasted.length, 5);
+      pinRefs.current[focusIdx]?.focus();
+    }
+  };
+
   const submitRegister = async (type: "check-in" | "check-out") => {
     if (!qrId) return;
+    if (requiresPin && pin.length !== 6) {
+      setActionError("Ingresa los 6 dígitos del PIN.");
+      return;
+    }
+
     setSubmitting(type);
     setActionError(null);
     setActionSuccess(null);
@@ -179,6 +240,7 @@ const ScheduledVisitPublic = () => {
       const body: Record<string, string> = { token, type };
       if (clientId) body.clientId = clientId;
       if (condominiumId) body.condominiumId = condominiumId;
+      if (requiresPin) body.pin = pin;
 
       const response = await fetch(
         `${API_BASE}/scheduled-visits-qr/${encodeURIComponent(qrId)}/register`,
@@ -194,7 +256,7 @@ const ScheduledVisitPublic = () => {
         const reason =
           payload?.reason ||
           payload?.message ||
-          (await extractErrorMessage(response, "No se pudo registrar"));
+          `Error ${response.status}`;
         throw new Error(reason);
       }
 
@@ -203,8 +265,8 @@ const ScheduledVisitPublic = () => {
           ? "✅ Entrada registrada exitosamente"
           : "✅ Salida registrada exitosamente",
       );
-
-      // Re-validar para refrescar el estado de la visita (status, usedAt, etc.)
+      setPin("");
+      // Re-validar para refrescar estado y siguiente acción sugerida
       await validateQR();
     } catch (err: any) {
       console.error("Error registering:", err);
@@ -266,14 +328,24 @@ const ScheduledVisitPublic = () => {
 
   if (!visit) return null;
 
-  const isActive = visit.status === "active";
   const isSingle = visit.visitType === "single";
-  const checkedIn = !!visit.usedAt;
-  const checkedOut = !!visit.exitAt;
+  const checkInValue = visit.checkInAt ?? null;
+  const checkOutValue = visit.checkOutAt ?? null;
 
-  // Para visita única, evitar que registre dos veces
-  const canCheckIn = isActive && (!isSingle || !checkedIn);
-  const canCheckOut = isActive && (!isSingle || (checkedIn && !checkedOut));
+  // Decisiones de UI: si el backend mandó booleans, los usamos.
+  // Si no, fallback a inferencia desde checkInAt/checkOutAt.
+  const canCheckIn =
+    typeof visit.needsCheckIn === "boolean"
+      ? visit.needsCheckIn
+      : visit.status === "active" && (!isSingle || !checkInValue);
+
+  const canCheckOut =
+    typeof visit.needsCheckOut === "boolean"
+      ? visit.needsCheckOut
+      : (visit.status === "used" || visit.status === "active") &&
+        (!isSingle || (!!checkInValue && !checkOutValue));
+
+  const noActionsAvailable = !canCheckIn && !canCheckOut;
 
   return (
     <>
@@ -300,6 +372,20 @@ const ScheduledVisitPublic = () => {
             <div className="flex items-center justify-center">
               <StatusBadge status={visit.status} />
             </div>
+
+            {/* Acción sugerida */}
+            {suggestedAction && (
+              <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-3 text-center">
+                <p className="text-xs text-indigo-600 uppercase tracking-wide font-semibold">
+                  Siguiente acción
+                </p>
+                <p className="text-sm text-indigo-900 font-medium">
+                  {suggestedAction === "check-in"
+                    ? "Registrar entrada"
+                    : "Registrar salida"}
+                </p>
+              </div>
+            )}
 
             {/* Mensajes */}
             {actionSuccess && (
@@ -348,19 +434,27 @@ const ScheduledVisitPublic = () => {
                 )}
             </Section>
 
-            {/* Horario */}
-            <Section title="Horario">
+            {/* Programado */}
+            <Section title="Programado">
               {isSingle ? (
                 <>
                   <Row
                     icon={<ClockIcon className="h-4 w-4" />}
                     label="Llegada"
-                    value={visit.arrivalAt || "—"}
+                    value={
+                      visit.scheduledArrival ||
+                      formatTimestampLike(visit.scheduledArrivalAt) ||
+                      "—"
+                    }
                   />
                   <Row
                     icon={<ClockIcon className="h-4 w-4" />}
                     label="Salida"
-                    value={visit.departureAt || "—"}
+                    value={
+                      visit.scheduledDeparture ||
+                      formatTimestampLike(visit.scheduledDepartureAt) ||
+                      "—"
+                    }
                   />
                 </>
               ) : (
@@ -382,6 +476,30 @@ const ScheduledVisitPublic = () => {
                 </>
               )}
             </Section>
+
+            {/* Real (caseta) */}
+            {(checkInValue || checkOutValue) && (
+              <Section title="Registros (caseta)">
+                {checkInValue && (
+                  <Row
+                    icon={
+                      <ArrowRightOnRectangleIcon className="h-4 w-4 text-green-600" />
+                    }
+                    label="Entrada"
+                    value={formatTimestampLike(checkInValue) || "—"}
+                  />
+                )}
+                {checkOutValue && (
+                  <Row
+                    icon={
+                      <ArrowLeftOnRectangleIcon className="h-4 w-4 text-red-600" />
+                    }
+                    label="Salida"
+                    value={formatTimestampLike(checkOutValue) || "—"}
+                  />
+                )}
+              </Section>
+            )}
 
             {/* Residente */}
             <Section title="Residente">
@@ -415,32 +533,41 @@ const ScheduledVisitPublic = () => {
               )}
             </Section>
 
-            {/* Registro previo (visita única) */}
-            {isSingle && (checkedIn || checkedOut) && (
-              <Section title="Registros previos">
-                {checkedIn && (
-                  <Row
-                    icon={
-                      <ArrowRightOnRectangleIcon className="h-4 w-4 text-green-600" />
-                    }
-                    label="Entrada"
-                    value={formatTimestampLike(visit.usedAt) || "—"}
-                  />
-                )}
-                {checkedOut && (
-                  <Row
-                    icon={
-                      <ArrowLeftOnRectangleIcon className="h-4 w-4 text-red-600" />
-                    }
-                    label="Salida"
-                    value={formatTimestampLike(visit.exitAt) || "—"}
-                  />
-                )}
+            {/* PIN — solo si el condo lo requiere y hay una acción posible */}
+            {requiresPin && !noActionsAvailable && (
+              <Section title="PIN de caseta">
+                <div className="flex items-center gap-2 mb-2 text-xs text-gray-600">
+                  <LockClosedIcon className="h-4 w-4" />
+                  <span>Ingresa el PIN de 6 dígitos del condominio</span>
+                </div>
+                <div
+                  className="flex justify-center gap-2"
+                  onPaste={handlePinPaste}
+                >
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <input
+                      key={i}
+                      ref={(el) => {
+                        pinRefs.current[i] = el;
+                      }}
+                      type="tel"
+                      inputMode="numeric"
+                      pattern="\d*"
+                      maxLength={1}
+                      value={pin[i] || ""}
+                      onChange={(e) =>
+                        handlePinDigitChange(i, e.target.value)
+                      }
+                      onKeyDown={(e) => handlePinKeyDown(i, e)}
+                      className="w-10 h-12 text-center text-xl font-mono rounded-md border-0 bg-white ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-500 text-gray-900"
+                    />
+                  ))}
+                </div>
               </Section>
             )}
 
             {/* Acciones */}
-            {isActive ? (
+            {!noActionsAvailable ? (
               <div className="grid grid-cols-2 gap-3 pt-2">
                 <button
                   type="button"
@@ -470,11 +597,13 @@ const ScheduledVisitPublic = () => {
                 </button>
               </div>
             ) : (
-              <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-4 text-center">
+              <div className="bg-gray-100 rounded-lg p-4 text-center">
                 <p className="text-sm text-gray-700">
-                  Esta visita ya no admite registros (
-                  <span className="font-medium">{statusLabelEs(visit.status)}</span>
-                  ).
+                  {visit.isComplete
+                    ? "Esta visita ya completó entrada y salida."
+                    : `Esta visita ya no admite registros (${statusLabelEs(
+                        visit.status,
+                      )}).`}
                 </p>
               </div>
             )}
@@ -496,10 +625,11 @@ const ScheduledVisitPublic = () => {
   );
 };
 
-const StatusBadge = ({ status }: { status: VisitPayload["status"] }) => {
-  const colorMap: Record<VisitPayload["status"], string> = {
+const StatusBadge = ({ status }: { status: VisitStatus }) => {
+  const colorMap: Record<VisitStatus, string> = {
     active: "bg-green-100 text-green-700 ring-green-200",
     used: "bg-blue-100 text-blue-700 ring-blue-200",
+    completed: "bg-emerald-100 text-emerald-700 ring-emerald-200",
     expired: "bg-gray-100 text-gray-700 ring-gray-200",
     cancelled: "bg-red-100 text-red-700 ring-red-200",
   };
@@ -512,12 +642,14 @@ const StatusBadge = ({ status }: { status: VisitPayload["status"] }) => {
   );
 };
 
-const statusLabelEs = (status: VisitPayload["status"]): string => {
+const statusLabelEs = (status: VisitStatus): string => {
   switch (status) {
     case "active":
       return "Activa";
     case "used":
-      return "Usada";
+      return "En curso";
+    case "completed":
+      return "Completada";
     case "expired":
       return "Expirada";
     case "cancelled":
