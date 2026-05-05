@@ -55,12 +55,13 @@ const Slide9Dashboard = ({ isActive }: Slide9DashboardProps) => {
   const up = { hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.22,1,0.36,1] as [number,number,number,number] } } };
 
   return (
-    <div className="relative w-full h-full flex flex-col justify-center overflow-hidden">
+    <div className="relative w-full h-full overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-br from-[#07070e] via-[#0a0a1a] to-[#060610]" />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_0%,rgba(79,70,229,0.12)_0%,transparent_65%)]" />
       <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: "linear-gradient(rgba(99,102,241,1) 1px,transparent 1px),linear-gradient(90deg,rgba(99,102,241,1) 1px,transparent 1px)", backgroundSize: "60px 60px" }} />
 
-      <div className="relative z-10 px-8 lg:px-14 py-8 max-w-7xl mx-auto w-full">
+      <div className="absolute inset-0 z-10 overflow-y-auto">
+        <div className="min-h-full flex flex-col justify-start lg:justify-center px-4 sm:px-8 lg:px-14 pt-20 pb-24 lg:py-8 max-w-7xl mx-auto w-full">
         <motion.div key="s9" variants={wrap} initial="hidden" animate={isActive ? "visible" : "hidden"} className="flex flex-col gap-6">
 
           {/* Header */}
@@ -69,10 +70,10 @@ const Slide9Dashboard = ({ isActive }: Slide9DashboardProps) => {
               <SparklesIcon className="w-3.5 h-3.5" />
               Panel Principal
             </div>
-            <h2 className="text-4xl lg:text-5xl font-black text-white leading-tight">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white leading-tight">
               Vista de{" "}
               <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400">operaciones</span>
-              <span className="text-slate-400 text-2xl font-semibold block mt-1">Todo el condominio en un vistazo</span>
+              <span className="text-slate-400 text-lg sm:text-xl lg:text-2xl font-semibold block mt-1">Todo el condominio en un vistazo</span>
             </h2>
           </motion.div>
 
@@ -136,6 +137,7 @@ const Slide9Dashboard = ({ isActive }: Slide9DashboardProps) => {
             </motion.div>
           </div>
         </motion.div>
+        </div>
       </div>
     </div>
   );

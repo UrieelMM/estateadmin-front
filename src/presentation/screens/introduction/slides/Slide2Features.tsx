@@ -33,18 +33,19 @@ const Slide2Features = ({ isActive }: Slide2FeaturesProps) => {
   const hdr = { hidden: { opacity: 0, y: -20 }, visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] as [number,number,number,number] } } };
 
   return (
-    <div className="relative w-full h-full flex flex-col justify-center overflow-hidden">
+    <div className="relative w-full h-full overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-br from-[#080818] via-[#0c0c22] to-[#06060f]" />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_0%,rgba(79,70,229,0.1)_0%,transparent_70%)]" />
       <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: "linear-gradient(rgba(99,102,241,1) 1px,transparent 1px),linear-gradient(90deg,rgba(99,102,241,1) 1px,transparent 1px)", backgroundSize: "60px 60px" }} />
 
-      <div className="relative z-10 px-8 lg:px-16 py-10 max-w-7xl mx-auto w-full">
-        <motion.div key="s2-hdr" variants={hdr} initial="hidden" animate={isActive ? "visible" : "hidden"} className="mb-10 text-center">
+      <div className="absolute inset-0 z-10 overflow-y-auto">
+        <div className="min-h-full flex flex-col justify-start lg:justify-center px-4 sm:px-8 lg:px-16 pt-20 pb-24 lg:py-10 max-w-7xl mx-auto w-full">
+        <motion.div key="s2-hdr" variants={hdr} initial="hidden" animate={isActive ? "visible" : "hidden"} className="mb-6 lg:mb-10 text-center">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-indigo-500/30 bg-indigo-500/10 text-indigo-300 text-xs font-medium tracking-widest uppercase mb-4">
             <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse" />
             Módulos del sistema
           </div>
-          <h2 className="text-4xl lg:text-5xl font-black text-white mb-3">
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white mb-3">
             Todo lo que necesitas,{" "}
             <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400">
               en un solo lugar
@@ -68,6 +69,7 @@ const Slide2Features = ({ isActive }: Slide2FeaturesProps) => {
             </motion.div>
           ))}
         </motion.div>
+        </div>
       </div>
     </div>
   );

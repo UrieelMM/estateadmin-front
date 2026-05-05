@@ -38,24 +38,25 @@ const Slide4Projects = ({ isActive }: Slide4ProjectsProps) => {
   const hdr = { hidden: { opacity: 0, y: -18 }, visible: { opacity: 1, y: 0, transition: { duration: 0.55, ease: [0.22,1,0.36,1] as [number,number,number,number] } } };
 
   return (
-    <div className="relative w-full h-full flex flex-col justify-center overflow-hidden">
+    <div className="relative w-full h-full overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-br from-[#080816] via-[#0c0b20] to-[#060510]" />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_20%_30%,rgba(124,58,237,0.1)_0%,transparent_65%)]" />
       <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: "linear-gradient(rgba(124,58,237,1) 1px,transparent 1px),linear-gradient(90deg,rgba(124,58,237,1) 1px,transparent 1px)", backgroundSize: "60px 60px" }} />
 
-      <div className="relative z-10 px-8 lg:px-14 py-8 max-w-7xl mx-auto w-full">
-        <motion.div key="s4" variants={wrap} initial="hidden" animate={isActive ? "visible" : "hidden"} className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
+      <div className="absolute inset-0 z-10 overflow-y-auto">
+        <div className="min-h-full flex flex-col justify-start lg:justify-center px-4 sm:px-8 lg:px-14 pt-20 pb-24 lg:py-8 max-w-7xl mx-auto w-full">
+        <motion.div key="s4" variants={wrap} initial="hidden" animate={isActive ? "visible" : "hidden"} className="grid grid-cols-1 lg:grid-cols-5 gap-5 lg:gap-8 items-start">
           <div className="lg:col-span-2 flex flex-col gap-5">
             <motion.div variants={hdr}>
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-violet-500/30 bg-violet-500/10 text-violet-300 text-xs font-medium tracking-widest uppercase mb-4">
                 <BoltIcon className="w-3.5 h-3.5" />
                 Módulo de Proyectos
               </div>
-              <h2 className="text-4xl lg:text-5xl font-black text-white leading-tight">
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white leading-tight">
                 Gestión de{" "}
                 <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400">proyectos</span>
                 <br />
-                <span className="text-slate-300 text-2xl font-semibold">y obras del condominio</span>
+                <span className="text-slate-300 text-lg sm:text-xl lg:text-2xl font-semibold">y obras del condominio</span>
               </h2>
             </motion.div>
 
@@ -107,6 +108,7 @@ const Slide4Projects = ({ isActive }: Slide4ProjectsProps) => {
             })}
           </div>
         </motion.div>
+        </div>
       </div>
     </div>
   );

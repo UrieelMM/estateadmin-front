@@ -41,24 +41,25 @@ const Slide3Finances = ({ isActive }: Slide3FinancesProps) => {
   const lft = { hidden: { opacity: 0, x: -25 }, visible: { opacity: 1, x: 0, transition: { duration: 0.55, ease: [0.22,1,0.36,1] as [number,number,number,number] } } };
 
   return (
-    <div className="relative w-full h-full flex flex-col justify-center overflow-hidden">
+    <div className="relative w-full h-full overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-br from-[#070714] via-[#0a0a1e] to-[#050510]" />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_0%_50%,rgba(79,70,229,0.12)_0%,transparent_60%)]" />
       <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: "linear-gradient(rgba(99,102,241,1) 1px,transparent 1px),linear-gradient(90deg,rgba(99,102,241,1) 1px,transparent 1px)", backgroundSize: "60px 60px" }} />
 
-      <div className="relative z-10 px-8 lg:px-14 py-8 max-w-7xl mx-auto w-full">
-        <motion.div key="s3" variants={wrap} initial="hidden" animate={isActive ? "visible" : "hidden"} className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
+      <div className="absolute inset-0 z-10 overflow-y-auto">
+        <div className="min-h-full flex flex-col justify-start lg:justify-center px-4 sm:px-8 lg:px-14 pt-20 pb-24 lg:py-8 max-w-7xl mx-auto w-full">
+        <motion.div key="s3" variants={wrap} initial="hidden" animate={isActive ? "visible" : "hidden"} className="grid grid-cols-1 lg:grid-cols-5 gap-5 lg:gap-8 items-start">
           <div className="lg:col-span-2 flex flex-col gap-6">
             <motion.div variants={up}>
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-indigo-500/30 bg-indigo-500/10 text-indigo-300 text-xs font-medium tracking-widest uppercase mb-4">
                 <SparklesIcon className="w-3.5 h-3.5" />
                 Módulo de Finanzas
               </div>
-              <h2 className="text-4xl lg:text-5xl font-black text-white leading-tight">
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white leading-tight">
                 Control{" "}
                 <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400">financiero</span>
                 <br />
-                <span className="text-slate-300 text-3xl font-semibold">sin complicaciones</span>
+                <span className="text-slate-300 text-xl sm:text-2xl lg:text-3xl font-semibold">sin complicaciones</span>
               </h2>
             </motion.div>
 
@@ -111,6 +112,7 @@ const Slide3Finances = ({ isActive }: Slide3FinancesProps) => {
             })}
           </div>
         </motion.div>
+        </div>
       </div>
     </div>
   );

@@ -43,20 +43,21 @@ const Slide5Reservations = ({ isActive }: Slide5ReservationsProps) => {
   const hdr = { hidden: { opacity: 0, y: -18 }, visible: { opacity: 1, y: 0, transition: { duration: 0.55, ease: [0.22,1,0.36,1] as [number,number,number,number] } } };
 
   return (
-    <div className="relative w-full h-full flex flex-col justify-center overflow-hidden">
+    <div className="relative w-full h-full overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-br from-[#07080f] via-[#0a0c1e] to-[#050610]" />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_60%_20%,rgba(147,51,234,0.08)_0%,transparent_60%)]" />
       <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: "linear-gradient(rgba(99,102,241,1) 1px,transparent 1px),linear-gradient(90deg,rgba(99,102,241,1) 1px,transparent 1px)", backgroundSize: "60px 60px" }} />
 
-      <div className="relative z-10 px-8 lg:px-14 py-8 max-w-7xl mx-auto w-full">
-        <motion.div key="s5" variants={wrap} initial="hidden" animate={isActive ? "visible" : "hidden"} className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
+      <div className="absolute inset-0 z-10 overflow-y-auto">
+        <div className="min-h-full flex flex-col justify-start lg:justify-center px-4 sm:px-8 lg:px-14 pt-20 pb-24 lg:py-8 max-w-7xl mx-auto w-full">
+        <motion.div key="s5" variants={wrap} initial="hidden" animate={isActive ? "visible" : "hidden"} className="grid grid-cols-1 lg:grid-cols-5 gap-5 lg:gap-8 items-start">
           <div className="lg:col-span-2 flex flex-col gap-5">
             <motion.div variants={hdr}>
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-purple-500/30 bg-purple-500/10 text-purple-300 text-xs font-medium tracking-widest uppercase mb-4">
                 <SparklesIcon className="w-3.5 h-3.5" />
                 Reservas inteligentes
               </div>
-              <h2 className="text-4xl lg:text-5xl font-black text-white leading-tight">
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white leading-tight">
                 Áreas comunes{" "}
                 <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400">sin fricciones</span>
               </h2>
@@ -113,6 +114,7 @@ const Slide5Reservations = ({ isActive }: Slide5ReservationsProps) => {
             })}
           </div>
         </motion.div>
+        </div>
       </div>
     </div>
   );

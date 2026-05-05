@@ -25,7 +25,7 @@ const Slide14ThankYou = ({ isActive }: Slide14ThankYouProps) => {
   }));
 
   return (
-    <div className="relative w-full h-full flex flex-col items-center justify-center overflow-hidden">
+    <div className="relative w-full h-full overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-br from-[#07070f] via-[#0a0a1e] to-[#060610]" />
 
       {/* Aurora animada */}
@@ -92,11 +92,13 @@ const Slide14ThankYou = ({ isActive }: Slide14ThankYouProps) => {
         transition={{ duration: 75, repeat: Infinity, ease: "linear" }}
       />
 
+      <div className="absolute inset-0 z-10 overflow-y-auto">
+        <div className="min-h-full flex flex-col items-center justify-center px-4 sm:px-8 pt-20 pb-24 lg:py-0">
       <motion.div
         variants={wrap}
         initial="hidden"
         animate={isActive ? "visible" : "hidden"}
-        className="relative z-10 flex flex-col items-center text-center px-8 gap-8 max-w-3xl"
+        className="flex flex-col items-center text-center gap-6 lg:gap-8 max-w-3xl w-full"
       >
         {/* Eyebrow */}
         <motion.div variants={up}>
@@ -108,7 +110,7 @@ const Slide14ThankYou = ({ isActive }: Slide14ThankYouProps) => {
 
         {/* Título principal */}
         <motion.div variants={up}>
-          <h1 className="text-6xl lg:text-8xl font-black text-white leading-none tracking-tight">
+          <h1 className="text-5xl sm:text-6xl lg:text-8xl font-black text-white leading-none tracking-tight">
             <motion.span
               className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 inline-block"
               initial={{ backgroundPosition: "0% 50%" }}
@@ -123,7 +125,7 @@ const Slide14ThankYou = ({ isActive }: Slide14ThankYouProps) => {
 
         {/* Subtítulo */}
         <motion.div variants={up}>
-          <p className="text-slate-300 text-xl lg:text-2xl font-medium leading-snug">
+          <p className="text-slate-300 text-lg sm:text-xl lg:text-2xl font-medium leading-snug">
             Por tu tiempo y por considerar a EstatAdmin para tu condominio.
           </p>
           <p className="mt-3 flex items-center justify-center gap-2 text-slate-500 text-sm">
@@ -196,6 +198,8 @@ const Slide14ThankYou = ({ isActive }: Slide14ThankYouProps) => {
           </div>
         </motion.div>
       </motion.div>
+        </div>
+      </div>
     </div>
   );
 };

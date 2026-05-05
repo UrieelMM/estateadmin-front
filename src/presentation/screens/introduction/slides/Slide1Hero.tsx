@@ -35,7 +35,7 @@ const Slide1Hero = ({ isActive, isFullscreen, onRequestFullscreen }: Slide1HeroP
   const sc = { hidden: { opacity: 0, scale: 0.85 }, visible: { opacity: 1, scale: 1, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] as [number,number,number,number] } } };
 
   return (
-    <div className="relative w-full h-full flex items-center justify-center overflow-hidden">
+    <div className="relative w-full h-full overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-br from-[#0a0a1a] via-[#0d0d2b] to-[#050510]" />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_30%_20%,rgba(79,70,229,0.18)_0%,transparent_60%)]" />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_70%_80%,rgba(147,51,234,0.12)_0%,transparent_60%)]" />
@@ -49,7 +49,9 @@ const Slide1Hero = ({ isActive, isFullscreen, onRequestFullscreen }: Slide1HeroP
         ))}
       </div>
 
-      <motion.div key="s1" variants={wrap} initial="hidden" animate={isActive ? "visible" : "hidden"} className="relative z-10 flex flex-col items-center text-center px-6 max-w-5xl mx-auto">
+      <div className="absolute inset-0 z-10 overflow-y-auto">
+        <div className="min-h-full flex flex-col items-center justify-center px-6 pt-20 pb-24 lg:py-0">
+      <motion.div key="s1" variants={wrap} initial="hidden" animate={isActive ? "visible" : "hidden"} className="flex flex-col items-center text-center max-w-5xl mx-auto w-full">
         <motion.div variants={sc} className="mb-8">
           <div className="relative inline-flex items-center justify-center">
             <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-indigo-600/30 to-purple-600/30 blur-xl scale-150" />
@@ -66,15 +68,15 @@ const Slide1Hero = ({ isActive, isFullscreen, onRequestFullscreen }: Slide1HeroP
           </span>
         </motion.div>
 
-        <motion.h1 variants={up} className="text-7xl sm:text-8xl lg:text-9xl font-black tracking-tight leading-none mb-6">
+        <motion.h1 variants={up} className="text-6xl sm:text-7xl md:text-8xl lg:text-9xl font-black tracking-tight leading-none mb-6">
           <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400">
             EstatAdmin
           </span>
         </motion.h1>
 
-        <motion.div variants={up} className="w-24 h-0.5 bg-gradient-to-r from-transparent via-indigo-500 to-transparent mb-8" />
+        <motion.div variants={up} className="w-24 h-0.5 bg-gradient-to-r from-transparent via-indigo-500 to-transparent mb-6 lg:mb-8" />
 
-        <motion.p variants={up} className="text-xl sm:text-2xl lg:text-3xl font-light text-slate-300 max-w-2xl leading-relaxed">
+        <motion.p variants={up} className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-light text-slate-300 max-w-2xl leading-relaxed px-2">
           Software integral para la{" "}
           <span className="font-medium bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400">
             gestión de condominios
@@ -102,6 +104,8 @@ const Slide1Hero = ({ isActive, isFullscreen, onRequestFullscreen }: Slide1HeroP
           <div className="w-8 h-[2px] bg-gradient-to-l from-transparent to-indigo-500" />
         </motion.div>
       </motion.div>
+        </div>
+      </div>
     </div>
   );
 };

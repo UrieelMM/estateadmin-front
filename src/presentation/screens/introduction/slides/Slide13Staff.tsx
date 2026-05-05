@@ -58,13 +58,14 @@ const Slide13Staff = ({ isActive }: Slide13StaffProps) => {
   const tabs = ["Personal", "Asistencia", "Tickets", "Evaluaciones", "Actividad", "Reportes"];
 
   return (
-    <div className="relative w-full h-full flex flex-col justify-center overflow-hidden">
+    <div className="relative w-full h-full overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-br from-[#060810] via-[#080a1c] to-[#050612]" />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_30%_60%,rgba(79,70,229,0.1)_0%,transparent_60%)]" />
       <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: "linear-gradient(rgba(99,102,241,1) 1px,transparent 1px),linear-gradient(90deg,rgba(99,102,241,1) 1px,transparent 1px)", backgroundSize: "60px 60px" }} />
 
-      <div className="relative z-10 px-8 lg:px-14 py-8 max-w-7xl mx-auto w-full">
-        <motion.div key="s13" variants={wrap} initial="hidden" animate={isActive ? "visible" : "hidden"} className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
+      <div className="absolute inset-0 z-10 overflow-y-auto">
+        <div className="min-h-full flex flex-col justify-start lg:justify-center px-4 sm:px-8 lg:px-14 pt-20 pb-24 lg:py-8 max-w-7xl mx-auto w-full">
+        <motion.div key="s13" variants={wrap} initial="hidden" animate={isActive ? "visible" : "hidden"} className="grid grid-cols-1 lg:grid-cols-5 gap-5 lg:gap-8 items-start">
 
           <div className="lg:col-span-2 flex flex-col gap-5">
             <motion.div variants={hdr}>
@@ -72,11 +73,11 @@ const Slide13Staff = ({ isActive }: Slide13StaffProps) => {
                 <BoltIcon className="w-3.5 h-3.5" />
                 Gestión de Personal
               </div>
-              <h2 className="text-4xl lg:text-5xl font-black text-white leading-tight">
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white leading-tight">
                 Administración{" "}
                 <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400">integral</span>
                 <br />
-                <span className="text-slate-300 text-2xl font-semibold">del personal del condominio</span>
+                <span className="text-slate-300 text-lg sm:text-xl lg:text-2xl font-semibold">del personal del condominio</span>
               </h2>
               <p className="mt-2 text-slate-400 text-sm leading-relaxed">Controla asistencia, tareas, evaluaciones y actividad de tu equipo en un solo lugar.</p>
             </motion.div>
@@ -143,6 +144,7 @@ const Slide13Staff = ({ isActive }: Slide13StaffProps) => {
             })}
           </div>
         </motion.div>
+        </div>
       </div>
     </div>
   );

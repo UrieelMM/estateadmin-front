@@ -126,14 +126,15 @@ const Slide7Notifications = ({ isActive }: Slide7NotificationsProps) => {
   const hdr = { hidden: { opacity: 0, y: -18 }, visible: { opacity: 1, y: 0, transition: { duration: 0.55, ease: [0.22,1,0.36,1] as [number,number,number,number] } } };
 
   return (
-    <div className="relative w-full h-full flex flex-col justify-center overflow-hidden">
+    <div className="relative w-full h-full overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-br from-[#08080f] via-[#0b0b1e] to-[#060610]" />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_20%,rgba(16,185,129,0.08)_0%,transparent_60%)]" />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_80%_80%,rgba(79,70,229,0.07)_0%,transparent_60%)]" />
       <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: "linear-gradient(rgba(99,102,241,1) 1px,transparent 1px),linear-gradient(90deg,rgba(99,102,241,1) 1px,transparent 1px)", backgroundSize: "60px 60px" }} />
 
-      <div className="relative z-10 px-8 lg:px-14 py-8 max-w-7xl mx-auto w-full">
-        <motion.div key="s7" variants={wrap} initial="hidden" animate={isActive ? "visible" : "hidden"} className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
+      <div className="absolute inset-0 z-10 overflow-y-auto">
+        <div className="min-h-full flex flex-col justify-start lg:justify-center px-4 sm:px-8 lg:px-14 pt-20 pb-24 lg:py-8 max-w-7xl mx-auto w-full">
+        <motion.div key="s7" variants={wrap} initial="hidden" animate={isActive ? "visible" : "hidden"} className="grid grid-cols-1 lg:grid-cols-5 gap-5 lg:gap-8 items-start">
           {/* Left */}
           <div className="lg:col-span-2 flex flex-col gap-5">
             <motion.div variants={hdr}>
@@ -141,7 +142,7 @@ const Slide7Notifications = ({ isActive }: Slide7NotificationsProps) => {
                 <BoltIcon className="w-3.5 h-3.5" />
                 WhatsApp & Correo
               </div>
-              <h2 className="text-4xl lg:text-5xl font-black text-white leading-tight">
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white leading-tight">
                 El residente se{" "}
                 <span className="bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 via-teal-400 to-indigo-400">entera al instante</span>
               </h2>
@@ -250,6 +251,7 @@ const Slide7Notifications = ({ isActive }: Slide7NotificationsProps) => {
             })}
           </div>
         </motion.div>
+        </div>
       </div>
     </div>
   );

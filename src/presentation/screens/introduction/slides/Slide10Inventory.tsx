@@ -52,13 +52,14 @@ const Slide10Inventory = ({ isActive }: Slide10InventoryProps) => {
   const hdr = { hidden: { opacity: 0, y: -18 }, visible: { opacity: 1, y: 0, transition: { duration: 0.55, ease: [0.22,1,0.36,1] as [number,number,number,number] } } };
 
   return (
-    <div className="relative w-full h-full flex flex-col justify-center overflow-hidden">
+    <div className="relative w-full h-full overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-br from-[#060810] via-[#08091c] to-[#050610]" />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_15%_50%,rgba(79,70,229,0.1)_0%,transparent_60%)]" />
       <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: "linear-gradient(rgba(99,102,241,1) 1px,transparent 1px),linear-gradient(90deg,rgba(99,102,241,1) 1px,transparent 1px)", backgroundSize: "60px 60px" }} />
 
-      <div className="relative z-10 px-8 lg:px-14 py-8 max-w-7xl mx-auto w-full">
-        <motion.div key="s10" variants={wrap} initial="hidden" animate={isActive ? "visible" : "hidden"} className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
+      <div className="absolute inset-0 z-10 overflow-y-auto">
+        <div className="min-h-full flex flex-col justify-start lg:justify-center px-4 sm:px-8 lg:px-14 pt-20 pb-24 lg:py-8 max-w-7xl mx-auto w-full">
+        <motion.div key="s10" variants={wrap} initial="hidden" animate={isActive ? "visible" : "hidden"} className="grid grid-cols-1 lg:grid-cols-5 gap-5 lg:gap-8 items-start">
 
           <div className="lg:col-span-2 flex flex-col gap-5">
             <motion.div variants={hdr}>
@@ -66,11 +67,11 @@ const Slide10Inventory = ({ isActive }: Slide10InventoryProps) => {
                 <BoltIcon className="w-3.5 h-3.5" />
                 Módulo de Inventario
               </div>
-              <h2 className="text-4xl lg:text-5xl font-black text-white leading-tight">
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white leading-tight">
                 Control de{" "}
                 <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400">inventario</span>
                 <br />
-                <span className="text-slate-300 text-2xl font-semibold">activos y suministros</span>
+                <span className="text-slate-300 text-lg sm:text-xl lg:text-2xl font-semibold">activos y suministros</span>
               </h2>
               <p className="mt-2 text-slate-400 text-sm">Controla cada artículo del condominio: desde focos hasta equipos de mantenimiento.</p>
             </motion.div>
@@ -164,6 +165,7 @@ const Slide10Inventory = ({ isActive }: Slide10InventoryProps) => {
             </motion.div>
           </div>
         </motion.div>
+        </div>
       </div>
     </div>
   );
