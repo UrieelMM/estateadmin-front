@@ -18,6 +18,8 @@ const FloatingWhatsAppButton = () => {
       "/nuevo-cliente/",
     ];
     const hiddenExact = [ "/login", "/reset-password", "/formulario-completado", "/introduccion" ];
+    // Hide on assembly viewer routes (/asamblea/*)
+    if (pathname.startsWith("/asamblea/")) return false;
 
     if ( hiddenExact.includes( pathname ) ) return false;
     return !hiddenPrefixes.some( ( prefix ) => pathname.startsWith( prefix ) );

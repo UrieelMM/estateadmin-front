@@ -99,6 +99,9 @@ const ScheduledVisits = React.lazy(
   () =>
     import("../presentation/screens/dashboard/scheduledVisits/ScheduledVisits"),
 );
+const AssemblyDashboard = React.lazy(
+  () => import("../presentation/screens/assembly/AssemblyDashboard"),
+);
 
 export const routesApp = [
   {
@@ -303,6 +306,13 @@ export const routesApp = [
     title: "Visitas",
     description: "Gestión de visitas agendadas con QR",
     component: <ScheduledVisits />,
+  },
+  {
+    to: "/dashboard/asambleas",
+    icon: "fa-solid fa-presentation-screen",
+    title: "Asambleas",
+    description: "Presentaciones de asamblea con datos en vivo",
+    component: <AssemblyDashboard />,
   },
   // {
   //   to: "/dashboard/planning",

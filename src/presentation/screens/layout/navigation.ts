@@ -8,6 +8,7 @@ import {
   BuildingStorefrontIcon,
   ClipboardDocumentCheckIcon,
   RectangleGroupIcon,
+  PresentationChartBarIcon,
 } from "@heroicons/react/24/solid";
 
 export const navigation = [
@@ -85,6 +86,12 @@ export const navigation = [
     name: "Personal",
     href: "/dashboard/personal-administration/staff",
     icon: RectangleGroupIcon,
+    current: false,
+  },
+  {
+    name: "Asambleas",
+    href: "/dashboard/asambleas",
+    icon: PresentationChartBarIcon,
     current: false,
   },
 ];

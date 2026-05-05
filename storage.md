@@ -1,6 +1,6 @@
 rules_version = '2';
 service firebase.storage {
-match /b/{bucket}/o {
+  match /b/{bucket}/o {
 
     /* ───────────── Funciones ───────────── */
     function isAuthenticated() {
@@ -222,7 +222,7 @@ match /b/{bucket}/o {
         || isSuperAdmin()
       );
     }
-
+    
      /* ─── Cotizaciones - Proyectos ─── */
     match /clients/{clientId}/condominiums/{condominiumId}/projects/{projectId}/quotes/{fileName} {
       // Leer cualquier cotización si pertenece al cliente o es superadmin
@@ -242,7 +242,7 @@ match /b/{bucket}/o {
         || isSuperAdmin()
       );
     }
-
+     
     /* ─── Publicaciones ─── */
     match /clients/{clientId}/condominiums/{condominiumId}/publications/{publicationId}/{fileName} {
       allow read:    if belongsToClient(clientId) || isSuperAdmin();
@@ -348,6 +348,24 @@ match /b/{bucket}/o {
       allow delete:          if ((isAdminOrAssistant() && belongsToClient(clientId)) || isSuperAdmin());
     }
 
+    /* ─── Asambleas: Logos personalizados ───
+       Subidos por el admin del cliente para mostrarse en cada slide.
+       Lectura pública porque el viewer (`/asamblea/:id`) no requiere auth. */
+    match /clients/{clientId}/condominiums/{condominiumId}/assembly/logos/{fileName} {
+      allow read: if true;
+      allow create, update: if (
+        (isAdminOrAssistant()
+          && belongsToClient(clientId)
+          && isValidFileSize()
+          && request.resource.contentType.matches('image/.*'))
+        || isSuperAdmin()
+      );
+      allow delete: if (
+        (isAdmin() && belongsToClient(clientId))
+        || isSuperAdmin()
+      );
+    }
+
     /* ─── ÁREAS COMUNES (ajuste 1) ─── */
     match /clients/{clientId}/condominiums/{condominiumId}/commonAreas/{fileName} {
       // lectura
@@ -361,7 +379,7 @@ match /b/{bucket}/o {
       allow delete:  if isSuperAdmin()
                         || (isAdmin() && belongsToClient(clientId));
     }
-
+    
     /* ─── Estados de cuenta temporales ─── */
     match /temp/account-statements/{allPaths=**} {
       allow read, write: if true;
@@ -371,6 +389,5 @@ match /b/{bucket}/o {
     match /{allPaths=**} {
       allow read, write: if isSuperAdmin();
     }
-
-}
+  }
 }

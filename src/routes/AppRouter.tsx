@@ -88,6 +88,9 @@ const MaintenanceAppLanding = React.lazy(
 const IntroductionPage = React.lazy(
   () => import("../presentation/screens/introduction/IntroductionPage"),
 );
+const AssemblyViewer = React.lazy(
+  () => import("../presentation/screens/assembly/AssemblyViewer"),
+);
 
 const PageLoader = () => (
   <div className="flex items-center justify-center min-h-screen bg-white dark:bg-gray-900">
@@ -159,6 +162,9 @@ export const AppRouterPage = () => {
 
           {/* Presentación interactiva del sistema */}
           <Route path="/introduccion" element={<IntroductionPage />} />
+
+          {/* Viewer público de presentaciones de asamblea */}
+          <Route path="/asamblea/:id" element={<AssemblyViewer />} />
 
           {/* Rutas protegidas para usuarios normales */}
           <Route element={<ProtectedRoute />}>
