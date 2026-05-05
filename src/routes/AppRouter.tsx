@@ -85,6 +85,9 @@ const GuidePage = React.lazy(() =>
 const MaintenanceAppLanding = React.lazy(
   () => import("../presentation/screens/presentation/MaintenanceAppLanding"),
 );
+const IntroductionPage = React.lazy(
+  () => import("../presentation/screens/introduction/IntroductionPage"),
+);
 
 const PageLoader = () => (
   <div className="flex items-center justify-center min-h-screen bg-white dark:bg-gray-900">
@@ -153,6 +156,9 @@ export const AppRouterPage = () => {
             path="/app-mantenimiento"
             element={<MaintenanceAppLanding />}
           />
+
+          {/* Presentación interactiva del sistema */}
+          <Route path="/introduccion" element={<IntroductionPage />} />
 
           {/* Rutas protegidas para usuarios normales */}
           <Route element={<ProtectedRoute />}>

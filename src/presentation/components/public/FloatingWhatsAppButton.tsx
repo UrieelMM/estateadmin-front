@@ -17,7 +17,7 @@ const FloatingWhatsAppButton = () => {
       "/unidentified-payments/",
       "/nuevo-cliente/",
     ];
-    const hiddenExact = [ "/login", "/reset-password", "/formulario-completado" ];
+    const hiddenExact = [ "/login", "/reset-password", "/formulario-completado", "/introduccion" ];
 
     if ( hiddenExact.includes( pathname ) ) return false;
     return !hiddenPrefixes.some( ( prefix ) => pathname.startsWith( prefix ) );
