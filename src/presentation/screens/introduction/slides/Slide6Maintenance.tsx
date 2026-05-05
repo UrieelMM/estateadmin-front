@@ -7,12 +7,12 @@ import { BoltIcon } from "@heroicons/react/24/solid";
 interface Slide6MaintenanceProps { isActive: boolean; }
 
 const appFeatures = [
-  { icon: ClipboardDocumentListIcon, title: "Tickets desde la app", desc: "El personal crea y actualiza tickets desde su celular con EstateFix" },
-  { icon: CameraIcon, title: "Evidencia fotográfica", desc: "Adjunta fotos del problema y solución desde la cámara" },
-  { icon: UserCircleIcon, title: "Asignación de técnicos", desc: "El administrador asigna tickets al técnico correcto en segundos" },
-  { icon: ClockIcon, title: "Seguimiento en tiempo real", desc: "Los residentes ven el estado de su solicitud sin llamar a nadie" },
-  { icon: ArrowPathIcon, title: "Historial completo", desc: "Registro cronológico de cada intervención, costo y responsable" },
-  { icon: SignalIcon, title: "Métricas de servicio", desc: "Tiempo promedio de resolución, tickets por área y desempeño del equipo" },
+  { icon: ClipboardDocumentListIcon, title: "Tickets con prioridad", desc: "Folio, área, prioridad alta/media/baja y estado abierto · en progreso · cerrado" },
+  { icon: CameraIcon, title: "Evidencia fotográfica", desc: "Adjunta fotos y archivos al crear el ticket o resolverlo" },
+  { icon: UserCircleIcon, title: "Asignación a técnicos", desc: "Asigna a empleados internos o proveedores externos del directorio" },
+  { icon: ClockIcon, title: "Citas con técnicos", desc: "Agenda visitas a domicilio y recibe recordatorios 24 horas antes" },
+  { icon: ArrowPathIcon, title: "Bitácora completa", desc: "Cada cambio de estado, prioridad o asignación queda registrado con autor y fecha" },
+  { icon: SignalIcon, title: "Fusión de tickets", desc: "Une tickets duplicados manteniendo el historial combinado" },
 ];
 
 const ticketStatuses = [

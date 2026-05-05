@@ -15,10 +15,9 @@ import Slide10Inventory from "./slides/Slide10Inventory";
 import Slide11Parcels from "./slides/Slide11Parcels";
 import Slide12Publications from "./slides/Slide12Publications";
 import Slide13Staff from "./slides/Slide13Staff";
-import Slide14AI from "./slides/Slide14AI";
-import Slide15Audit from "./slides/Slide15Audit";
+import Slide14ThankYou from "./slides/Slide14ThankYou";
 
-const TOTAL_SLIDES = 15;
+const TOTAL_SLIDES = 14;
 
 const slideTitles = [
   "Inicio",
@@ -34,8 +33,7 @@ const slideTitles = [
   "Paquetes",
   "Publicaciones",
   "Personal",
-  "IA",
-  "Auditoría",
+  "Gracias",
 ];
 
 const IntroductionPage = () => {
@@ -124,8 +122,7 @@ const IntroductionPage = () => {
     <Slide11Parcels key="s11" isActive={current === 10} />,
     <Slide12Publications key="s12" isActive={current === 11} />,
     <Slide13Staff key="s13" isActive={current === 12} />,
-    <Slide14AI key="s14" isActive={current === 13} />,
-    <Slide15Audit key="s15" isActive={current === 14} />,
+    <Slide14ThankYou key="s14" isActive={current === 13} />,
   ];
 
   return (

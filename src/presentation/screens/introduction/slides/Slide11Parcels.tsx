@@ -2,26 +2,24 @@ import { useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import gsap from "gsap";
 import {
-  ArchiveBoxIcon,
   TruckIcon,
-  BellAlertIcon,
+  EnvelopeIcon,
   MagnifyingGlassIcon,
-  ClipboardDocumentListIcon,
-  QrCodeIcon,
+  CameraIcon,
   CheckCircleIcon,
-  ClockIcon,
+  UserCircleIcon,
 } from "@heroicons/react/24/outline";
 import { BoltIcon } from "@heroicons/react/24/solid";
 
 interface Slide11ParcelsProps { isActive: boolean; }
 
 const features = [
-  { icon: TruckIcon, title: "Registro de llegada", desc: "El guardia o recepcionista registra el paquete con foto, remitente y destinatario" },
-  { icon: BellAlertIcon, title: "Notificación inmediata", desc: "El residente recibe un aviso por WhatsApp o app en cuanto llega su paquete" },
-  { icon: QrCodeIcon, title: "Código de retiro", desc: "Genera un código único para que el residente confirme la entrega del paquete" },
-  { icon: MagnifyingGlassIcon, title: "Búsqueda y filtros", desc: "Localiza paquetes por residente, fecha, estado o número de rastreo" },
-  { icon: ClipboardDocumentListIcon, title: "Historial completo", desc: "Registro de todos los paquetes recibidos y entregados con fecha y responsable" },
-  { icon: CheckCircleIcon, title: "Confirmación de entrega", desc: "El residente firma o confirma digitalmente la recepción del paquete" },
+  { icon: TruckIcon, title: "Registro en caseta", desc: "El guardia registra paquete con remitente, descripción y unidad destino" },
+  { icon: CameraIcon, title: "Foto del paquete", desc: "Al recibirlo se sube una foto que queda asociada al comprobante" },
+  { icon: EnvelopeIcon, title: "Aviso por correo al residente", desc: "El residente recibe correo automático con la foto y datos del envío" },
+  { icon: UserCircleIcon, title: "Identificación del destinatario", desc: "Liga cada paquete al usuario y unidad correctos del condominio" },
+  { icon: MagnifyingGlassIcon, title: "Búsqueda y filtros", desc: "Localiza paquetes por residente, fecha, remitente o estado" },
+  { icon: CheckCircleIcon, title: "Entrega y bitácora", desc: "Marca como entregado y consulta el historial completo con fecha y responsable" },
 ];
 
 const sampleParcels = [

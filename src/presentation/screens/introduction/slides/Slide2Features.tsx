@@ -7,12 +7,15 @@ interface Slide2FeaturesProps {
 }
 
 const modules = [
-  { number: "01", title: "Finanzas", description: "Control de pagos, cobros, gastos y presupuestos en tiempo real", gradient: "from-indigo-500 to-blue-600", border: "group-hover:border-indigo-500/40" },
-  { number: "02", title: "Mantenimiento", description: "Tickets, seguimiento y reportes de incidencias del condominio", gradient: "from-purple-500 to-pink-600", border: "group-hover:border-purple-500/40" },
-  { number: "03", title: "Proyectos", description: "Planificación y control de obras con presupuesto y avances", gradient: "from-violet-500 to-indigo-600", border: "group-hover:border-violet-500/40" },
-  { number: "04", title: "Reservas", description: "Gestión de áreas comunes con calendario y disponibilidad", gradient: "from-pink-500 to-rose-600", border: "group-hover:border-pink-500/40" },
-  { number: "05", title: "Notificaciones", description: "Alertas automáticas por WhatsApp y correo electrónico", gradient: "from-indigo-500 to-purple-600", border: "group-hover:border-indigo-500/40" },
-  { number: "06", title: "Acceso de Visitas", description: "Control de ingreso con QR, validación y registro en tiempo real", gradient: "from-purple-500 to-indigo-600", border: "group-hover:border-purple-500/40" },
+  { number: "01", title: "Finanzas", description: "Cargos, pagos, egresos, conciliación bancaria y caja chica con recibos automáticos", gradient: "from-indigo-500 to-blue-600", border: "group-hover:border-indigo-500/40" },
+  { number: "02", title: "Proyectos", description: "Obras con presupuesto, cotizaciones, hitos y gastos por proyecto", gradient: "from-violet-500 to-indigo-600", border: "group-hover:border-violet-500/40" },
+  { number: "03", title: "Reservas", description: "Áreas comunes con calendario, disponibilidad y confirmación por WhatsApp", gradient: "from-pink-500 to-rose-600", border: "group-hover:border-pink-500/40" },
+  { number: "04", title: "Mantenimiento", description: "Tickets con prioridad, asignación, evidencias y citas con técnicos", gradient: "from-purple-500 to-pink-600", border: "group-hover:border-purple-500/40" },
+  { number: "05", title: "Notificaciones", description: "WhatsApp y correo automáticos al aplicar pagos, reservar y recibir paquetes", gradient: "from-emerald-500 to-teal-600", border: "group-hover:border-emerald-500/40" },
+  { number: "06", title: "Acceso de visitas", description: "QR firmado, programación por chatbot WhatsApp y registro en caseta con PIN", gradient: "from-purple-500 to-indigo-600", border: "group-hover:border-purple-500/40" },
+  { number: "07", title: "Inventario", description: "Items con stock mínimo, movimientos y alertas de bajo stock", gradient: "from-amber-500 to-orange-600", border: "group-hover:border-amber-500/40" },
+  { number: "08", title: "Paquetería", description: "Recepción de paquetes con foto y aviso al residente por correo", gradient: "from-cyan-500 to-blue-600", border: "group-hover:border-cyan-500/40" },
+  { number: "09", title: "Personal y avisos", description: "Empleados, turnos, asistencia y comunicados masivos a residentes", gradient: "from-rose-500 to-pink-600", border: "group-hover:border-rose-500/40" },
 ];
 
 const Slide2Features = ({ isActive }: Slide2FeaturesProps) => {

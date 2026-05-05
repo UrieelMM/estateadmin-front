@@ -1,32 +1,110 @@
 import { useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import gsap from "gsap";
-import { BellAlertIcon, EnvelopeIcon, DevicePhoneMobileIcon, ChatBubbleLeftEllipsisIcon, MegaphoneIcon, CurrencyDollarIcon, WrenchScrewdriverIcon, CalendarDaysIcon } from "@heroicons/react/24/outline";
+import {
+  BellAlertIcon,
+  EnvelopeIcon,
+  ChatBubbleLeftRightIcon,
+  CurrencyDollarIcon,
+  CalendarDaysIcon,
+  InboxArrowDownIcon,
+  ExclamationTriangleIcon,
+  MegaphoneIcon,
+  DocumentTextIcon,
+} from "@heroicons/react/24/outline";
 import { BoltIcon } from "@heroicons/react/24/solid";
 
 interface Slide7NotificationsProps { isActive: boolean; }
 
+// Solo dos canales reales del sistema: WhatsApp (Twilio) y Email (MailerSend).
 const channels = [
-  { icon: DevicePhoneMobileIcon, label: "WhatsApp", color: "text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20" },
-  { icon: EnvelopeIcon, label: "Correo", color: "text-indigo-400", bg: "bg-indigo-500/10 border-indigo-500/20" },
-  { icon: BellAlertIcon, label: "Push App", color: "text-purple-400", bg: "bg-purple-500/10 border-purple-500/20" },
-  { icon: ChatBubbleLeftEllipsisIcon, label: "SMS", color: "text-pink-400", bg: "bg-pink-500/10 border-pink-500/20" },
+  {
+    icon: ChatBubbleLeftRightIcon,
+    label: "WhatsApp",
+    desc: "Mensajes con plantilla aprobada vía Twilio",
+    color: "text-emerald-400",
+    bg: "bg-emerald-500/10 border-emerald-500/20",
+  },
+  {
+    icon: EnvelopeIcon,
+    label: "Correo electrónico",
+    desc: "Envío transaccional con PDFs adjuntos",
+    color: "text-indigo-400",
+    bg: "bg-indigo-500/10 border-indigo-500/20",
+  },
 ];
 
+// Eventos reales del sistema con su canal real
 const notificationTypes = [
-  { icon: CurrencyDollarIcon, title: "Recordatorio de pago", desc: "Alerta automática días antes del vencimiento de la cuota", tag: "Finanzas" },
-  { icon: WrenchScrewdriverIcon, title: "Estado de ticket", desc: "Notifica al residente cada cambio de estado en su solicitud", tag: "Mantenimiento" },
-  { icon: CalendarDaysIcon, title: "Confirmación de reserva", desc: "Aviso al reservar, recordatorio y cancelación de área común", tag: "Reservas" },
-  { icon: MegaphoneIcon, title: "Avisos del administrador", desc: "Comunicados generales o por torre/piso a todos los residentes", tag: "General" },
-  { icon: BellAlertIcon, title: "Adeudos y mora", desc: "Alerta cuando un residente supera el límite de días sin pagar", tag: "Finanzas" },
-  { icon: DevicePhoneMobileIcon, title: "Acceso de visitas", desc: "Notifica al residente cuando su visita llega al condominio", tag: "Acceso" },
+  {
+    icon: CurrencyDollarIcon,
+    title: "Pago aplicado",
+    desc: "Al registrar un pago, el residente recibe el recibo en PDF por WhatsApp y correo automáticamente",
+    tag: "Finanzas",
+    channels: ["WhatsApp", "Correo"],
+    highlight: true,
+  },
+  {
+    icon: CalendarDaysIcon,
+    title: "Reserva de área común",
+    desc: "Confirmación inmediata por WhatsApp y correo cuando un residente reserva alberca, salón u otra área",
+    tag: "Reservas",
+    channels: ["WhatsApp", "Correo"],
+    highlight: true,
+  },
+  {
+    icon: InboxArrowDownIcon,
+    title: "Paquete recibido",
+    desc: "Cuando llega un paquete a caseta, el residente recibe correo con foto y comprobante de recepción",
+    tag: "Paquetería",
+    channels: ["Correo"],
+    highlight: true,
+  },
+  {
+    icon: DocumentTextIcon,
+    title: "Cargo nuevo",
+    desc: "Notificación por correo cuando se genera un cargo de mantenimiento o cuota especial",
+    tag: "Finanzas",
+    channels: ["Correo"],
+  },
+  {
+    icon: ExclamationTriangleIcon,
+    title: "Aviso de morosidad",
+    desc: "Correo con el detalle de adeudos cuando un residente acumula meses sin pagar",
+    tag: "Finanzas",
+    channels: ["Correo"],
+  },
+  {
+    icon: MegaphoneIcon,
+    title: "Comunicado o aviso",
+    desc: "El administrador publica un aviso y se envía a todos los residentes seleccionados",
+    tag: "Avisos",
+    channels: ["Correo"],
+  },
 ];
 
 const mockNotifs = [
-  { time: "Hace 2 min", text: "Pago de cuota de mayo confirmado — Torre A, Depto. 401", channel: "WhatsApp", color: "text-emerald-400" },
-  { time: "Hace 1 hora", text: "Tu ticket #204 fue asignado a técnico. Fecha estimada: hoy", channel: "WhatsApp", color: "text-emerald-400" },
-  { time: "Ayer", text: "Recordatorio: tu cuota de junio vence en 3 días", channel: "Correo", color: "text-indigo-400" },
+  {
+    time: "Hace 2 min",
+    text: "Pago de cuota mayo aplicado — Torre A, Depto. 401. Recibo enviado.",
+    channels: ["WhatsApp", "Correo"],
+  },
+  {
+    time: "Hace 18 min",
+    text: "Reservación del salón social confirmada para sábado 19:00 hrs.",
+    channels: ["WhatsApp", "Correo"],
+  },
+  {
+    time: "Hace 1 h",
+    text: "Llegó un paquete a caseta a nombre del Depto. 102.",
+    channels: ["Correo"],
+  },
 ];
+
+const channelColor: Record<string, string> = {
+  WhatsApp: "text-emerald-400",
+  Correo: "text-indigo-400",
+};
 
 const Slide7Notifications = ({ isActive }: Slide7NotificationsProps) => {
   const notifsRef = useRef<HTMLDivElement>(null);
@@ -50,7 +128,7 @@ const Slide7Notifications = ({ isActive }: Slide7NotificationsProps) => {
   return (
     <div className="relative w-full h-full flex flex-col justify-center overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-br from-[#08080f] via-[#0b0b1e] to-[#060610]" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_20%,rgba(147,51,234,0.09)_0%,transparent_60%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_20%,rgba(16,185,129,0.08)_0%,transparent_60%)]" />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_80%_80%,rgba(79,70,229,0.07)_0%,transparent_60%)]" />
       <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: "linear-gradient(rgba(99,102,241,1) 1px,transparent 1px),linear-gradient(90deg,rgba(99,102,241,1) 1px,transparent 1px)", backgroundSize: "60px 60px" }} />
 
@@ -59,29 +137,38 @@ const Slide7Notifications = ({ isActive }: Slide7NotificationsProps) => {
           {/* Left */}
           <div className="lg:col-span-2 flex flex-col gap-5">
             <motion.div variants={hdr}>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-purple-500/30 bg-purple-500/10 text-purple-300 text-xs font-medium tracking-widest uppercase mb-4">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-300 text-xs font-medium tracking-widest uppercase mb-4">
                 <BoltIcon className="w-3.5 h-3.5" />
-                Módulo de Notificaciones
+                WhatsApp & Correo
               </div>
               <h2 className="text-4xl lg:text-5xl font-black text-white leading-tight">
-                Comunicación{" "}
-                <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400">automática</span>
-                <br />
-                <span className="text-slate-300 text-2xl font-semibold">en tiempo real</span>
+                El residente se{" "}
+                <span className="bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 via-teal-400 to-indigo-400">entera al instante</span>
               </h2>
-              <p className="mt-2 text-slate-400 text-sm leading-relaxed">Mantén informados a residentes y administradores sin esfuerzo manual.</p>
+              <p className="mt-3 text-slate-400 text-sm leading-relaxed">
+                Cada acción importante dispara una notificación automática al residente. Sin trabajo
+                manual: el sistema envía el recibo por WhatsApp al aplicar un pago, confirma la
+                reserva del área común y avisa por correo cuando llega un paquete.
+              </p>
             </motion.div>
 
             {/* Channels */}
             <motion.div variants={card} className="rounded-2xl border border-white/[0.07] bg-white/[0.03] p-4">
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-3">Canales disponibles</p>
-              <div className="grid grid-cols-2 gap-2">
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-3">Canales del sistema</p>
+              <div className="flex flex-col gap-2">
                 {channels.map((ch, i) => {
                   const Icon = ch.icon;
                   return (
-                    <div key={ch.label} ref={(el) => { iconRefs.current[i] = el; }} className={`flex items-center gap-2 px-3 py-2 rounded-xl border ${ch.bg} opacity-0`}>
-                      <Icon className={`w-4 h-4 ${ch.color}`} />
-                      <span className={`text-xs font-semibold ${ch.color}`}>{ch.label}</span>
+                    <div
+                      key={ch.label}
+                      ref={(el) => { iconRefs.current[i] = el; }}
+                      className={`flex items-start gap-3 px-3 py-2.5 rounded-xl border ${ch.bg} opacity-0`}
+                    >
+                      <Icon className={`w-5 h-5 ${ch.color} mt-0.5 shrink-0`} />
+                      <div>
+                        <p className={`text-sm font-bold ${ch.color}`}>{ch.label}</p>
+                        <p className="text-[11px] text-slate-500 leading-snug">{ch.desc}</p>
+                      </div>
                     </div>
                   );
                 })}
@@ -91,18 +178,20 @@ const Slide7Notifications = ({ isActive }: Slide7NotificationsProps) => {
             {/* Live feed */}
             <motion.div variants={card} className="rounded-2xl border border-white/[0.07] bg-white/[0.03] p-4">
               <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest flex items-center gap-1.5 mb-3">
-                <BellAlertIcon className="w-3.5 h-3.5 text-purple-400" />
+                <BellAlertIcon className="w-3.5 h-3.5 text-emerald-400" />
                 Actividad reciente
               </p>
               <div ref={notifsRef} className="space-y-3">
                 {mockNotifs.map((n, i) => (
                   <div key={i} className="notif-item opacity-0 flex items-start gap-2.5">
-                    <div className="mt-0.5 w-1.5 h-1.5 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex-shrink-0" />
+                    <div className="mt-0.5 w-1.5 h-1.5 rounded-full bg-gradient-to-br from-emerald-400 to-indigo-500 flex-shrink-0" />
                     <div>
                       <p className="text-[11px] text-slate-300 leading-snug">{n.text}</p>
-                      <div className="flex items-center gap-2 mt-0.5">
+                      <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                         <span className="text-[10px] text-slate-600">{n.time}</span>
-                        <span className={`text-[10px] font-medium ${n.color}`}>· {n.channel}</span>
+                        {n.channels.map((c) => (
+                          <span key={c} className={`text-[10px] font-medium ${channelColor[c]}`}>· {c}</span>
+                        ))}
                       </div>
                     </div>
                   </div>
@@ -116,20 +205,46 @@ const Slide7Notifications = ({ isActive }: Slide7NotificationsProps) => {
             {notificationTypes.map((nt) => {
               const Icon = nt.icon;
               return (
-                <motion.div key={nt.title} variants={card} className="group relative rounded-xl border border-white/[0.07] bg-white/[0.03] p-4 hover:border-purple-500/30 hover:bg-purple-500/[0.04] transition-all duration-300">
+                <motion.div
+                  key={nt.title}
+                  variants={card}
+                  className={`group relative rounded-xl border p-4 transition-all duration-300 ${
+                    nt.highlight
+                      ? "border-emerald-500/25 bg-emerald-500/[0.04] hover:border-emerald-500/45"
+                      : "border-white/[0.07] bg-white/[0.03] hover:border-indigo-500/30 hover:bg-indigo-500/[0.04]"
+                  }`}
+                >
                   <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0 p-2 rounded-lg bg-gradient-to-br from-indigo-500/20 to-purple-600/20 border border-purple-500/20">
-                      <Icon className="w-5 h-5 text-purple-300" />
+                    <div className={`flex-shrink-0 p-2 rounded-lg border ${
+                      nt.highlight
+                        ? "bg-gradient-to-br from-emerald-500/20 to-teal-500/20 border-emerald-500/30"
+                        : "bg-gradient-to-br from-indigo-500/15 to-purple-600/15 border-indigo-500/20"
+                    }`}>
+                      <Icon className={`w-5 h-5 ${nt.highlight ? "text-emerald-300" : "text-indigo-300"}`} />
                     </div>
-                    <div>
-                      <div className="flex items-center gap-2 mb-0.5">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 mb-0.5 flex-wrap">
                         <h4 className="text-sm font-bold text-white leading-tight">{nt.title}</h4>
-                        <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">{nt.tag}</span>
+                        <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-slate-500/20 text-slate-300 border border-slate-500/30">{nt.tag}</span>
                       </div>
-                      <p className="text-xs text-slate-500 leading-relaxed">{nt.desc}</p>
+                      <p className="text-xs text-slate-500 leading-relaxed mb-2">{nt.desc}</p>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {nt.channels.map((c) => (
+                          <span
+                            key={c}
+                            className={`inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded border ${
+                              c === "WhatsApp"
+                                ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+                                : "border-indigo-500/30 bg-indigo-500/10 text-indigo-300"
+                            }`}
+                          >
+                            {c === "WhatsApp" ? "✦ WhatsApp" : "✉ Correo"}
+                          </span>
+                        ))}
+                      </div>
                     </div>
                   </div>
-                  <div className="absolute bottom-0 left-4 right-4 h-0.5 rounded-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 opacity-0 group-hover:opacity-40 transition-opacity duration-300" />
+                  <div className="absolute bottom-0 left-4 right-4 h-0.5 rounded-full bg-gradient-to-r from-emerald-500 via-teal-500 to-indigo-500 opacity-0 group-hover:opacity-40 transition-opacity duration-300" />
                 </motion.div>
               );
             })}

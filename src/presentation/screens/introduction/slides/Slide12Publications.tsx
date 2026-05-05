@@ -16,12 +16,12 @@ import { BoltIcon, SparklesIcon } from "@heroicons/react/24/solid";
 interface Slide12PublicationsProps { isActive: boolean; }
 
 const features = [
-  { icon: MegaphoneIcon, title: "Comunicados generales", desc: "Publica avisos para todos los residentes o segmentados por torre o piso" },
-  { icon: SparklesOutline, title: "Redacción con IA", desc: "El asistente IA ayuda a redactar comunicados claros y profesionales en segundos" },
-  { icon: TagIcon, title: "Categorías y etiquetas", desc: "Organiza publicaciones por tipo: aviso, urgente, evento, mantenimiento, etc." },
-  { icon: EyeIcon, title: "Vista previa enriquecida", desc: "Editor de texto con formato, listas y estilos para publicaciones profesionales" },
-  { icon: BellAlertIcon, title: "Notificación automática", desc: "Al publicar, los residentes reciben un aviso push, WhatsApp o correo" },
-  { icon: CalendarDaysIcon, title: "Historial de publicaciones", desc: "Accede a todas las publicaciones anteriores con fecha, autor y audiencia" },
+  { icon: MegaphoneIcon, title: "Comunicados a residentes", desc: "Publica avisos para todos o segmentados por torre, piso o unidad" },
+  { icon: SparklesOutline, title: "Redacción asistida por IA", desc: "Genera el borrador del comunicado con un par de palabras clave" },
+  { icon: TagIcon, title: "Categorías y etiquetas", desc: "Organiza por tipo: urgente, evento, mantenimiento, aviso, social…" },
+  { icon: EyeIcon, title: "Editor con formato", desc: "Texto enriquecido con listas, énfasis y archivos adjuntos" },
+  { icon: BellAlertIcon, title: "Envío masivo por correo", desc: "Al publicar, todos los residentes seleccionados reciben el aviso por correo" },
+  { icon: CalendarDaysIcon, title: "Historial de publicaciones", desc: "Consulta los avisos anteriores con fecha, autor y audiencia" },
 ];
 
 const mockPosts = [

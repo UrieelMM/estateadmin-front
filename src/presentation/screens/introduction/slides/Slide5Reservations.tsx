@@ -14,19 +14,18 @@ const areas = [
 ];
 
 const chatMessages = [
-  { from: "user", text: "Quiero reservar el salón de eventos el sábado" },
-  { from: "bot", text: "Tengo disponibilidad el sábado de 10:00 a 15:00. ¿Confirmo la reserva?" },
-  { from: "user", text: "Sí, confirma por favor" },
-  { from: "bot", text: "Reserva confirmada. Recibirás una notificación de confirmación." },
+  { from: "bot", text: "✅ Reserva confirmada — Salón de eventos" },
+  { from: "bot", text: "Sábado 14 jun · 10:00 a 15:00" },
+  { from: "bot", text: "Te enviamos también el detalle a tu correo. ¡Disfruta!" },
 ];
 
 const features = [
   { icon: CalendarDaysIcon, title: "Calendario en tiempo real", desc: "Visualiza disponibilidad de todas las áreas al instante" },
-  { icon: ChatBubbleLeftRightIcon, title: "Reservas por chatbot", desc: "Los residentes reservan desde WhatsApp sin abrir la app" },
-  { icon: BellIcon, title: "Notificaciones automáticas", desc: "Confirmación, recordatorio y cancelación por WhatsApp y correo" },
-  { icon: ClockIcon, title: "Límites y reglas de uso", desc: "Define horarios, duración máxima y reservas por residente" },
-  { icon: UserGroupIcon, title: "Control de aforo", desc: "Limita la capacidad máxima por área y franja horaria" },
-  { icon: MapPinIcon, title: "Múltiples amenidades", desc: "Alberca, salón, gimnasio, cancha y más desde el panel" },
+  { icon: ChatBubbleLeftRightIcon, title: "Confirmación por WhatsApp", desc: "Al reservar el residente recibe el detalle por WhatsApp y correo" },
+  { icon: BellIcon, title: "Aviso al administrador", desc: "El admin se entera cada vez que se realiza una reserva" },
+  { icon: ClockIcon, title: "Reglas y horarios por área", desc: "Define horarios, duración máxima y costo por reservación" },
+  { icon: UserGroupIcon, title: "Control de aforo", desc: "Limita capacidad máxima por área y franja horaria" },
+  { icon: MapPinIcon, title: "Múltiples amenidades", desc: "Alberca, salón, gimnasio, cancha, asadores y más" },
 ];
 
 const Slide5Reservations = ({ isActive }: Slide5ReservationsProps) => {
@@ -61,7 +60,7 @@ const Slide5Reservations = ({ isActive }: Slide5ReservationsProps) => {
                 Áreas comunes{" "}
                 <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400">sin fricciones</span>
               </h2>
-              <p className="mt-2 text-slate-400 text-sm leading-relaxed">Los residentes reservan desde el chatbot de EstatAdmin por WhatsApp, sin instalar nada.</p>
+              <p className="mt-2 text-slate-400 text-sm leading-relaxed">Los residentes reservan desde la app y reciben confirmación inmediata por WhatsApp y correo.</p>
             </motion.div>
 
             <motion.div variants={card} className="rounded-2xl border border-white/[0.07] bg-white/[0.03] p-4 space-y-2">

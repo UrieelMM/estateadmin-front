@@ -1,24 +1,26 @@
 import { useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import gsap from "gsap";
-import { CurrencyDollarIcon, DocumentChartBarIcon, WalletIcon, BuildingLibraryIcon, MagnifyingGlassCircleIcon, CalendarDaysIcon } from "@heroicons/react/24/outline";
+import { CurrencyDollarIcon, DocumentChartBarIcon, WalletIcon, BuildingLibraryIcon, MagnifyingGlassCircleIcon, BanknotesIcon, ReceiptRefundIcon, ArrowsRightLeftIcon } from "@heroicons/react/24/outline";
 import { SparklesIcon } from "@heroicons/react/24/solid";
 
 interface Slide3FinancesProps { isActive: boolean; }
 
 const stats = [
-  { label: "Trazabilidad total", value: "100%" },
-  { label: "Menos trabajo manual", value: "−80%" },
+  { label: "Recibo automático al pagar", value: "PDF" },
+  { label: "Conciliación bancaria", value: "CSV" },
   { label: "Reportes disponibles", value: "24/7" },
 ];
 
 const features = [
-  { icon: CurrencyDollarIcon, title: "Estado de cuenta por residente", desc: "Historial de pagos, adeudos y saldos por unidad" },
-  { icon: WalletIcon, title: "Cobro de cuotas y mantenimiento", desc: "Automatización de cargos ordinarios y extraordinarios" },
-  { icon: DocumentChartBarIcon, title: "Registro de gastos y proveedores", desc: "Control de egresos con categorías y comprobantes" },
-  { icon: BuildingLibraryIcon, title: "Reportes e informes financieros", desc: "Balances, flujo de caja y estados exportables" },
-  { icon: MagnifyingGlassCircleIcon, title: "Pagos no identificados", desc: "Conciliación de transferencias con QR de referencia único" },
-  { icon: CalendarDaysIcon, title: "Presupuesto anual", desc: "Planeación presupuestal con alertas de desviación" },
+  { icon: CurrencyDollarIcon, title: "Estado de cuenta por residente", desc: "Historial de cargos, pagos, saldos a favor y morosidad por unidad" },
+  { icon: WalletIcon, title: "Cobro de cuotas y cargos extras", desc: "Cargos ordinarios y extraordinarios con folio, recordatorios y recibos" },
+  { icon: DocumentChartBarIcon, title: "Egresos con comprobante", desc: "Categorías, proveedores, factura adjunta y vinculación con proyectos" },
+  { icon: ArrowsRightLeftIcon, title: "Conciliación bancaria", desc: "Carga el CSV de tu banco y el sistema empareja movimientos con pagos y egresos" },
+  { icon: MagnifyingGlassCircleIcon, title: "Pagos no identificados", desc: "Bandeja para asignar transferencias sin referencia al residente correcto" },
+  { icon: BanknotesIcon, title: "Caja chica", desc: "Transacciones, umbrales y cortes con auditoría" },
+  { icon: BuildingLibraryIcon, title: "Cuentas financieras", desc: "Múltiples cuentas con saldo inicial y desglose por movimiento" },
+  { icon: ReceiptRefundIcon, title: "Reversiones y recibos masivos", desc: "Anula pagos con bitácora y reenvía paquetes de recibos por correo" },
 ];
 
 const barData = [40, 65, 50, 80, 60, 90, 75, 95];

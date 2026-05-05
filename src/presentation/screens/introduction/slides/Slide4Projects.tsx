@@ -1,18 +1,18 @@
 import { useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import gsap from "gsap";
-import { RocketLaunchIcon, CurrencyDollarIcon, ClipboardDocumentCheckIcon, CalendarDaysIcon, UsersIcon, ChartBarIcon, CheckCircleIcon } from "@heroicons/react/24/outline";
+import { RocketLaunchIcon, CurrencyDollarIcon, ClipboardDocumentCheckIcon, FlagIcon, DocumentDuplicateIcon, ChartBarIcon, CheckCircleIcon } from "@heroicons/react/24/outline";
 import { BoltIcon } from "@heroicons/react/24/solid";
 
 interface Slide4ProjectsProps { isActive: boolean; }
 
 const features = [
-  { icon: RocketLaunchIcon, title: "Creación de proyectos", desc: "Define alcance, fechas y responsables desde un solo panel" },
-  { icon: CurrencyDollarIcon, title: "Control de presupuesto", desc: "Asigna y monitorea el presupuesto con alertas de desviación" },
-  { icon: ClipboardDocumentCheckIcon, title: "Tareas y avances", desc: "Divide el proyecto en tareas, asigna equipos y registra el progreso" },
-  { icon: CalendarDaysIcon, title: "Cronograma", desc: "Visualiza fechas de inicio y cierre con vista de línea de tiempo" },
-  { icon: UsersIcon, title: "Proveedores y contratistas", desc: "Vincula proveedores al proyecto con historial de contratos" },
-  { icon: ChartBarIcon, title: "Reportes de avance", desc: "Informes ejecutivos con porcentaje y costo real vs. estimado" },
+  { icon: RocketLaunchIcon, title: "Creación de proyectos", desc: "Alcance, descripción, fechas estimadas y presupuesto inicial" },
+  { icon: CurrencyDollarIcon, title: "Control de presupuesto vs ejercido", desc: "Cada gasto descuenta del presupuesto; alertas si se desvía más del 10%" },
+  { icon: DocumentDuplicateIcon, title: "Cotizaciones comparables", desc: "Recibe varias cotizaciones de proveedores y selecciona la ganadora" },
+  { icon: FlagIcon, title: "Hitos del proyecto", desc: "Marca avances clave, fechas y porcentaje de cumplimiento" },
+  { icon: ClipboardDocumentCheckIcon, title: "Tareas tipo Kanban", desc: "Divide el proyecto en tareas con dependencias y bloqueo automático" },
+  { icon: ChartBarIcon, title: "Gastos vinculados", desc: "Cada egreso queda asociado al proyecto con folio y comprobante" },
 ];
 
 const phases = [

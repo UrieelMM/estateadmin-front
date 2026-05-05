@@ -7,12 +7,12 @@ import { BoltIcon, LockClosedIcon } from "@heroicons/react/24/solid";
 interface Slide8AccessControlProps { isActive: boolean; }
 
 const features = [
-  { icon: QrCodeIcon, title: "QR por residente", desc: "Cada residente genera un código QR único para autorizar el ingreso de sus visitas" },
-  { icon: ShieldCheckIcon, title: "Validación en puerta", desc: "El guardia escanea el QR desde cualquier dispositivo para confirmar el acceso" },
-  { icon: DevicePhoneMobileIcon, title: "Notificación al residente", desc: "El residente recibe un aviso cuando su visita llega al condominio" },
-  { icon: UserCircleIcon, title: "Visitas frecuentes", desc: "Registra visitantes recurrentes para agilizar entradas futuras" },
-  { icon: TruckIcon, title: "Control de proveedores", desc: "Gestiona accesos de repartidores, técnicos y contratistas con tiempo limitado" },
-  { icon: ClipboardDocumentListIcon, title: "Bitácora de accesos", desc: "Historial completo de entradas y salidas con fecha, hora y responsable" },
+  { icon: QrCodeIcon, title: "QR firmado por visita", desc: "El residente programa la visita y se genera un QR único con caducidad" },
+  { icon: DevicePhoneMobileIcon, title: "QR por WhatsApp al visitante", desc: "El sistema envía automáticamente la imagen del QR al WhatsApp del invitado" },
+  { icon: ShieldCheckIcon, title: "Validación en caseta con PIN", desc: "El guardia escanea el QR y valida la entrada con su PIN único de caseta" },
+  { icon: UserCircleIcon, title: "Programación por chatbot", desc: "El residente registra la visita conversando con el chatbot de WhatsApp" },
+  { icon: TruckIcon, title: "Visitas y proveedores", desc: "Distingue entre visita personal, paquetería, técnicos y contratistas" },
+  { icon: ClipboardDocumentListIcon, title: "Bitácora de accesos", desc: "Registro de check-in/out con fecha, hora y guardia responsable" },
 ];
 
 const recentVisits = [
