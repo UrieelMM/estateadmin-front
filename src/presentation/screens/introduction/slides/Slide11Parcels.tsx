@@ -2,12 +2,14 @@ import { useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import gsap from "gsap";
 import {
+  ArchiveBoxIcon,
   TruckIcon,
   EnvelopeIcon,
   MagnifyingGlassIcon,
   CameraIcon,
   CheckCircleIcon,
   UserCircleIcon,
+  ClockIcon,
 } from "@heroicons/react/24/outline";
 import { BoltIcon } from "@heroicons/react/24/solid";
 
