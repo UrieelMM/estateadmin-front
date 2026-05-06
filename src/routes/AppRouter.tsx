@@ -45,6 +45,9 @@ const ScheduledVisitPublic = React.lazy(
 const ScheduledVisitLegacyRedirect = React.lazy(
   () => import("../presentation/screens/public/ScheduledVisitLegacyRedirect"),
 );
+const CasetaDashboard = React.lazy(
+  () => import("../presentation/screens/public/CasetaDashboard"),
+);
 const NewCustomerInformationForm = React.lazy(
   () => import("../presentation/screens/public/NewCustomerInformationForm"),
 );
@@ -138,6 +141,12 @@ export const AppRouterPage = () => {
           <Route
             path="/scheduled-visits-qr/:qrId"
             element={<ScheduledVisitLegacyRedirect />}
+          />
+
+          {/* Dashboard de caseta — acceso solo con PIN, sin Firebase Auth */}
+          <Route
+            path="/caseta/:clientId/:condominiumId"
+            element={<CasetaDashboard />}
           />
 
           {/* Rutas para el formulario de nuevos clientes */}

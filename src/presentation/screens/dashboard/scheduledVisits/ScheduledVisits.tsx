@@ -1,5 +1,5 @@
-import { Fragment, useEffect, useMemo, useState } from "react";
-import { Menu, Transition } from "@headlessui/react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { Dialog, Menu, Transition } from "@headlessui/react";
 import {
   MagnifyingGlassIcon,
   FunnelIcon,
@@ -8,8 +8,15 @@ import {
   CalendarDaysIcon,
   UserIcon,
   ShieldCheckIcon,
+  LinkIcon,
+  ClipboardDocumentIcon,
+  CheckCircleIcon,
+  XMarkIcon,
+  DevicePhoneMobileIcon,
+  ShareIcon,
 } from "@heroicons/react/24/outline";
 import { ChevronDownIcon, CheckIcon } from "@heroicons/react/20/solid";
+import { getAuth, getIdTokenResult } from "firebase/auth";
 import { motion, AnimatePresence } from "framer-motion";
 import moment from "moment";
 import "moment/locale/es";
@@ -59,6 +66,27 @@ const ScheduledVisits = () => {
   const [selected, setSelected] = useState<ScheduledVisit | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [pinModalOpen, setPinModalOpen] = useState(false);
+  const [casetaUrlOpen, setCasetaUrlOpen] = useState(false);
+  const [casetaUrl, setCasetaUrl] = useState<string | null>(null);
+
+  // Construye la URL de caseta leyendo clientId del token y condominiumId del localStorage
+  const handleOpenCasetaUrl = async () => {
+    try {
+      const auth = getAuth();
+      const user = auth.currentUser;
+      if (!user) return;
+      const tokenResult = await getIdTokenResult(user);
+      const clientId = tokenResult.claims["clientId"] as string | undefined;
+      const condominiumId = localStorage.getItem("condominiumId");
+      if (clientId && condominiumId) {
+        const url = `${window.location.origin}/caseta/${clientId}/${condominiumId}`;
+        setCasetaUrl(url);
+      }
+    } catch (e) {
+      console.error("Error al obtener la URL de caseta:", e);
+    }
+    setCasetaUrlOpen(true);
+  };
 
   useEffect(() => {
     fetchVisits();
@@ -154,6 +182,14 @@ const ScheduledVisits = () => {
                 >
                   <ShieldCheckIcon className="h-4 w-4 mr-1" />
                   {pinStatus?.configured ? "PIN configurado" : "Configurar PIN"}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleOpenCasetaUrl}
+                  className="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 dark:bg-gray-700 dark:text-gray-200 dark:ring-gray-600 dark:hover:bg-gray-600"
+                >
+                  <DevicePhoneMobileIcon className="h-4 w-4 mr-1 text-indigo-500" />
+                  Acceso caseta
                 </button>
                 <button
                   type="button"
@@ -420,6 +456,11 @@ const ScheduledVisits = () => {
         open={pinModalOpen}
         onClose={() => setPinModalOpen(false)}
       />
+      <CasetaUrlModal
+        open={casetaUrlOpen}
+        url={casetaUrl}
+        onClose={() => setCasetaUrlOpen(false)}
+      />
     </>
   );
 };
@@ -528,6 +569,221 @@ const SummaryCard = ({
         </p>
       </div>
     </div>
+  );
+};
+
+// ─── Modal URL de caseta ──────────────────────────────────────────────────
+
+interface CasetaUrlModalProps {
+  open: boolean;
+  url: string | null;
+  onClose: () => void;
+}
+
+const CasetaUrlModal = ({ open, url, onClose }: CasetaUrlModalProps) => {
+  const [copied, setCopied] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const canShare =
+    typeof navigator !== "undefined" && !!navigator.share && !!url;
+
+  const handleCopy = async () => {
+    if (!url) return;
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    } catch (_) {
+      // Fallback select
+      inputRef.current?.select();
+    }
+  };
+
+  const handleShare = async () => {
+    if (!url || !navigator.share) return;
+    try {
+      await navigator.share({
+        title: "Acceso Dashboard Caseta",
+        text: "Enlace para el dashboard de caseta (visitas agendadas):",
+        url,
+      });
+    } catch (_) {}
+  };
+
+  const handleOpen = () => {
+    if (url) window.open(url, "_blank", "noopener,noreferrer");
+  };
+
+  return (
+    <Transition show={open} as={Fragment}>
+      <Dialog as="div" className="relative z-50" onClose={onClose}>
+        {/* Backdrop */}
+        <Transition.Child
+          as={Fragment}
+          enter="ease-out duration-200"
+          enterFrom="opacity-0"
+          enterTo="opacity-100"
+          leave="ease-in duration-150"
+          leaveFrom="opacity-100"
+          leaveTo="opacity-0"
+        >
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" />
+        </Transition.Child>
+
+        <div className="fixed inset-0 flex items-center justify-center p-4">
+          <Transition.Child
+            as={Fragment}
+            enter="ease-out duration-200"
+            enterFrom="opacity-0 scale-95 translate-y-2"
+            enterTo="opacity-100 scale-100 translate-y-0"
+            leave="ease-in duration-150"
+            leaveFrom="opacity-100 scale-100"
+            leaveTo="opacity-0 scale-95"
+          >
+            <Dialog.Panel className="w-full max-w-md rounded-2xl bg-white dark:bg-gray-800 shadow-2xl overflow-hidden">
+              {/* Header */}
+              <div className="bg-gradient-to-r from-indigo-600 to-indigo-700 px-5 py-4 flex items-start justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="bg-white/15 rounded-full p-2">
+                    <DevicePhoneMobileIcon className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <Dialog.Title className="text-base font-bold text-white">
+                      Acceso Dashboard Caseta
+                    </Dialog.Title>
+                    <p className="text-indigo-200 text-xs mt-0.5">
+                      Comparte esta URL con el personal de caseta
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="p-1.5 rounded-full hover:bg-white/20 transition-colors text-white"
+                >
+                  <XMarkIcon className="h-5 w-5" />
+                </button>
+              </div>
+
+              <div className="p-5 space-y-4">
+                {/* Descripción */}
+                <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-xl p-3 text-sm text-indigo-800 dark:text-indigo-300 space-y-1.5">
+                  <p className="font-medium flex items-center gap-1.5">
+                    <ShieldCheckIcon className="h-4 w-4" />
+                    ¿Cómo funciona?
+                  </p>
+                  <p className="text-xs leading-relaxed text-indigo-700 dark:text-indigo-400">
+                    Al abrir esta URL, el guardia verá una pantalla de login
+                    donde ingresa el <strong>PIN de caseta</strong> (el mismo
+                    configurado en este panel). Una vez autenticado podrá
+                    consultar todas las visitas agendadas del condominio de
+                    forma segura y de solo lectura.
+                  </p>
+                </div>
+
+                {/* URL */}
+                {url ? (
+                  <div className="space-y-2">
+                    <label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                      URL de acceso
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 relative">
+                        <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                        <input
+                          ref={inputRef}
+                          type="text"
+                          readOnly
+                          value={url}
+                          onClick={(e) =>
+                            (e.target as HTMLInputElement).select()
+                          }
+                          className="w-full pl-9 pr-3 py-2.5 text-xs rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 font-mono focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none cursor-text"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleCopy}
+                        title="Copiar URL"
+                        className={classNames(
+                          "flex-shrink-0 flex items-center gap-1.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-all",
+                          copied
+                            ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                            : "bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600",
+                        )}
+                      >
+                        {copied ? (
+                          <>
+                            <CheckCircleIcon className="h-4 w-4" />
+                            <span className="hidden sm:inline">Copiado</span>
+                          </>
+                        ) : (
+                          <>
+                            <ClipboardDocumentIcon className="h-4 w-4" />
+                            <span className="hidden sm:inline">Copiar</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-amber-50 dark:bg-amber-900/20 rounded-xl p-3 text-sm text-amber-800 dark:text-amber-300">
+                    No se pudo obtener la URL. Asegúrate de tener una sesión
+                    activa.
+                  </div>
+                )}
+
+                {/* Aviso PIN */}
+                <div className="flex items-start gap-2 bg-gray-50 dark:bg-gray-700/50 rounded-xl p-3 text-xs text-gray-600 dark:text-gray-400">
+                  <ShieldCheckIcon className="h-4 w-4 flex-shrink-0 mt-0.5 text-gray-400" />
+                  <p>
+                    Esta URL es <strong>única por condominio</strong>. Sin el
+                    PIN correcto nadie puede acceder, aunque conozca el enlace.
+                    Recuerda configurar el PIN antes de compartirla.
+                  </p>
+                </div>
+
+                {/* Botones de acción */}
+                <div className="flex gap-2 pt-1">
+                  {canShare && (
+                    <button
+                      type="button"
+                      onClick={handleShare}
+                      className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 transition-colors shadow-sm"
+                    >
+                      <ShareIcon className="h-4 w-4" />
+                      Compartir
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={handleOpen}
+                    disabled={!url}
+                    className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl bg-white dark:bg-gray-700 px-4 py-2.5 text-sm font-semibold text-gray-700 dark:text-gray-200 ring-1 ring-inset ring-gray-300 dark:ring-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors disabled:opacity-50"
+                  >
+                    <LinkIcon className="h-4 w-4" />
+                    Abrir
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleCopy}
+                    disabled={!url}
+                    className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl bg-white dark:bg-gray-700 px-4 py-2.5 text-sm font-semibold text-gray-700 dark:text-gray-200 ring-1 ring-inset ring-gray-300 dark:ring-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors disabled:opacity-50"
+                  >
+                    {copied ? (
+                      <CheckCircleIcon className="h-4 w-4 text-green-600" />
+                    ) : (
+                      <ClipboardDocumentIcon className="h-4 w-4" />
+                    )}
+                    {copied ? "¡Copiado!" : "Copiar"}
+                  </button>
+                </div>
+              </div>
+            </Dialog.Panel>
+          </Transition.Child>
+        </div>
+      </Dialog>
+    </Transition>
   );
 };
 

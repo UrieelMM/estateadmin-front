@@ -342,8 +342,17 @@ match /databases/{database}/documents {
         // ─── Visitas programadas vía chatbot de WhatsApp ───
         // Escritura: solo el backend (Admin SDK) crea las visitas — desde el
         // panel únicamente admins pueden actualizar (cancelar) o leer.
-        // No exponemos lectura pública: la caseta valida vía endpoint HTTP
-        // que usa Admin SDK y verifica el `accessToken`.
+        //
+        // Accesos al recurso scheduledVisits:
+        //   1. Panel admin      → Firebase Auth (rol admin/assistant) → Firestore SDK directo
+        //   2. Caseta QR scan   → endpoint HTTP /scheduled-visits-qr/:qrId (Admin SDK, sin auth)
+        //   3. Dashboard caseta → endpoint HTTP /scheduled-visits-caseta/dashboard/visits
+        //                         (Admin SDK, auth = PIN de 6 dígitos, SOLO LECTURA)
+        //                         Ruta pública: /caseta/:clientId/:condominiumId
+        //                         Sesión guardada en sessionStorage, TTL 8 h.
+        //
+        // Los accesos 2 y 3 usan Admin SDK en el backend y NO están sujetos a
+        // estas reglas de Firestore — se autentican con PIN en el servidor.
         match /scheduledVisits/{visitId} {
           allow read: if belongsToClientOrSuperAdmin(clientId);
           // Crear desde el panel está deshabilitado (lo hace el backend).
@@ -499,6 +508,9 @@ match /databases/{database}/documents {
     // ─── CollectionGroup: visitas programadas (lectura por tenant) ───
     // Permite al panel admin consultar todas las visitas de su cliente
     // a través de queries collectionGroup('scheduledVisits').
+    // NOTA: el dashboard de caseta (/caseta/:clientId/:condominiumId) NO usa
+    // Firestore SDK directamente — consume el endpoint backend que usa Admin SDK,
+    // por lo que esta regla no aplica a ese flujo.
     match /{path=**}/scheduledVisits/{visitId} {
       allow read: if isSuperAdmin()
                   || (isAuthenticated() && resource.data.clientId == request.auth.token.clientId);
