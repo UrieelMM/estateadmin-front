@@ -106,7 +106,7 @@ const PDFExpenseReportGenerator: React.FC<PDFExpenseReportGeneratorProps> = ( {
     // --- Resumen mensual de egresos ---
     // Se ordenan los datos mensuales
     const sortedMonthlyStats = [ ...monthlyStats ].sort(
-      ( a, b ) => parseInt( a.month ) - parseInt( b.month )
+      ( a, b ) => parseInt( a.month, 10 ) - parseInt( b.month, 10 )
     );
     const summaryRows = sortedMonthlyStats.map( ( stat ) => [
       monthNames[ stat.month ] || stat.month,

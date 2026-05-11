@@ -83,7 +83,7 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({
     >
   ) => {
     const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   // Handle tag selection
@@ -91,15 +91,9 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({
     const { value, checked } = e.target;
 
     if (checked) {
-      setFormData({
-        ...formData,
-        tags: [...formData.tags, value],
-      });
+      setFormData((prev) => ({ ...prev, tags: [...prev.tags, value] }));
     } else {
-      setFormData({
-        ...formData,
-        tags: formData.tags.filter((tag) => tag !== value),
-      });
+      setFormData((prev) => ({ ...prev, tags: prev.tags.filter((tag) => tag !== value) }));
     }
   };
 

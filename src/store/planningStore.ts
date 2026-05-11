@@ -480,9 +480,7 @@ export const usePlanningStore = create<PlanningState>()((set, get) => ({
       );
       const tasksSnap = await getDocs(tasksRef);
 
-      for (const taskDoc of tasksSnap.docs) {
-        await deleteDoc(taskDoc.ref);
-      }
+      await Promise.all(tasksSnap.docs.map((taskDoc) => deleteDoc(taskDoc.ref)));
 
       // Luego eliminar todos los documentos asociados
       const docsRef = collection(
@@ -494,23 +492,25 @@ export const usePlanningStore = create<PlanningState>()((set, get) => ({
       // Storage para eliminar archivos
       const storage = getStorage();
 
-      for (const docRef of docsSnap.docs) {
-        const docData = docRef.data();
+      await Promise.all(
+        docsSnap.docs.map(async (docRef) => {
+          const docData = docRef.data();
 
-        // Eliminar el archivo de storage si existe
-        if (docData.fileUrl) {
-          try {
-            // Extraer la ruta del storage de la URL
-            const fileRef = ref(storage, docData.fileUrl);
-            await deleteObject(fileRef);
-          } catch (fileError) {
-            console.error("Error al eliminar archivo:", fileError);
+          // Eliminar el archivo de storage si existe
+          if (docData.fileUrl) {
+            try {
+              // Extraer la ruta del storage de la URL
+              const fileRef = ref(storage, docData.fileUrl);
+              await deleteObject(fileRef);
+            } catch (fileError) {
+              console.error("Error al eliminar archivo:", fileError);
+            }
           }
-        }
 
-        // Eliminar el documento
-        await deleteDoc(docRef.ref);
-      }
+          // Eliminar el documento
+          await deleteDoc(docRef.ref);
+        })
+      );
 
       // Eliminar los comentarios
       const commentsRef = collection(
@@ -519,9 +519,7 @@ export const usePlanningStore = create<PlanningState>()((set, get) => ({
       );
       const commentsSnap = await getDocs(commentsRef);
 
-      for (const commentDoc of commentsSnap.docs) {
-        await deleteDoc(commentDoc.ref);
-      }
+      await Promise.all(commentsSnap.docs.map((commentDoc) => deleteDoc(commentDoc.ref)));
 
       // Finalmente eliminar la planificación
       const planningRef = createDoc(

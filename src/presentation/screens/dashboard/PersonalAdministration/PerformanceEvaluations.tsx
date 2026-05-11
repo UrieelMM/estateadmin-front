@@ -28,6 +28,44 @@ interface EvaluationModalProps {
   mode: "create" | "edit" | "view";
 }
 
+// StarRating component at module scope to avoid re-creation on every parent render
+const StarRating: React.FC<{
+  value: number;
+  onChange: (value: number) => void;
+  disabled?: boolean;
+  label: string;
+}> = ({ value, onChange, disabled = false, label }) => {
+  return (
+    <div className="space-y-2">
+      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+        {label}
+      </label>
+      <div className="flex items-center space-x-1">
+        {[1, 2, 3, 4, 5].map((star) => (
+          <button
+            key={star}
+            type="button"
+            onClick={() => !disabled && onChange(star)}
+            disabled={disabled}
+            className={`${
+              disabled ? "cursor-default" : "cursor-pointer hover:scale-110"
+            } transition-transform`}
+          >
+            {star <= value ? (
+              <StarIconSolid className="h-6 w-6 text-yellow-400" />
+            ) : (
+              <StarIcon className="h-6 w-6 text-gray-300 dark:text-gray-600" />
+            )}
+          </button>
+        ))}
+        <span className="ml-2 text-sm text-gray-600 dark:text-gray-400">
+          {value}/5
+        </span>
+      </div>
+    </div>
+  );
+};
+
 const EvaluationModal: React.FC<EvaluationModalProps> = ({
   isOpen,
   onClose,
@@ -166,42 +204,6 @@ const EvaluationModal: React.FC<EvaluationModalProps> = ({
     });
   };
 
-  const StarRating: React.FC<{
-    value: number;
-    onChange: (value: number) => void;
-    disabled?: boolean;
-    label: string;
-  }> = ({ value, onChange, disabled = false, label }) => {
-    return (
-      <div className="space-y-2">
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-          {label}
-        </label>
-        <div className="flex items-center space-x-1">
-          {[1, 2, 3, 4, 5].map((star) => (
-            <button
-              key={star}
-              type="button"
-              onClick={() => !disabled && onChange(star)}
-              disabled={disabled}
-              className={`${
-                disabled ? "cursor-default" : "cursor-pointer hover:scale-110"
-              } transition-transform`}
-            >
-              {star <= value ? (
-                <StarIconSolid className="h-6 w-6 text-yellow-400" />
-              ) : (
-                <StarIcon className="h-6 w-6 text-gray-300 dark:text-gray-600" />
-              )}
-            </button>
-          ))}
-          <span className="ml-2 text-sm text-gray-600 dark:text-gray-400">
-            {value}/5
-          </span>
-        </div>
-      </div>
-    );
-  };
 
   if (!isOpen) return null;
 
