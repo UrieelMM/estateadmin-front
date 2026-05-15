@@ -3,7 +3,6 @@ import { getAuth, getIdTokenResult } from "firebase/auth";
 import {
   getFirestore,
   collection,
-  doc,
   addDoc,
   getDocs,
   query,
@@ -95,7 +94,7 @@ export interface ScheduledTask {
 /** Payload para crear una tarea — los campos de auditoría se generan automáticamente */
 export type CreateScheduledTaskPayload = Omit<
   ScheduledTask,
-  "id" | "createdAt" | "updatedAt" | "history" | "completionHistory" | "checklistProgress" | "lastCompletedDate"
+  "id" | "createdAt" | "updatedAt" | "history" | "completionHistory" | "checklistProgress" | "lastCompletedDate" | "createdBy" | "createdByName" | "updatedBy" | "updatedByName"
 >;
 
 // ─── Store ────────────────────────────────────────────────────────────────────
@@ -110,7 +109,7 @@ interface ScheduledMaintenanceState {
 }
 
 export const useScheduledMaintenanceStore =
-  create<ScheduledMaintenanceState>()((set, get) => ({
+  create<ScheduledMaintenanceState>()((set) => ({
     tasks: [],
     loading: false,
     saving: false,

@@ -21,7 +21,6 @@ import {
   MagnifyingGlassIcon,
   ChevronDownIcon,
   InformationCircleIcon,
-  DocumentTextIcon,
   ClipboardDocumentListIcon,
   WrenchScrewdriverIcon,
   PhotoIcon,
