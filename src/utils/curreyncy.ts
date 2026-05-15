@@ -12,7 +12,7 @@ export function formatCurrencyInventory(
   if (val === null || val === undefined) return "$0.00";
 
   // Si es string, eliminamos cualquier formato previo (comas, símbolos de moneda)
-  let numValue =
+  const numValue =
     typeof val === "string"
       ? parseFloat(val.replace(/[$,\s]/g, ""))
       : Number(val);
@@ -49,8 +49,8 @@ export const formatMXNToCents = (mxn: string): number => {
   return Math.round(pesosValue * 100);
 };
 
-export const centsToPesos = (val: any): number => {
-  const intVal = parseInt(val, 10);
+export const centsToPesos = (val: string | number): number => {
+  const intVal = typeof val === "string" ? parseInt(val, 10) : val;
   if (isNaN(intVal)) return 0;
   return intVal / 100;
 };

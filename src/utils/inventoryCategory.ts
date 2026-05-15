@@ -6,6 +6,7 @@ export interface CategoryLike {
   normalizedName?: string;
 }
 
+// eslint-disable-next-line no-control-regex
 const CONTROL_CHARS_REGEX = /[\u0000-\u001F\u007F]/g;
 const MULTI_SPACE_REGEX = /\s+/g;
 const DIACRITICS_REGEX = /[\u0300-\u036f]/g;
