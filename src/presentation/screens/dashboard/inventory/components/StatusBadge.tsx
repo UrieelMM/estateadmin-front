@@ -9,6 +9,7 @@ const badgeStyle: Record<ItemStatus, string> = {
   [ ItemStatus.ACTIVE ]: "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:ring-emerald-800",
   [ ItemStatus.INACTIVE ]: "bg-gray-100 text-gray-600 ring-1 ring-gray-200 dark:bg-gray-700/50 dark:text-gray-400 dark:ring-gray-600",
   [ ItemStatus.MAINTENANCE ]: "bg-amber-50 text-amber-700 ring-1 ring-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:ring-amber-800",
+  [ ItemStatus.RETIRED ]: "bg-rose-50 text-rose-700 ring-1 ring-rose-200 dark:bg-rose-900/30 dark:text-rose-400 dark:ring-rose-800",
   [ ItemStatus.DISCONTINUED ]: "bg-red-50 text-red-700 ring-1 ring-red-200 dark:bg-red-900/30 dark:text-red-400 dark:ring-red-800",
 };
 
@@ -16,6 +17,7 @@ const badgeDot: Record<ItemStatus, string> = {
   [ ItemStatus.ACTIVE ]: "bg-emerald-500 animate-pulse",
   [ ItemStatus.INACTIVE ]: "bg-gray-400",
   [ ItemStatus.MAINTENANCE ]: "bg-amber-500",
+  [ ItemStatus.RETIRED ]: "bg-rose-500",
   [ ItemStatus.DISCONTINUED ]: "bg-red-500",
 };
 
@@ -23,6 +25,7 @@ const badgeLabel: Record<ItemStatus, string> = {
   [ ItemStatus.ACTIVE ]: "Activo",
   [ ItemStatus.INACTIVE ]: "Inactivo",
   [ ItemStatus.MAINTENANCE ]: "Mantenimiento",
+  [ ItemStatus.RETIRED ]: "Retirado",
   [ ItemStatus.DISCONTINUED ]: "Descontinuado",
 };
 

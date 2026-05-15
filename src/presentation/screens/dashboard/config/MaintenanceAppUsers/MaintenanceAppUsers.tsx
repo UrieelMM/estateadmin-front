@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import {
   getFirestore,
   collection,
@@ -16,7 +17,9 @@ import {
   TrashIcon,
   XMarkIcon,
   PhotoIcon,
+  KeyIcon,
 } from "@heroicons/react/24/solid";
+import axios from "axios";
 import { useCondominiumStore } from "../../../../../store/useCondominiumStore";
 import { generatePassword } from "../../../../../utils/generatePassword";
 
@@ -57,6 +60,10 @@ const MaintenanceAppUsers = () => {
   );
   const [editingUser, setEditingUser] = useState<MaintenanceUser | null>(null);
   const [clientId, setClientId] = useState<string | null>(null);
+  const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
+  const [userToReset, setUserToReset] = useState<MaintenanceUser | null>(null);
+  const [resetPasswordSent, setResetPasswordSent] = useState(false);
+  const [resetPasswordLoading, setResetPasswordLoading] = useState(false);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -416,6 +423,46 @@ const MaintenanceAppUsers = () => {
     return condo?.name || "Desconocido";
   };
 
+  const handleResetPasswordClick = (user: MaintenanceUser) => {
+    setUserToReset(user);
+    setResetPasswordSent(false);
+    setShowResetPasswordModal(true);
+  };
+
+  const handleResetPasswordConfirm = async () => {
+    if (!userToReset) return;
+
+    try {
+      setResetPasswordLoading(true);
+      const response = await axios.post(
+        `${import.meta.env.VITE_URL_SERVER}/users-auth/reset-password`,
+        { email: userToReset.email },
+      );
+
+      if (response.data.status === true || response.data.code === 200) {
+        setResetPasswordSent(true);
+        toast.success("Correo de recuperación enviado exitosamente");
+      } else {
+        toast.error(
+          response.data.message || "No se pudo enviar el correo de recuperación",
+        );
+      }
+    } catch (error: any) {
+      const errorMessage =
+        error.response?.data?.message ||
+        "Error al enviar el correo de recuperación";
+      toast.error(errorMessage);
+    } finally {
+      setResetPasswordLoading(false);
+    }
+  };
+
+  const handleCloseResetModal = () => {
+    setShowResetPasswordModal(false);
+    setUserToReset(null);
+    setResetPasswordSent(false);
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -734,14 +781,23 @@ const MaintenanceAppUsers = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <button
+                        onClick={() => handleResetPasswordClick(user)}
+                        className="text-amber-500 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300 mr-4"
+                        title="Recuperar contraseña"
+                      >
+                        <KeyIcon className="h-5 w-5" />
+                      </button>
+                      <button
                         onClick={() => handleEdit(user)}
                         className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 mr-4"
+                        title="Editar usuario"
                       >
                         <PencilIcon className="h-5 w-5" />
                       </button>
                       <button
                         onClick={() => handleDeleteClick(user)}
                         className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                        title="Eliminar usuario"
                       >
                         <TrashIcon className="h-5 w-5" />
                       </button>
@@ -755,7 +811,7 @@ const MaintenanceAppUsers = () => {
       </div>
 
       {/* Modal de Credenciales */}
-      {showCredentials && credentials && (
+      {showCredentials && credentials && createPortal(
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
@@ -822,11 +878,126 @@ const MaintenanceAppUsers = () => {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body,
+      )}
+
+      {/* Modal de Recuperación de Contraseña */}
+      {showResetPasswordModal && userToReset && createPortal(
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6">
+            {resetPasswordSent ? (
+              <>
+                <div className="flex items-center justify-center w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 mx-auto mb-4">
+                  <svg
+                    className="h-6 w-6 text-green-600 dark:text-green-400"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M5 13l4 4L19 7"
+                    />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 text-center mb-2">
+                  ¡Correo enviado!
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400 text-center mb-1">
+                  Se envió un enlace de recuperación a:
+                </p>
+                <p className="text-sm font-semibold text-indigo-600 dark:text-indigo-400 text-center mb-6">
+                  {userToReset.email}
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 text-center mb-6">
+                  El técnico recibirá un correo con instrucciones para
+                  restablecer su contraseña.
+                </p>
+                <div className="flex justify-center">
+                  <button
+                    onClick={handleCloseResetModal}
+                    className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors"
+                  >
+                    Cerrar
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex items-center justify-center w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-900/30 mx-auto mb-4">
+                  <KeyIcon className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 text-center mb-2">
+                  Recuperar Contraseña
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400 text-center mb-1">
+                  Se enviará un correo de recuperación a:
+                </p>
+                <p className="text-sm font-semibold text-indigo-600 dark:text-indigo-400 text-center mb-2">
+                  {userToReset.email}
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 text-center mb-6">
+                  El técnico{" "}
+                  <span className="font-medium text-gray-700 dark:text-gray-300">
+                    {userToReset.name}
+                  </span>{" "}
+                  recibirá un enlace para crear una nueva contraseña.
+                </p>
+                <div className="flex justify-end space-x-3">
+                  <button
+                    type="button"
+                    onClick={handleCloseResetModal}
+                    disabled={resetPasswordLoading}
+                    className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleResetPasswordConfirm}
+                    disabled={resetPasswordLoading}
+                    className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {resetPasswordLoading ? (
+                      <span className="flex items-center gap-2">
+                        <svg
+                          className="animate-spin h-4 w-4 text-white"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          />
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                          />
+                        </svg>
+                        Enviando...
+                      </span>
+                    ) : (
+                      "Enviar correo"
+                    )}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>,
+        document.body,
       )}
 
       {/* Modal de Confirmación de Eliminación */}
-      {showDeleteModal && userToDelete && (
+      {showDeleteModal && userToDelete && createPortal(
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
@@ -856,7 +1027,8 @@ const MaintenanceAppUsers = () => {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );

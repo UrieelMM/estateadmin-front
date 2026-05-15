@@ -22,8 +22,10 @@ import {
   UsersIcon,
   ChartBarIcon,
   ClipboardDocumentCheckIcon,
+  SparklesIcon,
 } from "@heroicons/react/24/solid";
 import FinancialAccounts from "../FinancialAccounts";
+import KnowledgeBaseSettings from "../KnowledgeBase/KnowledgeBaseSettings";
 import { useTheme } from "../../../../../context/Theme/ThemeContext";
 import AdminUsers from "../AdminUsers/AdminUsers";
 import { getAuth } from "firebase/auth";
@@ -43,7 +45,8 @@ type ConfigTabId =
   | "mensaje-pago"
   | "users"
   | "audit"
-  | "committee";
+  | "committee"
+  | "assistant";
 
 type ConfigSectionTabId = "company" | "condominium";
 
@@ -55,6 +58,7 @@ const CONFIG_TAB_PATHS: Record<ConfigTabId, string> = {
   users: "/dashboard/client-config/administrators",
   audit: "/dashboard/client-config/audit-log",
   committee: "/dashboard/client-config/committee-reports",
+  assistant: "/dashboard/client-config/assistant",
 };
 
 const CONFIG_PATH_TO_TAB: Record<string, ConfigTabId> = {
@@ -65,6 +69,7 @@ const CONFIG_PATH_TO_TAB: Record<string, ConfigTabId> = {
   administrators: "users",
   "audit-log": "audit",
   "committee-reports": "committee",
+  assistant: "assistant",
   // Compatibilidad con enlaces previos
   "pagos-facturas": "payments",
   "cuentas-bancarias": "cuentas",
@@ -284,7 +289,7 @@ const ConfigForm = () => {
         },
         {
           id: "mensaje-pago",
-          label: "Mensajes y Documentos",
+          label: "Documentos",
           icon: DocumentTextIcon,
         },
         /*   {
@@ -295,13 +300,18 @@ const ConfigForm = () => {
         */
         {
           id: "users",
-          label: "Administradores",
+          label: "Usuarios",
           icon: UsersIcon,
         },
         {
           id: "audit",
           label: "Auditoría",
           icon: ClipboardDocumentCheckIcon,
+        },
+        {
+          id: "assistant",
+          label: "Asistente IA",
+          icon: SparklesIcon,
         },
       ]
       : [] ),
@@ -1201,6 +1211,25 @@ const ConfigForm = () => {
           </div>
           <div className="p-6">
             <AuditTrail />
+          </div>
+        </div>
+      ) }
+
+      { userRole === "admin" && activeTab === "assistant" && (
+        <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-3xl border border-gray-200/50 dark:border-gray-700/50 shadow-2xl overflow-hidden">
+          <div className="bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 dark:from-indigo-800 dark:via-purple-700 dark:to-indigo-800 p-4">
+            <div className="flex items-center gap-3 text-white">
+              <SparklesIcon className="h-8 w-8" />
+              <div>
+                <h2 className="text-lg md:text-xl font-bold">Asistente IA</h2>
+                <p className="text-white/80">
+                  Base de conocimiento del chatbot de WhatsApp (RAG)
+                </p>
+              </div>
+            </div>
+          </div>
+          <div className="p-6">
+            <KnowledgeBaseSettings />
           </div>
         </div>
       ) }

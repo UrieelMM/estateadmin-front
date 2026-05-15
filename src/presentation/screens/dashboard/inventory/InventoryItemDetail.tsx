@@ -11,6 +11,35 @@ import TypeBadge from "./components/TypeBadge";
 import InventoryItemForm from "./components/InventoryItemForm";
 import { formatCurrencyInventory } from "../../../../utils/curreyncy";
 
+// Traduce los nombres de campo en inglés que pueden aparecer en
+// movement.notes — útil para movimientos antiguos o generados por código
+// legacy. Se aplica al renderizar, no requiere migrar datos en Firestore.
+const MOVEMENT_NOTE_FIELDS_ES: Record<string, string> = {
+  name: "nombre",
+  description: "descripción",
+  brand: "marca",
+  model: "modelo",
+  serialNumber: "número de serie",
+  supplier: "proveedor",
+  price: "precio",
+  minStock: "stock mínimo",
+  notes: "notas",
+  stock: "stock",
+  location: "ubicación",
+  status: "estado",
+};
+
+const MOVEMENT_NOTE_FIELDS_PATTERN =
+  /\b(name|description|brand|model|serialNumber|supplier|price|minStock|notes|stock|location|status)\b/g;
+
+const translateMovementNotes = ( raw?: string | null ): string => {
+  if ( !raw ) return "";
+  return raw.replace(
+    MOVEMENT_NOTE_FIELDS_PATTERN,
+    ( match ) => MOVEMENT_NOTE_FIELDS_ES[ match ] || match
+  );
+};
+
 const InventoryItemDetail: React.FC = () => {
   const { id } = useParams<{ id: string; }>();
   const navigate = useNavigate();
@@ -22,8 +51,10 @@ const InventoryItemDetail: React.FC = () => {
     movements,
     loading,
     loadingMovements,
-    fetchItems,
-    fetchMovements,
+    subscribeToItems,
+    unsubscribeFromItems,
+    subscribeToMovements,
+    unsubscribeFromMovements,
     setSelectedItem,
     consumeItem,
     addStock,
@@ -43,24 +74,32 @@ const InventoryItemDetail: React.FC = () => {
   const [ isEditModalOpen, setIsEditModalOpen ] = React.useState( false );
   const [ submitLoading, setSubmitLoading ] = React.useState( false );
 
-  // Cargar datos al montar el componente
+  // Suscripción en tiempo real al inventario. Si la app de mantenimiento
+  // actualiza el ítem, lo veremos al instante.
   useEffect( () => {
-    fetchItems();
-  }, [ fetchItems ] );
+    subscribeToItems();
+    return () => {
+      unsubscribeFromItems();
+    };
+  }, [ subscribeToItems, unsubscribeFromItems ] );
 
   // Cuando cambie el ID o los items, seleccionar el ítem correspondiente
+  // y suscribirse a sus movimientos en tiempo real.
   useEffect( () => {
     if ( id && items.length > 0 ) {
       const item = items.find( ( item ) => item.id === id );
       if ( item ) {
         setSelectedItem( item );
-        fetchMovements( id );
+        subscribeToMovements( id );
       } else {
         // Si no encontramos el ítem, volvemos a la lista
         navigate( "/dashboard/inventory/items" );
       }
     }
-  }, [ id, items, setSelectedItem, fetchMovements, navigate ] );
+    return () => {
+      unsubscribeFromMovements();
+    };
+  }, [ id, items, setSelectedItem, subscribeToMovements, unsubscribeFromMovements, navigate ] );
 
   // Limpiar el ítem seleccionado al desmontar el componente
   useEffect( () => {
@@ -505,10 +544,30 @@ const InventoryItemDetail: React.FC = () => {
                               <i className="fas fa-plus-circle mr-1"></i>{ " " }
                               Creación
                             </span>
+                          ) : movement.type === "updated" ? (
+                            <span className="text-indigo-500">
+                              <i className="fas fa-pencil-alt mr-1"></i>{ " " }
+                              Actualización
+                            </span>
+                          ) : movement.type === "transferred" ? (
+                            <span className="text-sky-500">
+                              <i className="fas fa-exchange-alt mr-1"></i>{ " " }
+                              Traslado
+                            </span>
+                          ) : movement.type === "removed" ? (
+                            <span className="text-red-500">
+                              <i className="fas fa-trash-alt mr-1"></i>{ " " }
+                              Eliminación
+                            </span>
+                          ) : movement.type === "maintenance" ? (
+                            <span className="text-amber-500">
+                              <i className="fas fa-wrench mr-1"></i>{ " " }
+                              Mantenimiento
+                            </span>
                           ) : (
                             <span className="text-gray-400">
                               <i className="fas fa-history mr-1"></i>{ " " }
-                              { movement.type }
+                              Movimiento
                             </span>
                           ) }
                         </span>
@@ -519,14 +578,20 @@ const InventoryItemDetail: React.FC = () => {
                     </div>
 
                     <div className="text-gray-800 dark:text-white text-sm">
-                      { movement.notes ||
+                      { translateMovementNotes( movement.notes ) ||
                         ( movement.type === "added"
                           ? `Se añadieron ${ movement.quantity } unidades`
                           : movement.type === "consumed"
                             ? `Se consumieron ${ movement.quantity } unidades`
                             : movement.type === "status_change"
                               ? `Estado cambiado de ${ movement.previousStatus } a ${ movement.newStatus }`
-                              : "Sin detalles" ) }
+                              : movement.type === "transferred"
+                                ? `Ubicación cambiada de "${ movement.location || "—" }" a "${ movement.newLocation || "—" }"`
+                                : movement.type === "created"
+                                  ? "Se creó el ítem en el inventario"
+                                  : movement.type === "updated"
+                                    ? "Se actualizaron datos del ítem"
+                                    : "Sin detalles" ) }
                     </div>
 
                     <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">

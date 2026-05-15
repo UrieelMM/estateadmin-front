@@ -8,9 +8,46 @@ import { Link, useLocation } from "react-router-dom";
 
 const MOVEMENTS_PAGE_SIZE = 10;
 
+// Traducción al vuelo de nombres de campo en inglés que pueden aparecer en
+// las notas de movimientos antiguos (creados antes de que el store los
+// tradujera al guardar). No requiere migrar Firestore.
+const MOVEMENT_NOTE_FIELDS_ES: Record<string, string> = {
+  name: "nombre",
+  description: "descripción",
+  brand: "marca",
+  model: "modelo",
+  serialNumber: "número de serie",
+  supplier: "proveedor",
+  price: "precio",
+  minStock: "stock mínimo",
+  notes: "notas",
+  stock: "stock",
+  location: "ubicación",
+  status: "estado",
+};
+
+const MOVEMENT_NOTE_FIELDS_PATTERN =
+  /\b(name|description|brand|model|serialNumber|supplier|price|minStock|notes|stock|location|status)\b/g;
+
+const translateMovementNotes = ( raw?: string | null ): string => {
+  if ( !raw ) return "";
+  return raw.replace(
+    MOVEMENT_NOTE_FIELDS_PATTERN,
+    ( match ) => MOVEMENT_NOTE_FIELDS_ES[ match ] || match
+  );
+};
+
 const InventoryMovements: React.FC = () => {
-  const { movements, items, loading, fetchMovements, fetchItems, stockAlerts } =
-    useInventoryStore();
+  const {
+    movements,
+    items,
+    loading,
+    subscribeToMovements,
+    unsubscribeFromMovements,
+    subscribeToItems,
+    unsubscribeFromItems,
+    stockAlerts,
+  } = useInventoryStore();
 
   const location = useLocation();
   const lowStockItems = stockAlerts.length;
@@ -28,11 +65,16 @@ const InventoryMovements: React.FC = () => {
     MOVEMENTS_PAGE_SIZE
   );
 
-  // Cargar datos al montar el componente
+  // Suscripción en tiempo real: cualquier movimiento creado desde la app
+  // de mantenimiento aparecerá aquí al instante.
   useEffect( () => {
-    fetchMovements();
-    fetchItems();
-  }, [ fetchMovements, fetchItems ] );
+    subscribeToItems();
+    subscribeToMovements();
+    return () => {
+      unsubscribeFromItems();
+      unsubscribeFromMovements();
+    };
+  }, [ subscribeToItems, subscribeToMovements, unsubscribeFromItems, unsubscribeFromMovements ] );
 
   // Filtros combinados
   const filteredMovements = movements.filter( ( movement ) => {
@@ -473,7 +515,9 @@ const InventoryMovements: React.FC = () => {
                         <span className="block text-sm text-gray-500 dark:text-gray-400">
                           Notas
                         </span>
-                        <p className="text-gray-800 dark:text-white">{ movement.notes }</p>
+                        <p className="text-gray-800 dark:text-white">
+                          { translateMovementNotes( movement.notes ) }
+                        </p>
                       </div>
                     ) }
                   </div>

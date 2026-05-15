@@ -11,6 +11,8 @@ import {
   query,
   where,
   orderBy,
+  onSnapshot,
+  Unsubscribe,
 } from "firebase/firestore";
 import { getAuth, getIdTokenResult } from "firebase/auth";
 import {
@@ -37,11 +39,15 @@ export enum ItemType {
   MATERIAL = "material", // Materiales
 }
 
-// Estado del item
+// Estado del item.
+// Nota: "retired" se acepta para mantener compatibilidad con los valores que
+// puede asignar la app de mantenimiento; las reglas de Firestore también lo
+// permiten. El dashboard lo muestra como "Retirado".
 export enum ItemStatus {
   ACTIVE = "active",
   INACTIVE = "inactive",
   MAINTENANCE = "maintenance",
+  RETIRED = "retired",
   DISCONTINUED = "discontinued",
 }
 
@@ -145,8 +151,18 @@ interface InventoryStore {
   filters: InventoryFilters;
   stockAlerts: InventoryItem[];
 
+  // Internas — para limpiar subscripciones onSnapshot
+  _itemsUnsubscribe: Unsubscribe | null;
+  _movementsUnsubscribe: Unsubscribe | null;
+  _categoriesUnsubscribe: Unsubscribe | null;
+  _itemsKey: string | null;
+  _movementsKey: string | null;
+  _categoriesKey: string | null;
+
   // Métodos para items
   fetchItems: () => Promise<void>;
+  subscribeToItems: () => Promise<void>;
+  unsubscribeFromItems: () => void;
   addItem: (item: InventoryItemFormData) => Promise<string | null>;
   updateItem: (
     id: string,
@@ -157,12 +173,16 @@ interface InventoryStore {
 
   // Métodos para categorías
   fetchCategories: () => Promise<void>;
+  subscribeToCategories: () => Promise<void>;
+  unsubscribeFromCategories: () => void;
   addCategory: (category: Omit<Category, "id">) => Promise<string | null>;
   updateCategory: (id: string, updates: Partial<Category>) => Promise<boolean>;
   deleteCategory: (id: string) => Promise<boolean>;
 
   // Movimientos de inventario
   fetchMovements: (itemId?: string) => Promise<void>;
+  subscribeToMovements: (itemId?: string) => Promise<void>;
+  unsubscribeFromMovements: () => void;
   addMovement: (
     movement: Omit<
       InventoryMovement,
@@ -214,6 +234,13 @@ const useInventoryStore = create<InventoryStore>()((set, get) => ({
     lowStock: false,
   },
   stockAlerts: [],
+
+  _itemsUnsubscribe: null,
+  _movementsUnsubscribe: null,
+  _categoriesUnsubscribe: null,
+  _itemsKey: null,
+  _movementsKey: null,
+  _categoriesKey: null,
 
   // Método para obtener los ítems del inventario
   fetchItems: async () => {
@@ -1689,6 +1716,297 @@ const useInventoryStore = create<InventoryStore>()((set, get) => ({
     );
 
     set({ stockAlerts: alerts });
+  },
+
+  // ─── Subscripciones en tiempo real (sincronización con app de mantenimiento) ───
+  //
+  // Estos métodos reemplazan a fetchItems/fetchMovements/fetchCategories cuando
+  // queremos que el dashboard reciba en vivo cualquier cambio hecho desde la
+  // app de mantenimiento (y viceversa). Pueden coexistir con los fetch*: si la
+  // pantalla solo necesita una carga puntual, fetchItems sigue funcionando;
+  // si necesita streaming, llama a subscribeToItems en su useEffect y
+  // unsubscribeFromItems al desmontar.
+  subscribeToItems: async () => {
+    try {
+      set({ loading: true, error: null });
+      const auth = getAuth();
+      const user = auth.currentUser;
+      if (!user) {
+        throw new Error("Usuario no autenticado");
+      }
+      const tokenResult = await getIdTokenResult(user);
+      const clientId = tokenResult.claims["clientId"] as string;
+      const condominiumId = localStorage.getItem("condominiumId");
+      if (!condominiumId) {
+        throw new Error("Condominio no seleccionado");
+      }
+
+      const key = `${clientId}::${condominiumId}`;
+      if (get()._itemsKey === key && get()._itemsUnsubscribe) {
+        set({ loading: false });
+        return;
+      }
+
+      // Limpia subscripción anterior si existe
+      const prev = get()._itemsUnsubscribe;
+      if (prev) {
+        try {
+          prev();
+        } catch (_) {
+          // noop
+        }
+      }
+
+      const db = getFirestore();
+      const itemsRef = collection(
+        db,
+        `clients/${clientId}/condominiums/${condominiumId}/inventory_items`
+      );
+      const q = query(itemsRef, orderBy("createdAt", "desc"));
+
+      const unsubscribe = onSnapshot(
+        q,
+        (snapshot) => {
+          const items = snapshot.docs.map((d) => ({
+            id: d.id,
+            ...d.data(),
+            createdAt: d.data().createdAt?.toDate?.() || d.data().createdAt,
+            updatedAt: d.data().updatedAt?.toDate?.() || d.data().updatedAt,
+            purchaseDate:
+              d.data().purchaseDate?.toDate?.() || d.data().purchaseDate,
+            expirationDate:
+              d.data().expirationDate?.toDate?.() || d.data().expirationDate,
+          })) as InventoryItem[];
+
+          // Mantener selectedItem actualizado si sigue existiendo
+          const currentSelected = get().selectedItem;
+          let nextSelected = currentSelected;
+          if (currentSelected) {
+            const refreshed = items.find((i) => i.id === currentSelected.id);
+            nextSelected = refreshed || null;
+          }
+
+          set({
+            items,
+            filteredItems: items,
+            selectedItem: nextSelected,
+            loading: false,
+          });
+
+          // Reaplica filtros activos
+          const currentFilters = get().filters;
+          if (
+            currentFilters.search ||
+            currentFilters.type ||
+            currentFilters.category ||
+            currentFilters.status ||
+            currentFilters.location ||
+            currentFilters.lowStock
+          ) {
+            get().applyFilters(currentFilters);
+          }
+
+          get().checkStockAlerts();
+        },
+        (error) => {
+          console.error("Error en subscripción de inventario:", error);
+          set({
+            loading: false,
+            error: error.message || "Error al sincronizar inventario",
+          });
+        }
+      );
+
+      set({
+        _itemsUnsubscribe: unsubscribe,
+        _itemsKey: key,
+      });
+    } catch (error) {
+      console.error("Error al iniciar subscribeToItems:", error);
+      set({
+        loading: false,
+        error: (error as Error).message,
+      });
+    }
+  },
+
+  unsubscribeFromItems: () => {
+    const unsub = get()._itemsUnsubscribe;
+    if (unsub) {
+      try {
+        unsub();
+      } catch (_) {
+        // noop
+      }
+    }
+    set({ _itemsUnsubscribe: null, _itemsKey: null });
+  },
+
+  subscribeToMovements: async (itemId?: string) => {
+    try {
+      set({ loadingMovements: true, error: null });
+      const auth = getAuth();
+      const user = auth.currentUser;
+      if (!user) {
+        throw new Error("Usuario no autenticado");
+      }
+      const tokenResult = await getIdTokenResult(user);
+      const clientId = tokenResult.claims["clientId"] as string;
+      const condominiumId = localStorage.getItem("condominiumId");
+      if (!condominiumId) {
+        throw new Error("Condominio no seleccionado");
+      }
+
+      const key = `${clientId}::${condominiumId}::${itemId || "ALL"}`;
+      if (get()._movementsKey === key && get()._movementsUnsubscribe) {
+        set({ loadingMovements: false });
+        return;
+      }
+
+      const prev = get()._movementsUnsubscribe;
+      if (prev) {
+        try {
+          prev();
+        } catch (_) {
+          // noop
+        }
+      }
+
+      const db = getFirestore();
+      const movementsRef = collection(
+        db,
+        `clients/${clientId}/condominiums/${condominiumId}/inventory_movements`
+      );
+
+      const q = itemId
+        ? query(
+            movementsRef,
+            where("itemId", "==", itemId),
+            orderBy("createdAt", "desc")
+          )
+        : query(movementsRef, orderBy("createdAt", "desc"));
+
+      const unsubscribe = onSnapshot(
+        q,
+        (snapshot) => {
+          const movements = snapshot.docs.map((d) => {
+            const data = d.data();
+            return {
+              id: d.id,
+              ...data,
+              createdAt: data.createdAt?.toDate?.() || data.createdAt,
+            };
+          }) as InventoryMovement[];
+
+          set({ movements, loadingMovements: false });
+        },
+        (error) => {
+          console.error("Error en subscripción de movimientos:", error);
+          set({
+            loadingMovements: false,
+            error: error.message || "Error al sincronizar movimientos",
+          });
+        }
+      );
+
+      set({
+        _movementsUnsubscribe: unsubscribe,
+        _movementsKey: key,
+      });
+    } catch (error) {
+      console.error("Error al iniciar subscribeToMovements:", error);
+      set({
+        loadingMovements: false,
+        error: (error as Error).message,
+      });
+    }
+  },
+
+  unsubscribeFromMovements: () => {
+    const unsub = get()._movementsUnsubscribe;
+    if (unsub) {
+      try {
+        unsub();
+      } catch (_) {
+        // noop
+      }
+    }
+    set({ _movementsUnsubscribe: null, _movementsKey: null });
+  },
+
+  subscribeToCategories: async () => {
+    try {
+      const auth = getAuth();
+      const user = auth.currentUser;
+      if (!user) {
+        throw new Error("Usuario no autenticado");
+      }
+      const tokenResult = await getIdTokenResult(user);
+      const clientId = tokenResult.claims["clientId"] as string;
+      const condominiumId = localStorage.getItem("condominiumId");
+      if (!condominiumId) {
+        throw new Error("Condominio no seleccionado");
+      }
+
+      const key = `${clientId}::${condominiumId}`;
+      if (get()._categoriesKey === key && get()._categoriesUnsubscribe) {
+        return;
+      }
+
+      const prev = get()._categoriesUnsubscribe;
+      if (prev) {
+        try {
+          prev();
+        } catch (_) {
+          // noop
+        }
+      }
+
+      const db = getFirestore();
+      const categoriesRef = collection(
+        db,
+        `clients/${clientId}/condominiums/${condominiumId}/inventory_categories`
+      );
+
+      const unsubscribe = onSnapshot(
+        categoriesRef,
+        (snapshot) => {
+          const categories = snapshot.docs.map((d) => ({
+            id: d.id,
+            ...d.data(),
+          })) as Category[];
+          set({ categories });
+        },
+        (error) => {
+          console.error("Error en subscripción de categorías:", error);
+          set({
+            error: error.message || "Error al sincronizar categorías",
+          });
+        }
+      );
+
+      set({
+        _categoriesUnsubscribe: unsubscribe,
+        _categoriesKey: key,
+      });
+    } catch (error) {
+      console.error("Error al iniciar subscribeToCategories:", error);
+      set({
+        error: (error as Error).message,
+      });
+    }
+  },
+
+  unsubscribeFromCategories: () => {
+    const unsub = get()._categoriesUnsubscribe;
+    if (unsub) {
+      try {
+        unsub();
+      } catch (_) {
+        // noop
+      }
+    }
+    set({ _categoriesUnsubscribe: null, _categoriesKey: null });
   },
 }));
 

@@ -27,6 +27,14 @@ export interface MaintenanceAppReport {
   supervisor: string;
   title: string;
   updatedAt: Timestamp;
+  /** Siempre "maintenance-app" para reportes creados desde la app móvil */
+  source?: "maintenance-app" | string;
+  /** Usuario que registró el reporte desde la app móvil */
+  registeredBy?: {
+    uid: string;
+    name: string;
+    email?: string;
+  };
 }
 
 interface MaintenanceAppReportsStore {

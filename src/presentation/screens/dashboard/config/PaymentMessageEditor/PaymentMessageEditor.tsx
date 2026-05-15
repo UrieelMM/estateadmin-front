@@ -11,6 +11,7 @@ import {
   DocumentIcon,
   ExclamationCircleIcon,
   XMarkIcon,
+  SparklesIcon,
 } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 import { useConfigStore } from "../../../../../store/useConfigStore";
@@ -20,6 +21,9 @@ import "react-quill/dist/quill.snow.css";
 import "./quill-dark-mode.css";
 
 // Tipos de documentos predefinidos
+// Si `aiOnly` es true, el documento NO se muestra en la opción
+// "Consultar documentos del condominio" del chatbot de WhatsApp; únicamente
+// se usa para alimentar el knowledge base de la IA (opción 6 del bot).
 const DOCUMENT_TYPES = [
   {
     id: "reglamento",
@@ -27,6 +31,7 @@ const DOCUMENT_TYPES = [
     icon: <DocumentTextIcon className="h-6 w-6" />,
     description:
       "Documento oficial que establece las normas y regulaciones del condominio.",
+    aiOnly: false,
   },
   {
     id: "manualConvivencia",
@@ -34,6 +39,7 @@ const DOCUMENT_TYPES = [
     icon: <BookOpenIcon className="h-6 w-6" />,
     description:
       "Guía para la convivencia armónica entre los residentes del condominio.",
+    aiOnly: false,
   },
   {
     id: "politicasAreaComun",
@@ -41,6 +47,15 @@ const DOCUMENT_TYPES = [
     icon: <UsersIcon className="h-6 w-6" />,
     description:
       "Normativas específicas para el uso de espacios compartidos y áreas comunes.",
+    aiOnly: false,
+  },
+  {
+    id: "aiKnowledgeBase",
+    name: "Conocimiento adicional para la IA",
+    icon: <SparklesIcon className="h-6 w-6" />,
+    description:
+      "Sube información extra (FAQs internas, instructivos, datos del condominio, contactos, políticas operativas, etc.) para que la IA del chatbot responda mejor las preguntas del menú '🤖 Preguntar al asistente'. Este documento NO se mostrará a los residentes en la opción de consultar documentos; solo se usa para entrenar las respuestas del asistente.",
+    aiOnly: true,
   },
 ];
 
@@ -502,10 +517,22 @@ const PaymentMessageEditor: React.FC = () => {
 
       {activeTab === "documents" && (
         <div className="px-8 py-6">
-          <p className="text-gray-600 dark:text-gray-300 mb-6 text-sm">
-            Suba documentos importantes que los residentes del condominio podrán
-            consultar a través del ChatBot de EstateAdmin.
-          </p>
+          <div className="mb-6 space-y-2">
+            <p className="text-gray-600 dark:text-gray-300 text-sm">
+              Suba documentos importantes que los residentes del condominio
+              podrán consultar a través del ChatBot de EstateAdmin.
+            </p>
+            <div className="flex items-start gap-2 p-3 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800/40 rounded-lg">
+              <SparklesIcon className="h-5 w-5 text-purple-600 dark:text-purple-300 flex-shrink-0 mt-0.5" />
+              <p className="text-xs text-purple-800 dark:text-purple-200">
+                Los documentos con etiqueta <strong>"Solo IA"</strong> NO son
+                visibles para los residentes en el chatbot; únicamente alimentan
+                las respuestas del asistente inteligente (opción "🤖 Preguntar
+                al asistente"). Úsalo para contexto adicional como FAQs,
+                contactos internos, políticas operativas, etc.
+              </p>
+            </div>
+          </div>
 
           <div className="grid gap-6 mb-6">
             {DOCUMENT_TYPES.map((docType) => {
@@ -518,6 +545,8 @@ const PaymentMessageEditor: React.FC = () => {
                   className={`bg-gray-50 dark:bg-gray-900 rounded-lg p-5 shadow-sm transition-all duration-200 ${
                     hasFile
                       ? "border-l-4 border-green-500 dark:border-green-400"
+                      : docType.aiOnly
+                      ? "border-l-4 border-purple-400 dark:border-purple-500"
                       : ""
                   }`}
                 >
@@ -526,15 +555,25 @@ const PaymentMessageEditor: React.FC = () => {
                       className={`flex-shrink-0 p-2 rounded-md ${
                         hasFile
                           ? "bg-green-100 dark:bg-green-900"
+                          : docType.aiOnly
+                          ? "bg-purple-100 dark:bg-purple-900/40"
                           : "bg-indigo-100 dark:bg-indigo-900"
                       }`}
                     >
                       {docType.icon}
                     </div>
                     <div className="ml-4 flex-1">
-                      <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                        {docType.name}
-                      </h3>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                          {docType.name}
+                        </h3>
+                        {docType.aiOnly && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-200 uppercase tracking-wide">
+                            <SparklesIcon className="h-3 w-3" />
+                            Solo IA — no visible para residentes
+                          </span>
+                        )}
+                      </div>
                       <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                         {docType.description}
                       </p>

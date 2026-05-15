@@ -17,6 +17,38 @@ import {
   deleteObject,
 } from "firebase/storage";
 import * as Sentry from "@sentry/react";
+import { knowledgeBaseService } from "../services/knowledgeBaseService";
+
+/**
+ * Sincroniza el knowledge base del chatbot (RAG) con el estado actual de
+ * un documento público. Llamarla después de subir/eliminar un PDF garantiza
+ * que la info anterior se purgue del índice vectorial.
+ *
+ * Es fire-and-forget: cualquier fallo se loguea pero no rompe la operación
+ * principal del admin.
+ */
+const syncKnowledgeBaseForDocument = async (
+  clientId: string,
+  condominiumId: string,
+  docKey: string,
+  action: "upsert" | "delete",
+): Promise<void> => {
+  try {
+    const auth = getAuth();
+    const user = auth.currentUser;
+    if (!user) return;
+    const idToken = await user.getIdToken();
+    await knowledgeBaseService.syncDocument(
+      { clientId, condominiumId, docKey, action },
+      idToken,
+    );
+  } catch (err) {
+    console.warn(
+      `No se pudo sincronizar knowledge base (${action}) para ${docKey}:`,
+      err,
+    );
+  }
+};
 
 /** Config general en clients/{clientId}. (Incluyendo darkMode) */
 export type Config = {
@@ -710,6 +742,15 @@ export const useConfigStore = create<ConfigState>()((set, get) => ({
         },
         uploading: { ...state.uploading, [documentId]: false },
       }));
+
+      // Sincronizar knowledge base del chatbot RAG (purga chunks viejos y
+      // re-indexa con el contenido nuevo). Fire-and-forget — no bloquea al admin.
+      void syncKnowledgeBaseForDocument(
+        clientId,
+        condominiumId,
+        documentId,
+        "upsert",
+      );
     } catch (err: any) {
       set((state) => ({
         error: err.message,
@@ -802,6 +843,14 @@ export const useConfigStore = create<ConfigState>()((set, get) => ({
             },
             uploading: { ...state.uploading, [documentId]: false },
           }));
+
+          // Purgar chunks del knowledge base del chatbot RAG.
+          void syncKnowledgeBaseForDocument(
+            clientId,
+            condominiumId,
+            documentId,
+            "delete",
+          );
         }
       }
     } catch (err: any) {

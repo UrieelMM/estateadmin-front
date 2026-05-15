@@ -103,14 +103,23 @@ service firebase.storage {
     }
 
     /* ─── Inventarios ─── */
+    /* Los usuarios de la app de mantenimiento pueden leer y subir imágenes
+       (PNG/JPG/etc.) para los ítems marcados como administrables por la app.
+       La verificación de "managedByMaintenanceApp" se hace en Firestore
+       (canMaintenanceUpdateInventoryItem). Storage no puede leer documentos,
+       así que limitamos por rol + content-type + size. */
     match /clients/{clientId}/condominiums/{condominiumId}/inventory_items/{itemId}/{fileName} {
-      allow read:    if belongsToClient(clientId) || isSuperAdmin();
+      allow read:    if belongsToClient(clientId)
+                       || (isMaintenanceUser() && belongsToClient(clientId))
+                       || isSuperAdmin();
       allow create, update: if (
         (isAdminOrAssistant() && belongsToClient(clientId) && isValidFileSize() && isValidContentType())
+        || (isMaintenanceUser() && belongsToClient(clientId) && isValidFileSize() && request.resource.contentType.matches('image/.*'))
         || isSuperAdmin()
       );
       allow delete:  if (
         (isAdmin() && belongsToClient(clientId))
+        || (isMaintenanceUser() && belongsToClient(clientId))
         || isSuperAdmin()
       );
     }

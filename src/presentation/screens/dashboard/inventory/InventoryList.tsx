@@ -32,9 +32,12 @@ const InventoryList: React.FC = () => {
     loading,
     stockAlerts,
     filters,
-    fetchItems,
-    fetchCategories,
-    fetchMovements,
+    subscribeToItems,
+    unsubscribeFromItems,
+    subscribeToCategories,
+    unsubscribeFromCategories,
+    subscribeToMovements,
+    unsubscribeFromMovements,
     addItem,
     updateItem,
     deleteItem,
@@ -56,12 +59,26 @@ const InventoryList: React.FC = () => {
   const [ selectedItem, setSelectedItem ] = useState<InventoryItem | null>( null );
   const [ submitLoading, setSubmitLoading ] = useState( false );
 
-  // Cargar datos al montar el componente
+  // Suscripciones en tiempo real con Firestore. Cuando los usuarios de la
+  // app de mantenimiento editen un ítem o registren un movimiento, el cambio
+  // se reflejará aquí automáticamente sin tener que recargar.
   useEffect( () => {
-    fetchItems();
-    fetchCategories();
-    fetchMovements();
-  }, [ fetchItems, fetchCategories, fetchMovements ] );
+    subscribeToItems();
+    subscribeToCategories();
+    subscribeToMovements();
+    return () => {
+      unsubscribeFromItems();
+      unsubscribeFromCategories();
+      unsubscribeFromMovements();
+    };
+  }, [
+    subscribeToItems,
+    subscribeToCategories,
+    subscribeToMovements,
+    unsubscribeFromItems,
+    unsubscribeFromCategories,
+    unsubscribeFromMovements,
+  ] );
 
   // Handlers para modales
   const handleAddItem = async ( data: Partial<InventoryItemFormData> ) => {
@@ -240,6 +257,7 @@ const InventoryList: React.FC = () => {
     [ ItemStatus.ACTIVE ]: "Activo",
     [ ItemStatus.INACTIVE ]: "Inactivo",
     [ ItemStatus.MAINTENANCE ]: "Mantenimiento",
+    [ ItemStatus.RETIRED ]: "Retirado",
     [ ItemStatus.DISCONTINUED ]: "Descontinuado",
   };
 

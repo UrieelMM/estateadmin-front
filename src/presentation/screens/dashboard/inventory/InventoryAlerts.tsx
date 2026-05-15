@@ -7,7 +7,8 @@ import Modal from "../../../../components/Modal";
 const InventoryAlerts: React.FC = () => {
   const {
     stockAlerts,
-    fetchItems,
+    subscribeToItems,
+    unsubscribeFromItems,
     loading,
     changeItemStatus,
     deleteItem,
@@ -27,10 +28,15 @@ const InventoryAlerts: React.FC = () => {
   );
 
   useEffect(() => {
-    fetchItems();
+    // Suscripción en tiempo real: si la app de mantenimiento consume stock,
+    // las alertas reflejarán el cambio sin recargar.
+    subscribeToItems();
     // Aplicar filtro de stock bajo después de cargar los items
     applyFilters({ lowStock: true });
-  }, [fetchItems, applyFilters]);
+    return () => {
+      unsubscribeFromItems();
+    };
+  }, [subscribeToItems, unsubscribeFromItems, applyFilters]);
 
   const handleViewItem = (id: string) => {
     navigate(`/dashboard/inventory/item/${id}`);
