@@ -1,12 +1,14 @@
-import { Fragment, useState, useEffect } from "react";
+import { Fragment, useState, useEffect, useCallback } from "react";
 import { Disclosure, Menu, Transition } from "@headlessui/react";
 import { Link, useNavigate } from "react-router-dom";
 import { SunIcon, MoonIcon } from "@heroicons/react/24/solid";
 import {
   Cog6ToothIcon,
   ArrowRightStartOnRectangleIcon,
+  MagnifyingGlassIcon,
 } from "@heroicons/react/24/outline";
 import { motion } from "framer-motion";
+import GlobalSearch from "./GlobalSearch";
 
 // ─── Animation constants (Emil Kowalski philosophy) ────────────────────────
 // Strong ease-out: starts fast, gives instant visual feedback
@@ -56,6 +58,20 @@ const Navbar = () => {
   const { isDarkMode, toggleDarkMode } = useTheme();
   const navigate = useNavigate();
   const { logoutUser } = useAuthStore();
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+
+  // ─── Cmd/Ctrl + K shortcut ───────────────────────────────────────────────
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+      e.preventDefault();
+      setIsSearchOpen((prev) => !prev);
+    }
+  }, []);
+
+  useEffect(() => {
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [handleKeyDown]);
 
   const userPhoto =
     userData?.photoURL ||
@@ -82,7 +98,8 @@ const Navbar = () => {
   };
 
   return (
-    <motion.div
+    <>
+      <motion.div
       initial={{ y: -16, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.4, ease: EASE_OUT }}
@@ -141,6 +158,26 @@ const Navbar = () => {
               animate="visible"
               className="flex items-center gap-1 sm:gap-2 shrink-0"
             >
+              {/* ── Search trigger ── */}
+              <motion.div variants={itemVariants}>
+                <motion.button
+                  whileTap={{ scale: 0.9 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 28 }}
+                  onClick={() => setIsSearchOpen(true)}
+                  aria-label="Buscar (Cmd+K)"
+                  title="Buscar (⌘K)"
+                  className="relative flex items-center gap-2 h-9 pl-3 pr-3 sm:pr-4 rounded-xl bg-white/15 hover:bg-white/25 dark:bg-white/[0.07] dark:hover:bg-white/[0.12] border border-white/20 dark:border-white/[0.08] transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 dark:focus-visible:ring-indigo-500/60"
+                >
+                  <MagnifyingGlassIcon className="w-4 h-4 text-white/80 dark:text-gray-400" />
+                  <span className="hidden sm:block text-xs text-white/60 dark:text-gray-500 font-medium pr-1">
+                    Buscar…
+                  </span>
+                  <kbd className="hidden sm:inline-flex items-center gap-0.5 rounded border border-white/20 dark:border-white/10 bg-white/10 dark:bg-white/5 px-1.5 py-0.5 text-[10px] text-white/50 dark:text-gray-500 font-sans">
+                    ⌘K
+                  </kbd>
+                </motion.button>
+              </motion.div>
+
               {/* Dark-mode toggle */}
               <motion.div variants={itemVariants}>
                 <motion.button
@@ -363,6 +400,10 @@ const Navbar = () => {
         </div>
       </Disclosure>
     </motion.div>
+
+    {/* ── Global Search overlay (rendered outside the fixed navbar flow) ── */}
+    <GlobalSearch isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
+    </>
   );
 };
 

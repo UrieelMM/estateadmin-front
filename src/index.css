@@ -307,3 +307,10 @@ select[size] optgroup {
     box-shadow: 0 0 40px rgba(99, 102, 241, 0.8);
   }
 }
+
+/* Solución robusta: Selecciona cualquier elemento cuyo ID comience con 'headlessui-dialog-' y tenga rol 'dialog' */
+[id^="headlessui-dialog-"][role="dialog"] {
+  z-index: 999 !important;
+}
+
+

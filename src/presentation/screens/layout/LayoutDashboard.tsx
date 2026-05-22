@@ -465,7 +465,7 @@ const LayoutDashboard = ({ children }: Props) => {
           animate={{ x: 0, opacity: 1 }}
           transition={{ duration: 0.4, ease: EASE }}
           className={classNames(
-            "fixed inset-y-0 left-0 z-50 flex flex-col h-screen",
+            "fixed inset-y-0 left-0 z-[25] flex flex-col h-screen",
             "bg-white dark:bg-gray-900 border-r border-gray-100 dark:border-gray-800",
             "transition-[width] duration-300 ease-in-out",
             isDesktopMenuCollapsed ? "w-16" : "w-52 md:w-56"
@@ -578,11 +578,12 @@ const LayoutDashboard = ({ children }: Props) => {
       {/* ── NAVBAR FIJO ── */}
       <div
         className={classNames(
-          "fixed top-0 right-0 z-40",
+          "fixed top-0 right-0",
           "transition-[left] duration-300 ease-in-out",
           // Se desplaza junto con el sidebar (expandido o colapsado)
           isDesktopMenuCollapsed ? "left-0 xl:left-16" : "left-0 xl:left-52"
         )}
+        style={{ zIndex: 10 }}
       >
         <Navbar />
       </div>
