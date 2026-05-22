@@ -18,6 +18,7 @@ import LoadingApp from "../presentation/components/shared/loaders/LoadingApp";
 const LayoutDashboard = React.lazy(
   () => import("../presentation/screens/layout/LayoutDashboard"),
 );
+const InitialSetupRoute = React.lazy(() => import("./InitialSetupRoute"));
 const SuperAdminLayout = React.lazy(
   () => import("../presentation/screens/layout/SuperAdminLayout"),
 );
@@ -177,6 +178,10 @@ export const AppRouterPage = () => {
 
           {/* Rutas protegidas para usuarios normales */}
           <Route element={<ProtectedRoute />}>
+            <Route
+              path="/dashboard/initial-setup"
+              element={<InitialSetupRoute />}
+            />
             <Route
               path="/dashboard"
               element={

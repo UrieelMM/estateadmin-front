@@ -66,6 +66,7 @@ interface NewClientData {
   condominiumLimit: number;
   currency: string; // Movido del nivel de condominio al nivel del cliente
   language: string; // Movido del nivel de condominio al nivel del cliente
+  coupon?: string;
   condominiumInfo: {
     name: string;
     address: string;

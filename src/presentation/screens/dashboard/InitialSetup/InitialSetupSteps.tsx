@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import toast from "react-hot-toast";
 import { useConfigStore } from "../../../../store/useConfigStore";
 import { useFileCompression } from "../../../../hooks/useFileCompression";
@@ -46,8 +46,11 @@ import {
   addDoc,
   serverTimestamp,
   updateDoc,
+  getDoc,
 } from "firebase/firestore";
 import { getAuth, getIdTokenResult } from "firebase/auth";
+import { useLocation } from "react-router-dom";
+import { getInitialSubscriptionPaymentStatus } from "../../../../routes/initialSetupStatus";
 
 const InfoTooltip = ( { text }: { text: string; } ) => {
   const [ open, setOpen ] = useState( false );
@@ -76,12 +79,20 @@ const InfoTooltip = ( { text }: { text: string; } ) => {
   );
 };
 
-const InitialSetupSteps = () => {
+type InitialSetupStepsProps = {
+  initialStep?: number;
+};
+
+const InitialSetupSteps = ( { initialStep }: InitialSetupStepsProps ) => {
+  const location = useLocation();
   const TOTAL_STEPS = 7;
   const INITIAL_SETUP_STRIPE_PENDING_KEY = "initial_setup_stripe_pending";
   const USERS_IMPORT_TEMPLATE_URL =
     "https://res.cloudinary.com/dz5tntwl1/raw/upload/v1772080563/OmniPixel/plantilla_ejemplo_g7mtmu.xlsx";
-  const [ currentStep, setCurrentStep ] = useState( 1 );
+  const queryInitialStep =
+    new URLSearchParams( location.search ).get( "step" ) === "payment" ? 7 : 1;
+  const resolvedInitialStep = initialStep ?? queryInitialStep;
+  const [ currentStep, setCurrentStep ] = useState( resolvedInitialStep );
   const { isDarkMode, toggleDarkMode } = useTheme();
   const { fetchCondominiums } = useCondominiumStore();
   const [ userData, setUserData ] = useState( {
@@ -142,15 +153,23 @@ const InitialSetupSteps = () => {
   } | null>( null );
   const [ loadingInvoice, setLoadingInvoice ] = useState( false );
   const [ savingBeforePayment, setSavingBeforePayment ] = useState( false );
+  const hasLoadedPaymentInvoiceForStep = useRef( false );
+  const [ couponCode, setCouponCode ] = useState( "" );
+  const [ applyingCoupon, setApplyingCoupon ] = useState( false );
+  const [ couponBypassGranted, setCouponBypassGranted ] = useState( false );
 
   // Estado para controlar la UI tras redirección de Stripe
   const [ paymentState, setPaymentState ] = useState<"pending" | "cancel" | "error" | "success">( "pending" );
 
   const { config, fetchConfig, updateConfig } = useConfigStore();
-  const { createAccount } = useFinancialAccountsStore();
+  const { accounts, createAccount, fetchAccounts } = useFinancialAccountsStore();
   const { initiateStripePayment, checkPaymentStatus } = useClientInvoicesStore();
 
   const { compressFile, isCompressing } = useFileCompression();
+
+  useEffect( () => {
+    setCurrentStep( resolvedInitialStep );
+  }, [ resolvedInitialStep ] );
 
   const isSubscriptionInvoice = ( data: Record<string, any> ) => {
     const invoiceType = String( data.invoiceType || "" ).toLowerCase();
@@ -271,8 +290,38 @@ const InitialSetupSteps = () => {
         country: config.country || "",
         businessActivity: config.businessActivity || "",
       } );
+
+      setLogoPreview( config.logoUrl || config.logo || null );
+      setLogoReportsPreview( config.logoReports || null );
+      setSignReportsPreview( config.signatureUrl || null );
     }
   }, [ config ] );
+
+  useEffect( () => {
+    fetchAccounts().catch( ( error ) => {
+      console.error( "Error al cargar cuentas financieras:", error );
+    } );
+  }, [ fetchAccounts ] );
+
+  useEffect( () => {
+    const hasAccountInput =
+      !!accountData.name.trim() ||
+      !!accountData.type.trim() ||
+      !!accountData.description.trim() ||
+      Number( accountData.initialBalance || 0 ) > 0;
+
+    if ( hasAccountInput ) return;
+
+    const savedAccount = accounts.find( ( account ) => account.active ) || accounts[ 0 ];
+    if ( !savedAccount ) return;
+
+    setAccountData( {
+      name: savedAccount.name || "",
+      type: savedAccount.type || "",
+      initialBalance: Number( savedAccount.initialBalance || 0 ),
+      description: savedAccount.description || "",
+    } );
+  }, [ accounts, accountData ] );
   // Función para cargar la factura pendiente del cliente
   const loadPaymentInvoice = async (): Promise<boolean> => {
     setLoadingInvoice( true );
@@ -326,11 +375,24 @@ const InitialSetupSteps = () => {
     } catch ( err ) {
       console.error( "Error al cargar factura pendiente:", err );
       setPaymentState( "error" ); // Set error state if loading fails
-      return false;
+      return true;
     } finally {
       setLoadingInvoice( false );
     }
   };
+
+  useEffect( () => {
+    if (
+      currentStep !== 7 ||
+      paymentInvoice ||
+      loadingInvoice ||
+      hasLoadedPaymentInvoiceForStep.current
+    ) {
+      return;
+    }
+    hasLoadedPaymentInvoiceForStep.current = true;
+    loadPaymentInvoice();
+  }, [ currentStep, paymentInvoice, loadingInvoice ] );
 
   // Función para avanzar pasos con validaciones
   const nextStep = async () => {
@@ -359,7 +421,7 @@ const InitialSetupSteps = () => {
         return;
       }
     } else if ( currentStep === 3 ) {
-      if ( !signReportsFile ) {
+      if ( !signReportsFile && !signReportsPreview ) {
         toast.error( "La firma para reportes es obligatoria." );
         return;
       }
@@ -484,6 +546,17 @@ const InitialSetupSteps = () => {
         }
       }
 
+      await setDoc(
+        doc( db, "clients", clientId ),
+        {
+          initialSetupCompleted: false,
+          initialSetupPaymentPending: true,
+          initialSetupPaymentStepReachedAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        },
+        { merge: true }
+      );
+
       toast.success( "Datos guardados correctamente" );
 
       // 4. Cargar la factura pendiente
@@ -559,10 +632,58 @@ const InitialSetupSteps = () => {
     } ) );
   };
 
+  const hasInitialSetupPaymentAccess = async (): Promise<boolean> => {
+    const auth = getAuth();
+    const user = auth.currentUser;
+    if ( !user ) throw new Error( "Usuario no autenticado" );
+
+    const tokenResult = await getIdTokenResult( user );
+    const clientId = tokenResult.claims[ "clientId" ] as string;
+    if ( !clientId ) throw new Error( "clientId no disponible en el token" );
+
+    const db = getFirestore();
+    const clientDoc = await getDoc( doc( db, "clients", clientId ) );
+    const clientData = clientDoc.exists() ? clientDoc.data() || {} : {};
+    if ( clientData.initialSetupPaymentBypassed ) return true;
+
+    const condominiumId = localStorage.getItem( "condominiumId" );
+    if ( !condominiumId ) return false;
+
+    const paymentStatus = await getInitialSubscriptionPaymentStatus(
+      clientId,
+      condominiumId
+    );
+    return paymentStatus.hasPaidSubscription;
+  };
+
   // Función para finalizar el proceso
-  const handleFinish = async () => {
+  const handleFinish = async ( options?: { skipPaymentCheck?: boolean } ) => {
     setIsSubmitting( true );
     try {
+      if ( !options?.skipPaymentCheck && !couponBypassGranted ) {
+        const hasRequiredInvoicePending = await loadPaymentInvoice();
+        if ( hasRequiredInvoicePending ) {
+          setCurrentStep( 7 );
+          setPaymentState( "pending" );
+          toast.error(
+            "Debes completar el pago de la suscripción antes de entrar al dashboard."
+          );
+          setIsSubmitting( false );
+          return;
+        }
+
+        const hasPaymentAccess = await hasInitialSetupPaymentAccess();
+        if ( !hasPaymentAccess ) {
+          setCurrentStep( 7 );
+          setPaymentState( "pending" );
+          toast.error(
+            "No encontramos un pago completado ni un cupón válido. Debes completar el pago para entrar al dashboard."
+          );
+          setIsSubmitting( false );
+          return;
+        }
+      }
+
       const auth = getAuth();
       const user = auth.currentUser;
       if ( !user ) throw new Error( "Usuario no autenticado" );
@@ -613,6 +734,9 @@ const InitialSetupSteps = () => {
         configDocRef,
         {
           initialSetupCompleted: true,
+          initialSetupPaymentPending: false,
+          initialSetupPaymentCompletedAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
         },
         { merge: true }
       );
@@ -627,6 +751,50 @@ const InitialSetupSteps = () => {
       console.error( "Error al finalizar configuración:", error );
       toast.error( error.message || "Error al completar la configuración" );
       setIsSubmitting( false );
+    }
+  };
+
+  const handleApplyCoupon = async () => {
+    const normalizedCoupon = couponCode.trim().toUpperCase();
+    if ( normalizedCoupon.length < 8 ) {
+      toast.error( "El cupón debe tener al menos 8 caracteres." );
+      return;
+    }
+
+    setApplyingCoupon( true );
+    try {
+      const auth = getAuth();
+      const user = auth.currentUser;
+      if ( !user ) throw new Error( "Usuario no autenticado" );
+
+      const response = await fetch(
+        `${ import.meta.env.VITE_URL_SERVER }/users-auth/redeem-initial-setup-coupon`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${ await user.getIdToken() }`,
+          },
+          body: JSON.stringify( { coupon: normalizedCoupon } ),
+        }
+      );
+
+      const data = await response.json().catch( () => ( {} ) );
+      if ( !response.ok || !data?.success ) {
+        throw new Error( data?.message || "No se pudo validar el cupón." );
+      }
+
+      sessionStorage.removeItem( INITIAL_SETUP_STRIPE_PENDING_KEY );
+      setCouponBypassGranted( true );
+      setPaymentInvoice( null );
+      setPaymentState( "pending" );
+      toast.success( "Cupón validado. Finalizando configuración..." );
+      await handleFinish( { skipPaymentCheck: true } );
+    } catch ( error: any ) {
+      console.error( "Error al aplicar cupón:", error );
+      toast.error( error.message || "No se pudo validar el cupón." );
+    } finally {
+      setApplyingCoupon( false );
     }
   };
 
@@ -912,12 +1080,12 @@ const InitialSetupSteps = () => {
                 <InfoTooltip text="Se muestra en el sistema (barra superior y elementos de identidad visual del condominio/cliente)." />
               </div>
               <label className="inline-flex items-center space-x-2 cursor-pointer bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-md transition-colors">
-                { logoFile ? (
+                { logoFile || logoPreview ? (
                   <CheckIcon className="h-5 w-5" />
                 ) : (
                   <PhotoIcon className="h-5 w-5" />
                 ) }
-                <span>{ logoFile ? "Cambiar Logo" : "Seleccionar" }</span>
+                <span>{ logoFile || logoPreview ? "Cambiar Logo" : "Seleccionar" }</span>
                 <input
                   type="file"
                   accept="image/*"
@@ -941,12 +1109,12 @@ const InitialSetupSteps = () => {
                 <InfoTooltip text="Se usa en encabezados de PDF/Excel. Si no se carga, se utiliza el estilo por defecto del sistema." />
               </div>
               <label className="inline-flex items-center space-x-2 cursor-pointer bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-md transition-colors">
-                { logoReportsFile ? (
+                { logoReportsFile || logoReportsPreview ? (
                   <CheckIcon className="h-5 w-5" />
                 ) : (
                   <PhotoIcon className="h-5 w-5" />
                 ) }
-                <span>{ logoReportsFile ? "Cambiar Logo" : "Seleccionar" }</span>
+                <span>{ logoReportsFile || logoReportsPreview ? "Cambiar Logo" : "Seleccionar" }</span>
                 <input
                   type="file"
                   accept="image/*"
@@ -970,12 +1138,12 @@ const InitialSetupSteps = () => {
                 <InfoTooltip text="Firma que se imprime en reportes del sistema para validar su emisión." />
               </div>
               <label className="inline-flex items-center space-x-2 cursor-pointer bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-md transition-colors">
-                { signReportsFile ? (
+                { signReportsFile || signReportsPreview ? (
                   <CheckIcon className="h-5 w-5" />
                 ) : (
                   <PhotoIcon className="h-5 w-5" />
                 ) }
-                <span>{ signReportsFile ? "Cambiar Firma" : "Seleccionar" }</span>
+                <span>{ signReportsFile || signReportsPreview ? "Cambiar Firma" : "Seleccionar" }</span>
                 <input
                   type="file"
                   accept="image/*"
@@ -1225,6 +1393,32 @@ const InitialSetupSteps = () => {
                     Contactar a Soporte
                   </a>
                 </div>
+                <div className="mt-5 rounded-xl border border-indigo-100 bg-white/80 p-4 text-left dark:border-indigo-900 dark:bg-gray-800/80">
+                  <label className="block text-sm font-semibold text-gray-800 dark:text-gray-100">
+                    ¿Tienes un cupón de regalo?
+                  </label>
+                  <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+                    <input
+                      type="text"
+                      value={ couponCode }
+                      onChange={ ( e ) => setCouponCode( e.target.value.toUpperCase().trim() ) }
+                      placeholder="Ingresa tu cupón"
+                      minLength={ 8 }
+                      className="min-w-0 flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm uppercase text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+                    />
+                    <button
+                      type="button"
+                      onClick={ handleApplyCoupon }
+                      disabled={ applyingCoupon || isSubmitting }
+                      className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:opacity-60"
+                    >
+                      { applyingCoupon ? "Validando..." : "Aplicar cupón" }
+                    </button>
+                  </div>
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    El cupón se valida de forma segura con EstateAdmin.
+                  </p>
+                </div>
               </div>
             ) }
 
@@ -1363,6 +1557,33 @@ const InitialSetupSteps = () => {
                   </div>
                 ) }
 
+                <div className="w-full rounded-xl border border-indigo-100 bg-indigo-50/60 p-4 dark:border-indigo-900 dark:bg-indigo-900/20">
+                  <label className="block text-sm font-semibold text-gray-800 dark:text-gray-100">
+                    Cupón de regalo
+                  </label>
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    Si tu alta incluye un cupón asignado por el equipo comercial, puedes finalizar sin pago.
+                  </p>
+                  <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                    <input
+                      type="text"
+                      value={ couponCode }
+                      onChange={ ( e ) => setCouponCode( e.target.value.toUpperCase().trim() ) }
+                      placeholder="Mínimo 8 caracteres"
+                      minLength={ 8 }
+                      className="min-w-0 flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm uppercase text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+                    />
+                    <button
+                      type="button"
+                      onClick={ handleApplyCoupon }
+                      disabled={ applyingCoupon || isSubmitting }
+                      className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:opacity-60"
+                    >
+                      { applyingCoupon ? "Validando..." : "Aplicar cupón" }
+                    </button>
+                  </div>
+                </div>
+
                 {/* Sello de seguridad */ }
                 <div className="flex items-center gap-2 text-xs text-gray-400 dark:text-gray-500">
                   <LockClosedIcon className="h-3.5 w-3.5" />
@@ -1440,9 +1661,9 @@ const InitialSetupSteps = () => {
                 Siguiente
                 <ChevronRightIcon className="h-5 w-5 ml-1" />
               </button>
-            ) : ( !paymentInvoice ) ? (
+            ) : ( !paymentInvoice && paymentState === "pending" && !loadingInvoice ) ? (
               <button
-                onClick={ handleFinish }
+                onClick={ () => handleFinish() }
                 disabled={ isSubmitting }
                 className="flex items-center bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-700 dark:hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded transition-colors disabled:opacity-50"
               >

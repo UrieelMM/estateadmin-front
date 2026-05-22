@@ -55,6 +55,7 @@ const NewClientForm: React.FC<NewClientFormProps> = ( {
 
     currency: "MXN",
     language: "es-MX",
+    coupon: "",
     condominiumInfo: {
       name: "",
       address: "",
@@ -235,6 +236,18 @@ const NewClientForm: React.FC<NewClientFormProps> = ( {
     return password;
   };
 
+  const generateCoupon = () => {
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    let coupon = "GIFT";
+    for ( let i = 0; i < 8; i++ ) {
+      coupon += chars.charAt( Math.floor( Math.random() * chars.length ) );
+    }
+    setFormData( ( prev ) => ( {
+      ...prev,
+      coupon,
+    } ) );
+  };
+
   const copyToClipboard = async ( text: string, label: string ) => {
     try {
       await navigator.clipboard.writeText( text );
@@ -306,9 +319,16 @@ const NewClientForm: React.FC<NewClientFormProps> = ( {
       return;
     }
 
+    const normalizedCoupon = formData.coupon.trim().toUpperCase();
+    if ( normalizedCoupon && normalizedCoupon.length < 8 ) {
+      setFormError( "El cupón debe tener al menos 8 caracteres." );
+      return;
+    }
+
     const password = generatePassword();
     const submitData = {
       ...formData,
+      coupon: normalizedCoupon || undefined,
       password,
     };
 
@@ -763,6 +783,35 @@ const NewClientForm: React.FC<NewClientFormProps> = ( {
                   <option value="biannual">Semestral</option>
                   <option value="annual">Anual</option>
                 </select>
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Cupón de regalo
+                </label>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <input
+                    type="text"
+                    name="coupon"
+                    value={ formData.coupon }
+                    onChange={ ( e ) =>
+                      setFormData( ( prev ) => ( {
+                        ...prev,
+                        coupon: e.target.value.toUpperCase().trim(),
+                      } ) )
+                    }
+                    minLength={ 8 }
+                    placeholder="Opcional, mínimo 8 caracteres"
+                    className="w-full px-2 h-[42px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400"
+                  />
+                  <button
+                    type="button"
+                    onClick={ generateCoupon }
+                    className="px-3 h-[42px] rounded-lg border border-indigo-200 bg-indigo-50 text-sm font-medium text-indigo-700 hover:bg-indigo-100 dark:border-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-200 dark:hover:bg-indigo-900/50"
+                  >
+                    Generar
+                  </button>
+                </div>
               </div>
 
               <div className="md:col-span-3">

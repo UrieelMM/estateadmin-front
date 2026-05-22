@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { Link, Navigate, useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
 import { Disclosure } from "@headlessui/react";
@@ -22,13 +22,12 @@ import Loading from "../../components/shared/loaders/Loading";
 import { auth } from "../../../firebase/firebase";
 import logo from "../../../assets/logo.png";
 import ChatBot from "../IA/ChatBot";
-import InitialSetupSteps from "../dashboard/InitialSetup/InitialSetupSteps";
-import { getAuth, getIdTokenResult } from "firebase/auth";
-import { getFirestore, doc, getDoc } from "firebase/firestore";
+import { getAuth } from "firebase/auth";
 import { useSyncClientPlan } from "../../../hooks/useSyncClientPlan";
 import { useClientPlanStore } from "../../../store/clientPlanStore";
 import SupportModal from "../../components/shared/forms/SupportModal";
 import TutorialsMenu from "../../components/shared/Help/TutorialsMenu";
+import { resolveInitialSetupStatus } from "../../../routes/initialSetupStatus";
 
 // Función global de diagnóstico (accesible desde la consola del navegador)
 declare global {
@@ -86,6 +85,7 @@ const LayoutDashboard = ({ children }: Props) => {
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [loadingSession, setLoadingSession] = useState(true);
   const [showInitialSetup, setShowInitialSetup] = useState<boolean | null>(null);
+  const [initialSetupStep, setInitialSetupStep] = useState(1);
   const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
 
   useSyncClientPlan();
@@ -124,19 +124,13 @@ const LayoutDashboard = ({ children }: Props) => {
   useEffect(() => {
     const checkInitialSetup = async () => {
       try {
-        const auth = getAuth();
-        const user = auth.currentUser;
-        if (!user) { setShowInitialSetup(false); return; }
-        const tokenResult = await getIdTokenResult(user);
-        const clientId = tokenResult.claims["clientId"] as string;
-        if (!clientId) { setShowInitialSetup(false); return; }
-        const db = getFirestore();
-        const configDocRef = doc(db, "clients", clientId);
-        const configDoc = await getDoc(configDocRef);
-        setShowInitialSetup(!configDoc.exists() || !configDoc.data()?.initialSetupCompleted);
+        const status = await resolveInitialSetupStatus();
+        setInitialSetupStep(status.initialStep);
+        setShowInitialSetup(status.requiresInitialSetup);
       } catch (error) {
         console.error("Error al verificar configuración inicial:", error);
-        setShowInitialSetup(false);
+        setInitialSetupStep(7);
+        setShowInitialSetup(true);
       }
     };
     checkInitialSetup();
@@ -172,7 +166,11 @@ const LayoutDashboard = ({ children }: Props) => {
     return <Loading />;
   }
   if (showInitialSetup) {
-    return <InitialSetupSteps />;
+    const setupUrl =
+      initialSetupStep === 7
+        ? "/dashboard/initial-setup?step=payment"
+        : "/dashboard/initial-setup";
+    return <Navigate to={setupUrl} replace />;
   }
 
   // ── Renderer de ítem de navegación (compartido desktop & mobile) ──────────

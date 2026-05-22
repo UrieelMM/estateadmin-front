@@ -334,8 +334,7 @@ const KnowledgeBaseSettings = () => {
                   {askResult.relevantCount === 0 ? (
                     <p className="mt-1 text-xs text-amber-700 dark:text-amber-300">
                       ⚠️ No se encontró información suficientemente relevante
-                      (umbral &lt; {askResult.threshold}). Se devuelve el
-                      mensaje de fallback.
+                      (umbral &lt; {askResult.threshold}).
                     </p>
                   ) : (
                     <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">
