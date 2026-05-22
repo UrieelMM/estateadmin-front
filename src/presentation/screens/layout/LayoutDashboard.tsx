@@ -575,6 +575,18 @@ const LayoutDashboard = ({ children }: Props) => {
         </motion.aside>
       </div>
 
+      {/* ── NAVBAR FIJO ── */}
+      <div
+        className={classNames(
+          "fixed top-0 right-0 z-40",
+          "transition-[left] duration-300 ease-in-out",
+          // Se desplaza junto con el sidebar (expandido o colapsado)
+          isDesktopMenuCollapsed ? "left-0 xl:left-16" : "left-0 xl:left-52"
+        )}
+      >
+        <Navbar />
+      </div>
+
       {/*
         CONTENIDO PRINCIPAL
       */}
@@ -584,7 +596,8 @@ const LayoutDashboard = ({ children }: Props) => {
           isDesktopMenuCollapsed ? "xl:ml-16" : "xl:ml-52"
         )}
       >
-        <Navbar />
+        {/* Spacer para compensar el navbar fixed (h-16 = 64px) */}
+        <div className="h-16" aria-hidden="true" />
         <main className="p-4 bg-gray-50 dark:bg-gray-800 min-h-screen pl-6">
           {children}
         </main>

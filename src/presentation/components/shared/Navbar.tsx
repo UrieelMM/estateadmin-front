@@ -2,11 +2,19 @@ import { Fragment, useState, useEffect } from "react";
 import { Disclosure, Menu, Transition } from "@headlessui/react";
 import { Link, useNavigate } from "react-router-dom";
 import { SunIcon, MoonIcon } from "@heroicons/react/24/solid";
+import {
+  Cog6ToothIcon,
+  ArrowRightStartOnRectangleIcon,
+} from "@heroicons/react/24/outline";
 import { motion } from "framer-motion";
 
-const EASE_OUT = [0.16, 1, 0.3, 1] as const;
-const SPRING = { type: "spring", stiffness: 380, damping: 22 } as const;
+// ─── Animation constants (Emil Kowalski philosophy) ────────────────────────
+// Strong ease-out: starts fast, gives instant visual feedback
+const EASE_OUT: [number, number, number, number] = [0.23, 1, 0.32, 1];
+const SPRING = { type: "spring", stiffness: 400, damping: 28 } as const;
+
 const MotionMenuButton = motion(Menu.Button);
+
 import ConboBox from "./ComboBox";
 import { getCurrentDateWithGreeting } from "../../../utils/getCurrentDate";
 import useUserStore from "../../../store/UserDataStore";
@@ -19,9 +27,28 @@ function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(" ");
 }
 
+// ─── Staggered children variants ───────────────────────────────────────────
+const containerVariants = {
+  hidden: {},
+  visible: {
+    transition: { staggerChildren: 0.06, delayChildren: 0.08 },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: -6 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.3, ease: EASE_OUT },
+  },
+};
+
+// ─── Component ──────────────────────────────────────────────────────────────
 const Navbar = () => {
   const [currentDate, setCurrentDate] = useState("");
   const [userData, setUserData] = useState<UserData | null>(null);
+
   const { fetchUserData, user } = useUserStore((state) => ({
     user: state.user,
     fetchUserData: state.fetchUserData,
@@ -29,9 +56,12 @@ const Navbar = () => {
   const { isDarkMode, toggleDarkMode } = useTheme();
   const navigate = useNavigate();
   const { logoutUser } = useAuthStore();
+
   const userPhoto =
     userData?.photoURL ||
     (userData as UserData & { photoUrl?: string })?.photoUrl;
+
+  const userInitial = userData?.name?.charAt(0)?.toUpperCase() ?? "?";
 
   useEffect(() => {
     setCurrentDate(getCurrentDateWithGreeting(isDarkMode));
@@ -39,9 +69,7 @@ const Navbar = () => {
 
   useEffect(() => {
     fetchUserData();
-    if (user) {
-      setUserData(user);
-    }
+    if (user) setUserData(user);
   }, [fetchUserData, user]);
 
   const handleLogout = async () => {
@@ -55,97 +83,206 @@ const Navbar = () => {
 
   return (
     <motion.div
-      initial={{ y: -10, opacity: 0 }}
+      initial={{ y: -16, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
-      transition={{ duration: 0.38, ease: EASE_OUT }}
+      transition={{ duration: 0.4, ease: EASE_OUT }}
     >
-      <Disclosure
-        as="nav"
-        className="bg-gradient-to-r shadow-lg from-indigo-700 to-indigo-600 dark:from-gray-900 dark:to-gray-900"
-      >
-        <>
-          <div className="w-full px-4 sm:px-6 lg:px-8">
-            <div className="relative flex h-16 items-center justify-between">
-              {/* Sección izquierda */}
-              <div className="flex flex-1 items-center justify-start">
-                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-                  {userData?.role !== "super-provider-admin" && <ConboBox />}
-                  <motion.p
-                    initial={{ opacity: 0, x: -6 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.35, delay: 0.12, ease: EASE_OUT }}
-                    className="text-white text-sm lg:text-base"
-                  >
-                    <span className="font-bold">Hola, {userData?.name}</span>
-                    <span className="hidden sm:inline"> {currentDate}</span>
-                  </motion.p>
-                </div>
-              </div>
+      <Disclosure as="nav">
+        {/* ── Shell: indigo→violet gradient (light) / deep frosted (dark) ── */}
+        <div
+          className={classNames(
+            "w-full px-4 sm:px-6 lg:px-8 h-16",
+            // Light: branded gradient + subtle blur for depth
+            "bg-gradient-to-r from-indigo-600 via-indigo-500 to-violet-600",
+            "backdrop-blur-xl",
+            "border-b border-indigo-700/30",
+            "shadow-[0_4px_24px_-4px_rgba(99,102,241,0.45),0_1px_0_0_rgba(255,255,255,0.08)_inset]",
+            // Dark: deep slate frosted panel — override the gradient
+            "dark:bg-none dark:bg-gray-900/85 dark:border-white/[0.06]",
+            "dark:shadow-[0_1px_3px_0_rgb(0,0,0,0.4)]"
+          )}
+          // Inline style so dark mode can cleanly override the CSS gradient
+          style={isDarkMode ? { background: "rgba(17,24,39,0.85)" } : undefined}
+        >
+          <div className="relative flex h-full items-center justify-between gap-3">
 
-              {/* Sección derecha */}
-              <div className="flex items-center gap-2 sm:gap-4">
-                {/* Theme Toggle — spring en tap */}
+            {/* ── LEFT: ComboBox + greeting ── */}
+            <motion.div
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+              className="flex flex-1 items-center gap-3 min-w-0"
+            >
+              {/* ComboBox — hidden for super-provider-admin */}
+              {userData?.role !== "super-provider-admin" && (
+                <motion.div variants={itemVariants} className="shrink-0">
+                  <ConboBox />
+                </motion.div>
+              )}
+
+              {/* Greeting */}
+              <motion.p
+                variants={itemVariants}
+                className="truncate text-sm font-medium min-w-0 text-white/90 dark:text-gray-200"
+              >
+                <span className="font-semibold text-white dark:text-white">
+                  Hola, {userData?.name}
+                </span>
+                <span className="hidden sm:inline font-normal ml-1 text-indigo-200 dark:text-gray-400">
+                  {currentDate}
+                </span>
+              </motion.p>
+            </motion.div>
+
+            {/* ── RIGHT: actions ── */}
+            <motion.div
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+              className="flex items-center gap-1 sm:gap-2 shrink-0"
+            >
+              {/* Dark-mode toggle */}
+              <motion.div variants={itemVariants}>
                 <motion.button
-                  whileHover={{ scale: 1.08 }}
-                  whileTap={{ scale: 0.88, rotate: 20 }}
+                  whileTap={{ scale: 0.88, rotate: 18 }}
                   transition={SPRING}
                   onClick={toggleDarkMode}
-                  className="relative p-2 rounded-full bg-white/10 hover:bg-white/20 dark:bg-gray-700/50 dark:hover:bg-gray-600/50 transition-colors duration-200 backdrop-blur-sm border border-white/20 dark:border-gray-600/30 shadow-lg focus:outline-none focus:ring-2 focus:ring-white/50 dark:focus:ring-indigo-400/50"
+                  aria-label={isDarkMode ? "Activar modo claro" : "Activar modo oscuro"}
+                  className={classNames(
+                    "relative flex items-center justify-center",
+                    "w-9 h-9 rounded-xl",
+                    // Light: ghost white pill on gradient
+                    "bg-white/15 hover:bg-white/25",
+                    "border border-white/20",
+                    // Dark: subtle slate pill
+                    "dark:bg-white/[0.07] dark:hover:bg-white/[0.12]",
+                    "dark:border-white/[0.08]",
+                    "transition-colors duration-150",
+                    "focus-visible:outline-none focus-visible:ring-2",
+                    "focus-visible:ring-white/50 dark:focus-visible:ring-indigo-500/60",
+                    "[@media(hover:hover)_and_(pointer:fine)]:hover:scale-105"
+                  )}
+                  style={{
+                    transition:
+                      "transform 160ms cubic-bezier(0.23,1,0.32,1), background-color 150ms ease",
+                  }}
                 >
-                  <div className="relative w-5 h-5">
-                    <SunIcon
-                      className={`absolute inset-0 w-5 h-5 text-yellow-400 transition-all duration-300 transform ${
-                        !isDarkMode
-                          ? "opacity-100 rotate-0 scale-100"
-                          : "opacity-0 rotate-90 scale-75"
-                      }`}
-                    />
-                    <MoonIcon
-                      className={`absolute inset-0 w-5 h-5 text-indigo-200 transition-all duration-300 transform ${
-                        isDarkMode
-                          ? "opacity-100 rotate-0 scale-100"
-                          : "opacity-0 -rotate-90 scale-75"
-                      }`}
-                    />
-                  </div>
+                  {/* Sun */}
+                  <SunIcon
+                    className={classNames(
+                      "absolute transition-all duration-200",
+                      // Light: warm yellow-white; Dark: amber
+                      "text-yellow-200 dark:text-amber-400",
+                      !isDarkMode
+                        ? "opacity-100 rotate-0 scale-100"
+                        : "opacity-0 rotate-90 scale-75"
+                    )}
+                    style={{ width: 18, height: 18 }}
+                  />
+                  {/* Moon */}
+                  <MoonIcon
+                    className={classNames(
+                      "absolute transition-all duration-200",
+                      "text-white/90 dark:text-indigo-400",
+                      isDarkMode
+                        ? "opacity-100 rotate-0 scale-100"
+                        : "opacity-0 -rotate-90 scale-75"
+                    )}
+                    style={{ width: 18, height: 18 }}
+                  />
                 </motion.button>
+              </motion.div>
 
-                {/* NotificationBell */}
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.3, delay: 0.18, ease: EASE_OUT }}
+              {/* Notification bell */}
+              <motion.div variants={itemVariants}>
+                <div
+                  className={classNames(
+                    "flex items-center justify-center",
+                    "w-9 h-9 rounded-xl",
+                    // Light: ghost white
+                    "bg-white/15 hover:bg-white/25 border border-white/20",
+                    // Dark: subtle slate
+                    "dark:bg-white/[0.07] dark:hover:bg-white/[0.12] dark:border-white/[0.08]",
+                    "[@media(hover:hover)_and_(pointer:fine)]:hover:bg-white/25",
+                    "dark:[@media(hover:hover)_and_(pointer:fine)]:hover:bg-white/[0.12]",
+                    "transition-colors duration-150"
+                  )}
                 >
                   <NotificationBell />
-                </motion.div>
+                </div>
+              </motion.div>
 
-                {/* Avatar con spring */}
+              {/* Divider */}
+              <motion.div
+                variants={itemVariants}
+                className="hidden sm:block w-px h-6 bg-white/20 dark:bg-white/10 mx-1"
+              />
+
+              {/* Avatar + dropdown */}
+              <motion.div variants={itemVariants}>
                 <Menu as="div" className="relative">
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.3, delay: 0.22, ease: EASE_OUT }}
+                  <MotionMenuButton
+                    whileTap={{ scale: 0.94 }}
+                    transition={SPRING}
+                    className={classNames(
+                      "flex items-center gap-2 rounded-xl px-1.5 py-1",
+                      "ring-1 ring-transparent",
+                      "[@media(hover:hover)_and_(pointer:fine)]:hover:ring-white/30",
+                      "dark:[@media(hover:hover)_and_(pointer:fine)]:hover:ring-white/10",
+                      "focus-visible:outline-none focus-visible:ring-2",
+                      "focus-visible:ring-white/50 dark:focus-visible:ring-indigo-500/60",
+                      "transition-all duration-150"
+                    )}
                   >
-                    <MotionMenuButton
-                      whileHover={{ scale: 1.06 }}
-                      whileTap={{ scale: 0.94 }}
-                      transition={SPRING}
-                      className="relative flex rounded-full bg-gray-800 text-sm focus:outline-none ring-2 ring-transparent hover:ring-white/40 transition-all duration-200"
+                    {/* Avatar */}
+                    {userPhoto ? (
+                      <img
+                        className="h-8 w-8 sm:h-9 sm:w-9 rounded-xl object-cover ring-2 ring-white/30 dark:ring-gray-700 shadow-sm"
+                        src={userPhoto}
+                        alt={userData?.name ?? "Avatar"}
+                      />
+                    ) : (
+                      <span
+                        className={classNames(
+                          "flex items-center justify-center",
+                          "h-8 w-8 sm:h-9 sm:w-9 rounded-xl",
+                          "bg-white/20 dark:bg-gradient-to-br dark:from-indigo-500 dark:to-violet-600",
+                          "text-white text-sm font-bold",
+                          "ring-2 ring-white/30 dark:ring-gray-700 shadow-sm",
+                          "select-none backdrop-blur-sm"
+                        )}
+                        style={
+                          !isDarkMode
+                            ? { background: "rgba(255,255,255,0.22)" }
+                            : undefined
+                        }
+                      >
+                        {userInitial}
+                      </span>
+                    )}
+
+                    {/* Name — visible sm+ */}
+                    <span className="hidden sm:block text-sm font-medium max-w-[120px] truncate pr-1 text-white/90 dark:text-gray-200">
+                      {userData?.name}
+                    </span>
+
+                    {/* Chevron */}
+                    <svg
+                      className="hidden sm:block w-3.5 h-3.5 text-white/50 dark:text-gray-500"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2.5}
                     >
-                      <span className="absolute -inset-1.5" />
-                      {userPhoto ? (
-                        <img
-                          className="h-10 w-10 sm:h-12 sm:w-12 rounded-full object-cover"
-                          src={userPhoto}
-                          alt=""
-                        />
-                      ) : (
-                        <p className="bg-indigo-300 text-white rounded-full w-10 h-10 sm:w-12 sm:h-12 flex justify-center items-center text-sm sm:text-base">
-                          {userData?.name?.charAt(0)}
-                        </p>
-                      )}
-                    </MotionMenuButton>
-                  </motion.div>
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M19.5 8.25l-7.5 7.5-7.5-7.5"
+                      />
+                    </svg>
+                  </MotionMenuButton>
+
+                  {/* Dropdown panel */}
                   <Transition
                     as={Fragment}
                     enter="transition ease-out duration-150"
@@ -155,40 +292,75 @@ const Navbar = () => {
                     leaveFrom="transform opacity-100 scale-100 translate-y-0"
                     leaveTo="transform opacity-0 scale-95 -translate-y-1"
                   >
-                    <Menu.Items className="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-xl bg-white dark:bg-gray-800 py-1 shadow-xl ring-1 ring-black/5 dark:ring-white/10 focus:outline-none">
-                      <Menu.Item>
-                        {({ active }) => (
-                          <Link
-                            to="/dashboard/client-config/general"
-                            className={classNames(
-                              active ? "bg-gray-50 dark:bg-gray-700 text-indigo-600 dark:text-indigo-400" : "text-gray-700 dark:text-gray-200",
-                              "flex items-center gap-2 px-4 py-2 text-sm transition-colors duration-100"
-                            )}
-                          >
-                            Configuración
-                          </Link>
-                        )}
-                      </Menu.Item>
-                      <Menu.Item>
-                        {({ active }) => (
-                          <button
-                            onClick={handleLogout}
-                            className={classNames(
-                              active ? "bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400" : "text-gray-700 dark:text-gray-200",
-                              "flex items-center gap-2 w-full text-left px-4 py-2 text-sm transition-colors duration-100"
-                            )}
-                          >
-                            Cerrar sesión
-                          </button>
-                        )}
-                      </Menu.Item>
+                    <Menu.Items
+                      className={classNames(
+                        "absolute right-0 z-50 mt-2 w-52 origin-top-right",
+                        "rounded-2xl overflow-hidden",
+                        "bg-white/95 dark:bg-gray-800/90 backdrop-blur-xl",
+                        "shadow-xl shadow-indigo-900/10 dark:shadow-black/30",
+                        "ring-1 ring-black/[0.06] dark:ring-white/[0.08]",
+                        "focus:outline-none"
+                      )}
+                    >
+                      {/* User info header */}
+                      <div className="px-4 py-3 border-b border-gray-100 dark:border-white/[0.06]">
+                        <p className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wider font-medium">
+                          Cuenta
+                        </p>
+                        <p className="text-sm font-semibold text-gray-800 dark:text-gray-100 truncate mt-0.5">
+                          {userData?.name}
+                        </p>
+                      </div>
+
+                      <div className="p-1.5">
+                        {/* Configuración */}
+                        <Menu.Item>
+                          {({ active }) => (
+                            <Link
+                              to="/dashboard/client-config/general"
+                              className={classNames(
+                                active
+                                  ? "bg-gray-100 dark:bg-white/[0.07] text-indigo-600 dark:text-indigo-400"
+                                  : "text-gray-700 dark:text-gray-300",
+                                "flex items-center gap-3 px-3 py-2.5 text-sm rounded-xl",
+                                "transition-colors duration-100"
+                              )}
+                            >
+                              <Cog6ToothIcon className="w-4 h-4 shrink-0" />
+                              Configuración
+                            </Link>
+                          )}
+                        </Menu.Item>
+
+                        {/* Divider */}
+                        <div className="my-1 h-px bg-gray-100 dark:bg-white/[0.06]" />
+
+                        {/* Cerrar sesión */}
+                        <Menu.Item>
+                          {({ active }) => (
+                            <button
+                              onClick={handleLogout}
+                              className={classNames(
+                                active
+                                  ? "bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400"
+                                  : "text-gray-700 dark:text-gray-300",
+                                "flex items-center gap-3 w-full text-left px-3 py-2.5 text-sm rounded-xl",
+                                "transition-colors duration-100"
+                              )}
+                            >
+                              <ArrowRightStartOnRectangleIcon className="w-4 h-4 shrink-0" />
+                              Cerrar sesión
+                            </button>
+                          )}
+                        </Menu.Item>
+                      </div>
                     </Menu.Items>
                   </Transition>
                 </Menu>
-              </div>
-            </div>
+              </motion.div>
+            </motion.div>
           </div>
-        </>
+        </div>
       </Disclosure>
     </motion.div>
   );
