@@ -279,12 +279,7 @@ export default function CalendarReservations() {
     setCurrentDate(newDate.format("YYYY-MM-DD"));
   };
 
-  // eslint-disable-next-line no-unused-vars
-  let mainLabel = "";
-  if (view === "day") mainLabel = dayjs(currentDate).format("D [de] MMMM YYYY");
-  else if (view === "week" || view === "month")
-    mainLabel = dayjs(currentDate).format("MMMM YYYY");
-  else mainLabel = dayjs(currentDate).format("YYYY");
+
 
   let displayedEvents: CalendarEvent[] = [];
   if (view === "day") {
@@ -387,7 +382,6 @@ export default function CalendarReservations() {
     <div className="flex h-full flex-col bg-white">
       <header className="flex flex-none items-center justify-between border-b border-gray-200 px-6 py-4 dark:bg-gray-900">
         <div>
-          {/* <h1 className="text-base font-semibold text-gray-900 capitalize">{mainLabel}</h1> */}
           {view === "week" && (
             <p className="text-sm text-gray-500 dark:text-gray-100">
               Semana del {dayjs(currentDate).startOf("isoWeek").format("D MMM")}{" "}
