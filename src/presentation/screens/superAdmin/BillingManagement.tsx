@@ -152,9 +152,9 @@ const BillingManagement: React.FC = () => {
     }).format(amount);
   };
 
-  const handleViewInvoice = (invoice: InvoiceRecord) => {
+  const handleViewInvoice = (_invoice: InvoiceRecord) => {
     // Implementar visualización detallada de factura
-    console.log("Ver detalles de factura:", invoice);
+    toast.success("Esta funcionalidad será implementada próximamente");
   };
 
   const handleMarkAsPaid = (_invoice: InvoiceRecord) => {

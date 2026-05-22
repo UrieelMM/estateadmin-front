@@ -149,8 +149,6 @@ const TicketDetail: React.FC = () => {
   }, [fetchEmployees, fetchProviders]);
 
   function renderMergedTimeline(activeTicket: Ticket, tickets: Ticket[]) {
-    console.log("TicketDetail - activeTicket:", activeTicket);
-    console.log("TicketDetail - activeTicket.history:", activeTicket.history);
 
     // Verificar si activeTicket.history está inicializado correctamente
     if (!activeTicket.history) {
@@ -166,7 +164,6 @@ const TicketDetail: React.FC = () => {
 
     // Manejar tickets fusionados
     if (activeTicket.mergedFrom && activeTicket.mergedFrom.length > 0) {
-      console.log("Ticket tiene mergedFrom:", activeTicket.mergedFrom);
       for (const mergedId of activeTicket.mergedFrom) {
         const mergedTicket = tickets.find((t) => t.id === mergedId);
         if (mergedTicket) {
@@ -184,10 +181,6 @@ const TicketDetail: React.FC = () => {
 
           // Verificar si el ticket fusionado tiene historial
           if (mergedTicket.history && mergedTicket.history.length > 0) {
-            console.log(
-              `Añadiendo historial del ticket fusionado ${mergedId}:`,
-              mergedTicket.history,
-            );
             mergedHistory = mergedHistory.concat(mergedTicket.history);
           }
 
@@ -214,9 +207,6 @@ const TicketDetail: React.FC = () => {
         b.date instanceof Date ? b.date : new Date(b.date as string);
       return dateA.getTime() - dateB.getTime();
     });
-
-    console.log("TicketDetail - mergedHistory final:", mergedHistory);
-    console.log("TicketDetail - mergedHistory length:", mergedHistory.length);
 
     return mergedHistory.length > 0 ? (
       <>

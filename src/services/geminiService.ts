@@ -31,7 +31,6 @@ export const streamGeminiResponse = async (
     onUsage?: (usage: GeminiUsageMeta) => void;
   }
 ): Promise<void> => {
-  console.log("streamGeminiResponse - Received payload:", payload);
 
   const processSSEBlock = (rawBlock: string) => {
     const lines = rawBlock.split("\n");
@@ -141,21 +140,9 @@ export const streamGeminiResponse = async (
 
     // 3. Añadir el archivo si existe
     if (payload.file) {
-      console.log(
-        "streamGeminiResponse - Appending file to FormData:",
-        payload.file.name
-      );
       // El backend espera el archivo en un campo llamado 'file'
       formData.append("file", payload.file);
-    } else {
-      console.log("streamGeminiResponse - No file to append.");
     }
-
-    // Log para ver el FormData (limitado, no muestra el contenido binario)
-    // console.log("streamGeminiResponse - FormData entries:");
-    // for (let [key, value] of formData.entries()) {
-    //     console.log(`${key}:`, value);
-    // }
 
     // 4. Realizar la llamada fetch con FormData
     const response = await fetch(

@@ -33,9 +33,8 @@ export const useFileCompression = (
     setError(null);
 
     try {
-      console.log(`Original file size: ${(file.size / 1024 / 1024).toFixed(2)} MB`);
+  
       const compressedFile = await imageCompression(file, options);
-      console.log(`Compressed file size: ${(compressedFile.size / 1024 / 1024).toFixed(2)} MB`);
       
       // Si por alguna razón el archivo comprimido es más grande (raro pero posible en configuraciones extremas),
       // o si ocurrió algún problema que no lanzó error pero retornó algo inválido, devolvemos el original.

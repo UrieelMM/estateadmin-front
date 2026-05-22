@@ -104,11 +104,7 @@ const LayoutDashboard = ({ children }: Props) => {
       const auth = getAuth();
       const user = auth.currentUser;
       if (user) {
-        user.getIdTokenResult().then(() => {
-          console.log("[LayoutDashboard] Usuario autenticado correctamente");
-        });
-      } else {
-        console.log("[LayoutDashboard] No hay usuario autenticado");
+        user.getIdTokenResult().catch(() => {});
       }
     };
     window.forceUpdateClientPlan = () => {
