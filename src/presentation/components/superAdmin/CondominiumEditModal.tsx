@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useMemo } from "react";
 import { XMarkIcon } from "@heroicons/react/24/solid";
 import useClientsConfig from "../../../store/superAdmin/useClientsConfig";
 import { CondominiumStatus } from "./NewClientForm";
@@ -9,11 +9,37 @@ interface CondominiumEditModalProps {
   onSuccess: () => void;
 }
 
-const PLAN_LIMITS = {
-  Basic: { min: 1, max: 50 },
-  Essential: { min: 51, max: 100 },
-  Professional: { min: 101, max: 250 },
-  Premium: { min: 251, max: 500 },
+// Constantes alineadas con el flujo de creación (NewClientForm y
+// pestaña Agregar Condominio del ClientEditModal).
+const PLAN_BASE = 499;
+const COST_PER_UNIT = 4.0;
+const MIN_UNITS = 20;
+const MAX_UNITS = 500;
+const IVA_RATE = 0.16;
+
+const LEGACY_PLAN_NAMES = new Set( [
+  "Basic",
+  "Essential",
+  "Professional",
+  "Premium",
+  "Free",
+] );
+
+// Convierte el plan legacy o el plan nuevo (string numérico) al número de
+// unidades a mostrar en la calculadora. Para condominios viejos cuyo plan
+// era "Basic"/"Professional"/etc., usamos su condominiumLimit como cantidad
+// inicial de unidades, ajustando al rango permitido [MIN_UNITS, MAX_UNITS].
+const resolveInitialUnits = ( plan?: string | number, condominiumLimit?: number | string ): number => {
+  const rawPlan = String( plan ?? "" ).trim();
+  const parsedFromPlan = parseInt( rawPlan, 10 );
+  if ( !isNaN( parsedFromPlan ) && parsedFromPlan > 0 ) {
+    return Math.min( MAX_UNITS, Math.max( MIN_UNITS, parsedFromPlan ) );
+  }
+  const parsedLimit = parseInt( String( condominiumLimit ?? "" ), 10 );
+  if ( !isNaN( parsedLimit ) && parsedLimit > 0 ) {
+    return Math.min( MAX_UNITS, Math.max( MIN_UNITS, parsedLimit ) );
+  }
+  return MIN_UNITS;
 };
 
 const CondominiumEditModal: React.FC<CondominiumEditModalProps> = ({
@@ -29,6 +55,42 @@ const CondominiumEditModal: React.FC<CondominiumEditModalProps> = ({
     updateCondominium,
     resetCondominiumForm,
   } = useClientsConfig();
+
+  // Cantidad de unidades a mostrar en la calculadora.
+  // - Si el plan es un string numérico nuevo (e.g. "50"), úsalo.
+  // - Si es legacy (Basic/Professional/...), cae a condominiumLimit.
+  // Estos hooks deben llamarse incondicionalmente (rules of hooks), por lo que
+  // se evalúan aunque currentCondominium aún no esté disponible.
+  const units = useMemo(
+    () =>
+      resolveInitialUnits(
+        currentCondominium?.plan,
+        currentCondominium?.condominiumLimit
+      ),
+    [ currentCondominium?.plan, currentCondominium?.condominiumLimit ]
+  );
+
+  // Si el documento todavía tiene un plan legacy ("Basic", "Essential", etc.)
+  // o un plan inválido, normalizamos a string numérico (units) en el state
+  // local apenas se monta el modal, para evitar enviar "Basic" al guardar.
+  useEffect( () => {
+    if ( !currentCondominium ) return;
+    const rawPlan = String( currentCondominium.plan ?? "" ).trim();
+    const parsedFromPlan = parseInt( rawPlan, 10 );
+    const isNumericPlan = !isNaN( parsedFromPlan ) && parsedFromPlan > 0;
+    const isLegacyPlan = LEGACY_PLAN_NAMES.has( rawPlan );
+
+    if ( !isNumericPlan || isLegacyPlan ) {
+      const normalizedPlan = String( units );
+      if ( rawPlan !== normalizedPlan ) {
+        updateCondominiumForm( "plan", normalizedPlan );
+      }
+      if ( Number( currentCondominium.condominiumLimit ) !== units ) {
+        updateCondominiumForm( "condominiumLimit", units );
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ currentCondominium?.id ] );
 
   if (!isOpen || !currentCondominium || !currentClient) return null;
 
@@ -67,10 +129,21 @@ const CondominiumEditModal: React.FC<CondominiumEditModalProps> = ({
     [CondominiumStatus.Blocked]: "Bloqueado",
   };
 
-  const selectedPlanKey = (currentCondominium.plan ||
-    "Basic") as keyof typeof PLAN_LIMITS;
-  const selectedPlanLimits =
-    PLAN_LIMITS[selectedPlanKey] || PLAN_LIMITS.Basic;
+  const subtotal = PLAN_BASE + units * COST_PER_UNIT;
+  const iva = subtotal * IVA_RATE;
+  const total = subtotal + iva;
+  const sliderPct = ( ( units - MIN_UNITS ) / ( MAX_UNITS - MIN_UNITS ) ) * 100;
+  const fmt = ( v: number ) =>
+    v.toLocaleString( "es-MX", { style: "currency", currency: "MXN" } );
+
+  const handleUnitsChange = ( rawValue: string | number ) => {
+    const parsed =
+      typeof rawValue === "number" ? rawValue : parseInt( rawValue, 10 );
+    const safe = isNaN( parsed ) ? MIN_UNITS : parsed;
+    const clamped = Math.min( MAX_UNITS, Math.max( MIN_UNITS, safe ) );
+    updateCondominiumForm( "plan", String( clamped ) );
+    updateCondominiumForm( "condominiumLimit", clamped );
+  };
 
   const handleInputChange = (
     e: React.ChangeEvent<
@@ -205,52 +278,73 @@ const CondominiumEditModal: React.FC<CondominiumEditModalProps> = ({
             </select>
           </div>
 
-          <div>
-            <label
-              htmlFor="plan"
-              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-            >
-              Plan
-            </label>
-            <select
-              name="plan"
-              id="plan"
-              value={currentCondominium.plan || "Basic"}
-              onChange={handleInputChange}
-              className="px-2 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
-            >
-              <option value="Basic">Basic</option>
-              <option value="Essential">Essential</option>
-              <option value="Professional">Professional</option>
-              <option value="Premium">Premium</option>
-            </select>
-            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-              Límite del plan {selectedPlanKey}: {selectedPlanLimits.min} a{" "}
-              {selectedPlanLimits.max} condominios.
+          {/* Calculadora de unidades contratadas (alineada con creación de
+              condominios y registro de cliente nuevo) */}
+          <div className="rounded-xl border border-indigo-200 dark:border-indigo-800 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/30 p-4">
+            <p className="text-xs font-semibold text-indigo-700 dark:text-indigo-300 mb-3">
+              Unidades contratadas
             </p>
-          </div>
-
-          <div>
-            <label
-              htmlFor="condominiumLimit"
-              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-            >
-              Límite de Condominios
-            </label>
+            <div className="text-center mb-3">
+              <span className="text-3xl font-black bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600">
+                { units }
+              </span>
+              <span className="ml-1 text-sm font-semibold text-gray-500 dark:text-gray-400">
+                unidades
+              </span>
+            </div>
             <input
-              type="number"
-              name="condominiumLimit"
-              id="condominiumLimit"
-              value={currentCondominium.condominiumLimit || 1}
-              onChange={handleInputChange}
-              min={selectedPlanLimits.min}
-              max={selectedPlanLimits.max}
-              className="px-2 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
+              type="range"
+              min={ MIN_UNITS }
+              max={ MAX_UNITS }
+              value={ units }
+              onChange={ ( e ) => handleUnitsChange( e.target.value ) }
+              className="w-full h-2 rounded-full appearance-none cursor-pointer mb-1"
+              style={ {
+                background: `linear-gradient(to right, #6366f1 0%, #a855f7 ${ sliderPct }%, #e5e7eb ${ sliderPct }%, #e5e7eb 100%)`,
+              } }
             />
-            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-              Rango permitido para este plan: {selectedPlanLimits.min} -{" "}
-              {selectedPlanLimits.max}
-            </p>
+            <div className="flex justify-between text-xs text-gray-400 mb-3">
+              <span>{ MIN_UNITS }</span>
+              <span>{ MAX_UNITS }</span>
+            </div>
+            <div className="flex items-center gap-2 mb-3">
+              <label className="text-xs text-gray-600 dark:text-gray-400 whitespace-nowrap">
+                O ingresa:
+              </label>
+              <input
+                type="number"
+                min={ MIN_UNITS }
+                max={ MAX_UNITS }
+                value={ units }
+                onChange={ ( e ) => handleUnitsChange( e.target.value ) }
+                className="w-16 rounded-lg border border-indigo-300 dark:border-indigo-700 bg-white dark:bg-gray-700 text-center font-bold text-sm px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:text-white"
+              />
+              <span className="text-xs text-gray-500">unidades</span>
+            </div>
+            <div className="rounded-lg bg-white dark:bg-gray-800 border border-indigo-100 dark:border-indigo-900/50 p-3 space-y-1.5 text-xs">
+              <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                <span>Plataforma base</span>
+                <span className="font-medium">{ fmt( PLAN_BASE ) }</span>
+              </div>
+              <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                <span>{ units } uds. × { fmt( COST_PER_UNIT ) }</span>
+                <span className="font-medium">
+                  { fmt( units * COST_PER_UNIT ) }
+                </span>
+              </div>
+              <div className="flex justify-between text-gray-600 dark:text-gray-400 border-t border-gray-100 dark:border-gray-700 pt-1.5">
+                <span>IVA (16%)</span>
+                <span className="font-medium">{ fmt( iva ) }</span>
+              </div>
+              <div className="flex justify-between border-t-2 border-indigo-200 dark:border-indigo-700 pt-1.5">
+                <span className="font-bold text-gray-900 dark:text-white">
+                  Total / mes
+                </span>
+                <span className="font-black bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600">
+                  { fmt( total ) }
+                </span>
+              </div>
+            </div>
           </div>
 
           <div>

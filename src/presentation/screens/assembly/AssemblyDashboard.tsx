@@ -220,6 +220,7 @@ function BuilderModal( {
 } ) {
   const [ state, setState ] = useState<BuilderState>( () => getDefaultState( initial ) );
   const [ editingSlide, setEditingSlide ] = useState<string | null>( null );
+  const isEditingPublished = initial?.status === "published";
 
   const update = ( patch: Partial<BuilderState> ) => setState( ( s ) => ( { ...s, ...patch } ) );
 
@@ -459,8 +460,7 @@ function BuilderModal( {
                 <ExclamationTriangleIcon className="w-4 h-4 text-amber-500 dark:text-amber-400 shrink-0 mt-0.5" />
                 <p className="text-[11px] text-amber-700 dark:text-amber-300/70 leading-relaxed">
                   Los datos financieros, de cobros, mantenimiento y proyectos se filtran por el rango
-                  seleccionado. Al <strong>Publicar</strong> se capturan en ese momento; puedes
-                  republicar para actualizarlos.
+                  seleccionado. Al { isEditingPublished ? <strong>actualizar</strong> : <strong>publicar</strong> } se consultan de nuevo y se reemplaza el snapshot público.
                 </p>
               </div>
             </div>
@@ -480,7 +480,7 @@ function BuilderModal( {
             disabled={ saving || !state.title || state.draftSlides.length === 0 || !validPeriod }
             className="px-4 py-2 rounded-xl border border-gray-300 dark:border-white/[0.1] bg-white dark:bg-white/[0.05] text-sm text-gray-700 dark:text-slate-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/[0.08] disabled:opacity-40 disabled:cursor-not-allowed transition-all"
           >
-            Guardar borrador
+            { isEditingPublished ? "Actualizar publicación" : "Guardar borrador" }
           </button>
           <button
             onClick={ () => onPublish( initial?.id, state ) }
@@ -490,12 +490,12 @@ function BuilderModal( {
             { saving ? (
               <>
                 <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
-                Publicando…
+                { isEditingPublished ? "Actualizando…" : "Publicando…" }
               </>
             ) : (
               <>
                 <SparklesIcon className="w-4 h-4" />
-                Publicar
+                { isEditingPublished ? "Actualizar datos" : "Publicar" }
               </>
             ) }
           </button>
@@ -546,8 +546,15 @@ const AssemblyDashboard = () => {
     setSaving( true );
     try {
       if ( id ) {
-        await updateDraft( id, st.title, st.assemblyDate, st.draftSlides, { period: st.period, logoUrl: st.logoUrl } );
-        toast.success( "Borrador guardado" );
+        if ( editingPresentation?.status === "published" ) {
+          await publishPresentation( id, st.title, st.assemblyDate, st.draftSlides, { period: st.period, logoUrl: st.logoUrl } );
+          setSuccessId( id );
+          toast.success( "Presentación actualizada con datos frescos" );
+          setTimeout( () => setSuccessId( null ), 4500 );
+        } else {
+          await updateDraft( id, st.title, st.assemblyDate, st.draftSlides, { period: st.period, logoUrl: st.logoUrl } );
+          toast.success( "Borrador guardado" );
+        }
       } else {
         await createDraft( st.title, st.assemblyDate, st.draftSlides, { period: st.period, logoUrl: st.logoUrl } );
         toast.success( "Borrador creado" );
@@ -570,7 +577,7 @@ const AssemblyDashboard = () => {
       await publishPresentation( presentationId, st.title, st.assemblyDate, st.draftSlides, { period: st.period, logoUrl: st.logoUrl } );
       setSuccessId( presentationId );
       handleClose();
-      toast.success( "Presentación publicada" );
+      toast.success( id ? "Presentación actualizada con datos frescos" : "Presentación publicada" );
       setTimeout( () => setSuccessId( null ), 4500 );
     } catch ( e: any ) {
       toast.error( e?.message || "Error al publicar" );

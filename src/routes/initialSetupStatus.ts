@@ -13,9 +13,17 @@ import {
 
 export const INITIAL_SETUP_STRIPE_PENDING_KEY = "initial_setup_stripe_pending";
 
+export type InitialSetupMode =
+  | "none"
+  | "wizard"
+  | "condominium_payment";
+
 type InitialSetupStatus = {
   requiresInitialSetup: boolean;
   initialStep: number;
+  mode: InitialSetupMode;
+  clientId: string | null;
+  condominiumId: string | null;
 };
 
 type InitialSubscriptionPaymentStatus = {
@@ -66,18 +74,26 @@ export const getInitialSubscriptionPaymentStatus = async (
   };
 };
 
+const NOT_REQUIRED: InitialSetupStatus = {
+  requiresInitialSetup: false,
+  initialStep: 1,
+  mode: "none",
+  clientId: null,
+  condominiumId: null,
+};
+
 export const resolveInitialSetupStatus =
   async (): Promise<InitialSetupStatus> => {
     const auth = getAuth();
     const user = auth.currentUser;
     if (!user) {
-      return { requiresInitialSetup: false, initialStep: 1 };
+      return NOT_REQUIRED;
     }
 
     const tokenResult = await getIdTokenResult(user);
     const clientId = tokenResult.claims["clientId"] as string;
     if (!clientId) {
-      return { requiresInitialSetup: false, initialStep: 1 };
+      return NOT_REQUIRED;
     }
 
     const db = getFirestore();
@@ -87,42 +103,110 @@ export const resolveInitialSetupStatus =
     const initialSetupCompleted = Boolean(
       configDoc.exists() && clientData.initialSetupCompleted,
     );
-    const hasGiftCouponBypass = Boolean(clientData.initialSetupPaymentBypassed);
+    // Flag a nivel cliente que marca pago inicial pendiente del primer
+    // condominio (legacy). Después de pagar/redimir queda false. NO refleja
+    // condominios agregados posteriormente.
     const hasSetupPaymentPending = Boolean(clientData.initialSetupPaymentPending);
+    // Flag a nivel cliente seteado al redimir un cupón a nivel cliente para
+    // el primer condominio. Útil para reconocer que el wizard inicial ya
+    // está liquidado, pero NO debe usarse para dar por pagados condominios
+    // agregados después (cada uno tiene su propia factura inicial).
+    const clientCouponBypass = Boolean(clientData.initialSetupPaymentBypassed);
     const condominiumId = localStorage.getItem("condominiumId");
-    const hasPendingStripeCheckout =
-      !hasGiftCouponBypass &&
-      Boolean(sessionStorage.getItem(INITIAL_SETUP_STRIPE_PENDING_KEY));
-    const subscriptionPaymentStatus =
-      condominiumId && !hasGiftCouponBypass
-        ? await getInitialSubscriptionPaymentStatus(clientId, condominiumId)
-        : { hasPaidSubscription: false, hasPendingSubscription: false };
+
+    // Bypass propio del condominio actual (caso: nuevo condominio agregado
+    // a un cliente existente con cupón redimido).
+    let condominiumCouponBypass = false;
+    if (condominiumId) {
+      try {
+        const condominiumDoc = await getDoc(
+          doc(db, `clients/${clientId}/condominiums/${condominiumId}`),
+        );
+        if (condominiumDoc.exists()) {
+          condominiumCouponBypass = Boolean(
+            condominiumDoc.data()?.initialSetupPaymentBypassed,
+          );
+        }
+      } catch (error) {
+        console.error(
+          "Error al verificar bypass a nivel condominio:",
+          error,
+        );
+      }
+    }
+
+    // IMPORTANTE: siempre consultamos el estado real de facturas del
+    // condominio actual. Antes se saltaba este check cuando había
+    // `clientCouponBypass`, lo que provocaba que condominios agregados
+    // después de la configuración inicial (con su propia factura de
+    // suscripción pendiente) se vieran como "ya pagados". Ahora el bypass
+    // del cliente sirve solo para no forzar el wizard completo, no para
+    // dar por bueno el pago del condominio actual.
+    const subscriptionPaymentStatus = condominiumId
+      ? await getInitialSubscriptionPaymentStatus(clientId, condominiumId)
+      : { hasPaidSubscription: false, hasPendingSubscription: false };
     const hasPaidInitialSubscription =
       subscriptionPaymentStatus.hasPaidSubscription;
     const hasUnpaidInitialSubscription =
       subscriptionPaymentStatus.hasPendingSubscription;
-    const hasInitialSetupPaymentAccess =
-      hasGiftCouponBypass || hasPaidInitialSubscription;
+
+    const hasPendingStripeCheckout = Boolean(
+      sessionStorage.getItem(INITIAL_SETUP_STRIPE_PENDING_KEY),
+    );
+
+    // "Pagado/condonado" del condominio actual: requiere evidencia local
+    // del condominio (bypass propio o factura suscripción pagada). El
+    // bypass a nivel cliente NO cuenta por sí solo, salvo que no existan
+    // facturas para este condominio (compatibilidad con clientes legacy
+    // donde el primer condominio se redimió antes de existir el bypass
+    // por condominio).
+    const currentCondominiumHasInvoiceEvidence =
+      hasPaidInitialSubscription || hasUnpaidInitialSubscription;
+    const currentCondominiumPaid =
+      condominiumCouponBypass ||
+      hasPaidInitialSubscription ||
+      (clientCouponBypass && !currentCondominiumHasInvoiceEvidence);
+
     const shouldOpenPaymentStep =
       hasSetupPaymentPending ||
       hasPendingStripeCheckout ||
-      hasUnpaidInitialSubscription;
+      hasUnpaidInitialSubscription ||
+      !currentCondominiumPaid;
 
     if (!initialSetupCompleted) {
       return {
         requiresInitialSetup: true,
         initialStep: shouldOpenPaymentStep ? 7 : 1,
+        mode: "wizard",
+        clientId,
+        condominiumId,
       };
     }
 
     if (
-      !hasInitialSetupPaymentAccess ||
+      !currentCondominiumPaid ||
       hasSetupPaymentPending ||
       hasPendingStripeCheckout ||
       hasUnpaidInitialSubscription
     ) {
-      return { requiresInitialSetup: true, initialStep: 7 };
+      // El wizard inicial ya está completo, pero el condominio actual tiene
+      // factura inicial pendiente (típico cuando se agrega un condominio
+      // adicional a un cliente existente). Mostramos el gate dedicado en
+      // lugar del wizard completo.
+      return {
+        requiresInitialSetup: true,
+        initialStep: 7,
+        mode: "condominium_payment",
+        clientId,
+        condominiumId,
+      };
     }
 
-    return { requiresInitialSetup: false, initialStep: 1 };
+    return {
+      requiresInitialSetup: false,
+      initialStep: 1,
+      mode: "none",
+      clientId,
+      condominiumId,
+    };
   };

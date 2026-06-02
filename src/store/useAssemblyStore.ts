@@ -138,6 +138,28 @@ function getPreviousPeriod(period: AssemblyPeriod): AssemblyPeriod {
   return { start: ymd(prevStart), end: ymd(prevEnd) };
 }
 
+function getYearsForPeriod(period: AssemblyPeriod): string[] {
+  const start = parseISODateLocal(period.start);
+  const end = parseISODateLocal(period.end);
+  if (isNaN(start.getTime()) || isNaN(end.getTime())) return [];
+
+  const years: string[] = [];
+  for (let year = start.getFullYear(); year <= end.getFullYear(); year++) {
+    years.push(year.toString());
+  }
+  return years;
+}
+
+function uniquePaymentKey(payment: any): string {
+  return [
+    payment?.userId ?? "",
+    payment?.chargeId ?? payment?.id ?? "",
+    payment?.paymentGroupId ?? "",
+    payment?.month ?? "",
+    payment?.numberCondominium ?? "",
+  ].join("|");
+}
+
 /** Detecta si un periodo abarca exactamente un mes calendario */
 function isFullMonth(period: AssemblyPeriod): boolean {
   const s = parseISODateLocal(period.start);
@@ -215,26 +237,26 @@ interface BuildContext {
 async function ensurePaymentsLoaded(ctx: BuildContext) {
   if (ctx.payments) return;
   const payStore = usePaymentSummaryStore.getState();
-  const yearStart = parseISODateLocal(ctx.period.start).getFullYear().toString();
-  const yearEnd = parseISODateLocal(ctx.period.end).getFullYear().toString();
-  // Si periodo abarca dos años, cargar ambos por separado y unir
-  if (yearStart !== yearEnd) {
-    await payStore.fetchSummary(yearStart, true);
-    const aPayments = (usePaymentSummaryStore.getState().payments ?? []).slice();
-    const aMonthly = (usePaymentSummaryStore.getState().monthlyStats ?? []).slice();
-    await payStore.fetchSummary(yearEnd, true);
-    const bPayments = (usePaymentSummaryStore.getState().payments ?? []).slice();
-    const bMonthly = (usePaymentSummaryStore.getState().monthlyStats ?? []).slice();
-    ctx.payments = [...aPayments, ...bPayments];
-    ctx.monthlyStats = aMonthly.concat(bMonthly); // bruto: el filtrado real es por fecha
-    ctx.totalCondominiums = usePaymentSummaryStore.getState().totalCondominiums;
-  } else {
-    await payStore.fetchSummary(yearStart, true);
+  const years = Array.from(new Set([
+    ...getYearsForPeriod(ctx.period),
+    ...getYearsForPeriod(getPreviousPeriod(ctx.period)),
+  ])).sort();
+
+  const paymentsByKey = new Map<string, any>();
+  const monthlyStats: any[] = [];
+
+  for (const year of years) {
+    await payStore.fetchSummary(year, true);
     const st = usePaymentSummaryStore.getState();
-    ctx.payments = (st.payments ?? []).slice();
-    ctx.monthlyStats = (st.monthlyStats ?? []).slice();
+    (st.payments ?? []).forEach((payment) => {
+      paymentsByKey.set(uniquePaymentKey(payment), payment);
+    });
+    monthlyStats.push(...(st.monthlyStats ?? []));
     ctx.totalCondominiums = st.totalCondominiums;
   }
+
+  ctx.payments = Array.from(paymentsByKey.values());
+  ctx.monthlyStats = monthlyStats;
 }
 
 async function ensureExpensesLoaded(ctx: BuildContext) {
@@ -250,7 +272,7 @@ async function ensureExpensesLoaded(ctx: BuildContext) {
 async function ensureTicketsLoaded(ctx: BuildContext) {
   if (ctx.tickets) return;
   const ticketStore = useTicketsStore.getState();
-  await ticketStore.fetchTickets(undefined, 200);
+  await ticketStore.fetchTickets(undefined, 1000);
   ctx.tickets = (useTicketsStore.getState().tickets ?? []).slice();
 }
 
@@ -1126,6 +1148,11 @@ export const useAssemblyStore = create<AssemblyState>()((set, _get) => ({
       }
 
       const now = new Date().toISOString();
+      const privateRef = doc(db, privatePath(clientId, condominiumId), id);
+      const existingSnap = await getDoc(privateRef);
+      const existing = existingSnap.exists()
+        ? (existingSnap.data() as Partial<AssemblyPresentation>)
+        : null;
       const payload: Omit<AssemblyPresentation, "id"> = {
         clientId,
         condominiumId,
@@ -1135,15 +1162,14 @@ export const useAssemblyStore = create<AssemblyState>()((set, _get) => ({
         period,
         logoUrl,
         status: "published",
-        createdBy: user.email ?? user.uid,
-        createdAt: now,
+        createdBy: existing?.createdBy ?? user.email ?? user.uid,
+        createdAt: existing?.createdAt ?? now,
         updatedAt: now,
         slides,
         draftSlides,
       };
 
       // 1. Write/update private path
-      const privateRef = doc(db, privatePath(clientId, condominiumId), id);
       await setDoc(privateRef, stripUndefined(payload), { merge: true });
 
       // 2. Write to top-level public collection (viewer uses this)

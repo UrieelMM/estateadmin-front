@@ -24,7 +24,7 @@ type BillingFrequency = "monthly" | "quarterly" | "biannual" | "annual";
 // Constantes de precios por unidad
 const PLAN_BASE = 499;
 const COST_PER_UNIT = 4.0;
-const MIN_UNITS = 30;
+const MIN_UNITS = 20;
 const MAX_UNITS = 500;
 const IVA_RATE = 0.16;
 

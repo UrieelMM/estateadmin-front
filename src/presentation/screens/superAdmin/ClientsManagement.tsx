@@ -62,6 +62,71 @@ const planColors = {
   Free: "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300",
 };
 
+// Estilo y etiqueta para el badge de "Plan" del condominio.
+// - Si plan es numérico (modelo nuevo: número de unidades contratadas),
+//   mostramos "X unidades" con estilo índigo.
+// - Si plan es un nombre legacy (Basic/Essential/Professional/Premium/Free),
+//   conservamos el comportamiento original.
+const UNITS_PLAN_BADGE_CLASS =
+  "bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200";
+const FALLBACK_PLAN_BADGE_CLASS =
+  "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300";
+
+const resolveCondominiumPlanDisplay = (
+  condominium: { plan?: string | number; condominiumLimit?: number | string }
+): { label: string; className: string; } => {
+  const rawPlan = String( condominium.plan ?? "" ).trim();
+  const parsedFromPlan = parseInt( rawPlan, 10 );
+  if ( !isNaN( parsedFromPlan ) && parsedFromPlan > 0 ) {
+    return {
+      label: `${ parsedFromPlan } unidades`,
+      className: UNITS_PLAN_BADGE_CLASS,
+    };
+  }
+
+  // Plan legacy reconocido: usar su estilo y mantener el nombre.
+  if ( rawPlan && rawPlan in planColors ) {
+    return {
+      label: rawPlan,
+      className: planColors[ rawPlan as keyof typeof planColors ],
+    };
+  }
+
+  // Si no hay plan o no es reconocido, intentamos usar condominiumLimit como
+  // cantidad de unidades (común en condominios migrados/legacy).
+  const parsedLimit = parseInt( String( condominium.condominiumLimit ?? "" ), 10 );
+  if ( !isNaN( parsedLimit ) && parsedLimit > 0 ) {
+    return {
+      label: `${ parsedLimit } unidades`,
+      className: UNITS_PLAN_BADGE_CLASS,
+    };
+  }
+
+  return {
+    label: rawPlan || "Free",
+    className: FALLBACK_PLAN_BADGE_CLASS,
+  };
+};
+
+const resolveCondominiumCreatedDate = (
+  condominium: { createdDate?: any; createdAt?: any; }
+): string => {
+  const raw = condominium.createdDate ?? condominium.createdAt;
+  if ( !raw ) return "-";
+  try {
+    if ( typeof raw === "object" && typeof raw.toDate === "function" ) {
+      return raw.toDate().toLocaleDateString( "es-ES" );
+    }
+    const asDate = new Date( raw );
+    if ( !isNaN( asDate.getTime() ) ) {
+      return asDate.toLocaleDateString( "es-ES" );
+    }
+  } catch ( error ) {
+    console.error( "Error al formatear fecha del condominio:", error );
+  }
+  return "-";
+};
+
 const ClientsManagement: React.FC = () => {
   const {
     clients,
@@ -583,15 +648,17 @@ const ClientsManagement: React.FC = () => {
                                             { condominium.address || "-" }
                                           </td>
                                           <td className="px-4 py-2 whitespace-nowrap">
-                                            <span
-                                              className={ `px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${ planColors[
-                                                condominium.plan as keyof typeof planColors
-                                              ] ||
-                                                "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
-                                                }` }
-                                            >
-                                              { condominium.plan || "Free" }
-                                            </span>
+                                            { ( () => {
+                                              const planDisplay =
+                                                resolveCondominiumPlanDisplay( condominium );
+                                              return (
+                                                <span
+                                                  className={ `px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${ planDisplay.className }` }
+                                                >
+                                                  { planDisplay.label }
+                                                </span>
+                                              );
+                                            } )() }
                                           </td>
                                           <td className="px-4 py-2 whitespace-nowrap">
                                             <span
@@ -613,12 +680,7 @@ const ClientsManagement: React.FC = () => {
                                             </span>
                                           </td>
                                           <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                            { condominium.createdDate &&
-                                              condominium.createdDate.toDate
-                                              ? condominium.createdDate
-                                                .toDate()
-                                                .toLocaleDateString( "es-ES" )
-                                              : "-" }
+                                            { resolveCondominiumCreatedDate( condominium ) }
                                           </td>
                                           <td className="px-4 py-2 whitespace-nowrap text-right text-sm font-medium">
                                             <div className="flex justify-end space-x-2">

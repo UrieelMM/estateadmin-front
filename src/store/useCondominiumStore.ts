@@ -230,27 +230,48 @@ export const useCondominiumStore = create<CondominiumStore>()((set, get) => ({
   },
 }));
 
-// Función auxiliar para preservar datos de sesión importantes
+// Función auxiliar para preservar datos de sesión importantes cuando se
+// cambia de condominio.
+//
+// IMPORTANTE: Firebase Auth persiste la sesión del usuario en `localStorage`
+// con llaves tipo `firebase:authUser:<API_KEY>:<APP_NAME>`. Si limpiamos el
+// localStorage sin preservar esas llaves, la sesión se pierde y el usuario
+// es enviado al login al recargar la página. Por eso preservamos todas las
+// llaves que empiezan por los prefijos conocidos de Firebase, además de las
+// preferencias de UI y datos del usuario.
 const preserveSessionData = (newCondominiumId: string) => {
-  // Guardar datos críticos antes de limpiar localStorage
-  const keysToPreserve = ["dataUserActive", "theme"];
-  const savedData: Record<string, string | null> = {};
+  const explicitKeysToPreserve = ["dataUserActive", "theme"];
+  const firebasePrefixes = [
+    "firebase:",
+    "firebaseLocalStorage",
+    "FCM",
+    "@firebase/",
+  ];
 
-  // Guardar temporalmente los datos críticos
-  keysToPreserve.forEach((key) => {
-    savedData[key] = localStorage.getItem(key);
-  });
+  const savedData: Record<string, string> = {};
+  const allKeys = Object.keys(localStorage);
 
-  // Limpiar localStorage
+  for (const key of allKeys) {
+    const isExplicit = explicitKeysToPreserve.includes(key);
+    const isFirebase = firebasePrefixes.some((prefix) =>
+      key.startsWith(prefix),
+    );
+    if (!isExplicit && !isFirebase) continue;
+
+    const value = localStorage.getItem(key);
+    if (value !== null) {
+      savedData[key] = value;
+    }
+  }
+
+  // Limpiar localStorage para descartar cache del condominio anterior.
   localStorage.clear();
 
-  // Restaurar datos críticos
+  // Restaurar datos críticos (sesión de Firebase + preferencias).
   Object.entries(savedData).forEach(([key, value]) => {
-    if (value) {
-      localStorage.setItem(key, value);
-    }
+    localStorage.setItem(key, value);
   });
 
-  // Establecer el nuevo ID de condominio
+  // Establecer el nuevo ID de condominio.
   localStorage.setItem("condominiumId", newCondominiumId);
 };

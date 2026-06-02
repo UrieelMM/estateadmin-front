@@ -13,7 +13,7 @@ interface ClientEditModalProps {
 // Constantes de precios por unidad
 const PLAN_BASE = 499;
 const COST_PER_UNIT = 4.0;
-const MIN_UNITS = 30;
+const MIN_UNITS = 20;
 const MAX_UNITS = 500;
 const IVA_RATE = 0.16;
 
@@ -31,9 +31,62 @@ const ClientEditModal: React.FC<ClientEditModalProps> = ( {
     updateCondominiumForm,
     submitClientEdit,
     createCondominium,
+    assignRescueCoupon,
+    syncAdminCondominiums,
   } = useClientsConfig();
 
   const [ activeTab, setActiveTab ] = useState<"edit" | "addCondominium">( "edit" );
+  // State local del input de "cupón de rescate" en la pestaña Editar Cliente.
+  const [ rescueCouponInput, setRescueCouponInput ] = useState<string>( "" );
+  const [ assigningRescueCoupon, setAssigningRescueCoupon ] = useState<boolean>(
+    false,
+  );
+  const [ syncingAdmins, setSyncingAdmins ] = useState<boolean>( false );
+
+  const handleSyncAdminCondominiums = async () => {
+    setSyncingAdmins( true );
+    try {
+      await syncAdminCondominiums();
+    } finally {
+      setSyncingAdmins( false );
+    }
+  };
+
+  const generateCoupon = () => {
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    let coupon = "GIFT";
+    for ( let i = 0; i < 8; i++ ) {
+      coupon += chars.charAt( Math.floor( Math.random() * chars.length ) );
+    }
+    updateCondominiumForm( "coupon", coupon );
+  };
+
+  // Genera un cupón aleatorio en el input de rescate (no se guarda hasta
+  // que el super admin lo confirma con el botón "Asignar cupón").
+  const generateRescueCoupon = () => {
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    let coupon = "RESC";
+    for ( let i = 0; i < 8; i++ ) {
+      coupon += chars.charAt( Math.floor( Math.random() * chars.length ) );
+    }
+    setRescueCouponInput( coupon );
+  };
+
+  const handleAssignRescueCoupon = async () => {
+    const normalized = rescueCouponInput.trim().toUpperCase();
+    if ( normalized.length < 8 ) {
+      return; // El backend y el store también validan.
+    }
+    setAssigningRescueCoupon( true );
+    try {
+      const success = await assignRescueCoupon( { coupon: normalized } );
+      if ( success ) {
+        setRescueCouponInput( "" );
+      }
+    } finally {
+      setAssigningRescueCoupon( false );
+    }
+  };
 
   // Opciones de funciones pro y sus etiquetas en español
   const proFunctionOptions = [
@@ -564,6 +617,142 @@ const ClientEditModal: React.FC<ClientEditModalProps> = ( {
                   <option value="annual">Anual</option>
                 </select>
               </div>
+
+              {/* === Cupón de rescate ====================================
+                  Solo aplica para clientes que NO han pagado su primera
+                  factura y NO tienen ya un bypass o cupón redimido. Se usa
+                  para "rescatar" cuentas creadas antes de la implementación
+                  de cupones o cuando el admin nunca completó el pago inicial.
+                  ========================================================== */ }
+              { ( () => {
+                const existingCoupon = String(
+                  currentClient.coupon || "",
+                ).toUpperCase();
+                const existingStatus = String(
+                  currentClient.couponStatus || "",
+                ).toLowerCase();
+                const isRedeemed = existingStatus === "redeemed";
+                const isAlreadyBypassed = Boolean(
+                  currentClient.initialSetupPaymentBypassed,
+                );
+
+                return (
+                  <div className="mt-6 rounded-xl border border-amber-300 dark:border-amber-700 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 p-4">
+                    <div className="flex items-start gap-2 mb-2">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide bg-amber-200 text-amber-900 dark:bg-amber-800 dark:text-amber-100">
+                        Caso de rescate
+                      </span>
+                    </div>
+                    <h4 className="text-sm font-bold text-amber-900 dark:text-amber-100">
+                      Cupón de rescate (pago inicial no realizado)
+                    </h4>
+                    <p className="mt-1 text-xs text-amber-900/80 dark:text-amber-100/80">
+                      Úsalo solo cuando el cliente <strong>se quedó atorado en el
+                      paso de pago inicial</strong> (no pagó su primera factura) o
+                      fue creado antes de que existiera el flujo de cupones. El
+                      administrador del condominio podrá redimirlo desde su
+                      dashboard para condonar la factura de suscripción inicial.
+                    </p>
+
+                    {/* Estado actual del cupón a nivel cliente */ }
+                    { isAlreadyBypassed ? (
+                      <div className="mt-3 rounded-md bg-green-100 dark:bg-green-900/30 border border-green-300 dark:border-green-700 px-3 py-2 text-xs text-green-900 dark:text-green-100">
+                        Este cliente ya tiene el pago inicial condonado. No es
+                        necesario asignar un cupón de rescate.
+                      </div>
+                    ) : isRedeemed && existingCoupon ? (
+                      <div className="mt-3 rounded-md bg-blue-100 dark:bg-blue-900/30 border border-blue-300 dark:border-blue-700 px-3 py-2 text-xs text-blue-900 dark:text-blue-100">
+                        Este cliente ya redimió un cupón anteriormente
+                        (<span className="font-mono font-semibold">{ existingCoupon }</span>).
+                        Si necesitas asignar uno nuevo, revisa el caso manualmente.
+                      </div>
+                    ) : existingCoupon ? (
+                      <div className="mt-3 rounded-md bg-white dark:bg-gray-800 border border-amber-200 dark:border-amber-800 px-3 py-2 text-xs text-gray-800 dark:text-gray-200">
+                        Cupón activo actual:{ " " }
+                        <span className="font-mono font-semibold text-amber-800 dark:text-amber-200">
+                          { existingCoupon }
+                        </span>
+                        . Puedes reemplazarlo asignando uno nuevo abajo.
+                      </div>
+                    ) : null }
+
+                    {/* Input + acciones — se ocultan si ya hay bypass */ }
+                    { !isAlreadyBypassed && (
+                      <div className="mt-3 flex flex-col sm:flex-row gap-2">
+                        <input
+                          type="text"
+                          value={ rescueCouponInput }
+                          onChange={ ( e ) =>
+                            setRescueCouponInput(
+                              e.target.value.toUpperCase().trim(),
+                            )
+                          }
+                          minLength={ 8 }
+                          placeholder="Mínimo 8 caracteres"
+                          className="min-w-0 flex-1 rounded-lg border border-amber-300 dark:border-amber-700 bg-white dark:bg-gray-700 px-3 py-2 text-sm font-mono uppercase text-gray-900 dark:text-gray-100 focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/30"
+                        />
+                        <button
+                          type="button"
+                          onClick={ generateRescueCoupon }
+                          className="px-3 h-[38px] rounded-lg border border-amber-300 bg-amber-50 text-sm font-medium text-amber-800 hover:bg-amber-100 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-100 dark:hover:bg-amber-900/50"
+                        >
+                          Generar
+                        </button>
+                        <button
+                          type="button"
+                          onClick={ handleAssignRescueCoupon }
+                          disabled={
+                            assigningRescueCoupon ||
+                            rescueCouponInput.trim().length < 8
+                          }
+                          className="px-3 h-[38px] rounded-lg bg-amber-600 hover:bg-amber-700 text-sm font-semibold text-white disabled:opacity-50 dark:bg-amber-500 dark:hover:bg-amber-600"
+                        >
+                          { assigningRescueCoupon
+                            ? "Asignando..."
+                            : "Asignar cupón" }
+                        </button>
+                      </div>
+                    ) }
+                  </div>
+                );
+              } )() }
+
+              {/* === Sincronización de permisos de administradores ============
+                  Se usa para regularizar clientes creados antes del fix de
+                  propagación automática. Cuando se agrega un condominio nuevo
+                  a un cliente existente, el doc del administrador no recibía
+                  el nuevo UID en `condominiumUids`, por lo que el ComboBox
+                  del navbar mostraba solo el primer condominio.
+                  ============================================================ */ }
+              <div className="mt-6 rounded-xl border border-sky-300 dark:border-sky-700 bg-gradient-to-br from-sky-50 to-cyan-50 dark:from-sky-950/30 dark:to-cyan-950/30 p-4">
+                <div className="flex items-start gap-2 mb-2">
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide bg-sky-200 text-sky-900 dark:bg-sky-800 dark:text-sky-100">
+                    Mantenimiento
+                  </span>
+                </div>
+                <h4 className="text-sm font-bold text-sky-900 dark:text-sky-100">
+                  Sincronizar permisos de administradores
+                </h4>
+                <p className="mt-1 text-xs text-sky-900/80 dark:text-sky-100/80">
+                  Úsalo si el administrador de este cliente <strong>no ve todos
+                  sus condominios</strong> en el selector del navbar. Recorre
+                  todos los condominios del cliente y se asegura de que los
+                  usuarios con rol <em>admin</em> tengan acceso a cada uno. Es
+                  seguro re-ejecutarlo (es idempotente).
+                </p>
+                <div className="mt-3">
+                  <button
+                    type="button"
+                    onClick={ handleSyncAdminCondominiums }
+                    disabled={ syncingAdmins }
+                    className="px-3 h-[38px] rounded-lg bg-sky-600 hover:bg-sky-700 text-sm font-semibold text-white disabled:opacity-50 dark:bg-sky-500 dark:hover:bg-sky-600"
+                  >
+                    { syncingAdmins
+                      ? "Sincronizando..."
+                      : "Sincronizar ahora" }
+                  </button>
+                </div>
+              </div>
             </div>
 
             <div className="mt-6 flex justify-end space-x-3">
@@ -804,6 +993,47 @@ const ClientEditModal: React.FC<ClientEditModalProps> = ( {
                     Fecha de contratación registrada: { maintenanceDateLabel }
                   </p>
                 ) }
+              </div>
+
+              <div>
+                <h4 className="text-md font-medium mb-3 text-gray-800 dark:text-gray-200 border-b pb-1">
+                  Cupón de regalo
+                </h4>
+                <label
+                  htmlFor="coupon"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                >
+                  Cupón (opcional)
+                </label>
+                <div className="flex flex-col sm:flex-row gap-2 mt-1">
+                  <input
+                    type="text"
+                    name="coupon"
+                    id="coupon"
+                    value={ condominiumForm.coupon || "" }
+                    onChange={ ( e ) =>
+                      updateCondominiumForm(
+                        "coupon",
+                        e.target.value.toUpperCase().trim()
+                      )
+                    }
+                    minLength={ 8 }
+                    placeholder="Opcional, mínimo 8 caracteres"
+                    className="px-2 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={ generateCoupon }
+                    className="px-3 h-[38px] rounded-lg border border-indigo-200 bg-indigo-50 text-sm font-medium text-indigo-700 hover:bg-indigo-100 dark:border-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-200 dark:hover:bg-indigo-900/50"
+                  >
+                    Generar
+                  </button>
+                </div>
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  Si se asigna un cupón, el administrador del condominio podrá
+                  redimirlo desde su dashboard para condonar la primera factura
+                  de suscripción.
+                </p>
               </div>
 
               <div className="pt-2">

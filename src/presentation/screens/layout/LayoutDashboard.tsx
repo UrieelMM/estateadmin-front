@@ -27,7 +27,11 @@ import { useSyncClientPlan } from "../../../hooks/useSyncClientPlan";
 import { useClientPlanStore } from "../../../store/clientPlanStore";
 import SupportModal from "../../components/shared/forms/SupportModal";
 import TutorialsMenu from "../../components/shared/Help/TutorialsMenu";
-import { resolveInitialSetupStatus } from "../../../routes/initialSetupStatus";
+import {
+  resolveInitialSetupStatus,
+  type InitialSetupMode,
+} from "../../../routes/initialSetupStatus";
+import CondominiumPaymentGate from "../dashboard/InitialSetup/CondominiumPaymentGate";
 
 // Función global de diagnóstico (accesible desde la consola del navegador)
 declare global {
@@ -86,6 +90,11 @@ const LayoutDashboard = ({ children }: Props) => {
   const [loadingSession, setLoadingSession] = useState(true);
   const [showInitialSetup, setShowInitialSetup] = useState<boolean | null>(null);
   const [initialSetupStep, setInitialSetupStep] = useState(1);
+  const [initialSetupMode, setInitialSetupMode] = useState<InitialSetupMode>("none");
+  const [paymentGateContext, setPaymentGateContext] = useState<{
+    clientId: string;
+    condominiumId: string;
+  } | null>(null);
   const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
 
   useSyncClientPlan();
@@ -116,20 +125,59 @@ const LayoutDashboard = ({ children }: Props) => {
     };
   }, []);
 
-  // Verificar si el usuario necesita hacer la configuración inicial
+  // Verificar si el usuario necesita hacer la configuración inicial.
+  // IMPORTANTE: esperamos a que `auth.currentUser` esté listo antes de
+  // evaluar; al recargar la página, Firebase tarda unos ms en restaurar la
+  // sesión desde localStorage. Sin esta espera, la primera ejecución del
+  // efecto veía `currentUser === null` y devolvía "sin setup" silenciosamente.
   useEffect(() => {
-    const checkInitialSetup = async () => {
+    let isMounted = true;
+
+    const evaluateStatus = async () => {
       try {
         const status = await resolveInitialSetupStatus();
+        if (!isMounted) return;
         setInitialSetupStep(status.initialStep);
+        setInitialSetupMode(status.mode);
         setShowInitialSetup(status.requiresInitialSetup);
+        if (
+          status.mode === "condominium_payment" &&
+          status.clientId &&
+          status.condominiumId
+        ) {
+          setPaymentGateContext({
+            clientId: status.clientId,
+            condominiumId: status.condominiumId,
+          });
+        } else {
+          setPaymentGateContext(null);
+        }
       } catch (error) {
         console.error("Error al verificar configuración inicial:", error);
+        if (!isMounted) return;
         setInitialSetupStep(7);
+        setInitialSetupMode("wizard");
         setShowInitialSetup(true);
+        setPaymentGateContext(null);
       }
     };
-    checkInitialSetup();
+
+    const unsubscribe = auth.onAuthStateChanged((firebaseUser) => {
+      if (!firebaseUser) {
+        // El listener de sesión más abajo manejará el redirect al login.
+        if (!isMounted) return;
+        setShowInitialSetup(false);
+        setInitialSetupMode("none");
+        setPaymentGateContext(null);
+        return;
+      }
+      evaluateStatus();
+    });
+
+    return () => {
+      isMounted = false;
+      unsubscribe();
+    };
   }, []);
 
   useEffect(() => {
@@ -161,12 +209,27 @@ const LayoutDashboard = ({ children }: Props) => {
   if (isLoadingData || loadingSession || showInitialSetup === null) {
     return <Loading />;
   }
-  if (showInitialSetup) {
+  // Wizard inicial completo: usa la pantalla legacy de InitialSetupSteps.
+  if (showInitialSetup && initialSetupMode === "wizard") {
     const setupUrl =
       initialSetupStep === 7
         ? "/dashboard/initial-setup?step=payment"
         : "/dashboard/initial-setup";
     return <Navigate to={setupUrl} replace />;
+  }
+  // Pago pendiente solo para el condominio actual (cliente ya configurado):
+  // renderizamos un gate dedicado encima del dashboard, sin cambiar de ruta.
+  if (
+    showInitialSetup &&
+    initialSetupMode === "condominium_payment" &&
+    paymentGateContext
+  ) {
+    return (
+      <CondominiumPaymentGate
+        clientId={paymentGateContext.clientId}
+        condominiumId={paymentGateContext.condominiumId}
+      />
+    );
   }
 
   // ── Renderer de ítem de navegación (compartido desktop & mobile) ──────────

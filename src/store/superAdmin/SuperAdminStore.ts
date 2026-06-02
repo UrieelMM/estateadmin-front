@@ -44,6 +44,14 @@ interface Client {
   currency?: string; // Nuevo campo para moneda
   language?: string; // Nuevo campo para idioma
   hasMaintenanceApp?: boolean; // App de Mantenimiento
+  // Cupón asignado al cliente (creación inicial o rescate posterior).
+  coupon?: string;
+  couponStatus?: string;
+  couponType?: string;
+  couponCreatedAt?: any;
+  couponRedeemedAt?: any;
+  initialSetupPaymentBypassed?: boolean;
+  initialSetupPaymentPending?: boolean;
 }
 
 interface NewClientData {
@@ -175,6 +183,15 @@ const useSuperAdminStore = create<SuperAdminStore>()((set, _get) => ({
           billingDelinquent: data.billingDelinquent || false,
           nextBillingDate: data.nextBillingDate || null,
           lastOverdueInvoice: data.lastOverdueInvoice || "",
+          // Estado del cupón y pago inicial (usado por la edición del cliente
+          // para mostrar el cupón actual y por el flujo de "cupón de rescate").
+          coupon: data.coupon || "",
+          couponStatus: data.couponStatus || "",
+          couponType: data.couponType || "",
+          couponCreatedAt: data.couponCreatedAt || null,
+          couponRedeemedAt: data.couponRedeemedAt || null,
+          initialSetupPaymentBypassed: Boolean(data.initialSetupPaymentBypassed),
+          initialSetupPaymentPending: Boolean(data.initialSetupPaymentPending),
         };
       });
 
@@ -228,8 +245,8 @@ const useSuperAdminStore = create<SuperAdminStore>()((set, _get) => ({
     try {
       // Validar rango de unidades (plan = número de unidades)
       const units = parseInt(clientData.plan);
-      if (isNaN(units) || units < 30 || units > 500) {
-        toast.error("El número de unidades debe estar entre 30 y 500");
+      if (isNaN(units) || units < 20 || units > 500) {
+        toast.error("El número de unidades debe estar entre 20 y 500");
         set({ creatingClient: false });
         return { success: false };
       }

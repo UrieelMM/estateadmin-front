@@ -7,9 +7,30 @@ import {
   updateDoc,
   serverTimestamp,
 } from "firebase/firestore";
+import { getAuth } from "firebase/auth";
 import { executeSuperAdminOperation } from "../../services/superAdminService";
 import toast from "react-hot-toast";
 import { CondominiumStatus } from "../../presentation/components/superAdmin/NewClientForm";
+
+// Constantes de cálculo de pricing alineadas con NewClientForm.tsx,
+// ClientEditModal.tsx (pestaña Agregar Condominio) y CondominiumEditModal.tsx.
+// Mantener sincronizadas en los 4 lugares.
+const PLAN_BASE = 499;
+const COST_PER_UNIT = 4.0;
+const IVA_RATE = 0.16;
+const MIN_PRICING_UNITS = 20;
+
+const computePricingFromUnits = (
+  unitsRaw: number | string | undefined | null,
+): { pricing: number; pricingWithoutTax: number; units: number } => {
+  const parsed = parseInt(String(unitsRaw ?? ""), 10);
+  const units =
+    !isNaN(parsed) && parsed > 0 ? parsed : MIN_PRICING_UNITS;
+  const sub = PLAN_BASE + units * COST_PER_UNIT;
+  const pricing = Math.round(sub * (1 + IVA_RATE) * 100) / 100;
+  const pricingWithoutTax = Math.round(sub * 100) / 100;
+  return { pricing, pricingWithoutTax, units };
+};
 
 // Interfaces
 export interface Client {
@@ -37,6 +58,14 @@ export interface Client {
   billingFrequency?: string;
   pricing?: number;
   condominiumManager?: string;
+  // Estado del cupón / pago inicial (a nivel cliente).
+  coupon?: string;
+  couponStatus?: string;
+  couponType?: string;
+  couponCreatedAt?: any;
+  couponRedeemedAt?: any;
+  initialSetupPaymentBypassed?: boolean;
+  initialSetupPaymentPending?: boolean;
 }
 
 export interface ClientFormData {
@@ -62,6 +91,16 @@ export interface ClientFormData {
   hasMaintenanceApp?: boolean;
   pricing?: number;
   condominiumManager?: string;
+  // Estado del cupón / bypass de pago inicial. Se exponen para que el modal
+  // de edición pueda mostrar el cupón actual y asignar un cupón de rescate
+  // cuando aplica.
+  coupon?: string;
+  couponStatus?: string;
+  couponType?: string;
+  couponCreatedAt?: any;
+  couponRedeemedAt?: any;
+  initialSetupPaymentBypassed?: boolean;
+  initialSetupPaymentPending?: boolean;
 }
 
 export interface CondominiumFormData {
@@ -76,6 +115,7 @@ export interface CondominiumFormData {
   condominiumManager?: string;
   hasMaintenanceApp?: boolean;
   maintenanceAppContractedAt?: string | null;
+  coupon?: string;
 }
 
 export interface ClientCredentials {
@@ -119,6 +159,17 @@ interface ClientsConfigStore {
   submitClientEdit: () => Promise<boolean>;
   createCondominium: () => Promise<boolean>;
   updateCondominium: () => Promise<boolean>;
+  // Asigna un cupón "de rescate" al cliente actual (o a un condominio
+  // específico de ese cliente) y persiste en backend. El cupón queda
+  // `active` y debe ser redimido manualmente por el administrador.
+  assignRescueCoupon: (params: {
+    coupon: string;
+    condominiumId?: string;
+  }) => Promise<boolean>;
+  // Sincroniza permisos de administradores con todos los condominios del
+  // cliente. Útil para regularizar clientes creados antes del fix de
+  // propagación automática.
+  syncAdminCondominiums: () => Promise<boolean>;
   setCredentials: (credentials: ClientCredentials | null) => void;
 }
 
@@ -131,6 +182,7 @@ const initialCondominiumForm: CondominiumFormData = {
   condominiumManager: "",
   hasMaintenanceApp: false,
   maintenanceAppContractedAt: null,
+  coupon: "",
 };
 
 const db = getFirestore();
@@ -295,6 +347,19 @@ const useClientsConfig = create<ClientsConfigStore>()((set, get) => ({
         billingFrequency: client.billingFrequency || "monthly",
         pricing: client.pricing,
         condominiumManager: client.condominiumManager || "",
+        // Estado del cupón / pago inicial (para mostrar y manejar el cupón
+        // de rescate en el modal de edición).
+        coupon: (client as any).coupon || "",
+        couponStatus: (client as any).couponStatus || "",
+        couponType: (client as any).couponType || "",
+        couponCreatedAt: (client as any).couponCreatedAt || null,
+        couponRedeemedAt: (client as any).couponRedeemedAt || null,
+        initialSetupPaymentBypassed: Boolean(
+          (client as any).initialSetupPaymentBypassed,
+        ),
+        initialSetupPaymentPending: Boolean(
+          (client as any).initialSetupPaymentPending,
+        ),
       },
     });
   },
@@ -462,14 +527,27 @@ const useClientsConfig = create<ClientsConfigStore>()((set, get) => ({
           new Date().toISOString()
         : null;
 
+      // Recalculamos pricing a partir de las unidades, igual que al crear
+      // un condominio nuevo. Esto mantiene `pricing` y `pricingWithoutTax`
+      // coherentes con la calculadora del formulario de edición.
+      const {
+        pricing: resolvedPricing,
+        pricingWithoutTax: resolvedPricingWithoutTax,
+        units: resolvedUnits,
+      } = computePricingFromUnits(
+        currentCondominium.plan ?? currentCondominium.condominiumLimit,
+      );
+
       const payload = {
         clientId: currentClient.id,
         name: currentCondominium.name,
         address: currentCondominium.address,
-        plan: currentCondominium.plan,
+        plan: String(resolvedUnits),
+        pricing: resolvedPricing,
+        pricingWithoutTax: resolvedPricingWithoutTax,
         proFunctions: currentCondominium.proFunctions || [],
         status: currentCondominium.status,
-        condominiumLimit: Number(currentCondominium.condominiumLimit || 1),
+        condominiumLimit: resolvedUnits,
         hasMaintenanceApp,
         maintenanceAppContractedAt,
       };
@@ -499,10 +577,13 @@ const useClientsConfig = create<ClientsConfigStore>()((set, get) => ({
         db,
         `clients/${currentClient.id}/condominiums/${currentCondominium.id}`
       );
+
       await updateDoc(condominiumRef, {
         name: payload.name,
         address: payload.address,
-        plan: payload.plan || "Basic",
+        plan: payload.plan,
+        pricing: payload.pricing,
+        pricingWithoutTax: payload.pricingWithoutTax,
         proFunctions: payload.proFunctions,
         status: payload.status || CondominiumStatus.Pending,
         condominiumLimit: payload.condominiumLimit,
@@ -512,6 +593,7 @@ const useClientsConfig = create<ClientsConfigStore>()((set, get) => ({
             ? new Date(payload.maintenanceAppContractedAt)
             : serverTimestamp()
           : null,
+        updatedAt: serverTimestamp(),
       });
 
       toast.success("Condominio actualizado con éxito");
@@ -521,6 +603,142 @@ const useClientsConfig = create<ClientsConfigStore>()((set, get) => ({
       console.error("Error al actualizar condominio:", error);
       toast.error(`Error al actualizar el condominio: ${error.message || ""}`);
       set({ updatingCondominium: false });
+      return false;
+    }
+  },
+
+  // Asigna un cupón de rescate al cliente actual (o a un condominio
+  // específico de ese cliente). Caso de uso: clientes que se crearon antes
+  // de la implementación de cupones o que se quedaron atorados en el paso
+  // de pago inicial.
+  assignRescueCoupon: async ({ coupon, condominiumId }) => {
+    const { currentClient } = get();
+    if (!currentClient || !currentClient.id) {
+      toast.error("No hay cliente seleccionado.");
+      return false;
+    }
+
+    const normalizedCoupon = String(coupon || "").trim().toUpperCase();
+    if (normalizedCoupon.length < 8) {
+      toast.error("El cupón debe tener al menos 8 caracteres.");
+      return false;
+    }
+
+    try {
+      const auth = getAuth();
+      const user = auth.currentUser;
+      if (!user) {
+        toast.error("Tu sesión de super admin no está disponible.");
+        return false;
+      }
+      const idToken = await user.getIdToken();
+
+      const response = await fetch(
+        `${import.meta.env.VITE_URL_SERVER}/users-auth/assign-rescue-coupon`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${idToken}`,
+          },
+          body: JSON.stringify({
+            clientId: currentClient.id,
+            coupon: normalizedCoupon,
+            ...(condominiumId ? { condominiumId } : {}),
+          }),
+        },
+      );
+
+      const responseData = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        toast.error(
+          responseData?.message || "No se pudo asignar el cupón de rescate.",
+        );
+        return false;
+      }
+
+      toast.success(
+        responseData?.message ||
+          "Cupón de rescate asignado. El administrador podrá redimirlo desde su dashboard.",
+      );
+
+      // Reflejar el cambio en el state local del cliente para que el modal
+      // muestre de inmediato el cupón activo. Solo aplica al alcance cliente,
+      // ya que el alcance condominio se refresca al recargar la lista.
+      if (!condominiumId) {
+        set({
+          currentClient: {
+            ...currentClient,
+            coupon: normalizedCoupon,
+            couponStatus: "active",
+            couponType: "rescue",
+            couponRedeemedAt: null,
+            initialSetupPaymentBypassed: false,
+          },
+        });
+      }
+
+      return true;
+    } catch (error: any) {
+      console.error("Error al asignar cupón de rescate:", error);
+      toast.error(
+        `Error al asignar el cupón de rescate: ${error.message || ""}`,
+      );
+      return false;
+    }
+  },
+
+  // Sincroniza permisos de administradores con todos los condominios del
+  // cliente actual. Llama al endpoint sync-admin-condominiums.
+  syncAdminCondominiums: async () => {
+    const { currentClient } = get();
+    if (!currentClient || !currentClient.id) {
+      toast.error("No hay cliente seleccionado.");
+      return false;
+    }
+
+    try {
+      const auth = getAuth();
+      const user = auth.currentUser;
+      if (!user) {
+        toast.error("Tu sesión de super admin no está disponible.");
+        return false;
+      }
+      const idToken = await user.getIdToken();
+
+      const response = await fetch(
+        `${import.meta.env.VITE_URL_SERVER}/users-auth/sync-admin-condominiums`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${idToken}`,
+          },
+          body: JSON.stringify({ clientId: currentClient.id }),
+        },
+      );
+
+      const responseData = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        toast.error(
+          responseData?.message ||
+            "No se pudo sincronizar los permisos de administradores.",
+        );
+        return false;
+      }
+
+      toast.success(
+        responseData?.message ||
+          "Permisos de administradores sincronizados con éxito.",
+      );
+      return true;
+    } catch (error: any) {
+      console.error("Error al sincronizar permisos de admins:", error);
+      toast.error(
+        `Error al sincronizar permisos: ${error.message || ""}`,
+      );
       return false;
     }
   },
@@ -543,6 +761,14 @@ const useClientsConfig = create<ClientsConfigStore>()((set, get) => ({
       return false;
     }
 
+    const normalizedCoupon = String(condominiumForm.coupon || "")
+      .trim()
+      .toUpperCase();
+    if (normalizedCoupon && normalizedCoupon.length < 8) {
+      toast.error("El cupón debe tener al menos 8 caracteres.");
+      return false;
+    }
+
     set({ addingCondominium: true });
 
     try {
@@ -551,6 +777,16 @@ const useClientsConfig = create<ClientsConfigStore>()((set, get) => ({
         ? toIsoDateString(condominiumForm.maintenanceAppContractedAt) ||
           new Date().toISOString()
         : null;
+
+      // El plan ahora representa el número de unidades contratadas. A partir
+      // de ese número derivamos pricing (total con IVA) y pricingWithoutTax
+      // (subtotal). El backend usa estos campos para generar la factura
+      // inicial — sin ellos llegan null y la factura queda incompleta.
+      const { pricing, pricingWithoutTax, units: resolvedUnits } =
+        computePricingFromUnits(
+          condominiumForm.plan ?? condominiumForm.condominiumLimit,
+        );
+      const resolvedPlan = String(resolvedUnits);
 
       const response = await fetch(
         `${import.meta.env.VITE_URL_SERVER}/users-auth/register-condominium`,
@@ -563,13 +799,16 @@ const useClientsConfig = create<ClientsConfigStore>()((set, get) => ({
             name: condominiumForm.name,
             address: condominiumForm.address,
             clientId: currentClient.id,
-            plan: condominiumForm.plan || "Free",
+            plan: resolvedPlan,
+            pricing,
+            pricingWithoutTax,
             proFunctions: condominiumForm.proFunctions || [],
             status: condominiumForm.status || CondominiumStatus.Pending,
-            condominiumLimit: condominiumForm.condominiumLimit || 1,
+            condominiumLimit: resolvedUnits,
             condominiumManager: condominiumForm.condominiumManager || "",
             hasMaintenanceApp,
             maintenanceAppContractedAt,
+            ...(normalizedCoupon ? { coupon: normalizedCoupon } : {}),
           }),
         }
       );

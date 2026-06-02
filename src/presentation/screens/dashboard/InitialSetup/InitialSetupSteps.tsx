@@ -649,6 +649,16 @@ const InitialSetupSteps = ( { initialStep }: InitialSetupStepsProps ) => {
     const condominiumId = localStorage.getItem( "condominiumId" );
     if ( !condominiumId ) return false;
 
+    // Cupón redimido a nivel del condominio actual (caso: cliente existente
+    // al que se le agregó un nuevo condominio con cupón de regalo).
+    const condominiumDoc = await getDoc(
+      doc( db, `clients/${ clientId }/condominiums/${ condominiumId }` )
+    );
+    const condominiumData = condominiumDoc.exists()
+      ? condominiumDoc.data() || {}
+      : {};
+    if ( condominiumData.initialSetupPaymentBypassed ) return true;
+
     const paymentStatus = await getInitialSubscriptionPaymentStatus(
       clientId,
       condominiumId
@@ -767,6 +777,11 @@ const InitialSetupSteps = ( { initialStep }: InitialSetupStepsProps ) => {
       const user = auth.currentUser;
       if ( !user ) throw new Error( "Usuario no autenticado" );
 
+      // Enviamos el condominiumId actual (desde localStorage) porque al cambiar
+      // de condominio en el selector el JWT del admin sigue apuntando al condominio
+      // original. El backend validará que pertenezca al mismo cliente.
+      const currentCondominiumId = localStorage.getItem( "condominiumId" ) || "";
+
       const response = await fetch(
         `${ import.meta.env.VITE_URL_SERVER }/users-auth/redeem-initial-setup-coupon`,
         {
@@ -775,7 +790,12 @@ const InitialSetupSteps = ( { initialStep }: InitialSetupStepsProps ) => {
             "Content-Type": "application/json",
             Authorization: `Bearer ${ await user.getIdToken() }`,
           },
-          body: JSON.stringify( { coupon: normalizedCoupon } ),
+          body: JSON.stringify( {
+            coupon: normalizedCoupon,
+            ...( currentCondominiumId
+              ? { condominiumId: currentCondominiumId }
+              : {} ),
+          } ),
         }
       );
 
