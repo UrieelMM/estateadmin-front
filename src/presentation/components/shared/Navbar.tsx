@@ -138,16 +138,24 @@ const Navbar = () => {
                   </motion.div>
                 )}
 
+                {/* Divider vertical sutil entre el selector y el saludo */}
+                {userData?.role !== "super-provider-admin" && (
+                  <motion.div
+                    variants={itemVariants}
+                    className="hidden md:block h-7 w-px bg-white/20 dark:bg-white/10"
+                  />
+                )}
+
                 {/* Greeting */}
                 <motion.p
                   variants={itemVariants}
-                  className="truncate text-sm font-medium min-w-0 text-white/90 dark:text-gray-200"
+                  className="hidden md:block truncate text-sm font-medium min-w-0 text-white/90 dark:text-gray-200"
                 >
                   <span className="font-semibold text-white dark:text-white">
                     Hola, {userData?.name}
                   </span>
-                  <span className="hidden sm:inline font-normal ml-1 text-indigo-200 dark:text-gray-400">
-                    {currentDate}
+                  <span className="hidden lg:inline font-normal ml-1 text-indigo-200/90 dark:text-gray-400">
+                    · {currentDate}
                   </span>
                 </motion.p>
               </motion.div>
