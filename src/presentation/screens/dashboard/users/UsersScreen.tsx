@@ -17,7 +17,6 @@ import { UserCircleIcon } from "@heroicons/react/24/solid";
 import {
   compareUsersByTowerThenUnit,
   compareNaturalStrings,
-  normalizeTowerForSort,
 } from "../../../../utils/sortUsersByUnit";
 
 const UsersScreen = () => {
@@ -51,20 +50,20 @@ const UsersScreen = () => {
   const [columnSettingsOpen, setColumnSettingsOpen] = useState(false);
 
   const currentCondominiumId = useCondominiumStore(
-    (state) => state.selectedCondominium?.id
+    (state) => state.selectedCondominium?.id,
   );
 
   const pageSize = 30; // Cantidad de usuarios por página
 
   const fetchUserDetails = useUserStore((state) => state.fetchUserDetails);
   const fetchPaginatedCondominiumsUsers = useUserStore(
-    (state) => state.fetchPaginatedCondominiumsUsers
+    (state) => state.fetchPaginatedCondominiumsUsers,
   );
   const fetchPaginatedCondominiumsUsersByTower = useUserStore(
-    (state) => state.fetchPaginatedCondominiumsUsersByTower
+    (state) => state.fetchPaginatedCondominiumsUsersByTower,
   );
   const fetchCondominiumTowerOptions = useUserStore(
-    (state) => state.fetchCondominiumTowerOptions
+    (state) => state.fetchCondominiumTowerOptions,
   );
   const searchUsersByName = useUserStore((state) => state.searchUsersByName);
 
@@ -97,7 +96,8 @@ const UsersScreen = () => {
       const filteredUsers = normalizedTowerFilter
         ? fetchedUsers.filter(
             (user) =>
-              normalizeTower(user.tower).toLowerCase() === normalizedTowerFilter
+              normalizeTower(user.tower).toLowerCase() ===
+              normalizedTowerFilter,
           )
         : fetchedUsers;
       setUsers(filteredUsers);
@@ -115,13 +115,13 @@ const UsersScreen = () => {
         ? await fetchPaginatedCondominiumsUsersByTower(
             pageSize,
             page,
-            normalizedTower
+            normalizedTower,
           )
         : await fetchPaginatedCondominiumsUsers(pageSize, page);
       setUsers(fetchedUsers);
     } catch (error) {
       setLoadingError(
-        "Error al cargar usuarios. Por favor, inténtalo de nuevo."
+        "Error al cargar usuarios. Por favor, inténtalo de nuevo.",
       );
       console.error(error);
     } finally {
@@ -160,8 +160,7 @@ const UsersScreen = () => {
     loadTowerOptions();
   };
 
-  const normalizeTower = (value: unknown): string =>
-    String(value ?? "").trim();
+  const normalizeTower = (value: unknown): string => String(value ?? "").trim();
 
   useEffect(() => {
     fetchUsers(currentPage, towerFilter);
@@ -262,16 +261,16 @@ const UsersScreen = () => {
                   {key === "department"
                     ? "Número"
                     : key === "tower"
-                    ? "Torre"
-                    : key === "name"
-                    ? "Nombre"
-                    : key === "phone"
-                    ? "Teléfono"
-                    : key === "email"
-                    ? "Email"
-                    : key === "role"
-                    ? "Rol"
-                    : "Acciones"}
+                      ? "Torre"
+                      : key === "name"
+                        ? "Nombre"
+                        : key === "phone"
+                          ? "Teléfono"
+                          : key === "email"
+                            ? "Email"
+                            : key === "role"
+                              ? "Rol"
+                              : "Acciones"}
                 </label>
               </div>
             ))}
@@ -470,12 +469,19 @@ const UsersScreen = () => {
                       <td className="px-4 py-3.5">
                         <div className="flex items-center">
                           <div className="flex-shrink-0 h-10 w-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-500 dark:text-gray-400 overflow-hidden">
-                            {user.photoURL && user.photoURL.trim() !== "" && !imageErrors[user.uid || ''] ? (
-                              <img 
-                                src={user.photoURL} 
-                                alt="User Photo" 
+                            {user.photoURL &&
+                            user.photoURL.trim() !== "" &&
+                            !imageErrors[user.uid || ""] ? (
+                              <img
+                                src={user.photoURL}
+                                alt="User Photo"
                                 className="w-full h-full object-cover"
-                                onError={() => setImageErrors(prev => ({ ...prev, [user.uid || '']: true }))}
+                                onError={() =>
+                                  setImageErrors((prev) => ({
+                                    ...prev,
+                                    [user.uid || ""]: true,
+                                  }))
+                                }
                               />
                             ) : (
                               <UserCircleIcon className="h-7 w-7" />
