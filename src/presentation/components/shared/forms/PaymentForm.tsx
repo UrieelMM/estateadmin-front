@@ -1,15 +1,26 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { Transition, Dialog, Combobox } from "@headlessui/react";
 import {
-  PhotoIcon,
   XMarkIcon,
   UserIcon,
   CurrencyDollarIcon,
   CreditCardIcon,
   ClipboardIcon,
   CalendarIcon,
-} from "@heroicons/react/16/solid";
-import { CheckIcon, ChevronUpDownIcon } from "@heroicons/react/20/solid";
+  BanknotesIcon,
+  DocumentTextIcon,
+  CloudArrowUpIcon,
+  TicketIcon,
+  IdentificationIcon,
+  HashtagIcon,
+  BuildingLibraryIcon,
+} from "@heroicons/react/24/outline";
+import {
+  CheckIcon,
+  ChevronUpDownIcon,
+  CheckCircleIcon,
+  InformationCircleIcon,
+} from "@heroicons/react/20/solid";
 import useUserStore from "../../../../store/UserDataStore";
 import { UserData } from "../../../../interfaces/UserData";
 import { usePaymentStore } from "../../../../store/usePaymentStore";
@@ -19,6 +30,141 @@ import { usePaymentSummaryStore } from "../../../../store/paymentSummaryStore";
 import { useUnidentifiedPaymentsStore } from "../../../../store/useUnidentifiedPaymentsStore";
 import { useCondominiumStore } from "../../../../store/useCondominiumStore";
 import { useFileCompression } from "../../../../hooks/useFileCompression";
+
+// ─── Helpers visuales (sin lógica de negocio) ────────────────────────────────
+const cn = (...classes: (string | boolean | undefined | null)[]) =>
+  classes.filter(Boolean).join(" ");
+
+const inputBase =
+  "block w-full rounded-lg border-0 bg-white py-2 pr-3 text-sm text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 transition focus:ring-2 focus:ring-inset focus:ring-indigo-500 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500 dark:bg-gray-800 dark:text-gray-100 dark:ring-gray-700 dark:placeholder:text-gray-500 dark:focus:ring-indigo-400 dark:disabled:bg-gray-800/50 dark:disabled:text-gray-500";
+
+interface SectionCardProps {
+  title: string;
+  description?: string;
+  icon: React.ReactNode;
+  muted?: boolean;
+  children: React.ReactNode;
+}
+
+const SectionCard = ({
+  title,
+  description,
+  icon,
+  muted,
+  children,
+}: SectionCardProps) => (
+  <section
+    className={cn(
+      "rounded-2xl border bg-white shadow-sm transition dark:bg-gray-900",
+      muted
+        ? "border-gray-200/70 opacity-70 dark:border-gray-800"
+        : "border-gray-200 dark:border-gray-800",
+    )}
+  >
+    <header className="flex items-start gap-2.5 border-b border-gray-100 px-4 py-3 dark:border-gray-800">
+      <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-300">
+        {icon}
+      </span>
+      <div className="min-w-0 flex-1">
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+          {title}
+        </h3>
+        {description && (
+          <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+            {description}
+          </p>
+        )}
+      </div>
+    </header>
+    <div className="space-y-4 px-4 py-4">{children}</div>
+  </section>
+);
+
+interface FieldProps {
+  label: string;
+  htmlFor?: string;
+  hint?: string;
+  optional?: boolean;
+  children: React.ReactNode;
+  right?: React.ReactNode;
+}
+
+const Field = ({
+  label,
+  htmlFor,
+  hint,
+  optional,
+  children,
+  right,
+}: FieldProps) => (
+  <div>
+    <div className="flex items-end justify-between gap-2">
+      <label
+        htmlFor={htmlFor}
+        className="block text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-400"
+      >
+        {label}
+        {optional && (
+          <span className="ml-1 text-[10px] font-normal normal-case tracking-normal text-gray-400">
+            (opcional)
+          </span>
+        )}
+      </label>
+      {right}
+    </div>
+    <div className="mt-1.5">{children}</div>
+    {hint && (
+      <p className="mt-1 text-[11px] text-gray-500 dark:text-gray-400">
+        {hint}
+      </p>
+    )}
+  </div>
+);
+
+interface PaymentTypeCardProps {
+  active: boolean;
+  title: string;
+  description: string;
+  icon: React.ReactNode;
+  onClick: () => void;
+}
+
+const PaymentTypeCard = ({
+  active,
+  title,
+  description,
+  icon,
+  onClick,
+}: PaymentTypeCardProps) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className={cn(
+      "group relative flex items-start gap-2.5 rounded-xl border px-3 py-2.5 text-left transition",
+      active
+        ? "border-white/40 bg-white/20 text-white shadow-inner backdrop-blur"
+        : "border-white/20 bg-white/[0.07] text-white/80 hover:bg-white/15 hover:text-white",
+    )}
+  >
+    <span
+      className={cn(
+        "mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition",
+        active ? "bg-white text-indigo-600" : "bg-white/15 text-white",
+      )}
+    >
+      {icon}
+    </span>
+    <div className="min-w-0 flex-1">
+      <p className="text-sm font-semibold leading-tight">{title}</p>
+      <p className="mt-0.5 text-[11px] leading-snug text-white/70">
+        {description}
+      </p>
+    </div>
+    {active && (
+      <CheckCircleIcon className="h-4 w-4 shrink-0 text-white" />
+    )}
+  </button>
+);
 
 interface FormParcelReceptionProps {
   open: boolean;
@@ -666,7 +812,17 @@ const PaymentForm = ( { open, setOpen }: FormParcelReceptionProps ) => {
   return (
     <Transition.Root show={ open } as={ Fragment }>
       <Dialog as="div" className="relative z-10" onClose={ setOpen }>
-        <div className="fixed inset-0" />
+        <Transition.Child
+          as={ Fragment }
+          enter="ease-in-out duration-300"
+          enterFrom="opacity-0"
+          enterTo="opacity-100"
+          leave="ease-in-out duration-300"
+          leaveFrom="opacity-100"
+          leaveTo="opacity-0"
+        >
+          <div className="fixed inset-0 bg-gray-900/40 backdrop-blur-[2px] transition-opacity" />
+        </Transition.Child>
         <div className="fixed inset-0 overflow-hidden">
           <div className="overlay-forms absolute inset-0 overflow-hidden">
             <div className="pointer-events-none fixed inset-y-0 right-0 flex max-w-full pl-10 sm:pl-16">
@@ -682,228 +838,254 @@ const PaymentForm = ( { open, setOpen }: FormParcelReceptionProps ) => {
                 <Dialog.Panel className="pointer-events-auto w-screen max-w-3xl">
                   <form
                     onSubmit={ handleSubmit }
-                    className="flex h-full flex-col divide-y divide-gray-200 bg-white shadow-xl"
+                    className="flex h-full flex-col bg-gray-50 shadow-2xl dark:bg-gray-950"
                   >
-                    <div className="h-0 flex-1 overflow-y-auto dark:bg-gray-900">
-                      <div className="bg-indigo-700 px-4 py-6 sm:px-6 dark:bg-gray-800">
-                        <div className="flex items-center justify-between">
-                          <Dialog.Title className="text-base font-semibold leading-6 text-white">
+                    {/* ── Hero header ────────────────────────────────────── */ }
+                    <div className="relative overflow-hidden bg-gradient-to-br from-indigo-600 via-indigo-600 to-violet-600 px-5 py-5 sm:px-6 dark:from-indigo-700 dark:via-indigo-800 dark:to-violet-900">
+                      <button
+                        type="button"
+                        className="absolute right-4 top-4 inline-flex items-center justify-center rounded-lg bg-white/10 p-1.5 text-white/80 transition hover:bg-white/20 hover:text-white focus:outline-none focus:ring-2 focus:ring-white/50"
+                        onClick={ () => setOpen( false ) }
+                        aria-label="Cerrar"
+                      >
+                        <XMarkIcon className="h-5 w-5" aria-hidden="true" />
+                      </button>
+
+                      <div className="flex items-center gap-3 pr-10">
+                        <div className="rounded-xl bg-white/15 p-2.5 backdrop-blur">
+                          <CurrencyDollarIcon className="h-6 w-6 text-white" />
+                        </div>
+                        <div className="min-w-0">
+                          <Dialog.Title className="text-lg font-bold leading-tight text-white">
                             Registrar pago
                           </Dialog.Title>
-                          <div className="ml-3 flex h-7 items-center">
-                            <button
-                              type="button"
-                              className="relative rounded-md bg-indigo-700 text-indigo-200 hover:text-white focus:outline-none focus:ring-2 focus:ring-white"
-                              onClick={ () => setOpen( false ) }
-                            >
-                              <span className="absolute -inset-2.5" />
-                              <XMarkIcon
-                                className="h-6 w-6"
-                                aria-hidden="true"
-                              />
-                            </button>
-                          </div>
-                        </div>
-                        <div className="mt-1">
-                          <p className="text-sm text-indigo-300">
-                            Registra un nuevo pago para un condómino.
+                          <p className="mt-0.5 text-xs text-indigo-100">
+                            Captura un pago de mantenimiento aplicado a un condómino o
+                            como pago no identificado.
                           </p>
                         </div>
-                        <div className="mt-4">
-                          <span className="block text-sm font-medium leading-6 text-white">
-                            Tipo de registro
-                          </span>
-                          <div className="mt-2 flex items-center space-x-4">
-                            <label className="flex items-center text-white">
-                              <input
-                                type="radio"
-                                name="paymentIdentification"
-                                value="identified"
-                                checked={ !isUnidentifiedPayment }
-                                onChange={ () => handlePaymentTypeChange( false ) }
-                                className="mr-2"
-                              />
-                              Pago identificado
-                            </label>
-                            <label className="flex items-center text-white">
-                              <input
-                                type="radio"
-                                name="paymentIdentification"
-                                value="unidentified"
-                                checked={ isUnidentifiedPayment }
-                                onChange={ () => handlePaymentTypeChange( true ) }
-                                className="mr-2"
-                              />
-                              Pago no identificado
-                            </label>
-                          </div>
+                      </div>
+
+                      <div className="mt-4">
+                        <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-indigo-100/80">
+                          Tipo de registro
+                        </p>
+                        <div className="grid gap-2 sm:grid-cols-2">
+                          <PaymentTypeCard
+                            active={ !isUnidentifiedPayment }
+                            title="Pago identificado"
+                            description="Aplícalo a los cargos de un condómino específico."
+                            icon={ <IdentificationIcon className="h-4 w-4" /> }
+                            onClick={ () => handlePaymentTypeChange( false ) }
+                          />
+                          <PaymentTypeCard
+                            active={ isUnidentifiedPayment }
+                            title="Pago no identificado"
+                            description="Regístralo y asígnalo más tarde a un condómino."
+                            icon={ <BanknotesIcon className="h-4 w-4" /> }
+                            onClick={ () => handlePaymentTypeChange( true ) }
+                          />
                         </div>
                       </div>
-                      <div className="flex flex-1 flex-col justify-between">
-                        <div className="divide-y divide-gray-200 px-4 sm:px-6">
-                          <div className="space-y-6 pb-5 pt-6">
-                            {/* Seleccionar condómino */ }
-                            <div>
-                              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                                <label
-                                  htmlFor="nameRecipient"
-                                  className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100"
-                                >
-                                  Condómino
-                                </label>
-                                <div className="flex items-center gap-2">
-                                  <label
-                                    htmlFor="recipientSortOrder"
-                                    className="text-xs text-gray-500 dark:text-gray-400"
-                                  >
-                                    Orden por
-                                  </label>
-                                  <select
-                                    id="recipientSortOrder"
-                                    value={ recipientSortOrder }
-                                    onChange={ ( e ) =>
-                                      handleRecipientSortOrderChange(
-                                        e.target.value as "" | "asc" | "desc"
-                                      )
-                                    }
-                                    disabled={ isUnidentifiedPayment }
-                                    className="rounded-md border border-gray-300 bg-white px-2 py-1 text-xs text-gray-700 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:cursor-not-allowed disabled:bg-gray-100 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:disabled:bg-gray-700"
-                                  >
-                                    <option value="">Sin orden</option>
-                                    <option value="asc">Ascendente</option>
-                                    <option value="desc">Descendente</option>
-                                  </select>
-                                </div>
-                              </div>
-                              <div className="mt-2 relative">
-                                <Combobox
-                                  value={ selectedRecipientUid }
-                                  onChange={ ( uid: string ) => {
-                                    if ( !uid ) {
-                                      localStorage.removeItem( recipientStorageKey );
-                                      setSelectedUser( null );
-                                      setEmail( "" );
-                                      setNumberCondominium( "" );
-                                      setSelectedCharges( [] );
-                                      return;
-                                    }
-                                    setRecipientSearch( "" );
-                                    handleRecipientSelection( uid );
-                                  } }
-                                  disabled={ isUnidentifiedPayment }
-                                >
-                                  <div className="relative">
-                                    <div className="absolute left-2 top-1/2 flex items-center transform -translate-y-1/2 z-10">
-                                      <UserIcon className="h-5 w-5 text-gray-400" />
-                                    </div>
-                                    <Combobox.Input
-                                      ref={ recipientComboboxInputRef }
-                                      id="nameRecipient"
-                                      name="nameRecipient"
-                                      className="px-8 pr-10 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
-                                      displayValue={ ( uid: string ) =>
-                                        getRecipientLabel( uid )
-                                      }
-                                      onChange={ ( event ) =>
-                                        setRecipientSearch( event.target.value )
-                                      }
-                                      onFocus={ () =>
-                                        recipientComboboxButtonRef.current?.click()
-                                      }
-                                      placeholder="Buscar por nombre, número o torre"
-                                    />
-                                    <Combobox.Button
-                                      ref={ recipientComboboxButtonRef }
-                                      className="absolute inset-y-0 right-0 flex items-center pr-2"
-                                    >
-                                      <ChevronUpDownIcon className="h-5 w-5 text-gray-400" />
-                                    </Combobox.Button>
-                                  </div>
+                    </div>
 
-                                  <Combobox.Options className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white dark:bg-gray-800 py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
+                    <div className="h-0 flex-1 overflow-y-auto">
+                      <div className="space-y-4 px-4 py-5 sm:px-6">
+                        {/* ── Sección: Condómino ───────────────────────── */ }
+                        <SectionCard
+                          title="Condómino"
+                          description={
+                            isUnidentifiedPayment
+                              ? "Pago no identificado: no requiere un condómino en este momento."
+                              : "Selecciona al residente que realizó el pago."
+                          }
+                          icon={ <UserIcon className="h-4 w-4" /> }
+                          muted={ isUnidentifiedPayment }
+                        >
+                          <Field
+                            label="Buscar condómino"
+                            htmlFor="nameRecipient"
+                            hint="Puedes buscar por nombre, número de unidad o torre."
+                            right={
+                              <div className="flex items-center gap-1.5">
+                                <label
+                                  htmlFor="recipientSortOrder"
+                                  className="text-[10px] font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400"
+                                >
+                                  Orden
+                                </label>
+                                <select
+                                  id="recipientSortOrder"
+                                  value={ recipientSortOrder }
+                                  onChange={ ( e ) =>
+                                    handleRecipientSortOrderChange(
+                                      e.target.value as "" | "asc" | "desc"
+                                    )
+                                  }
+                                  disabled={ isUnidentifiedPayment }
+                                  className="rounded-md border border-gray-200 bg-white px-2 py-0.5 text-[11px] text-gray-700 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:cursor-not-allowed disabled:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:disabled:bg-gray-700"
+                                >
+                                  <option value="">Sin orden</option>
+                                  <option value="asc">Asc</option>
+                                  <option value="desc">Desc</option>
+                                </select>
+                              </div>
+                            }
+                          >
+                            <Combobox
+                              value={ selectedRecipientUid }
+                              onChange={ ( uid: string ) => {
+                                if ( !uid ) {
+                                  localStorage.removeItem( recipientStorageKey );
+                                  setSelectedUser( null );
+                                  setEmail( "" );
+                                  setNumberCondominium( "" );
+                                  setSelectedCharges( [] );
+                                  return;
+                                }
+                                setRecipientSearch( "" );
+                                handleRecipientSelection( uid );
+                              } }
+                              disabled={ isUnidentifiedPayment }
+                            >
+                              <div className="relative">
+                                <UserIcon className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                                <Combobox.Input
+                                  ref={ recipientComboboxInputRef }
+                                  id="nameRecipient"
+                                  name="nameRecipient"
+                                  className={ `${ inputBase } pl-9 pr-10` }
+                                  displayValue={ ( uid: string ) =>
+                                    getRecipientLabel( uid )
+                                  }
+                                  onChange={ ( event ) =>
+                                    setRecipientSearch( event.target.value )
+                                  }
+                                  onFocus={ () =>
+                                    recipientComboboxButtonRef.current?.click()
+                                  }
+                                  placeholder="Buscar por nombre, número o torre"
+                                />
+                                <Combobox.Button
+                                  ref={ recipientComboboxButtonRef }
+                                  className="absolute inset-y-0 right-0 flex items-center pr-2"
+                                >
+                                  <ChevronUpDownIcon className="h-5 w-5 text-gray-400" />
+                                </Combobox.Button>
+                              </div>
+
+                              <Combobox.Options className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-lg bg-white py-1 text-sm shadow-lg ring-1 ring-black/5 focus:outline-none dark:bg-gray-800 dark:ring-white/[0.08]">
+                                <Combobox.Option
+                                  value=""
+                                  className={ ( { active } ) =>
+                                    `relative cursor-default select-none px-3 py-1.5 text-[11px] italic ${ active
+                                      ? "bg-indigo-50 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-300"
+                                      : "text-gray-500 dark:text-gray-400"
+                                    }`
+                                  }
+                                >
+                                  Sin selección
+                                </Combobox.Option>
+
+                                { filteredUsers.length === 0 ? (
+                                  <div className="px-3 py-3 text-sm text-gray-500 dark:text-gray-400">
+                                    Sin resultados
+                                  </div>
+                                ) : (
+                                  filteredUsers.map( ( user ) => (
                                     <Combobox.Option
-                                      value=""
+                                      key={ user.uid }
+                                      value={ user.uid }
                                       className={ ( { active } ) =>
-                                        `relative cursor-default select-none py-2 pl-8 pr-4 ${ active
-                                          ? "bg-indigo-600 text-white"
-                                          : "text-gray-900 dark:text-gray-100"
+                                        `relative cursor-default select-none px-2 py-1.5 ${ active
+                                          ? "bg-indigo-50 dark:bg-indigo-500/10"
+                                          : ""
                                         }`
                                       }
                                     >
-                                      -- Selecciona un condómino --
-                                    </Combobox.Option>
-
-                                    { filteredUsers.length === 0 ? (
-                                      <div className="relative cursor-default select-none py-2 px-4 text-gray-700 dark:text-gray-300">
-                                        Sin resultados
-                                      </div>
-                                    ) : (
-                                      filteredUsers.map( ( user ) => (
-                                        <Combobox.Option
-                                          key={ user.uid }
-                                          value={ user.uid }
-                                          className={ ( { active } ) =>
-                                            `relative cursor-default select-none py-2 pl-8 pr-4 ${ active
-                                              ? "bg-indigo-600 text-white"
-                                              : "text-gray-900 dark:text-gray-100"
-                                            }`
-                                          }
-                                        >
-                                          { ( { active } ) => (
-                                            <>
-                                              <span
-                                                className={ `block truncate ${ selectedRecipientUid ===
-                                                  user.uid
-                                                  ? "font-medium"
-                                                  : "font-normal"
-                                                  }` }
-                                              >
-                                                { user.number || "-" } { user.name }
-                                              </span>
-                                              <span
-                                                className={ `block truncate text-xs ${ active
-                                                  ? "text-indigo-100"
+                                      { ( { active } ) => (
+                                        <div className="flex items-start gap-2.5">
+                                          <span className="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-indigo-100 text-[10px] font-bold text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-200">
+                                            { String( user.number || "?" ).slice( 0, 3 ) }
+                                          </span>
+                                          <div className="min-w-0 flex-1">
+                                            <p
+                                              className={ cn(
+                                                "truncate text-sm font-semibold",
+                                                selectedRecipientUid === user.uid
+                                                  ? "text-indigo-700 dark:text-indigo-300"
+                                                  : "text-gray-900 dark:text-gray-100"
+                                              ) }
+                                            >
+                                              { user.name } { user.lastName || "" }
+                                            </p>
+                                            <p
+                                              className={ cn(
+                                                "text-[11px]",
+                                                active
+                                                  ? "text-indigo-700/80 dark:text-indigo-200/70"
                                                   : "text-gray-500 dark:text-gray-400"
-                                                  }` }
-                                              >
-                                                { String( user.tower || "" ).trim().length > 0
-                                                  ? `Torre ${ String( user.tower || "" )
-                                                    .replace( /^torre\s*/i, "" )
-                                                    .trim() }`
-                                                  : "Sin torre" }
-                                              </span>
-                                              { selectedRecipientUid ===
-                                                user.uid && (
-                                                  <span
-                                                    className={ `absolute inset-y-0 left-0 flex items-center pl-2 ${ active
-                                                      ? "text-white"
-                                                      : "text-indigo-600"
-                                                      }` }
-                                                  >
-                                                    <CheckIcon className="h-4 w-4" />
-                                                  </span>
-                                                ) }
-                                            </>
+                                              ) }
+                                            >
+                                              { String( user.tower || "" ).trim().length > 0
+                                                ? `Torre ${ String( user.tower || "" )
+                                                  .replace( /^torre\s*/i, "" )
+                                                  .trim() }`
+                                                : "Sin torre" }
+                                            </p>
+                                          </div>
+                                          { selectedRecipientUid === user.uid && (
+                                            <CheckIcon className="mt-0.5 h-4 w-4 shrink-0 text-indigo-600 dark:text-indigo-300" />
                                           ) }
-                                        </Combobox.Option>
-                                      ) )
-                                    ) }
-                                  </Combobox.Options>
-                                </Combobox>
-                              </div>
+                                        </div>
+                                      ) }
+                                    </Combobox.Option>
+                                  ) )
+                                ) }
+                              </Combobox.Options>
+                            </Combobox>
+                          </Field>
+
+                          { /* Resumen del condómino seleccionado */ }
+                          { selectedUser && !isUnidentifiedPayment && (
+                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-indigo-100 bg-indigo-50/60 px-3 py-2 text-xs dark:border-indigo-900/40 dark:bg-indigo-500/10">
+                              <span className="inline-flex items-center gap-1 text-indigo-700 dark:text-indigo-300">
+                                <HashtagIcon className="h-3.5 w-3.5" />
+                                Unidad
+                                <strong className="font-semibold">
+                                  { numberCondominium || "-" }
+                                </strong>
+                              </span>
+                              { String( selectedUser.tower || "" ).trim() && (
+                                <span className="inline-flex items-center gap-1 text-indigo-700 dark:text-indigo-300">
+                                  <BuildingLibraryIcon className="h-3.5 w-3.5" />
+                                  Torre
+                                  { " " }
+                                  { String( selectedUser.tower )
+                                    .replace( /^torre\s*/i, "" )
+                                    .trim() }
+                                </span>
+                              ) }
+                              { email && (
+                                <span className="inline-flex min-w-0 items-center gap-1 text-indigo-700 dark:text-indigo-300">
+                                  <InformationCircleIcon className="h-3.5 w-3.5 shrink-0" />
+                                  <span className="truncate">{ email }</span>
+                                </span>
+                              ) }
                             </div>
-                            {/* Fecha y hora de pago */ }
-                            <div>
-                              <label
-                                htmlFor="paymentDate"
-                                className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100"
-                              >
-                                Fecha y hora de pago
-                              </label>
-                              <div className="mt-2 relative">
-                                <div className="absolute left-2 top-1/2 flex items-center transform -translate-y-1/2">
-                                  <CalendarIcon className="h-5 w-5 text-gray-400" />
-                                </div>
+                          ) }
+                        </SectionCard>
+
+                        {/* ── Sección: Detalle del pago ────────────────── */ }
+                        <SectionCard
+                          title="Detalle del pago"
+                          description="Información básica del movimiento."
+                          icon={ <CreditCardIcon className="h-4 w-4" /> }
+                        >
+                          <div className="grid gap-4 sm:grid-cols-2">
+                            <Field label="Fecha de pago" htmlFor="paymentDate">
+                              <div className="relative">
+                                <CalendarIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                                 <input
                                   onChange={ ( e ) => {
                                     const selectedDate = new Date(
@@ -914,7 +1096,7 @@ const PaymentForm = ( { open, setOpen }: FormParcelReceptionProps ) => {
                                   type="date"
                                   name="paymentDate"
                                   id="paymentDate"
-                                  className="px-8 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-50"
+                                  className={ `${ inputBase } pl-9` }
                                   value={
                                     paymentDate && !isNaN( paymentDate.getTime() )
                                       ? paymentDate.toISOString().split( "T" )[ 0 ]
@@ -922,33 +1104,23 @@ const PaymentForm = ( { open, setOpen }: FormParcelReceptionProps ) => {
                                   }
                                 />
                               </div>
-                            </div>
-                            {/* Monto abonado */ }
-                            <div>
-                              <label
-                                htmlFor="amountPaid"
-                                className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100"
-                              >
-                                Monto abonado
-                              </label>
-                              <div className="mt-2 relative">
-                                <div className="absolute left-2 top-1/2 flex items-center transform -translate-y-1/2">
-                                  <CurrencyDollarIcon className="h-5 w-5 text-gray-400" />
-                                </div>
+                            </Field>
+
+                            <Field label="Monto abonado" htmlFor="amountPaid">
+                              <div className="relative">
+                                <CurrencyDollarIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                                 <input
                                   type="text"
                                   name="amountPaid"
                                   id="amountPaid"
                                   placeholder="$100.00"
-                                  className="px-8 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-50"
+                                  className={ `${ inputBase } pl-9` }
                                   value={ amountPaidDisplay }
                                   onChange={ ( e ) => {
                                     setAmountPaid( e.target.value );
                                     setAmountPaidDisplay( e.target.value );
                                   } }
-                                  onFocus={ () =>
-                                    setAmountPaidDisplay( amountPaid )
-                                  }
+                                  onFocus={ () => setAmountPaidDisplay( amountPaid ) }
                                   onBlur={ () => {
                                     const num = parseCurrencyInput( amountPaid );
                                     if ( Number.isFinite( num ) ) {
@@ -959,357 +1131,444 @@ const PaymentForm = ( { open, setOpen }: FormParcelReceptionProps ) => {
                                   } }
                                 />
                               </div>
-                            </div>
-                            {/* Tipo de pago */ }
-                            <div>
-                              <label
-                                htmlFor="paymentType"
-                                className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100"
-                              >
-                                Tipo de pago
-                              </label>
-                              <div className="mt-2 relative">
-                                <div className="absolute left-2 top-1/2 flex items-center transform -translate-y-1/2">
-                                  <CreditCardIcon className="h-5 w-5 text-gray-400" />
-                                </div>
+                            </Field>
+                          </div>
+
+                          <div className="grid gap-4 sm:grid-cols-2">
+                            <Field label="Tipo de pago" htmlFor="paymentType">
+                              <div className="relative">
+                                <CreditCardIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                                 <select
-                                  onChange={ ( e ) =>
-                                    setPaymentType( e.target.value )
-                                  }
+                                  onChange={ ( e ) => setPaymentType( e.target.value ) }
                                   name="paymentType"
                                   id="paymentType"
-                                  className="px-8 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-50"
+                                  className={ `${ inputBase } pl-9` }
                                   value={ paymentType }
                                 >
-                                  <option value="">
-                                    Selecciona un tipo de pago
-                                  </option>
-                                  <option value="Transferencia">
-                                    Transferencia
-                                  </option>
+                                  <option value="">Selecciona…</option>
+                                  <option value="Transferencia">Transferencia</option>
                                   <option value="Efectivo">Efectivo</option>
                                   <option value="Tarjeta">Tarjeta</option>
                                   <option value="Depósito">Depósito</option>
                                 </select>
                               </div>
-                            </div>
-                            {/* Referencia de pago */ }
-                            <div>
-                              <label
-                                htmlFor="paymentReference"
-                                className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100"
+                            </Field>
+
+                            <Field label="Cuenta destino" htmlFor="financialAccountId">
+                              <select
+                                onChange={ ( e ) =>
+                                  setFinancialAccountId( e.target.value )
+                                }
+                                name="financialAccountId"
+                                id="financialAccountId"
+                                className={ `${ inputBase } pl-3` }
+                                value={ financialAccountId }
                               >
-                                Referencia de pago
-                              </label>
-                              <div className="mt-2 relative">
-                                <div className="absolute left-2 top-1/2 flex items-center transform -translate-y-1/2">
-                                  <ClipboardIcon className="h-5 w-5 text-gray-400" />
-                                </div>
-                                <input
-                                  type="text"
-                                  id="paymentReference"
-                                  name="paymentReference"
-                                  value={ paymentReference }
-                                  onChange={ ( e ) =>
-                                    setPaymentReference( e.target.value )
-                                  }
-                                  placeholder="Ej. SPEI1234567890"
-                                  className="px-8 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-50"
-                                />
-                              </div>
-                              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                                Obligatoria para Transferencia y Depósito.
-                              </p>
-                            </div>
-                            {/* Selección de la cuenta */ }
-                            <div>
-                              <label
-                                htmlFor="financialAccountId"
-                                className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100"
-                              >
-                                Cuenta
-                              </label>
-                              <div className="mt-2 relative">
-                                <select
-                                  onChange={ ( e ) =>
-                                    setFinancialAccountId( e.target.value )
-                                  }
-                                  name="financialAccountId"
-                                  id="financialAccountId"
-                                  className="px-2 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-500 focus:ring-2 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-50"
-                                  value={ financialAccountId }
-                                >
-                                  <option value="">
-                                    Selecciona una cuenta
+                                <option value="">Selecciona una cuenta</option>
+                                { selectableFinancialAccounts.map( ( acc ) => (
+                                  <option key={ acc.id } value={ acc.id }>
+                                    { acc.name }
                                   </option>
-                                  { selectableFinancialAccounts.map( ( acc ) => (
-                                    <option key={ acc.id } value={ acc.id }>
-                                      { acc.name }
-                                    </option>
-                                  ) ) }
-                                </select>
-                              </div>
+                                ) ) }
+                              </select>
+                            </Field>
+                          </div>
+
+                          <Field
+                            label="Referencia de pago"
+                            htmlFor="paymentReference"
+                            hint="Obligatoria para Transferencia y Depósito."
+                          >
+                            <div className="relative">
+                              <ClipboardIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                              <input
+                                type="text"
+                                id="paymentReference"
+                                name="paymentReference"
+                                value={ paymentReference }
+                                onChange={ ( e ) =>
+                                  setPaymentReference( e.target.value )
+                                }
+                                placeholder="Ej. SPEI1234567890"
+                                className={ `${ inputBase } pl-9` }
+                              />
                             </div>
-                            {/* Monto pendiente - Ahora calculado automáticamente */ }
-                            <div>
-                              <label
-                                htmlFor="amountPending"
-                                className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100"
-                              >
-                                Monto pendiente (calculado automáticamente)
-                              </label>
-                              <div className="mt-2 relative">
-                                <div className="absolute left-2 top-1/2 flex items-center transform -translate-y-1/2">
-                                  <ClipboardIcon className="h-5 w-5 text-gray-400" />
-                                </div>
-                                <input
-                                  type="text"
-                                  name="amountPending"
-                                  id="amountPending"
-                                  readOnly
-                                  disabled={ isUnidentifiedPayment }
-                                  className="px-8 block w-full rounded-md ring-1 outline-none border-0 py-1.5 text-gray-900 shadow-sm ring-gray-300 placeholder:text-gray-400 bg-gray-50 sm:text-sm sm:leading-6 dark:bg-gray-700 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none"
-                                  value={ amountPendingDisplay }
-                                />
-                              </div>
-                            </div>
-                            {/* Saldo a favor */ }
-                            { !isUnidentifiedPayment &&
-                              userCreditBalance !== null &&
-                              userCreditBalance > 0 && (
-                                <div>
-                                  <label className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100">
-                                    Saldo a favor disponible:{ " " }
-                                    { formatCurrency( userCreditInPesos ) }
-                                  </label>
-                                  <div className="mt-2 flex items-center space-x-4">
-                                    <label className="flex items-center dark:text-gray-100">
-                                      <input
-                                        type="radio"
-                                        name="useCreditBalance"
-                                        value="false"
-                                        checked={ !useCreditBalance }
-                                        onChange={ () =>
-                                          setUseCreditBalance( false )
-                                        }
-                                        className="mr-2"
-                                      />
-                                      No utilizar saldo a favor
-                                    </label>
-                                    <label className="flex items-center dark:text-gray-100">
-                                      <input
-                                        type="radio"
-                                        name="useCreditBalance"
-                                        value="true"
-                                        checked={ useCreditBalance }
-                                        onChange={ () =>
-                                          setUseCreditBalance( true )
-                                        }
-                                        className="mr-2"
-                                      />
-                                      Utilizar saldo a favor
-                                    </label>
+                          </Field>
+                        </SectionCard>
+
+                        {/* ── Sección: Aplicación a cargos ─────────────── */ }
+                        { !isUnidentifiedPayment && (
+                          <SectionCard
+                            title="Aplicación a cargos pendientes"
+                            description={
+                              selectedUser
+                                ? "Marca los cargos a cubrir y asigna el monto correspondiente."
+                                : "Selecciona primero al condómino para ver sus cargos."
+                            }
+                            icon={ <TicketIcon className="h-4 w-4" /> }
+                          >
+                            { /* Saldo a favor */ }
+                            { userCreditBalance !== null && userCreditBalance > 0 && (
+                              <div className="rounded-xl border border-emerald-200 bg-emerald-50/70 p-3 dark:border-emerald-900/40 dark:bg-emerald-900/20">
+                                <div className="flex items-start gap-2.5">
+                                  <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-300">
+                                    <BanknotesIcon className="h-4 w-4" />
+                                  </span>
+                                  <div className="min-w-0 flex-1">
+                                    <p className="text-sm font-semibold text-emerald-900 dark:text-emerald-200">
+                                      Saldo a favor disponible
+                                    </p>
+                                    <p className="mt-0.5 text-xs text-emerald-800/80 dark:text-emerald-300/80">
+                                      Este condómino tiene{ " " }
+                                      <strong className="font-semibold">
+                                        { formatCurrency( userCreditInPesos ) }
+                                      </strong>{ " " }
+                                      acumulados de pagos anteriores.
+                                    </p>
+                                    <div className="mt-2 flex flex-wrap gap-1.5">
+                                      <button
+                                        type="button"
+                                        onClick={ () => setUseCreditBalance( false ) }
+                                        className={ cn(
+                                          "inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-medium transition",
+                                          !useCreditBalance
+                                            ? "border-emerald-600 bg-emerald-600 text-white shadow-sm"
+                                            : "border-emerald-200 text-emerald-700 hover:bg-emerald-100/70 dark:border-emerald-800 dark:text-emerald-200 dark:hover:bg-emerald-900/40"
+                                        ) }
+                                      >
+                                        No utilizar
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={ () => setUseCreditBalance( true ) }
+                                        className={ cn(
+                                          "inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-medium transition",
+                                          useCreditBalance
+                                            ? "border-emerald-600 bg-emerald-600 text-white shadow-sm"
+                                            : "border-emerald-200 text-emerald-700 hover:bg-emerald-100/70 dark:border-emerald-800 dark:text-emerald-200 dark:hover:bg-emerald-900/40"
+                                        ) }
+                                      >
+                                        Utilizar saldo
+                                      </button>
+                                    </div>
                                   </div>
                                 </div>
-                              ) }
-                            {/* Lista de cargos pendientes */ }
-                            { numberCondominium &&
-                              charges.length > 0 &&
-                              !isUnidentifiedPayment && (
-                                <div>
-                                  <label className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100">
-                                    Selecciona cargos a pagar
-                                  </label>
-                                  <div className="mt-2 space-y-2">
-                                    { charges.map( ( charge ) => {
-                                      const isChecked = selectedCharges.some(
-                                        ( sc ) => sc.chargeId === charge.id
-                                      );
-                                      return (
-                                        <div
-                                          key={ charge.id }
-                                          className="flex items-center space-x-2"
-                                        >
-                                          <input
-                                            type="checkbox"
-                                            disabled={ isUnidentifiedPayment }
-                                            checked={ isChecked }
-                                            onChange={ ( e ) =>
-                                              handleToggleCharge(
-                                                charge.id,
-                                                e.target.checked
-                                              )
-                                            }
-                                          />
-                                          <span className="flex-1 dark:text-gray-100">
-                                            { `${ charge.concept } | Mes: ${ charge.month || "Sin mes"
-                                              } | Monto: ${ formatCurrency(
-                                                charge.amount / 100
-                                              ) }` }
-                                          </span>
-                                          { isChecked && (
-                                            <div className="relative">
-                                              <input
-                                                type="text"
-                                                min="0"
-                                                step="0.01"
-                                                className="w-18 rounded-md ring-0 focus:ring-0 outline-none border border-solid border-indigo-300 pl-5 h-8 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
-                                                placeholder="$100.00"
-                                                value={
-                                                  chargeDisplayValues[
-                                                  charge.id
-                                                  ] || ""
-                                                }
-                                                onChange={ ( e ) => {
-                                                  const rawValue =
-                                                    e.target.value;
-                                                  const newNumber =
-                                                    parseFloat(
-                                                      rawValue.replace(
-                                                        /[^0-9.]/g,
-                                                        ""
-                                                      )
-                                                    ) || 0;
-                                                  handleAmountChange(
-                                                    charge.id,
-                                                    newNumber
-                                                  );
-                                                  setChargeDisplayValues(
-                                                    ( prev ) => ( {
-                                                      ...prev,
-                                                      [ charge.id ]: rawValue,
-                                                    } )
-                                                  );
-                                                } }
-                                                onFocus={ () => {
-                                                  setChargeDisplayValues(
-                                                    ( prev ) => ( {
-                                                      ...prev,
-                                                      [ charge.id ]: "",
-                                                    } )
-                                                  );
-                                                } }
-                                                onBlur={ () => {
-                                                  const selected =
-                                                    selectedCharges.find(
-                                                      ( sc ) =>
-                                                        sc.chargeId ===
-                                                        charge.id
-                                                    );
-                                                  if (
-                                                    selected &&
-                                                    selected.amount > 0
-                                                  ) {
-                                                    setChargeDisplayValues(
-                                                      ( prev ) => ( {
-                                                        ...prev,
-                                                        [ charge.id ]:
-                                                          formatCurrency(
-                                                            selected.amount
-                                                          ),
-                                                      } )
-                                                    );
-                                                  } else {
-                                                    setChargeDisplayValues(
-                                                      ( prev ) => ( {
-                                                        ...prev,
-                                                        [ charge.id ]: "",
-                                                      } )
-                                                    );
-                                                  }
-                                                } }
-                                              />
-                                            </div>
-                                          ) }
+                              </div>
+                            ) }
+
+                            { /* Lista de cargos */ }
+                            { numberCondominium && charges.length > 0 ? (
+                              <div className="space-y-2">
+                                <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-400">
+                                  Cargos pendientes ({ charges.length })
+                                </p>
+                                <div className="grid gap-2">
+                                  { charges.map( ( charge ) => {
+                                    const isChecked = selectedCharges.some(
+                                      ( sc ) => sc.chargeId === charge.id
+                                    );
+                                    return (
+                                      <label
+                                        key={ charge.id }
+                                        className={ cn(
+                                          "group relative flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition",
+                                          isChecked
+                                            ? "border-indigo-300 bg-indigo-50/60 dark:border-indigo-700 dark:bg-indigo-500/10"
+                                            : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:hover:bg-gray-800"
+                                        ) }
+                                      >
+                                        <input
+                                          type="checkbox"
+                                          disabled={ isUnidentifiedPayment }
+                                          checked={ isChecked }
+                                          onChange={ ( e ) =>
+                                            handleToggleCharge(
+                                              charge.id,
+                                              e.target.checked
+                                            )
+                                          }
+                                          className="mt-0.5 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700"
+                                        />
+                                        <div className="min-w-0 flex-1">
+                                          <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                                            { charge.concept }
+                                          </p>
+                                          <p className="mt-0.5 text-[11px] text-gray-500 dark:text-gray-400">
+                                            Mes:{ " " }
+                                            <span className="font-medium text-gray-700 dark:text-gray-300">
+                                              { charge.month || "Sin mes" }
+                                            </span>
+                                            { " · " }
+                                            Monto original:{ " " }
+                                            <span className="font-medium text-gray-700 dark:text-gray-300">
+                                              { formatCurrency( charge.amount / 100 ) }
+                                            </span>
+                                          </p>
                                         </div>
-                                      );
-                                    } ) }
+                                        { isChecked && (
+                                          <div className="relative w-32 shrink-0">
+                                            <CurrencyDollarIcon className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400" />
+                                            <input
+                                              type="text"
+                                              min="0"
+                                              step="0.01"
+                                              onClick={ ( e ) => e.preventDefault() }
+                                              className="block w-full rounded-md border-0 bg-white py-1.5 pl-7 pr-2 text-xs text-gray-900 shadow-sm ring-1 ring-inset ring-indigo-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:ring-indigo-700"
+                                              placeholder="$100.00"
+                                              value={
+                                                chargeDisplayValues[ charge.id ] || ""
+                                              }
+                                              onChange={ ( e ) => {
+                                                const rawValue = e.target.value;
+                                                const newNumber =
+                                                  parseFloat(
+                                                    rawValue.replace( /[^0-9.]/g, "" )
+                                                  ) || 0;
+                                                handleAmountChange(
+                                                  charge.id,
+                                                  newNumber
+                                                );
+                                                setChargeDisplayValues( ( prev ) => ( {
+                                                  ...prev,
+                                                  [ charge.id ]: rawValue,
+                                                } ) );
+                                              } }
+                                              onFocus={ ( e ) => {
+                                                e.stopPropagation();
+                                                setChargeDisplayValues( ( prev ) => ( {
+                                                  ...prev,
+                                                  [ charge.id ]: "",
+                                                } ) );
+                                              } }
+                                              onBlur={ ( e ) => {
+                                                e.stopPropagation();
+                                                const selected = selectedCharges.find(
+                                                  ( sc ) => sc.chargeId === charge.id
+                                                );
+                                                if ( selected && selected.amount > 0 ) {
+                                                  setChargeDisplayValues( ( prev ) => ( {
+                                                    ...prev,
+                                                    [ charge.id ]: formatCurrency(
+                                                      selected.amount
+                                                    ),
+                                                  } ) );
+                                                } else {
+                                                  setChargeDisplayValues( ( prev ) => ( {
+                                                    ...prev,
+                                                    [ charge.id ]: "",
+                                                  } ) );
+                                                }
+                                              } }
+                                            />
+                                          </div>
+                                        ) }
+                                      </label>
+                                    );
+                                  } ) }
+                                </div>
+
+                                {/* Chips de resumen */ }
+                                <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                                  <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 dark:border-gray-700 dark:bg-gray-800/60">
+                                    <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                                      Asignado
+                                    </p>
+                                    <p className="mt-0.5 text-sm font-semibold text-gray-900 dark:text-gray-100">
+                                      { formatCurrency( totalAssigned ) }
+                                    </p>
                                   </div>
-                                  <div className="mt-2">
-                                    <span className="text-sm font-bold dark:text-gray-100">
-                                      Saldo restante a aplicar:{ " " }
+                                  <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 dark:border-gray-700 dark:bg-gray-800/60">
+                                    <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                                      Por aplicar
+                                    </p>
+                                    <p
+                                      className={ cn(
+                                        "mt-0.5 text-sm font-semibold",
+                                        remainingEffective < 0
+                                          ? "text-rose-600 dark:text-rose-400"
+                                          : "text-indigo-600 dark:text-indigo-400"
+                                      ) }
+                                    >
                                       { formatCurrency( remainingEffective ) }
-                                    </span>
+                                    </p>
+                                  </div>
+                                  <div className="col-span-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 dark:border-gray-700 dark:bg-gray-800/60 sm:col-span-1">
+                                    <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                                      Pendiente de cargos
+                                    </p>
+                                    <p className="mt-0.5 text-sm font-semibold text-gray-900 dark:text-gray-100">
+                                      { amountPendingDisplay || formatCurrency( 0 ) }
+                                    </p>
                                   </div>
                                 </div>
-                              ) }
-                            {/* Dropzone */ }
+                              </div>
+                            ) : numberCondominium ? (
+                              <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800 dark:border-emerald-900/40 dark:bg-emerald-900/20 dark:text-emerald-200">
+                                Este condómino no tiene cargos pendientes registrados.
+                              </p>
+                            ) : (
+                              <p className="rounded-lg border border-dashed border-gray-200 bg-gray-50 px-3 py-4 text-center text-xs text-gray-500 dark:border-gray-700 dark:bg-gray-800/40 dark:text-gray-400">
+                                Selecciona un condómino para listar sus cargos pendientes.
+                              </p>
+                            ) }
+                          </SectionCard>
+                        ) }
+
+                        {/* ── Sección: Comprobante y notas ─────────────── */ }
+                        <SectionCard
+                          title="Comprobante y notas"
+                          description="Adjunta el recibo y captura información adicional si aplica."
+                          icon={ <DocumentTextIcon className="h-4 w-4" /> }
+                        >
+                          <Field
+                            label="Comprobante"
+                            optional
+                            hint="PDF, imagen o XLSX. Se procesa automáticamente. Hasta 10 MB."
+                          >
                             <div
                               { ...getRootProps() }
-                              className="mt-12 h-auto flex items-center justify-center rounded-lg border border-dashed border-gray-900/25 px-6 py-4 dark:border-indigo-900"
+                              className={ cn(
+                                "flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed px-5 py-6 text-center transition",
+                                isDragActive
+                                  ? "border-indigo-400 bg-indigo-50 dark:border-indigo-500 dark:bg-indigo-500/10"
+                                  : fileName
+                                    ? "border-emerald-300 bg-emerald-50/60 dark:border-emerald-700 dark:bg-emerald-900/10"
+                                    : "border-gray-300 bg-gray-50/60 hover:border-indigo-300 hover:bg-indigo-50/40 dark:border-gray-700 dark:bg-gray-800/40 dark:hover:border-indigo-600 dark:hover:bg-indigo-500/10"
+                              ) }
                             >
                               <input { ...getInputProps() } />
-                              <div className="text-center">
-                                <PhotoIcon
-                                  className="mx-auto h-12 w-12 text-gray-300"
-                                  aria-hidden="true"
-                                />
+                              <div
+                                className={ cn(
+                                  "mb-2 rounded-full p-2.5",
+                                  fileName
+                                    ? "bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-300"
+                                    : "bg-indigo-100 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-300"
+                                ) }
+                              >
                                 { fileName ? (
-                                  <p className="mt-4 text-sm leading-6 text-gray-600">
+                                  <CheckCircleIcon className="h-6 w-6" />
+                                ) : (
+                                  <CloudArrowUpIcon className="h-6 w-6" />
+                                ) }
+                              </div>
+                              { fileName ? (
+                                <>
+                                  <p className="max-w-full truncate px-2 text-sm font-semibold text-emerald-700 dark:text-emerald-300">
                                     { fileName }
                                   </p>
-                                ) : (
-                                  <p className="mt-4 text-sm leading-6 font-medium text-indigo-600">
-                                    { isDragActive
-                                      ? "Suelta el archivo aquí..."
-                                      : isCompressing
-                                        ? "Procesando archivo..."
-                                        : "Arrastra y suelta el comprobante (PDF o Imagen) aquí o haz click" }
+                                  <p className="mt-1 text-[11px] text-gray-500 dark:text-gray-400">
+                                    Haz click o arrastra otro archivo para reemplazarlo.
                                   </p>
-                                ) }
-                                <p className="text-xs leading-5 text-gray-600">
-                                  Hasta 10MB
-                                </p>
-                              </div>
+                                </>
+                              ) : (
+                                <>
+                                  <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                                    { isDragActive
+                                      ? "Suelta el archivo aquí…"
+                                      : isCompressing
+                                        ? "Procesando archivo…"
+                                        : "Arrastra y suelta o haz click" }
+                                  </p>
+                                  <p className="mt-1 text-[11px] text-gray-500 dark:text-gray-400">
+                                    PDF, JPG, PNG o XLSX
+                                  </p>
+                                </>
+                              ) }
                             </div>
-                            {/* Descarga automática de recibo deshabilitada temporalmente en PaymentForm. */ }
-                            {/* Comentarios */ }
-                            <div>
-                              <label
-                                htmlFor="comments"
-                                className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100"
-                              >
-                                Comentarios
-                              </label>
-                              <div className="mt-2">
-                                <textarea
-                                  onChange={ ( e ) => setComments( e.target.value ) }
-                                  id="comments"
-                                  name="comments"
-                                  rows={ 4 }
-                                  className="block w-full rounded-md py-1.5 border border-gray-300 text-gray-900 shadow-sm ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
-                                  value={ comments }
-                                />
-                              </div>
-                            </div>
-                          </div>
-                        </div>
+                          </Field>
+
+                          <Field label="Comentarios" htmlFor="comments" optional>
+                            <textarea
+                              onChange={ ( e ) => setComments( e.target.value ) }
+                              id="comments"
+                              name="comments"
+                              rows={ 3 }
+                              value={ comments }
+                              placeholder="Agrega cualquier información relevante para este pago…"
+                              className={ `${ inputBase } resize-none px-3 py-2` }
+                            />
+                          </Field>
+                        </SectionCard>
                       </div>
                     </div>
-                    {/* Botones de acción */ }
-                    <div className="flex flex-shrink-0 justify-end px-4 py-4 dark:bg-gray-900">
-                      <button
-                        type="button"
-                        className="rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
-                        onClick={ () => setOpen( false ) }
-                      >
-                        Cancelar
-                      </button>
-                      <button
-                        type="submit"
-                        className="ml-4 inline-flex justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
-                      >
-                        { loading ? (
-                          <svg
-                            className="animate-spin h-5 w-5 mr-3 border-t-2 border-b-2 border-indigo-100 rounded-full"
-                            viewBox="0 0 24 24"
-                          ></svg>
-                        ) : isCompressing ? (
-                          "Procesando..."
+
+                    {/* ── Sticky footer ──────────────────────────────── */ }
+                    <div className="flex flex-shrink-0 items-center justify-between gap-3 border-t border-gray-200 bg-white px-4 py-3 sm:px-6 dark:border-gray-800 dark:bg-gray-900">
+                      <div className="hidden min-w-0 sm:block">
+                        { !isUnidentifiedPayment && selectedCharges.length > 0 ? (
+                          <p className="text-[11px] text-gray-500 dark:text-gray-400">
+                            Aplicando{ " " }
+                            <span className="font-semibold text-gray-900 dark:text-gray-100">
+                              { formatCurrency( totalAssigned ) }
+                            </span>
+                            <span className="mx-1.5 text-gray-300 dark:text-gray-700">
+                              ·
+                            </span>
+                            Restante{ " " }
+                            <span
+                              className={ cn(
+                                "font-semibold",
+                                remainingEffective < 0
+                                  ? "text-rose-600 dark:text-rose-400"
+                                  : "text-indigo-600 dark:text-indigo-400"
+                              ) }
+                            >
+                              { formatCurrency( remainingEffective ) }
+                            </span>
+                          </p>
                         ) : (
-                          "Guardar"
+                          <p className="text-[11px] text-gray-500 dark:text-gray-400">
+                            Revisa los datos antes de guardar.
+                          </p>
                         ) }
-                      </button>
+                      </div>
+                      <div className="flex flex-1 items-center justify-end gap-2 sm:flex-none">
+                        <button
+                          type="button"
+                          className="rounded-lg bg-white px-3 py-2 text-sm font-semibold text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 transition hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-200 dark:ring-gray-700 dark:hover:bg-gray-700"
+                          onClick={ () => setOpen( false ) }
+                        >
+                          Cancelar
+                        </button>
+                        <button
+                          type="submit"
+                          disabled={ loading || isCompressing }
+                          className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          { loading ? (
+                            <>
+                              <svg
+                                className="h-4 w-4 animate-spin"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                              >
+                                <circle
+                                  cx="12"
+                                  cy="12"
+                                  r="9"
+                                  stroke="currentColor"
+                                  strokeOpacity="0.25"
+                                  strokeWidth="3"
+                                />
+                                <path
+                                  d="M21 12a9 9 0 0 1-9 9"
+                                  stroke="currentColor"
+                                  strokeWidth="3"
+                                  strokeLinecap="round"
+                                />
+                              </svg>
+                              Guardando…
+                            </>
+                          ) : isCompressing ? (
+                            "Procesando archivo…"
+                          ) : (
+                            <>
+                              <CheckIcon className="h-4 w-4" />
+                              Guardar pago
+                            </>
+                          ) }
+                        </button>
+                      </div>
                     </div>
                   </form>
                 </Dialog.Panel>
