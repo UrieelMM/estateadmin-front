@@ -1,16 +1,23 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { Transition, Dialog, Combobox } from "@headlessui/react";
 import {
-  PhotoIcon,
   XMarkIcon,
   CurrencyDollarIcon,
   ClipboardIcon,
   CreditCardIcon,
   CalendarIcon,
-  PencilIcon,
   UserGroupIcon,
-} from "@heroicons/react/24/solid";
-import { CheckIcon, ChevronUpDownIcon } from "@heroicons/react/20/solid";
+  ArrowTrendingDownIcon,
+  DocumentTextIcon,
+  CloudArrowUpIcon,
+  BuildingLibraryIcon,
+  TagIcon,
+} from "@heroicons/react/24/outline";
+import {
+  CheckIcon,
+  ChevronUpDownIcon,
+  CheckCircleIcon,
+} from "@heroicons/react/20/solid";
 import { useDropzone } from "react-dropzone";
 import toast from "react-hot-toast";
 import {
@@ -49,6 +56,81 @@ const normalizeAccountName = (value: string) =>
     .toLowerCase()
     .replace(/[^a-z0-9]/g, "")
     .trim();
+
+const cn = (...classes: (string | boolean | undefined | null)[]) =>
+  classes.filter(Boolean).join(" ");
+
+const inputBase =
+  "block w-full rounded-lg border-0 bg-white py-2 pr-3 text-sm text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 transition focus:ring-2 focus:ring-inset focus:ring-indigo-500 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500 dark:bg-gray-800 dark:text-gray-100 dark:ring-gray-700 dark:placeholder:text-gray-500 dark:focus:ring-indigo-400 dark:disabled:bg-gray-800/50 dark:disabled:text-gray-500";
+
+interface SectionCardProps {
+  title: string;
+  description?: string;
+  icon: React.ReactNode;
+  children: React.ReactNode;
+}
+
+const SectionCard = ({
+  title,
+  description,
+  icon,
+  children,
+}: SectionCardProps) => (
+  <section className="rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
+    <header className="flex items-start gap-2.5 border-b border-gray-100 px-4 py-3 dark:border-gray-800">
+      <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-300">
+        {icon}
+      </span>
+      <div className="min-w-0 flex-1">
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+          {title}
+        </h3>
+        {description && (
+          <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+            {description}
+          </p>
+        )}
+      </div>
+    </header>
+    <div className="space-y-4 px-4 py-4">{children}</div>
+  </section>
+);
+
+interface FieldProps {
+  label: string;
+  htmlFor?: string;
+  hint?: string;
+  optional?: boolean;
+  children: React.ReactNode;
+}
+
+const Field = ({
+  label,
+  htmlFor,
+  hint,
+  optional,
+  children,
+}: FieldProps) => (
+  <div>
+    <label
+      htmlFor={htmlFor}
+      className="block text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-400"
+    >
+      {label}
+      {optional && (
+        <span className="ml-1 text-[10px] font-normal normal-case tracking-normal text-gray-400">
+          (opcional)
+        </span>
+      )}
+    </label>
+    <div className="mt-1.5">{children}</div>
+    {hint && (
+      <p className="mt-1 text-[11px] text-gray-500 dark:text-gray-400">
+        {hint}
+      </p>
+    )}
+  </div>
+);
 
 const ExpenseForm: React.FC<ExpenseFormProps> = ({ open, setOpen }) => {
   const [amount, setAmount] = useState<string>("");
@@ -185,6 +267,26 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ open, setOpen }) => {
       : "Proveedor no disponible";
   };
 
+  const summaryAccountName = useMemo(
+    () =>
+      selectableFinancialAccounts.find((acc) => acc.id === financialAccountId)
+        ?.name || "",
+    [selectableFinancialAccounts, financialAccountId],
+  );
+
+  const formattedExpenseDate = useMemo(() => {
+    if (!expenseDate) return "";
+    const parsed = new Date(expenseDate);
+    if (isNaN(parsed.getTime())) return expenseDate;
+    return parsed.toLocaleString("es-MX", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }, [expenseDate]);
+
   // Función para formatear a moneda mexicana (solo visual)
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat("es-MX", {
@@ -251,7 +353,17 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ open, setOpen }) => {
   return (
     <Transition.Root show={open} as={Fragment}>
       <Dialog as="div" className="relative z-10" onClose={setOpen}>
-        <div className="fixed inset-0" />
+        <Transition.Child
+          as={Fragment}
+          enter="ease-in-out duration-300"
+          enterFrom="opacity-0"
+          enterTo="opacity-100"
+          leave="ease-in-out duration-300"
+          leaveFrom="opacity-100"
+          leaveTo="opacity-0"
+        >
+          <div className="fixed inset-0 bg-gray-900/40 backdrop-blur-[2px] transition-opacity" />
+        </Transition.Child>
         <div className="fixed inset-0 overflow-hidden">
           <div className="overlay-forms absolute inset-0 overflow-hidden">
             <div className="pointer-events-none fixed inset-y-0 right-0 flex max-w-full pl-10 sm:pl-16">
@@ -264,57 +376,53 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ open, setOpen }) => {
                 leaveFrom="translate-x-0"
                 leaveTo="translate-x-full"
               >
-                <Dialog.Panel className="pointer-events-auto w-screen max-w-3xl">
+                <Dialog.Panel className="pointer-events-auto flex h-full w-screen max-w-3xl flex-col">
                   <form
                     onSubmit={handleSubmit}
-                    className="flex h-full flex-col divide-y divide-gray-200 bg-white shadow-xl"
+                    className="flex h-full min-h-0 flex-col bg-gray-50 shadow-2xl dark:bg-gray-950"
                   >
-                    <div className="h-0 flex-1 overflow-y-auto dark:bg-gray-900">
-                      <div className="bg-indigo-700 px-4 py-6 sm:px-6 dark:bg-gray-800">
-                        <div className="flex items-center justify-between">
-                          <Dialog.Title className="text-base font-semibold leading-6 text-white">
-                            Registrar Egreso
-                          </Dialog.Title>
-                          <div className="ml-3 flex h-7 items-center">
-                            <button
-                              type="button"
-                              className="relative rounded-md bg-indigo-700 text-indigo-200 hover:text-white focus:outline-none"
-                              onClick={() => setOpen(false)}
-                            >
-                              <span className="absolute -inset-2.5" />
-                              <XMarkIcon
-                                className="h-6 w-6"
-                                aria-hidden="true"
-                              />
-                            </button>
-                          </div>
+                    {/* Hero header */}
+                    <div className="relative overflow-hidden bg-gradient-to-br from-indigo-600 via-indigo-600 to-violet-600 px-5 py-5 sm:px-6 dark:from-indigo-700 dark:via-indigo-800 dark:to-violet-900">
+                      <button
+                        type="button"
+                        className="absolute right-4 top-4 inline-flex items-center justify-center rounded-lg bg-white/10 p-1.5 text-white/80 transition hover:bg-white/20 hover:text-white focus:outline-none focus:ring-2 focus:ring-white/50"
+                        onClick={() => setOpen(false)}
+                        aria-label="Cerrar"
+                      >
+                        <XMarkIcon className="h-5 w-5" aria-hidden="true" />
+                      </button>
+                      <div className="flex items-center gap-3 pr-10">
+                        <div className="rounded-xl bg-white/15 p-2.5 backdrop-blur">
+                          <ArrowTrendingDownIcon className="h-6 w-6 text-white" />
                         </div>
-                        <div className="mt-1">
-                          <p className="text-sm text-indigo-300">
-                            Registra un nuevo egreso para el condominio.
+                        <div className="min-w-0">
+                          <Dialog.Title className="text-lg font-bold leading-tight text-white">
+                            Registrar egreso
+                          </Dialog.Title>
+                          <p className="mt-0.5 text-xs text-indigo-100">
+                            Registra un gasto del condominio con concepto, cuenta y
+                            comprobante opcional.
                           </p>
                         </div>
                       </div>
-                      <div className="flex flex-1 flex-col justify-between">
-                        <div className="divide-y divide-gray-200 px-4 sm:px-6">
-                          <div className="space-y-6 pb-5 pt-6">
-                            {/* Monto del egreso */}
-                            <div>
-                              <label
-                                htmlFor="amount"
-                                className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100"
-                              >
-                                Monto del Egreso
-                              </label>
-                              <div className="mt-2 relative">
-                                <div className="absolute left-2 top-1/2 flex items-center transform -translate-y-1/2">
-                                  <CurrencyDollarIcon className="h-5 w-5 text-gray-400" />
-                                </div>
+                    </div>
+
+                    <div className="h-0 flex-1 overflow-y-auto">
+                      <div className="space-y-4 px-4 py-5 sm:px-6">
+                        <SectionCard
+                          title="Detalle del egreso"
+                          description="Monto, fecha y forma de pago."
+                          icon={<CurrencyDollarIcon className="h-4 w-4" />}
+                        >
+                          <div className="grid gap-4 sm:grid-cols-2">
+                            <Field label="Monto del egreso" htmlFor="amount">
+                              <div className="relative">
+                                <CurrencyDollarIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                                 <input
                                   id="amount"
                                   name="amount"
                                   type="text"
-                                  className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none block w-full rounded-md border-0 pl-8 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
+                                  className={`${inputBase} pl-9 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none`}
                                   placeholder="$0.00"
                                   value={amountDisplay}
                                   onChange={(e) => {
@@ -333,241 +441,35 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ open, setOpen }) => {
                                   }}
                                 />
                               </div>
-                            </div>
+                            </Field>
 
-                            {/* Select de Proveedor */}
-                            <div>
-                              <label
-                                htmlFor="providerId"
-                                className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100"
-                              >
-                                Proveedor (opcional)
-                              </label>
-                              <div className="mt-2 relative">
-                                <Combobox
-                                  value={providerId}
-                                  onChange={(value: string) => {
-                                    setProviderId(value);
-                                    setProviderSearch("");
-                                  }}
-                                >
-                                  <div className="relative">
-                                    <div className="absolute left-2 top-1/2 flex items-center transform -translate-y-1/2 z-10">
-                                      <UserGroupIcon className="h-5 w-5 text-gray-400" />
-                                    </div>
-                                    <Combobox.Input
-                                      id="providerId"
-                                      name="providerId"
-                                      className="block w-full rounded-md border-0 pl-10 pr-10 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
-                                      displayValue={(id: string) =>
-                                        getProviderLabel(id)
-                                      }
-                                      onChange={(event) =>
-                                        setProviderSearch(event.target.value)
-                                      }
-                                      onFocus={() =>
-                                        providerComboboxButtonRef.current?.click()
-                                      }
-                                      placeholder="Buscar proveedor por nombre o servicio"
-                                    />
-                                    <Combobox.Button
-                                      ref={providerComboboxButtonRef}
-                                      className="absolute inset-y-0 right-0 flex items-center pr-2"
-                                    >
-                                      <ChevronUpDownIcon className="h-5 w-5 text-gray-400" />
-                                    </Combobox.Button>
-                                  </div>
-                                  <Combobox.Options className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white dark:bg-gray-800 py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
-                                    <Combobox.Option
-                                      value=""
-                                      className={({ active }) =>
-                                        `relative cursor-default select-none py-2 pl-8 pr-4 ${
-                                          active
-                                            ? "bg-indigo-600 text-white"
-                                            : "text-gray-900 dark:text-gray-100"
-                                        }`
-                                      }
-                                    >
-                                      -- Sin proveedor --
-                                    </Combobox.Option>
-                                    {filteredProviders.length === 0 ? (
-                                      <div className="relative cursor-default select-none py-2 px-4 text-gray-700 dark:text-gray-300">
-                                        Sin resultados
-                                      </div>
-                                    ) : (
-                                      filteredProviders.map((provider) => (
-                                        <Combobox.Option
-                                          key={provider.id}
-                                          value={provider.id}
-                                          className={({ active }) =>
-                                            `relative cursor-default select-none py-2 pl-8 pr-4 ${
-                                              active
-                                                ? "bg-indigo-600 text-white"
-                                                : "text-gray-900 dark:text-gray-100"
-                                            }`
-                                          }
-                                        >
-                                          {({ active }) => (
-                                            <>
-                                              <span
-                                                className={`block truncate ${
-                                                  providerId === provider.id
-                                                    ? "font-medium"
-                                                    : "font-normal"
-                                                }`}
-                                              >
-                                                {provider.name} -{" "}
-                                                {provider.serviceLabel}
-                                              </span>
-                                              {providerId === provider.id && (
-                                                <span
-                                                  className={`absolute inset-y-0 left-0 flex items-center pl-2 ${
-                                                    active
-                                                      ? "text-white"
-                                                      : "text-indigo-600"
-                                                  }`}
-                                                >
-                                                  <CheckIcon className="h-4 w-4" />
-                                                </span>
-                                              )}
-                                            </>
-                                          )}
-                                        </Combobox.Option>
-                                      ))
-                                    )}
-                                  </Combobox.Options>
-                                </Combobox>
+                            <Field label="Fecha del egreso" htmlFor="expenseDate">
+                              <div className="relative">
+                                <CalendarIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                                <input
+                                  id="expenseDate"
+                                  name="expenseDate"
+                                  type="datetime-local"
+                                  className={`${inputBase} pl-9`}
+                                  value={expenseDate}
+                                  onChange={(e) => setExpenseDate(e.target.value)}
+                                />
                               </div>
-                            </div>
+                            </Field>
+                          </div>
 
-                            {/* Concepto */}
-                            <div>
-                              <label
-                                htmlFor="concept"
-                                className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100"
-                              >
-                                Concepto de Egreso
-                              </label>
-                              <div className="mt-2 relative">
-                                <Combobox
-                                  value={concept}
-                                  onChange={(value: string) => {
-                                    setConcept(value);
-                                    setConceptSearch("");
-                                  }}
-                                >
-                                  <div className="relative">
-                                    <div className="absolute left-2 top-1/2 flex items-center transform -translate-y-1/2 z-10">
-                                      <ClipboardIcon className="h-5 w-5 text-gray-400" />
-                                    </div>
-                                    <Combobox.Input
-                                      id="concept"
-                                      name="concept"
-                                      className="block w-full rounded-md border-0 pl-10 pr-10 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
-                                      displayValue={(value: string) => value}
-                                      onChange={(event) =>
-                                        setConceptSearch(event.target.value)
-                                      }
-                                      onFocus={() =>
-                                        conceptComboboxButtonRef.current?.click()
-                                      }
-                                      placeholder="Buscar concepto de egreso"
-                                    />
-                                    <Combobox.Button
-                                      ref={conceptComboboxButtonRef}
-                                      className="absolute inset-y-0 right-0 flex items-center pr-2"
-                                    >
-                                      <ChevronUpDownIcon className="h-5 w-5 text-gray-400" />
-                                    </Combobox.Button>
-                                  </div>
-                                  <Combobox.Options className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white dark:bg-gray-800 py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
-                                    <Combobox.Option
-                                      value=""
-                                      className={({ active }) =>
-                                        `relative cursor-default select-none py-2 pl-8 pr-4 ${
-                                          active
-                                            ? "bg-indigo-600 text-white"
-                                            : "text-gray-900 dark:text-gray-100"
-                                        }`
-                                      }
-                                    >
-                                      -- Selecciona un concepto --
-                                    </Combobox.Option>
-                                    {filteredExpenseConcepts.length === 0 ? (
-                                      <div className="relative cursor-default select-none py-2 px-4 text-gray-700 dark:text-gray-300">
-                                        Sin resultados
-                                      </div>
-                                    ) : (
-                                      filteredExpenseConcepts.map(
-                                        (expenseConcept) => (
-                                          <Combobox.Option
-                                            key={expenseConcept}
-                                            value={expenseConcept}
-                                            className={({ active }) =>
-                                              `relative cursor-default select-none py-2 pl-8 pr-4 ${
-                                                active
-                                                  ? "bg-indigo-600 text-white"
-                                                  : "text-gray-900 dark:text-gray-100"
-                                              }`
-                                            }
-                                          >
-                                            {({ active }) => (
-                                              <>
-                                                <span
-                                                  className={`block truncate ${
-                                                    concept === expenseConcept
-                                                      ? "font-medium"
-                                                      : "font-normal"
-                                                  }`}
-                                                >
-                                                  {expenseConcept}
-                                                </span>
-                                                {concept === expenseConcept && (
-                                                  <span
-                                                    className={`absolute inset-y-0 left-0 flex items-center pl-2 ${
-                                                      active
-                                                        ? "text-white"
-                                                        : "text-indigo-600"
-                                                    }`}
-                                                  >
-                                                    <CheckIcon className="h-4 w-4" />
-                                                  </span>
-                                                )}
-                                              </>
-                                            )}
-                                          </Combobox.Option>
-                                        )
-                                      )
-                                    )}
-                                  </Combobox.Options>
-                                </Combobox>
-                              </div>
-                            </div>
-
-                            {/* Tipo de pago */}
-                            <div>
-                              <label
-                                htmlFor="paymentType"
-                                className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100"
-                              >
-                                Tipo de pago
-                              </label>
-                              <div className="mt-2 relative">
-                                <div className="absolute left-2 top-1/2 flex items-center transform -translate-y-1/2">
-                                  <CreditCardIcon className="h-5 w-5 text-gray-400" />
-                                </div>
+                          <div className="grid gap-4 sm:grid-cols-2">
+                            <Field label="Tipo de pago" htmlFor="paymentType">
+                              <div className="relative">
+                                <CreditCardIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                                 <select
                                   id="paymentType"
                                   name="paymentType"
-                                  className="block w-full rounded-md border-0 pl-10 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
+                                  className={`${inputBase} pl-9`}
                                   value={paymentType}
-                                  onChange={(e) =>
-                                    setPaymentType(e.target.value)
-                                  }
+                                  onChange={(e) => setPaymentType(e.target.value)}
                                 >
-                                  <option value="">
-                                    -- Selecciona el tipo de pago --
-                                  </option>
+                                  <option value="">Selecciona…</option>
                                   {PAYMENT_TYPES.map((pt) => (
                                     <option key={pt} value={pt}>
                                       {pt}
@@ -575,20 +477,11 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ open, setOpen }) => {
                                   ))}
                                 </select>
                               </div>
-                            </div>
+                            </Field>
 
-                            {/* Selección de la cuenta financiera */}
-                            <div>
-                              <label
-                                htmlFor="financialAccountId"
-                                className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100"
-                              >
-                                Cuenta Financiera
-                              </label>
-                              <div className="mt-2 relative">
-                                <div className="absolute left-2 top-1/2 flex items-center transform -translate-y-1/2">
-                                  <CreditCardIcon className="h-5 w-5 text-gray-400" />
-                                </div>
+                            <Field label="Cuenta financiera" htmlFor="financialAccountId">
+                              <div className="relative">
+                                <BuildingLibraryIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                                 <select
                                   id="financialAccountId"
                                   name="financialAccountId"
@@ -596,12 +489,10 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ open, setOpen }) => {
                                   onChange={(e) =>
                                     setFinancialAccountId(e.target.value)
                                   }
-                                  className="block w-full rounded-md border-0 pl-10 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
+                                  className={`${inputBase} pl-9`}
                                   required
                                 >
-                                  <option value="">
-                                    -- Selecciona una cuenta --
-                                  </option>
+                                  <option value="">Selecciona una cuenta</option>
                                   {selectableFinancialAccounts.map((account) => (
                                     <option key={account.id} value={account.id}>
                                       {account.name}
@@ -609,121 +500,364 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ open, setOpen }) => {
                                   ))}
                                 </select>
                               </div>
-                            </div>
-
-                            {/* Fecha de egreso */}
-                            <div>
-                              <label
-                                htmlFor="expenseDate"
-                                className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100"
-                              >
-                                Fecha del egreso
-                              </label>
-                              <div className="mt-2 relative">
-                                <div className="absolute left-2 top-1/2 flex items-center transform -translate-y-1/2">
-                                  <CalendarIcon className="h-5 w-5 text-gray-400" />
-                                </div>
-                                <input
-                                  id="expenseDate"
-                                  name="expenseDate"
-                                  type="datetime-local"
-                                  className="block w-full rounded-md border-0 pl-10 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
-                                  value={expenseDate}
-                                  onChange={(e) =>
-                                    setExpenseDate(e.target.value)
-                                  }
-                                />
-                              </div>
-                            </div>
-
-                            {/* Descripción */}
-                            <div>
-                              <label
-                                htmlFor="description"
-                                className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100"
-                              >
-                                Descripción (opcional)
-                              </label>
-                              <div className="mt-2 relative">
-                                <div className="absolute left-2 top-1/2 flex items-center transform -translate-y-1/2">
-                                  <PencilIcon className="h-5 w-5 text-gray-400" />
-                                </div>
-                                <textarea
-                                  id="description"
-                                  name="description"
-                                  rows={3}
-                                  className="block w-full rounded-md border-0 pl-10 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:border-indigo-400 dark:ring-none dark:outline-none dark:focus:ring-2 dark:ring-indigo-500"
-                                  placeholder="Detalles adicionales del egreso"
-                                  value={description}
-                                  onChange={(e) =>
-                                    setDescription(e.target.value)
-                                  }
-                                />
-                              </div>
-                            </div>
-
-                            {/* Dropzone para factura/recibo */}
-                            <div>
-                              <label className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100">
-                                Factura o Comprobante (opcional)
-                              </label>
-                              <div
-                                {...getRootProps()}
-                                className="mt-2 h-auto flex items-center justify-center rounded-lg border border-dashed border-gray-900/25 px-6 py-4 dark:border-indigo-900"
-                              >
-                                <input {...getInputProps()} />
-                                <div className="text-center">
-                                  <PhotoIcon
-                                    className="mx-auto h-12 w-12 text-gray-300"
-                                    aria-hidden="true"
-                                  />
-                                  {fileName ? (
-                                    <p className="mt-4 text-sm leading-6 text-gray-600">
-                                      {fileName}
-                                    </p>
-                                  ) : (
-                                    <p className="mt-4 text-sm leading-6 font-medium text-indigo-600">
-                                      {isDragActive
-                                        ? "Suelta el archivo aquí..."
-                                        : isCompressing
-                                        ? "Procesando archivo..."
-                                        : "Arrastra y suelta el comprobante aquí o haz click para seleccionarlo"}
-                                    </p>
-                                  )}
-                                  <p className="text-xs leading-5 text-gray-600">
-                                    Hasta 10MB
-                                  </p>
-                                </div>
-                              </div>
-                            </div>
+                            </Field>
                           </div>
-                        </div>
+                        </SectionCard>
+
+                        <SectionCard
+                          title="Clasificación"
+                          description="Proveedor y concepto del gasto."
+                          icon={<TagIcon className="h-4 w-4" />}
+                        >
+                          <Field
+                            label="Proveedor"
+                            htmlFor="providerId"
+                            optional
+                            hint="Busca por nombre o tipo de servicio."
+                          >
+                            <Combobox
+                              value={providerId}
+                              onChange={(value: string) => {
+                                setProviderId(value);
+                                setProviderSearch("");
+                              }}
+                            >
+                              <div className="relative">
+                                <UserGroupIcon className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                                <Combobox.Input
+                                  id="providerId"
+                                  name="providerId"
+                                  className={`${inputBase} pl-9 pr-10`}
+                                  displayValue={(id: string) => getProviderLabel(id)}
+                                  onChange={(event) =>
+                                    setProviderSearch(event.target.value)
+                                  }
+                                  onFocus={() =>
+                                    providerComboboxButtonRef.current?.click()
+                                  }
+                                  placeholder="Buscar proveedor"
+                                />
+                                <Combobox.Button
+                                  ref={providerComboboxButtonRef}
+                                  className="absolute inset-y-0 right-0 flex items-center pr-2"
+                                >
+                                  <ChevronUpDownIcon className="h-5 w-5 text-gray-400" />
+                                </Combobox.Button>
+                              </div>
+                              <Combobox.Options className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-lg bg-white py-1 text-sm shadow-lg ring-1 ring-black/5 focus:outline-none dark:bg-gray-800 dark:ring-white/[0.08]">
+                                <Combobox.Option
+                                  value=""
+                                  className={({ active }) =>
+                                    cn(
+                                      "relative cursor-default select-none px-3 py-1.5 text-[11px] italic",
+                                      active
+                                        ? "bg-indigo-50 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-300"
+                                        : "text-gray-500 dark:text-gray-400",
+                                    )
+                                  }
+                                >
+                                  Sin proveedor
+                                </Combobox.Option>
+                                {filteredProviders.length === 0 ? (
+                                  <div className="px-3 py-3 text-sm text-gray-500 dark:text-gray-400">
+                                    Sin resultados
+                                  </div>
+                                ) : (
+                                  filteredProviders.map((provider) => (
+                                    <Combobox.Option
+                                      key={provider.id}
+                                      value={provider.id}
+                                      className={({ active }) =>
+                                        cn(
+                                          "relative cursor-default select-none px-2 py-1.5",
+                                          active && "bg-indigo-50 dark:bg-indigo-500/10",
+                                        )
+                                      }
+                                    >
+                                      <div className="flex items-start justify-between gap-2">
+                                        <div className="min-w-0 flex-1">
+                                          <p
+                                            className={cn(
+                                              "truncate text-sm font-semibold",
+                                              providerId === provider.id
+                                                ? "text-indigo-700 dark:text-indigo-300"
+                                                : "text-gray-900 dark:text-gray-100",
+                                            )}
+                                          >
+                                            {provider.name}
+                                          </p>
+                                          <p className="truncate text-[11px] text-gray-500 dark:text-gray-400">
+                                            {provider.serviceLabel}
+                                          </p>
+                                        </div>
+                                        {providerId === provider.id && (
+                                          <CheckIcon className="mt-0.5 h-4 w-4 shrink-0 text-indigo-600 dark:text-indigo-300" />
+                                        )}
+                                      </div>
+                                    </Combobox.Option>
+                                  ))
+                                )}
+                              </Combobox.Options>
+                            </Combobox>
+                          </Field>
+
+                          {providerId && (
+                            <div className="rounded-xl border border-indigo-100 bg-indigo-50/60 px-3 py-2 text-xs text-indigo-800 dark:border-indigo-900/40 dark:bg-indigo-500/10 dark:text-indigo-200">
+                              <span className="font-semibold">Proveedor:</span>{" "}
+                              {getProviderLabel(providerId)}
+                            </div>
+                          )}
+
+                          <Field
+                            label="Concepto de egreso"
+                            htmlFor="concept"
+                            hint="Selecciona o busca entre los conceptos predefinidos."
+                          >
+                            <Combobox
+                              value={concept}
+                              onChange={(value: string) => {
+                                setConcept(value);
+                                setConceptSearch("");
+                              }}
+                            >
+                              <div className="relative">
+                                <ClipboardIcon className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                                <Combobox.Input
+                                  id="concept"
+                                  name="concept"
+                                  className={`${inputBase} pl-9 pr-10`}
+                                  displayValue={(value: string) => value}
+                                  onChange={(event) =>
+                                    setConceptSearch(event.target.value)
+                                  }
+                                  onFocus={() =>
+                                    conceptComboboxButtonRef.current?.click()
+                                  }
+                                  placeholder="Buscar concepto"
+                                />
+                                <Combobox.Button
+                                  ref={conceptComboboxButtonRef}
+                                  className="absolute inset-y-0 right-0 flex items-center pr-2"
+                                >
+                                  <ChevronUpDownIcon className="h-5 w-5 text-gray-400" />
+                                </Combobox.Button>
+                              </div>
+                              <Combobox.Options className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-lg bg-white py-1 text-sm shadow-lg ring-1 ring-black/5 focus:outline-none dark:bg-gray-800 dark:ring-white/[0.08]">
+                                <Combobox.Option
+                                  value=""
+                                  className={({ active }) =>
+                                    cn(
+                                      "relative cursor-default select-none px-3 py-1.5 text-[11px] italic",
+                                      active
+                                        ? "bg-indigo-50 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-300"
+                                        : "text-gray-500 dark:text-gray-400",
+                                    )
+                                  }
+                                >
+                                  Sin concepto
+                                </Combobox.Option>
+                                {filteredExpenseConcepts.length === 0 ? (
+                                  <div className="px-3 py-3 text-sm text-gray-500 dark:text-gray-400">
+                                    Sin resultados
+                                  </div>
+                                ) : (
+                                  filteredExpenseConcepts.map((expenseConcept) => (
+                                    <Combobox.Option
+                                      key={expenseConcept}
+                                      value={expenseConcept}
+                                      className={({ active }) =>
+                                        cn(
+                                          "relative cursor-default select-none px-2 py-1.5",
+                                          active && "bg-indigo-50 dark:bg-indigo-500/10",
+                                        )
+                                      }
+                                    >
+                                      <div className="flex items-center justify-between gap-2">
+                                        <span
+                                          className={cn(
+                                            "truncate text-sm",
+                                            concept === expenseConcept
+                                              ? "font-semibold text-indigo-700 dark:text-indigo-300"
+                                              : "text-gray-900 dark:text-gray-100",
+                                          )}
+                                        >
+                                          {expenseConcept}
+                                        </span>
+                                        {concept === expenseConcept && (
+                                          <CheckIcon className="h-4 w-4 shrink-0 text-indigo-600 dark:text-indigo-300" />
+                                        )}
+                                      </div>
+                                    </Combobox.Option>
+                                  ))
+                                )}
+                              </Combobox.Options>
+                            </Combobox>
+                          </Field>
+                        </SectionCard>
+
+                        <SectionCard
+                          title="Comprobante y notas"
+                          description="Adjunta factura o recibo y agrega detalles adicionales."
+                          icon={<DocumentTextIcon className="h-4 w-4" />}
+                        >
+                          <Field
+                            label="Factura o comprobante"
+                            optional
+                            hint="PDF o imagen. Se procesa automáticamente. Hasta 10 MB."
+                          >
+                            <div
+                              {...getRootProps()}
+                              className={cn(
+                                "flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed px-5 py-6 text-center transition",
+                                isDragActive
+                                  ? "border-indigo-400 bg-indigo-50 dark:border-indigo-500 dark:bg-indigo-500/10"
+                                  : fileName
+                                    ? "border-emerald-300 bg-emerald-50/60 dark:border-emerald-700 dark:bg-emerald-900/10"
+                                    : "border-gray-300 bg-gray-50/60 hover:border-indigo-300 hover:bg-indigo-50/40 dark:border-gray-700 dark:bg-gray-800/40 dark:hover:border-indigo-600 dark:hover:bg-indigo-500/10",
+                              )}
+                            >
+                              <input {...getInputProps()} />
+                              <div
+                                className={cn(
+                                  "mb-2 rounded-full p-2.5",
+                                  fileName
+                                    ? "bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-300"
+                                    : "bg-indigo-100 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-300",
+                                )}
+                              >
+                                {fileName ? (
+                                  <CheckCircleIcon className="h-6 w-6" />
+                                ) : (
+                                  <CloudArrowUpIcon className="h-6 w-6" />
+                                )}
+                              </div>
+                              {fileName ? (
+                                <>
+                                  <p className="max-w-full truncate px-2 text-sm font-semibold text-emerald-700 dark:text-emerald-300">
+                                    {fileName}
+                                  </p>
+                                  <p className="mt-1 text-[11px] text-gray-500 dark:text-gray-400">
+                                    Haz click o arrastra otro archivo para reemplazarlo.
+                                  </p>
+                                </>
+                              ) : (
+                                <>
+                                  <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                                    {isDragActive
+                                      ? "Suelta el archivo aquí…"
+                                      : isCompressing
+                                        ? "Procesando archivo…"
+                                        : "Arrastra y suelta o haz click"}
+                                  </p>
+                                  <p className="mt-1 text-[11px] text-gray-500 dark:text-gray-400">
+                                    PDF, JPG o PNG
+                                  </p>
+                                </>
+                              )}
+                            </div>
+                          </Field>
+
+                          <Field label="Descripción" htmlFor="description" optional>
+                            <textarea
+                              id="description"
+                              name="description"
+                              rows={3}
+                              className={`${inputBase} resize-none px-3 py-2`}
+                              placeholder="Detalles adicionales del egreso…"
+                              value={description}
+                              onChange={(e) => setDescription(e.target.value)}
+                            />
+                          </Field>
+                        </SectionCard>
                       </div>
                     </div>
 
-                    {/* Botones al final */}
-                    <div className="flex flex-shrink-0 justify-end px-4 py-4 dark:bg-gray-900">
-                      <button
-                        type="button"
-                        className="rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
-                        onClick={() => setOpen(false)}
-                      >
-                        Cancelar
-                      </button>
-                      <button
-                        type="submit"
-                        disabled={loading || isCompressing}
-                        className="ml-4 inline-flex justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-600 disabled:opacity-50"
-                      >
-                        {loading || isCompressing ? (
-                          <svg
-                            className="animate-spin h-5 w-5 mr-3 border-t-2 border-b-2 border-white rounded-full"
-                            viewBox="0 0 24 24"
-                          ></svg>
-                        ) : (
-                          "Guardar"
+                    {/* Sticky footer */}
+                    <div className="flex flex-shrink-0 items-center justify-between gap-3 border-t border-gray-200 bg-white px-4 py-3 sm:px-6 dark:border-gray-800 dark:bg-gray-900">
+                      <div className="hidden min-w-0 sm:block">
+                        <p className="text-[11px] text-gray-500 dark:text-gray-400">
+                          {amountDisplay ? (
+                            <>
+                              Egreso de{" "}
+                              <span className="font-semibold text-gray-900 dark:text-gray-100">
+                                {amountDisplay}
+                              </span>
+                              {concept && (
+                                <>
+                                  <span className="mx-1.5 text-gray-300 dark:text-gray-700">
+                                    ·
+                                  </span>
+                                  <span className="font-semibold text-gray-900 dark:text-gray-100">
+                                    {concept}
+                                  </span>
+                                </>
+                              )}
+                              {summaryAccountName && (
+                                <>
+                                  <span className="mx-1.5 text-gray-300 dark:text-gray-700">
+                                    ·
+                                  </span>
+                                  {summaryAccountName}
+                                </>
+                              )}
+                            </>
+                          ) : (
+                            "Revisa los datos antes de guardar."
+                          )}
+                        </p>
+                        {formattedExpenseDate && (
+                          <p className="mt-0.5 truncate text-[10px] text-gray-400 dark:text-gray-500">
+                            {formattedExpenseDate}
+                          </p>
                         )}
-                      </button>
+                      </div>
+                      <div className="flex flex-1 items-center justify-end gap-2 sm:flex-none">
+                        <button
+                          type="button"
+                          className="rounded-lg bg-white px-3 py-2 text-sm font-semibold text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 transition hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-200 dark:ring-gray-700 dark:hover:bg-gray-700"
+                          onClick={() => setOpen(false)}
+                        >
+                          Cancelar
+                        </button>
+                        <button
+                          type="submit"
+                          disabled={loading || isCompressing}
+                          className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {loading ? (
+                            <>
+                              <svg
+                                className="h-4 w-4 animate-spin"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                              >
+                                <circle
+                                  cx="12"
+                                  cy="12"
+                                  r="9"
+                                  stroke="currentColor"
+                                  strokeOpacity="0.25"
+                                  strokeWidth="3"
+                                />
+                                <path
+                                  d="M21 12a9 9 0 0 1-9 9"
+                                  stroke="currentColor"
+                                  strokeWidth="3"
+                                  strokeLinecap="round"
+                                />
+                              </svg>
+                              Guardando…
+                            </>
+                          ) : isCompressing ? (
+                            "Procesando archivo…"
+                          ) : (
+                            <>
+                              <CheckIcon className="h-4 w-4" />
+                              Guardar egreso
+                            </>
+                          )}
+                        </button>
+                      </div>
                     </div>
                   </form>
                 </Dialog.Panel>

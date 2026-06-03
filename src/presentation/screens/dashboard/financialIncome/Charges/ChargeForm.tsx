@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   UserIcon,
   CurrencyDollarIcon,
@@ -9,12 +9,133 @@ import {
   ArrowPathIcon,
   DocumentTextIcon,
   UserGroupIcon,
-} from "@heroicons/react/24/solid";
+  HashtagIcon,
+  ClockIcon,
+} from "@heroicons/react/24/outline";
 import { useChargeStore } from "../../../../../store/useChargeStore";
 import useUserStore from "../../../../../store/UserDataStore";
 import { usePaymentSummaryStore } from "../../../../../store/paymentSummaryStore";
 import { toast } from "react-hot-toast";
 import { commonConcepts } from "../../../../../utils/commonConcepts";
+
+const cn = (...classes: (string | boolean | undefined | null)[]) =>
+  classes.filter(Boolean).join(" ");
+
+const inputBase =
+  "block w-full rounded-lg border-0 bg-white py-2.5 pr-3 text-sm text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 transition focus:ring-2 focus:ring-inset focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:ring-gray-700 dark:placeholder:text-gray-500 dark:focus:ring-indigo-400";
+
+interface SectionCardProps {
+  title: string;
+  description?: string;
+  icon: React.ReactNode;
+  children: React.ReactNode;
+}
+
+const SectionCard = ({
+  title,
+  description,
+  icon,
+  children,
+}: SectionCardProps) => (
+  <section className="rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
+    <header className="flex items-start gap-2.5 border-b border-gray-100 px-4 py-3 dark:border-gray-800">
+      <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-300">
+        {icon}
+      </span>
+      <div className="min-w-0 flex-1">
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+          {title}
+        </h3>
+        {description && (
+          <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+            {description}
+          </p>
+        )}
+      </div>
+    </header>
+    <div className="space-y-4 px-4 py-4">{children}</div>
+  </section>
+);
+
+interface FieldProps {
+  label: string;
+  htmlFor?: string;
+  hint?: string;
+  children: React.ReactNode;
+}
+
+const Field = ({ label, htmlFor, hint, children }: FieldProps) => (
+  <div>
+    <label
+      htmlFor={htmlFor}
+      className="block text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-400"
+    >
+      {label}
+    </label>
+    <div className="mt-1.5">{children}</div>
+    {hint && (
+      <p className="mt-1 text-[11px] text-gray-500 dark:text-gray-400">
+        {hint}
+      </p>
+    )}
+  </div>
+);
+
+interface ChargeTypeCardProps {
+  active: boolean;
+  title: string;
+  description: string;
+  icon: React.ReactNode;
+  onClick: () => void;
+}
+
+const ChargeTypeCard = ({
+  active,
+  title,
+  description,
+  icon,
+  onClick,
+}: ChargeTypeCardProps) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className={cn(
+      "group relative flex w-full items-start gap-2.5 rounded-xl border px-3 py-2.5 text-left transition",
+      active
+        ? "border-indigo-300 bg-indigo-50 shadow-sm ring-1 ring-indigo-200 dark:border-indigo-600 dark:bg-indigo-500/10 dark:ring-indigo-500/40"
+        : "border-gray-200 bg-white hover:border-indigo-200 hover:bg-indigo-50/40 dark:border-gray-700 dark:bg-gray-900 dark:hover:border-indigo-700 dark:hover:bg-indigo-500/10",
+    )}
+  >
+    <span
+      className={cn(
+        "mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition",
+        active
+          ? "bg-indigo-600 text-white"
+          : "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400",
+      )}
+    >
+      {icon}
+    </span>
+    <div className="min-w-0 flex-1">
+      <p
+        className={cn(
+          "text-sm font-semibold leading-tight",
+          active
+            ? "text-indigo-900 dark:text-indigo-100"
+            : "text-gray-900 dark:text-gray-100",
+        )}
+      >
+        {title}
+      </p>
+      <p className="mt-0.5 text-[11px] leading-snug text-gray-500 dark:text-gray-400">
+        {description}
+      </p>
+    </div>
+    {active && (
+      <CheckCircleIcon className="h-4 w-4 shrink-0 text-indigo-600 dark:text-indigo-300" />
+    )}
+  </button>
+);
 
 const getCurrentMonthDateRange = () => {
   const now = new Date();
@@ -24,7 +145,7 @@ const getCurrentMonthDateRange = () => {
   const startAt = `${year}-${String(month + 1).padStart(2, "0")}-01`;
   const lastDay = new Date(year, month + 1, 0).getDate();
   const dueDate = `${year}-${String(month + 1).padStart(2, "0")}-${String(
-    lastDay
+    lastDay,
   ).padStart(2, "0")}`;
 
   return { startAt, dueDate };
@@ -34,13 +155,13 @@ const ChargeForm = () => {
   const { createChargeForOne, createChargeForAll, loading, error } =
     useChargeStore();
   const fetchCondominiumsUsers = useUserStore(
-    (state) => state.fetchCondominiumsUsers
+    (state) => state.fetchCondominiumsUsers,
   );
   const fetchSummary = usePaymentSummaryStore((state) => state.fetchSummary);
   const condominiumsUsers = useUserStore((state) => state.condominiumsUsers);
 
   const [chargeType, setChargeType] = useState<"individual" | "all">(
-    "individual"
+    "individual",
   );
   const [selectedUser, setSelectedUser] = useState<string>("");
   const [concept, setConcept] = useState<string>("Cuota de mantenimiento");
@@ -55,10 +176,10 @@ const ChargeForm = () => {
     return `${year}-${mm}-${dd}`;
   });
   const [startAt, setStartAt] = useState<string>(
-    () => getCurrentMonthDateRange().startAt
+    () => getCurrentMonthDateRange().startAt,
   );
   const [dueDate, setDueDate] = useState<string>(
-    () => getCurrentMonthDateRange().dueDate
+    () => getCurrentMonthDateRange().dueDate,
   );
   const [paid, setPaid] = useState<boolean>(false);
 
@@ -66,11 +187,39 @@ const ChargeForm = () => {
     fetchCondominiumsUsers();
   }, [fetchCondominiumsUsers]);
 
+  const chargeableUsers = useMemo(
+    () =>
+      condominiumsUsers.filter(
+        (user) =>
+          user.role !== "admin" &&
+          user.role !== "super-admin" &&
+          user.role !== "security",
+      ),
+    [condominiumsUsers],
+  );
+
+  const selectedUserLabel = useMemo(() => {
+    const user = chargeableUsers.find((u) => u.uid === selectedUser);
+    if (!user) return "";
+    return `${user.number || "-"} ${user.name || ""}`.trim();
+  }, [chargeableUsers, selectedUser]);
+
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat("es-MX", {
       style: "currency",
       currency: "MXN",
     }).format(value);
+
+  const formatShortDate = (dateString: string) => {
+    if (!dateString) return "—";
+    const parsed = new Date(`${dateString}T12:00:00`);
+    if (isNaN(parsed.getTime())) return dateString;
+    return parsed.toLocaleDateString("es-MX", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+  };
 
   const validateForm = (): boolean => {
     if (chargeType === "individual" && !selectedUser) {
@@ -139,7 +288,6 @@ const ChargeForm = () => {
 
       await fetchSummary();
 
-      // Resetear el formulario
       const currentMonthRange = getCurrentMonthDateRange();
       setConcept("Cuota de mantenimiento");
       setAmount(0);
@@ -161,279 +309,302 @@ const ChargeForm = () => {
     setAmountDisplay(rawValue);
   };
 
+  const summaryScopeLabel =
+    chargeType === "individual"
+      ? selectedUserLabel || "Sin condómino"
+      : `Todos los condóminos (${chargeableUsers.length})`;
+
   return (
-    <div className="bg-white p-6 rounded-xl shadow-lg dark:bg-gray-800 dark:text-gray-100 transition-all duration-300 border border-gray-100 dark:border-gray-700">
-      <div className="flex items-center justify-between mb-6 border-b border-gray-100 dark:border-gray-700 pb-4">
-        <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">
-          Asignar Cargo
-        </h2>
-        <DocumentTextIcon className="h-7 w-7 text-indigo-600 dark:text-indigo-400" />
+    <div className="overflow-hidden rounded-2xl border border-gray-200 bg-gray-50 shadow-lg dark:border-gray-800 dark:bg-gray-950">
+      {/* Header */}
+      <div className="relative overflow-hidden bg-gradient-to-br from-indigo-600 via-indigo-600 to-violet-600 px-5 py-5 sm:px-6 dark:from-indigo-700 dark:via-indigo-800 dark:to-violet-900">
+        <div className="flex items-center gap-3">
+          <div className="rounded-xl bg-white/15 p-2.5 backdrop-blur">
+            <DocumentTextIcon className="h-6 w-6 text-white" />
+          </div>
+          <div className="min-w-0">
+            <h2 className="text-lg font-bold leading-tight text-white">
+              Asignar cargo
+            </h2>
+            <p className="mt-0.5 text-xs text-indigo-100">
+              Crea un cargo de mantenimiento para un condómino o para todo el
+              condominio.
+            </p>
+          </div>
+        </div>
       </div>
+
       {error && toast.error(error)}
-      <form onSubmit={handleSubmit} className="space-y-5">
-        <div className="mb-4">
-          <label className="font-medium text-gray-700 dark:text-gray-300 block mb-2">
-            Tipo de cargo:
-          </label>
-          <div className="flex gap-4">
-            <label
-              className={`flex items-center p-3 border text-md border-gray-200 dark:border-gray-600 rounded-lg cursor-pointer transition-all hover:border-indigo-400 dark:hover:border-indigo-400 hover:bg-indigo-50 dark:hover:bg-gray-700 ${
-                chargeType === "individual"
-                  ? "border-indigo-500 bg-indigo-50 dark:bg-gray-700 dark:border-indigo-500"
-                  : ""
-              }`}
-            >
-              <div
-                className={`flex items-center justify-center w-4 h-4 border-2 rounded-full mr-3 ${
-                  chargeType === "individual"
-                    ? "border-indigo-500 dark:border-indigo-400"
-                    : "border-gray-400 dark:border-gray-500"
-                }`}
-              >
-                {chargeType === "individual" && (
-                  <div className="w-2.5 h-2.5 bg-indigo-600 dark:bg-indigo-400 rounded-full"></div>
-                )}
-              </div>
-              <input
-                type="radio"
-                value="individual"
-                checked={chargeType === "individual"}
-                onChange={() => setChargeType("individual")}
-                className="sr-only"
+
+      <form onSubmit={handleSubmit} className="flex flex-col">
+        <div className="space-y-4 px-4 py-5 sm:px-6">
+          <SectionCard
+            title="Alcance del cargo"
+            description="Define si el cargo aplica a una unidad o a todos los condóminos."
+            icon={<UserGroupIcon className="h-4 w-4" />}
+          >
+            <div className="grid gap-2 sm:grid-cols-2">
+              <ChargeTypeCard
+                active={chargeType === "individual"}
+                title="Individual"
+                description="Un solo condómino recibe este cargo."
+                icon={<UserIcon className="h-4 w-4" />}
+                onClick={() => setChargeType("individual")}
               />
-              <div className="flex items-center gap-2">
-                <UserIcon className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
-                <span className="font-medium text-xs">Individual</span>
-              </div>
-            </label>
-            <label
-              className={`flex items-center p-3 border text-md border-gray-200 dark:border-gray-600 rounded-lg cursor-pointer transition-all hover:border-indigo-400 dark:hover:border-indigo-400 hover:bg-indigo-50 dark:hover:bg-gray-700 ${
-                chargeType === "all"
-                  ? "border-indigo-500 bg-indigo-50 dark:bg-gray-700 dark:border-indigo-500"
-                  : ""
-              }`}
-            >
-              <div
-                className={`flex items-center justify-center w-4 h-4 border-2 rounded-full mr-3 ${
-                  chargeType === "all"
-                    ? "border-indigo-500 dark:border-indigo-400"
-                    : "border-gray-400 dark:border-gray-500"
-                }`}
-              >
-                {chargeType === "all" && (
-                  <div className="w-2.5 h-2.5 bg-indigo-600 dark:bg-indigo-400 rounded-full"></div>
-                )}
-              </div>
-              <input
-                type="radio"
-                value="all"
-                checked={chargeType === "all"}
-                onChange={() => setChargeType("all")}
-                className="sr-only"
+              <ChargeTypeCard
+                active={chargeType === "all"}
+                title="Todos los condóminos"
+                description={`Se aplicará a ${chargeableUsers.length} unidades.`}
+                icon={<UserGroupIcon className="h-4 w-4" />}
+                onClick={() => setChargeType("all")}
               />
-              <div className="flex items-center gap-2">
-                <UserGroupIcon className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
-                <span className="font-medium text-xs">
-                  Todos los condóminos
-                </span>
-              </div>
-            </label>
-          </div>
+            </div>
+
+            {chargeType === "individual" && (
+              <Field
+                label="Condómino"
+                htmlFor="selectedUser"
+                hint="Selecciona la unidad que recibirá el cargo."
+              >
+                <div className="relative">
+                  <UserIcon className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                  <select
+                    id="selectedUser"
+                    className={`${inputBase} cursor-pointer appearance-none pl-9 pr-10`}
+                    value={selectedUser}
+                    onChange={(e) => setSelectedUser(e.target.value)}
+                  >
+                    <option value="">Selecciona un condómino</option>
+                    {chargeableUsers.map((user) => (
+                      <option key={user.uid} value={user.uid}>
+                        {user.number} {user.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                {selectedUserLabel && (
+                  <div className="mt-2 flex items-center gap-1.5 rounded-xl border border-indigo-100 bg-indigo-50/60 px-3 py-2 text-xs text-indigo-800 dark:border-indigo-900/40 dark:bg-indigo-500/10 dark:text-indigo-200">
+                    <HashtagIcon className="h-3.5 w-3.5 shrink-0" />
+                    <span>
+                      Cargo para:{" "}
+                      <strong className="font-semibold">
+                        {selectedUserLabel}
+                      </strong>
+                    </span>
+                  </div>
+                )}
+              </Field>
+            )}
+
+            {chargeType === "all" && (
+              <p className="rounded-xl border border-dashed border-indigo-200 bg-indigo-50/50 px-3 py-3 text-xs leading-relaxed text-indigo-800 dark:border-indigo-800 dark:bg-indigo-500/10 dark:text-indigo-200">
+                Este cargo se generará para{" "}
+                <strong className="font-semibold">
+                  {chargeableUsers.length} condóminos
+                </strong>{" "}
+                activos en el condominio actual.
+              </p>
+            )}
+          </SectionCard>
+
+          <SectionCard
+            title="Detalle del cargo"
+            description="Concepto y monto a cobrar."
+            icon={<CurrencyDollarIcon className="h-4 w-4" />}
+          >
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="Concepto" htmlFor="concept">
+                <div className="relative">
+                  <ClipboardIcon className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                  <select
+                    id="concept"
+                    className={`${inputBase} cursor-pointer appearance-none pl-9 pr-10`}
+                    value={concept}
+                    onChange={(e) => setConcept(e.target.value)}
+                  >
+                    {commonConcepts.map((item) => (
+                      <option key={item} value={item}>
+                        {item}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </Field>
+
+              <Field label="Monto" htmlFor="amount">
+                <div className="relative">
+                  <CurrencyDollarIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                  <input
+                    id="amount"
+                    type="text"
+                    className={`${inputBase} pl-9`}
+                    value={amountDisplay}
+                    onChange={handleAmountChange}
+                    onFocus={() => setAmountDisplay(amount.toString())}
+                    onBlur={() => {
+                      if (amount > 0) {
+                        setAmountDisplay(formatCurrency(amount));
+                      } else {
+                        setAmountDisplay("");
+                      }
+                    }}
+                    placeholder="$0.00"
+                    min="0"
+                  />
+                </div>
+              </Field>
+            </div>
+          </SectionCard>
+
+          <SectionCard
+            title="Vigencia y estado"
+            description="Periodo del cargo y si ya se considera pagado."
+            icon={<CalendarIcon className="h-4 w-4" />}
+          >
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field
+                label="Fecha de inicio"
+                htmlFor="startAt"
+                hint="Primer día en que aplica el cargo."
+              >
+                <div className="relative">
+                  <CalendarIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                  <input
+                    id="startAt"
+                    type="date"
+                    className={`${inputBase} cursor-pointer pl-9`}
+                    value={startAt}
+                    onChange={(e) => setStartAt(e.target.value)}
+                  />
+                </div>
+              </Field>
+
+              <Field
+                label="Fecha límite de pago"
+                htmlFor="dueDate"
+                hint="Último día para liquidar sin recargos."
+              >
+                <div className="relative">
+                  <ClockIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                  <input
+                    id="dueDate"
+                    type="date"
+                    className={`${inputBase} cursor-pointer pl-9`}
+                    value={dueDate}
+                    onChange={(e) => setDueDate(e.target.value)}
+                  />
+                </div>
+              </Field>
+            </div>
+
+            <Field label="Estado de pago">
+              <button
+                type="button"
+                onClick={() => setPaid((prev) => !prev)}
+                className={cn(
+                  "flex w-full items-center justify-between gap-3 rounded-xl border px-4 py-3 text-left transition",
+                  paid
+                    ? "border-emerald-200 bg-emerald-50/70 dark:border-emerald-900/40 dark:bg-emerald-900/20"
+                    : "border-amber-200 bg-amber-50/70 dark:border-amber-900/40 dark:bg-amber-900/20",
+                )}
+              >
+                <div className="flex items-center gap-2.5">
+                  {paid ? (
+                    <CheckCircleIcon className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                  ) : (
+                    <XCircleIcon className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                  )}
+                  <div>
+                    <p
+                      className={cn(
+                        "text-sm font-semibold",
+                        paid
+                          ? "text-emerald-800 dark:text-emerald-200"
+                          : "text-amber-800 dark:text-amber-200",
+                      )}
+                    >
+                      {paid ? "Marcado como pagado" : "Pendiente de pago"}
+                    </p>
+                    <p className="text-[11px] text-gray-500 dark:text-gray-400">
+                      {paid
+                        ? "El cargo se registrará ya cubierto."
+                        : "El condómino deberá liquidarlo después."}
+                    </p>
+                  </div>
+                </div>
+                <div
+                  className={cn(
+                    "relative h-6 w-11 shrink-0 rounded-full transition",
+                    paid ? "bg-emerald-500" : "bg-gray-300 dark:bg-gray-600",
+                  )}
+                  aria-hidden
+                >
+                  <span
+                    className={cn(
+                      "absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform",
+                      paid && "translate-x-5",
+                    )}
+                  />
+                </div>
+              </button>
+            </Field>
+          </SectionCard>
         </div>
 
-        {chargeType === "individual" && (
-          <div className="mb-4 animate-fadeIn">
-            <label className="font-medium text-gray-700 dark:text-gray-300 block mb-2">
-              Usuario (condómino):
-            </label>
-            <div className="relative group">
-              <div className="absolute left-3 top-1/2 flex items-center transform -translate-y-1/2 z-10 transition-all group-focus-within:text-indigo-500">
-                <UserIcon className="h-5 w-5 text-gray-400 group-focus-within:text-indigo-500 transition-colors duration-200" />
-              </div>
-              <select
-                className="w-full pl-10 h-[46px] border border-gray-200 bg-white dark:bg-gray-800 dark:text-gray-100 dark:border-gray-600 rounded-lg appearance-none focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 shadow-sm pr-10"
-                value={selectedUser}
-                onChange={(e) => setSelectedUser(e.target.value)}
-                style={{
-                  backgroundImage:
-                    "url('data:image/svg+xml;charset=US-ASCII,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2224%22 height=%2224%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%236366F1%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><path d=%22m6 9 6 6 6-6%22/></svg>')",
-                  backgroundRepeat: "no-repeat",
-                  backgroundPosition: "right 10px center",
-                  backgroundSize: "20px",
-                }}
-              >
-                <option value="" className="text-gray-500">
-                  -- Selecciona un usuario --
-                </option>
-                {condominiumsUsers
-                  .filter(
-                    (user) =>
-                      user.role !== "admin" &&
-                      user.role !== "super-admin" &&
-                      user.role !== "security"
-                  )
-                  .map((user) => (
-                    <option key={user.uid} value={user.uid} className="py-2">
-                      {user.number} {user.name}
-                    </option>
-                  ))}
-              </select>
-            </div>
-          </div>
-        )}
-
-        <div className="mb-4">
-          <label className="font-medium text-gray-700 dark:text-gray-300 block mb-2">
-            Concepto:
-          </label>
-          <div className="relative group">
-            <div className="absolute left-3 top-1/2 flex items-center transform -translate-y-1/2 z-10 transition-all group-focus-within:text-indigo-500">
-              <ClipboardIcon className="h-5 w-5 text-gray-400 group-focus-within:text-indigo-500 transition-colors duration-200" />
-            </div>
-            <select
-              className="w-full pl-10 h-[46px] border border-gray-200 bg-white dark:bg-gray-800 dark:text-gray-100 dark:border-gray-600 rounded-lg appearance-none focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 shadow-sm pr-10"
-              value={concept}
-              onChange={(e) => setConcept(e.target.value)}
-              style={{
-                backgroundImage:
-                  "url('data:image/svg+xml;charset=US-ASCII,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2224%22 height=%2224%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%236366F1%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><path d=%22m6 9 6 6 6-6%22/></svg>')",
-                backgroundRepeat: "no-repeat",
-                backgroundPosition: "right 10px center",
-                backgroundSize: "20px",
-              }}
-            >
-              {commonConcepts.map((item) => (
-                <option key={item} value={item} className="py-2">
-                  {item}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        <div className="mb-4">
-          <label className="font-medium text-gray-700 dark:text-gray-300 block mb-2">
-            Monto:
-          </label>
-          <div className="relative group">
-            <div className="absolute left-3 top-1/2 flex items-center transform -translate-y-1/2 z-10 transition-all group-focus-within:text-indigo-500">
-              <CurrencyDollarIcon className="h-5 w-5 text-gray-400 group-focus-within:text-indigo-500 transition-colors duration-200" />
-            </div>
-            <input
-              type="text"
-              className="w-full pl-10 h-[46px] border border-gray-200 bg-white dark:bg-gray-800 dark:text-gray-100 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 shadow-sm"
-              value={amountDisplay}
-              onChange={handleAmountChange}
-              onFocus={() => setAmountDisplay(amount.toString())}
-              onBlur={() => {
-                if (amount > 0) {
-                  setAmountDisplay(formatCurrency(amount));
-                } else {
-                  setAmountDisplay("");
-                }
-              }}
-              placeholder="Ejemplo: $1500"
-              min="0"
-            />
-            {amount > 0 && (
-              <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-xs text-indigo-600 dark:text-indigo-400 font-medium bg-indigo-50 dark:bg-gray-700 px-2 py-1 rounded-full">
-                {formatCurrency(amount)}
-              </div>
+        {/* Footer */}
+        <div className="flex flex-col gap-3 border-t border-gray-200 bg-white px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6 dark:border-gray-800 dark:bg-gray-900">
+          <div className="min-w-0">
+            {amount > 0 || concept ? (
+              <>
+                <p className="text-[11px] text-gray-500 dark:text-gray-400">
+                  {summaryScopeLabel}
+                  {amount > 0 && (
+                    <>
+                      <span className="mx-1.5 text-gray-300 dark:text-gray-700">
+                        ·
+                      </span>
+                      <span className="font-semibold text-gray-900 dark:text-gray-100">
+                        {formatCurrency(amount)}
+                      </span>
+                    </>
+                  )}
+                  {concept && (
+                    <>
+                      <span className="mx-1.5 text-gray-300 dark:text-gray-700">
+                        ·
+                      </span>
+                      <span className="font-semibold text-gray-900 dark:text-gray-100">
+                        {concept}
+                      </span>
+                    </>
+                  )}
+                </p>
+                <p className="mt-0.5 text-[10px] text-gray-400 dark:text-gray-500">
+                  {formatShortDate(startAt)} → {formatShortDate(dueDate)}
+                  <span className="mx-1.5">·</span>
+                  {paid ? "Pagado" : "Pendiente"}
+                </p>
+              </>
+            ) : (
+              <p className="text-[11px] text-gray-500 dark:text-gray-400">
+                Completa el formulario para revisar el resumen del cargo.
+              </p>
             )}
           </div>
-        </div>
-
-        <div className="mb-4">
-          <label className="font-medium text-gray-700 dark:text-gray-300 block mb-2">
-            Fecha de inicio del cargo:
-          </label>
-          <div className="relative group">
-            <div className="absolute left-3 top-1/2 flex items-center transform -translate-y-1/2 z-10 transition-all group-focus-within:text-indigo-500">
-              <CalendarIcon className="h-5 w-5 text-gray-400 group-focus-within:text-indigo-500 transition-colors duration-200" />
-            </div>
-            <input
-              type="date"
-              className="w-full pl-10 h-[46px] border border-gray-200 bg-white dark:bg-gray-800 dark:text-gray-100 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 shadow-sm cursor-pointer"
-              value={startAt}
-              onChange={(e) => setStartAt(e.target.value)}
-            />
-          </div>
-        </div>
-
-        <div className="mb-4">
-          <label className="font-medium text-gray-700 dark:text-gray-300 block mb-2">
-            Fecha límite de pago:
-          </label>
-          <div className="relative group">
-            <div className="absolute left-3 top-1/2 flex items-center transform -translate-y-1/2 z-10 transition-all group-focus-within:text-indigo-500">
-              <CalendarIcon className="h-5 w-5 text-gray-400 group-focus-within:text-indigo-500 transition-colors duration-200" />
-            </div>
-            <input
-              type="date"
-              className="w-full pl-10 h-[46px] border border-gray-200 bg-white dark:bg-gray-800 dark:text-gray-100 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 shadow-sm cursor-pointer"
-              value={dueDate}
-              onChange={(e) => setDueDate(e.target.value)}
-            />
-          </div>
-        </div>
-
-        <div className="mb-4">
-          <label className="font-medium text-gray-700 dark:text-gray-300 block mb-2">
-            Estado de pago:
-          </label>
-          <label className="relative inline-flex items-center cursor-pointer p-3 border border-gray-200 dark:border-gray-600 rounded-lg transition-all hover:border-indigo-400 dark:hover:border-indigo-400 hover:bg-indigo-50 dark:hover:bg-gray-700">
-            <input
-              type="checkbox"
-              checked={paid}
-              onChange={(e) => setPaid(e.target.checked)}
-              className="sr-only"
-            />
-            <div
-              className={`relative w-12 h-6 flex items-center rounded-full transition duration-300 ease-in-out px-0.5 ${
-                paid ? "bg-indigo-600" : "bg-gray-200 dark:bg-gray-700"
-              }`}
-            >
-              <div
-                className={`absolute w-5 h-5 bg-white rounded-full shadow transform transition-transform duration-300 ease-in-out ${
-                  paid ? "translate-x-6" : "translate-x-0"
-                }`}
-              ></div>
-            </div>
-            <div className="flex items-center ml-3">
-              {paid ? (
-                <>
-                  <CheckCircleIcon className="h-5 w-5 text-green-500 mr-2" />
-                  <span className="font-medium text-green-600 dark:text-green-400">
-                    Pagado
-                  </span>
-                </>
-              ) : (
-                <>
-                  <XCircleIcon className="h-5 w-5 text-amber-500 mr-2" />
-                  <span className="font-medium text-amber-600 dark:text-amber-400">
-                    Pendiente
-                  </span>
-                </>
-              )}
-            </div>
-          </label>
-        </div>
-
-        <div className="flex justify-end pt-4 border-t border-gray-100 dark:border-gray-700">
           <button
             type="submit"
-            className="flex items-center gap-2 bg-indigo-500 hover:bg-indigo-600 text-white py-3 px-6 rounded-lg font-medium shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:hover:shadow-none"
+            className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
             disabled={loading}
           >
             {loading ? (
               <>
-                <ArrowPathIcon className="h-5 w-5 animate-spin" />
-                <span>Procesando...</span>
+                <ArrowPathIcon className="h-4 w-4 animate-spin" />
+                Procesando…
               </>
             ) : (
               <>
-                <CheckCircleIcon className="h-5 w-5" />
-                <span>Guardar Cargo</span>
+                <CheckCircleIcon className="h-4 w-4" />
+                Guardar cargo
               </>
             )}
           </button>

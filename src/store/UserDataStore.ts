@@ -14,6 +14,7 @@ import { getIdTokenResult, onAuthStateChanged } from "firebase/auth";
 import { auth } from "../firebase/firebase"; // Ajusta la ruta según tu estructura de carpetas
 import { UserData } from "../interfaces/UserData";
 import { useCondominiumStore } from "./useCondominiumStore";
+import { sortUsersByTowerThenUnit } from "../utils/sortUsersByUnit";
 import * as Sentry from "@sentry/react";
 
 export interface UserState {
@@ -354,10 +355,11 @@ const useUserStore = create<UserState>()((set, get) => ({
           (doc) => ({ ...doc.data(), id: doc.id } as unknown as UserData)
         );
 
+        const sortedUsers = sortUsersByTowerThenUnit(users);
         const startIdx = (page - 1) * pageSize;
         const endIdx = startIdx + pageSize;
 
-        const paginatedUsers = users.slice(startIdx, endIdx);
+        const paginatedUsers = sortedUsers.slice(startIdx, endIdx);
         return paginatedUsers;
       } catch (error) {
         console.error("Error al obtener usuarios paginados:", error);
@@ -423,9 +425,10 @@ const useUserStore = create<UserState>()((set, get) => ({
               .toLowerCase() === normalizedTower
         );
 
+        const sortedUsers = sortUsersByTowerThenUnit(filteredByTower);
         const startIdx = (page - 1) * pageSize;
         const endIdx = startIdx + pageSize;
-        return filteredByTower.slice(startIdx, endIdx);
+        return sortedUsers.slice(startIdx, endIdx);
       } catch (error) {
         console.error("Error al obtener usuarios por torre:", error);
         return [];
@@ -566,11 +569,11 @@ const useUserStore = create<UserState>()((set, get) => ({
           );
         });
 
-        // Paginar los resultados para mantener consistencia con la interfaz
+        const sortedUsers = sortUsersByTowerThenUnit(filteredUsers);
         const startIdx = (page - 1) * pageSize;
         const endIdx = startIdx + pageSize;
 
-        const paginatedUsers = filteredUsers.slice(startIdx, endIdx);
+        const paginatedUsers = sortedUsers.slice(startIdx, endIdx);
         return paginatedUsers;
       } catch (error) {
         console.error("Error al buscar usuarios por nombre:", error);

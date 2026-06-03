@@ -14,6 +14,11 @@ import {
   Cog6ToothIcon,
 } from "@heroicons/react/24/solid";
 import { UserCircleIcon } from "@heroicons/react/24/solid";
+import {
+  compareUsersByTowerThenUnit,
+  compareNaturalStrings,
+  normalizeTowerForSort,
+} from "../../../../utils/sortUsersByUnit";
 
 const UsersScreen = () => {
   // Original states
@@ -32,7 +37,7 @@ const UsersScreen = () => {
   const [sortConfig, setSortConfig] = useState<{
     field: string;
     direction: "asc" | "desc";
-  } | null>(null);
+  }>({ field: "department", direction: "asc" });
   const [towerFilter, setTowerFilter] = useState<string>("");
   const [visibleColumns, setVisibleColumns] = useState({
     name: true,
@@ -177,50 +182,41 @@ const UsersScreen = () => {
     }
   }, [currentCondominiumId]);
 
-  // Memo for filtered + sorted users data
   const filteredAndSortedUsers = useMemo(() => {
-    if (!sortConfig) return users;
+    const direction = sortConfig.direction === "asc" ? 1 : -1;
 
     return [...users].sort((a, b) => {
-      let aValue: string | number = "";
-      let bValue: string | number = "";
+      let result = 0;
 
       switch (sortConfig.field) {
         case "name":
-          aValue = `${a.name || ""} ${a.lastName || ""}`;
-          bValue = `${b.name || ""} ${b.lastName || ""}`;
+          result = compareNaturalStrings(
+            `${a.name || ""} ${a.lastName || ""}`.trim(),
+            `${b.name || ""} ${b.lastName || ""}`.trim(),
+          );
           break;
         case "email":
-          aValue = a.email || "";
-          bValue = b.email || "";
+          result = compareNaturalStrings(a.email || "", b.email || "");
           break;
         case "phone":
-          aValue = a.phone || "";
-          bValue = b.phone || "";
+          result = compareNaturalStrings(a.phone || "", b.phone || "");
           break;
         case "role":
-          aValue = a.role || "";
-          bValue = b.role || "";
-          break;
-        case "department":
-          aValue = a.number || "";
-          bValue = b.number || "";
+          result = compareNaturalStrings(a.role || "", b.role || "");
           break;
         case "tower":
-          aValue = normalizeTower(a.tower);
-          bValue = normalizeTower(b.tower);
+          result = compareNaturalStrings(
+            normalizeTower(a.tower),
+            normalizeTower(b.tower),
+          );
           break;
+        case "department":
         default:
-          return 0;
+          result = compareUsersByTowerThenUnit(a, b);
+          break;
       }
 
-      if (aValue < bValue) {
-        return sortConfig.direction === "asc" ? -1 : 1;
-      }
-      if (aValue > bValue) {
-        return sortConfig.direction === "asc" ? 1 : -1;
-      }
-      return 0;
+      return result * direction;
     });
   }, [users, sortConfig]);
 
