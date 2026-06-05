@@ -8,7 +8,6 @@ import {
   limit,
   orderBy,
   query,
-  where,
 } from "firebase/firestore";
 
 export const INITIAL_SETUP_STRIPE_PENDING_KEY = "initial_setup_stripe_pending";
@@ -26,52 +25,122 @@ type InitialSetupStatus = {
   condominiumId: string | null;
 };
 
-type InitialSubscriptionPaymentStatus = {
+export type InitialSubscriptionPaymentStatus = {
   hasPaidSubscription: boolean;
+  /** True solo si la PRIMERA factura de suscripción sigue pendiente/vencida. */
   hasPendingSubscription: boolean;
+  hasUnpaidFirstSubscription: boolean;
+  firstSubscriptionInvoiceSettled: boolean;
+  hasAnySubscriptionInvoice: boolean;
 };
 
-const isSubscriptionInvoice = (data: Record<string, any>) => {
+export const isSubscriptionInvoice = (data: Record<string, any>) => {
   const invoiceType = String(data.invoiceType || "").toLowerCase();
   const concept = String(data.concept || "").toLowerCase();
   return invoiceType === "subscription" || concept.includes("suscrip");
+};
+
+/** La primera factura ya fue pagada, condonada por cupón u otro motivo válido. */
+export const isSubscriptionInvoiceSettled = (data: Record<string, any>) => {
+  const status = String(data.paymentStatus || "").toLowerCase();
+  if (status === "paid") return true;
+  if (Boolean(data.waivedByCoupon)) return true;
+  if (
+    status === "canceled" &&
+    (data.waivedReason || data.waivedCoupon || data.waivedByCoupon)
+  ) {
+    return true;
+  }
+  return false;
+};
+
+const getSubscriptionInvoicesAsc = async (
+  clientId: string,
+  condominiumId: string,
+) => {
+  const db = getFirestore();
+  const invoicesRef = collection(
+    db,
+    `clients/${clientId}/condominiums/${condominiumId}/invoicesGenerated`,
+  );
+  const snap = await getDocs(
+    query(invoicesRef, orderBy("createdAt", "asc"), limit(100)),
+  );
+  return snap.docs.filter((invoiceDoc) =>
+    isSubscriptionInvoice(invoiceDoc.data() || {}),
+  );
+};
+
+export const fetchFirstPendingSubscriptionInvoice = async (
+  clientId: string,
+  condominiumId: string,
+): Promise<{ id: string; data: Record<string, any> } | null> => {
+  const subscriptionDocs = await getSubscriptionInvoicesAsc(
+    clientId,
+    condominiumId,
+  );
+  if (!subscriptionDocs.length) return null;
+
+  const firstDoc = subscriptionDocs[0];
+  const data = firstDoc.data() || {};
+  if (isSubscriptionInvoiceSettled(data)) return null;
+
+  const status = String(data.paymentStatus || "").toLowerCase();
+  if (status === "pending" || status === "overdue") {
+    return { id: firstDoc.id, data };
+  }
+
+  return null;
 };
 
 export const getInitialSubscriptionPaymentStatus = async (
   clientId: string,
   condominiumId: string,
 ): Promise<InitialSubscriptionPaymentStatus> => {
-  const db = getFirestore();
-  const invoicesRef = collection(
-    db,
-    `clients/${clientId}/condominiums/${condominiumId}/invoicesGenerated`,
+  const subscriptionDocs = await getSubscriptionInvoicesAsc(
+    clientId,
+    condominiumId,
   );
 
-  const paidQuery = query(
-    invoicesRef,
-    where("paymentStatus", "==", "paid"),
-    orderBy("createdAt", "desc"),
-    limit(20),
-  );
-  const paidSnap = await getDocs(paidQuery);
-  const hasPaidSubscription = paidSnap.docs.some((invoiceDoc) =>
-    isSubscriptionInvoice(invoiceDoc.data() || {}),
-  );
+  if (!subscriptionDocs.length) {
+    return {
+      hasPaidSubscription: false,
+      hasPendingSubscription: false,
+      hasUnpaidFirstSubscription: false,
+      firstSubscriptionInvoiceSettled: false,
+      hasAnySubscriptionInvoice: false,
+    };
+  }
 
-  const pendingQuery = query(
-    invoicesRef,
-    where("paymentStatus", "in", ["pending", "overdue"]),
-    orderBy("createdAt", "desc"),
-    limit(20),
+  const firstData = subscriptionDocs[0].data() || {};
+  const firstSubscriptionInvoiceSettled =
+    isSubscriptionInvoiceSettled(firstData);
+  const firstStatus = String(firstData.paymentStatus || "").toLowerCase();
+  const hasUnpaidFirstSubscription =
+    !firstSubscriptionInvoiceSettled &&
+    (firstStatus === "pending" || firstStatus === "overdue");
+
+  const hasPaidSubscription = subscriptionDocs.some(
+    (invoiceDoc) =>
+      String((invoiceDoc.data() || {}).paymentStatus || "").toLowerCase() ===
+      "paid",
   );
-  const pendingSnap = await getDocs(pendingQuery);
 
   return {
     hasPaidSubscription,
-    hasPendingSubscription: pendingSnap.docs.some((invoiceDoc) =>
-      isSubscriptionInvoice(invoiceDoc.data() || {}),
-    ),
+    hasPendingSubscription: hasUnpaidFirstSubscription,
+    hasUnpaidFirstSubscription,
+    firstSubscriptionInvoiceSettled,
+    hasAnySubscriptionInvoice: true,
   };
+};
+
+const EMPTY_SUBSCRIPTION_STATUS: InitialSubscriptionPaymentStatus = {
+  hasPaidSubscription: false,
+  hasPendingSubscription: false,
+  hasUnpaidFirstSubscription: false,
+  firstSubscriptionInvoiceSettled: false,
+  hasAnySubscriptionInvoice: false,
 };
 
 const NOT_REQUIRED: InitialSetupStatus = {
@@ -103,19 +172,10 @@ export const resolveInitialSetupStatus =
     const initialSetupCompleted = Boolean(
       configDoc.exists() && clientData.initialSetupCompleted,
     );
-    // Flag a nivel cliente que marca pago inicial pendiente del primer
-    // condominio (legacy). Después de pagar/redimir queda false. NO refleja
-    // condominios agregados posteriormente.
     const hasSetupPaymentPending = Boolean(clientData.initialSetupPaymentPending);
-    // Flag a nivel cliente seteado al redimir un cupón a nivel cliente para
-    // el primer condominio. Útil para reconocer que el wizard inicial ya
-    // está liquidado, pero NO debe usarse para dar por pagados condominios
-    // agregados después (cada uno tiene su propia factura inicial).
     const clientCouponBypass = Boolean(clientData.initialSetupPaymentBypassed);
     const condominiumId = localStorage.getItem("condominiumId");
 
-    // Bypass propio del condominio actual (caso: nuevo condominio agregado
-    // a un cliente existente con cupón redimido).
     let condominiumCouponBypass = false;
     if (condominiumId) {
       try {
@@ -135,42 +195,33 @@ export const resolveInitialSetupStatus =
       }
     }
 
-    // IMPORTANTE: siempre consultamos el estado real de facturas del
-    // condominio actual. Antes se saltaba este check cuando había
-    // `clientCouponBypass`, lo que provocaba que condominios agregados
-    // después de la configuración inicial (con su propia factura de
-    // suscripción pendiente) se vieran como "ya pagados". Ahora el bypass
-    // del cliente sirve solo para no forzar el wizard completo, no para
-    // dar por bueno el pago del condominio actual.
     const subscriptionPaymentStatus = condominiumId
       ? await getInitialSubscriptionPaymentStatus(clientId, condominiumId)
-      : { hasPaidSubscription: false, hasPendingSubscription: false };
+      : EMPTY_SUBSCRIPTION_STATUS;
+
     const hasPaidInitialSubscription =
       subscriptionPaymentStatus.hasPaidSubscription;
-    const hasUnpaidInitialSubscription =
-      subscriptionPaymentStatus.hasPendingSubscription;
+    const hasUnpaidFirstSubscription =
+      subscriptionPaymentStatus.hasUnpaidFirstSubscription;
+    const firstSubscriptionSettled =
+      subscriptionPaymentStatus.firstSubscriptionInvoiceSettled;
+    const hasAnySubscriptionInvoice =
+      subscriptionPaymentStatus.hasAnySubscriptionInvoice;
 
     const hasPendingStripeCheckout = Boolean(
       sessionStorage.getItem(INITIAL_SETUP_STRIPE_PENDING_KEY),
     );
 
-    // "Pagado/condonado" del condominio actual: requiere evidencia local
-    // del condominio (bypass propio o factura suscripción pagada). El
-    // bypass a nivel cliente NO cuenta por sí solo, salvo que no existan
-    // facturas para este condominio (compatibilidad con clientes legacy
-    // donde el primer condominio se redimió antes de existir el bypass
-    // por condominio).
-    const currentCondominiumHasInvoiceEvidence =
-      hasPaidInitialSubscription || hasUnpaidInitialSubscription;
     const currentCondominiumPaid =
       condominiumCouponBypass ||
       hasPaidInitialSubscription ||
-      (clientCouponBypass && !currentCondominiumHasInvoiceEvidence);
+      firstSubscriptionSettled ||
+      (clientCouponBypass && !hasAnySubscriptionInvoice);
 
     const shouldOpenPaymentStep =
       hasSetupPaymentPending ||
       hasPendingStripeCheckout ||
-      hasUnpaidInitialSubscription ||
+      hasUnpaidFirstSubscription ||
       !currentCondominiumPaid;
 
     if (!initialSetupCompleted) {
@@ -187,12 +238,8 @@ export const resolveInitialSetupStatus =
       !currentCondominiumPaid ||
       hasSetupPaymentPending ||
       hasPendingStripeCheckout ||
-      hasUnpaidInitialSubscription
+      hasUnpaidFirstSubscription
     ) {
-      // El wizard inicial ya está completo, pero el condominio actual tiene
-      // factura inicial pendiente (típico cuando se agrega un condominio
-      // adicional a un cliente existente). Mostramos el gate dedicado en
-      // lugar del wizard completo.
       return {
         requiresInitialSetup: true,
         initialStep: 7,

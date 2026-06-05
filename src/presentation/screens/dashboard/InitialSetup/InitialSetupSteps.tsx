@@ -50,7 +50,10 @@ import {
 } from "firebase/firestore";
 import { getAuth, getIdTokenResult } from "firebase/auth";
 import { useLocation } from "react-router-dom";
-import { getInitialSubscriptionPaymentStatus } from "../../../../routes/initialSetupStatus";
+import {
+  fetchFirstPendingSubscriptionInvoice,
+  getInitialSubscriptionPaymentStatus,
+} from "../../../../routes/initialSetupStatus";
 
 const InfoTooltip = ( { text }: { text: string; } ) => {
   const [ open, setOpen ] = useState( false );
@@ -170,12 +173,6 @@ const InitialSetupSteps = ( { initialStep }: InitialSetupStepsProps ) => {
   useEffect( () => {
     setCurrentStep( resolvedInitialStep );
   }, [ resolvedInitialStep ] );
-
-  const isSubscriptionInvoice = ( data: Record<string, any> ) => {
-    const invoiceType = String( data.invoiceType || "" ).toLowerCase();
-    const concept = String( data.concept || "" ).toLowerCase();
-    return invoiceType === "subscription" || concept.includes( "suscrip" );
-  };
 
   const isMaintenanceInvoice = ( data: Record<string, any> ) => {
     const invoiceType = String( data.invoiceType || "" ).toLowerCase();
@@ -335,32 +332,32 @@ const InitialSetupSteps = ( { initialStep }: InitialSetupStepsProps ) => {
       if ( !clientId || !condominiumId ) return false;
 
       const db = getFirestore();
+      const firstPendingSubscription =
+        await fetchFirstPendingSubscriptionInvoice( clientId, condominiumId );
+
+      setPaymentInvoice(
+        firstPendingSubscription
+          ? normalizeInvoiceForSetup(
+            firstPendingSubscription.id,
+            firstPendingSubscription.data
+          )
+          : null
+      );
+
       const invoicesRef = collection(
         db,
         `clients/${ clientId }/condominiums/${ condominiumId }/invoicesGenerated`
       );
-      const q = query(
-        invoicesRef,
-        where( "paymentStatus", "in", [ "pending", "overdue" ] ),
-        orderBy( "createdAt", "desc" ),
-        limit( 20 )
+      const maintenanceSnap = await getDocs(
+        query(
+          invoicesRef,
+          where( "paymentStatus", "in", [ "pending", "overdue" ] ),
+          orderBy( "createdAt", "desc" ),
+          limit( 20 )
+        )
       );
-      const snap = await getDocs( q );
-
-      const subscriptionDoc = snap.docs.find( ( invoiceDoc ) =>
-        isSubscriptionInvoice( invoiceDoc.data() || {} )
-      );
-      const maintenanceDoc = snap.docs.find( ( invoiceDoc ) =>
+      const maintenanceDoc = maintenanceSnap.docs.find( ( invoiceDoc ) =>
         isMaintenanceInvoice( invoiceDoc.data() || {} )
-      );
-
-      setPaymentInvoice(
-        subscriptionDoc
-          ? normalizeInvoiceForSetup(
-            subscriptionDoc.id,
-            subscriptionDoc.data() as Record<string, any>
-          )
-          : null
       );
       setMaintenanceInvoice(
         maintenanceDoc
@@ -371,7 +368,7 @@ const InitialSetupSteps = ( { initialStep }: InitialSetupStepsProps ) => {
           : null
       );
 
-      return Boolean( subscriptionDoc );
+      return Boolean( firstPendingSubscription );
     } catch ( err ) {
       console.error( "Error al cargar factura pendiente:", err );
       setPaymentState( "error" ); // Set error state if loading fails
@@ -663,7 +660,10 @@ const InitialSetupSteps = ( { initialStep }: InitialSetupStepsProps ) => {
       clientId,
       condominiumId
     );
-    return paymentStatus.hasPaidSubscription;
+    return (
+      paymentStatus.hasPaidSubscription ||
+      paymentStatus.firstSubscriptionInvoiceSettled
+    );
   };
 
   // Función para finalizar el proceso

@@ -1,16 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { getAuth } from "firebase/auth";
-import {
-  collection,
-  doc,
-  getDoc,
-  getDocs,
-  getFirestore,
-  limit,
-  orderBy,
-  query,
-  where,
-} from "firebase/firestore";
+import { doc, getDoc, getFirestore } from "firebase/firestore";
 import toast from "react-hot-toast";
 import { motion } from "framer-motion";
 import {
@@ -27,7 +17,10 @@ import {
 import useClientInvoicesStore from "../../../../store/useClientInvoicesStore";
 import useAuthStore from "../../../../store/AuthStore";
 import { useCondominiumStore } from "../../../../store/useCondominiumStore";
-import { INITIAL_SETUP_STRIPE_PENDING_KEY } from "../../../../routes/initialSetupStatus";
+import {
+  fetchFirstPendingSubscriptionInvoice,
+  INITIAL_SETUP_STRIPE_PENDING_KEY,
+} from "../../../../routes/initialSetupStatus";
 
 interface Props {
   clientId: string;
@@ -73,12 +66,6 @@ const formatDate = (raw: any): string => {
   } catch {
     return "";
   }
-};
-
-const isSubscriptionInvoice = (data: Record<string, any>) => {
-  const invoiceType = String(data.invoiceType || "").toLowerCase();
-  const concept = String(data.concept || "").toLowerCase();
-  return invoiceType === "subscription" || concept.includes("suscrip");
 };
 
 const CondominiumPaymentGate = ({
@@ -142,26 +129,15 @@ const CondominiumPaymentGate = ({
         );
       }
 
-      const invoicesRef = collection(
-        db,
-        `clients/${clientId}/condominiums/${condominiumId}/invoicesGenerated`,
-      );
-      const pendingSnap = await getDocs(
-        query(
-          invoicesRef,
-          where("paymentStatus", "in", ["pending", "overdue"]),
-          orderBy("createdAt", "desc"),
-          limit(20),
-        ),
-      );
-      const subscriptionDoc = pendingSnap.docs.find((d) =>
-        isSubscriptionInvoice(d.data() || {}),
+      const firstPending = await fetchFirstPendingSubscriptionInvoice(
+        clientId,
+        condominiumId,
       );
 
-      if (subscriptionDoc) {
-        const data = subscriptionDoc.data() as Record<string, any>;
+      if (firstPending) {
+        const data = firstPending.data;
         setInvoice({
-          id: subscriptionDoc.id,
+          id: firstPending.id,
           invoiceNumber: String(data.invoiceNumber || ""),
           amount: Number(data.amount) || 0,
           currency: String(data.currency || "MXN"),
