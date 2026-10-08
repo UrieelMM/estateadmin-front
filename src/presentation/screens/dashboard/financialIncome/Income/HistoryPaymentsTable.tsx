@@ -429,7 +429,12 @@ const HistoryPaymentsTable: React.FC = () => {
     resetReversalState();
 
     try {
-      await previewPaymentReversal( { paymentId: payment.id } );
+      const isUnidentified = payment.concept === "Pago no identificado";
+      await previewPaymentReversal( {
+        paymentId: payment.id,
+        userId: isUnidentified ? undefined : payment.userId,
+        chargeId: isUnidentified ? undefined : payment.chargeId,
+      } );
     } catch ( error: any ) {
       toast.error(
         error?.message || "No se pudo validar el pago para reversa."

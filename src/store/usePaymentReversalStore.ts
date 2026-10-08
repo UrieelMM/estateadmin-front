@@ -10,6 +10,8 @@ import {
 
 type PreviewPayload = {
   paymentId: string;
+  userId?: string;
+  chargeId?: string;
   reason?: string;
   notes?: string;
   operationId?: string;
@@ -70,7 +72,7 @@ const resolveTenantContext = async (): Promise<TenantContext> => {
   const clientId = String(tokenResult.claims["clientId"] || "").trim();
   const condominiumClaim = String(tokenResult.claims["condominiumId"] || "").trim();
   const condominiumStorage = String(localStorage.getItem("condominiumId") || "").trim();
-  const condominiumId = condominiumClaim || condominiumStorage;
+  const condominiumId = condominiumStorage || condominiumClaim;
   const role = String(tokenResult.claims["role"] || "").trim();
 
   if (!clientId || !condominiumId) {
@@ -129,6 +131,8 @@ const usePaymentReversalStore = create<PaymentReversalState>()((set) => ({
           clientId: context.clientId,
           condominiumId: context.condominiumId,
           paymentId: payload.paymentId,
+          userId: payload.userId,
+          chargeId: payload.chargeId,
           reason: payload.reason,
           notes: payload.notes,
           operationId: payload.operationId,

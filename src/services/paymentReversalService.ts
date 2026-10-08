@@ -23,6 +23,8 @@ export type PaymentReversalPreviewRequest = {
   clientId: string;
   condominiumId: string;
   paymentId: string;
+  userId?: string;
+  chargeId?: string;
   reason?: string;
   notes?: string;
   operationId?: string;

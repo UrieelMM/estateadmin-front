@@ -1234,8 +1234,8 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>()(
             receiptUrl: data.receiptUrl,
             paymentGroupId: data.paymentGroupId || "",
             towerSnapshot: data.towerSnapshot || "",
-            chargeId: data.chargeId || "",
-            userId: data.userId || "",
+            chargeId: docSnap.ref.parent.parent?.id || "",
+            userId: docSnap.ref.parent.parent?.parent.parent?.id || "",
             referenceAmount: parseFloat(centsToPesos(data.amount).toFixed(2)),
           };
           paymentRecords.push(record);
@@ -1416,8 +1416,8 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>()(
             receiptUrl: data.receiptUrl,
             paymentGroupId: data.paymentGroupId || "",
             towerSnapshot: data.towerSnapshot || "",
-            chargeId: data.chargeId || "",
-            userId: data.userId || "",
+            chargeId: docSnap.ref.parent.parent?.id || "",
+            userId: docSnap.ref.parent.parent?.parent.parent?.id || "",
             referenceAmount: parseFloat(centsToPesos(data.amount).toFixed(2)),
           };
           paymentRecords.push(record);
