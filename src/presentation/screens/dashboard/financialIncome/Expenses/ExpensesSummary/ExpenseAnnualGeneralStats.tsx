@@ -27,8 +27,7 @@ const ExpenseAnnualGeneralStats: React.FC = () => {
   const topConcepts = useMemo(() => {
     const conceptMap: Record<string, number> = {};
     expenses.forEach((exp) => {
-      const group = exp.conceptGroup || exp.concept;
-      conceptMap[group] = (conceptMap[group] || 0) + exp.amount;
+      conceptMap[exp.concept] = (conceptMap[exp.concept] || 0) + exp.amount;
     });
     const sorted = Object.entries(conceptMap).sort((a, b) => b[1] - a[1]);
     return sorted.slice(0, 5).map(([concept]) => concept);
@@ -52,13 +51,12 @@ const ExpenseAnnualGeneralStats: React.FC = () => {
 
     // Acumular gasto para cada concepto por mes
     expenses.forEach((exp) => {
-      const group = exp.conceptGroup || exp.concept;
-      if (topConcepts.includes(group)) {
+      if (topConcepts.includes(exp.concept)) {
         const mm = exp.expenseDate.substring(5, 7);
         const monthRecord = months.find((r) => r.month === mm);
         if (monthRecord) {
-          const currentValue = Number(monthRecord[group]) || 0;
-          monthRecord[group] = currentValue + exp.amount;
+          const currentValue = Number(monthRecord[exp.concept]) || 0;
+          monthRecord[exp.concept] = currentValue + exp.amount;
         }
       }
     });

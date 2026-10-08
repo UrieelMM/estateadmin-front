@@ -25,7 +25,13 @@ import {
   ExpenseCreateInput,
 } from "../../../../store/expenseStore";
 import { EXPENSE_CONCEPTS } from "../../../../utils/expensesList";
-import { sanitizeConcept } from "../../../../services/chargeConcepts";
+import {
+  CustomConcept,
+  conceptKey,
+  listCustomConcepts,
+  sanitizeConcept,
+} from "../../../../services/customConcepts";
+import { ConceptManagerDialog } from "../ConceptManagerDialog";
 import { getFirestore, collection, getDocs } from "firebase/firestore";
 import { getAuth, getIdTokenResult } from "firebase/auth";
 import { useExpenseSummaryStore } from "../../../../store/expenseSummaryStore";
@@ -137,7 +143,8 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ open, setOpen }) => {
   const [amount, setAmount] = useState<string>("");
   const [amountDisplay, setAmountDisplay] = useState<string>("");
   const [concept, setConcept] = useState<string>("");
-  const [conceptGroup, setConceptGroup] = useState<string>("");
+  const [customConcepts, setCustomConcepts] = useState<CustomConcept[]>([]);
+  const [conceptModalOpen, setConceptModalOpen] = useState(false);
   const [paymentType, setPaymentType] = useState<string>("");
   const [expenseDate, setExpenseDate] = useState<string>("");
   const [description, setDescription] = useState<string>("");
@@ -214,10 +221,13 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ open, setOpen }) => {
     if (open) {
       fetchFinancialAccounts();
       fetchProviders();
+      listCustomConcepts("expense")
+        .then(setCustomConcepts)
+        .catch(() => toast.error("No se pudieron cargar los conceptos personalizados"));
       setAmount("");
       setAmountDisplay("");
       setConcept("");
-      setConceptGroup("");
+      setConceptModalOpen(false);
       setPaymentType("");
       setExpenseDate("");
       setDescription("");
@@ -229,6 +239,12 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ open, setOpen }) => {
       setProviderSearch("");
     }
   }, [open]);
+
+  const conceptOptions = useMemo(() => [
+    ...customConcepts.map((item) => item.name),
+    ...EXPENSE_CONCEPTS.filter((item) =>
+      !customConcepts.some((custom) => conceptKey(custom.name) === conceptKey(item))),
+  ], [customConcepts]);
 
   const filteredProviders = useMemo(() => {
     const term = providerSearch.trim().toLowerCase();
@@ -316,7 +332,6 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ open, setOpen }) => {
       const dataToCreate: ExpenseCreateInput = {
         amount: amountInPesos,
         concept: sanitizeConcept(concept),
-        conceptGroup: conceptGroup || undefined,
         paymentType,
         expenseDate,
         description,
@@ -603,24 +618,21 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ open, setOpen }) => {
                           <Field
                             label="Concepto de egreso"
                             htmlFor="concept"
-                            hint="Describe el gasto con tus propias palabras."
+                            hint="Selecciona un concepto del catálogo o crea uno personalizado."
                           >
                             <div className="relative">
                               <ClipboardIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                              <input id="concept" name="concept" value={concept}
+                              <select id="concept" name="concept" value={concept} required
                                 onChange={(event) => setConcept(event.target.value)}
-                                maxLength={100} required className={`${inputBase} pl-9 pr-3`}
-                                placeholder="Ej. Reparación de tubería del edificio" />
+                                className={`${inputBase} cursor-pointer pl-9 pr-3`}>
+                                <option value="">Selecciona un concepto</option>
+                                {conceptOptions.map((item) => <option key={item} value={item}>{item}</option>)}
+                              </select>
                             </div>
-                          </Field>
-                          <Field label="Grupo de egreso" htmlFor="conceptGroup" optional
-                            hint="Úsalo para agrupar gastos en reportes; el concepto libre se conserva.">
-                            <select id="conceptGroup" value={conceptGroup}
-                              onChange={(event) => setConceptGroup(event.target.value)}
-                              className={`${inputBase} px-3`}>
-                              <option value="">Sin grupo</option>
-                              {EXPENSE_CONCEPTS.map((item) => <option key={item} value={item}>{item}</option>)}
-                            </select>
+                            <button type="button" onClick={() => setConceptModalOpen(true)}
+                              className="mt-2 text-xs font-semibold text-indigo-600 hover:underline dark:text-indigo-300">
+                              Administrar conceptos personalizados
+                            </button>
                           </Field>
                         </SectionCard>
 
@@ -789,6 +801,13 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ open, setOpen }) => {
                       </div>
                     </div>
                   </form>
+                  <ConceptManagerDialog open={conceptModalOpen} kind="expense"
+                    catalog={EXPENSE_CONCEPTS} concepts={customConcepts}
+                    onClose={() => setConceptModalOpen(false)}
+                    onSaved={async (name) => {
+                      setCustomConcepts(await listCustomConcepts("expense"));
+                      setConcept(name);
+                    }} />
                 </Dialog.Panel>
               </Transition.Child>
             </div>

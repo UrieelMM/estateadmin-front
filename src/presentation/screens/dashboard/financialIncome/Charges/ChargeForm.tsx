@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Dialog } from "@headlessui/react";
 import {
   UserIcon,
   CurrencyDollarIcon,
@@ -19,12 +18,12 @@ import { usePaymentSummaryStore } from "../../../../../store/paymentSummaryStore
 import { toast } from "react-hot-toast";
 import { commonConcepts } from "../../../../../utils/commonConcepts";
 import {
-  CustomChargeConcept,
+  CustomConcept,
   conceptKey,
-  listCustomChargeConcepts,
-  saveCustomChargeConcept,
+  listCustomConcepts,
   sanitizeConcept,
-} from "../../../../../services/chargeConcepts";
+} from "../../../../../services/customConcepts";
+import { ConceptManagerDialog } from "../../../../components/shared/ConceptManagerDialog";
 
 const cn = (...classes: (string | boolean | undefined | null)[]) =>
   classes.filter(Boolean).join(" ");
@@ -173,11 +172,8 @@ const ChargeForm = () => {
   );
   const [selectedUser, setSelectedUser] = useState<string>("");
   const [concept, setConcept] = useState<string>("Cuota de mantenimiento");
-  const [customConcepts, setCustomConcepts] = useState<CustomChargeConcept[]>([]);
+  const [customConcepts, setCustomConcepts] = useState<CustomConcept[]>([]);
   const [conceptModalOpen, setConceptModalOpen] = useState(false);
-  const [editingConceptId, setEditingConceptId] = useState<string | undefined>();
-  const [conceptDraft, setConceptDraft] = useState("");
-  const [savingConcept, setSavingConcept] = useState(false);
   const [amount, setAmount] = useState<number>(0);
   const [amountDisplay, setAmountDisplay] = useState<string>("");
 
@@ -201,7 +197,7 @@ const ChargeForm = () => {
   }, [fetchCondominiumsUsers]);
 
   useEffect(() => {
-    listCustomChargeConcepts()
+    listCustomConcepts("charge")
       .then(setCustomConcepts)
       .catch(() => toast.error("No se pudieron cargar los conceptos personalizados"));
   }, []);
@@ -211,30 +207,6 @@ const ChargeForm = () => {
     ...commonConcepts.filter((item) =>
       !customConcepts.some((custom) => conceptKey(custom.name) === conceptKey(item))),
   ], [customConcepts]);
-
-  const handleSaveConcept = async (event: React.FormEvent) => {
-    event.preventDefault();
-    const cleanName = sanitizeConcept(conceptDraft);
-    if (commonConcepts.some((item) => conceptKey(item) === conceptKey(cleanName))) {
-      toast.error("Ese concepto ya está en el catálogo");
-      return;
-    }
-    setSavingConcept(true);
-    try {
-      const savedName = await saveCustomChargeConcept(
-        cleanName, customConcepts, editingConceptId,
-      );
-      setCustomConcepts(await listCustomChargeConcepts());
-      setConcept(savedName);
-      setConceptDraft("");
-      setEditingConceptId(undefined);
-      toast.success("Concepto guardado");
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "No se pudo guardar el concepto");
-    } finally {
-      setSavingConcept(false);
-    }
-  };
 
   const chargeableUsers = useMemo(
     () =>
@@ -666,49 +638,13 @@ const ChargeForm = () => {
           </button>
         </div>
       </form>
-      <Dialog open={conceptModalOpen} onClose={() => setConceptModalOpen(false)} className="relative z-50">
-        <div className="fixed inset-0 bg-black/50" aria-hidden="true" />
-        <div className="fixed inset-0 flex items-center justify-center overflow-y-auto p-4">
-          <Dialog.Panel className="w-full max-w-lg rounded-2xl bg-white p-5 shadow-xl dark:bg-gray-900">
-            <Dialog.Title className="text-lg font-bold text-gray-900 dark:text-white">
-              Conceptos personalizados
-            </Dialog.Title>
-            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              Puedes crear o editar conceptos. Los cargos ya registrados conservan su concepto original.
-            </p>
-            <ul className="my-4 max-h-52 divide-y overflow-y-auto dark:divide-gray-700">
-              {customConcepts.length === 0 && <li className="py-3 text-sm text-gray-500">Aún no hay conceptos personalizados.</li>}
-              {customConcepts.map((item) => (
-                <li key={item.id} className="flex items-center justify-between gap-3 py-2 text-sm dark:text-white">
-                  <span>{item.name}</span>
-                  <button type="button" className="font-semibold text-indigo-600 dark:text-indigo-300"
-                    onClick={() => { setEditingConceptId(item.id); setConceptDraft(item.name); }}>
-                    Editar
-                  </button>
-                </li>
-              ))}
-            </ul>
-            <form onSubmit={handleSaveConcept} className="space-y-3">
-              <label htmlFor="custom-concept" className="block text-sm font-semibold dark:text-white">
-                {editingConceptId ? "Editar concepto" : "Nuevo concepto"}
-              </label>
-              <input id="custom-concept" value={conceptDraft} maxLength={100} required
-                onChange={(event) => setConceptDraft(event.target.value)}
-                className={`${inputBase} px-3`} placeholder="Escribe el concepto" />
-              <div className="flex justify-end gap-2">
-                {editingConceptId && <button type="button" className="rounded-lg px-3 py-2 text-sm dark:text-white"
-                  onClick={() => { setEditingConceptId(undefined); setConceptDraft(""); }}>Cancelar edición</button>}
-                <button type="button" className="rounded-lg px-3 py-2 text-sm dark:text-white"
-                  onClick={() => setConceptModalOpen(false)}>Cerrar</button>
-                <button type="submit" disabled={savingConcept}
-                  className="rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50">
-                  Guardar
-                </button>
-              </div>
-            </form>
-          </Dialog.Panel>
-        </div>
-      </Dialog>
+      <ConceptManagerDialog open={conceptModalOpen} kind="charge"
+        catalog={commonConcepts} concepts={customConcepts}
+        onClose={() => setConceptModalOpen(false)}
+        onSaved={async (name) => {
+          setCustomConcepts(await listCustomConcepts("charge"));
+          setConcept(name);
+        }} />
     </div>
   );
 };

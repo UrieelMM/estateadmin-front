@@ -42,8 +42,7 @@ const ExpenseSummaryCards: React.FC = () => {
     const monthMap: Record<string, number> = {};
 
     expenses.forEach((exp) => {
-      const group = exp.conceptGroup || exp.concept;
-      conceptMap[group] = (conceptMap[group] || 0) + exp.amount;
+      conceptMap[exp.concept] = (conceptMap[exp.concept] || 0) + exp.amount;
       // Asumimos expenseDate = "YYYY-MM-DD HH:mm"
       const mm = exp.expenseDate.substring(5, 7);
       monthMap[mm] = (monthMap[mm] || 0) + exp.amount;

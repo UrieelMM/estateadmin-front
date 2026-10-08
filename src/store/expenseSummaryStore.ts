@@ -91,7 +91,6 @@ export interface ExpenseRecord {
   folio: string; // "EA-..."
   amount: number; // Monto del egreso en pesos (float)
   concept: string; // Concepto del egreso
-  conceptGroup?: string; // Agrupación opcional del catálogo
   paymentType: string; // Tipo de pago
   financialAccountId?: string;
   expenseDate: string; // "YYYY-MM-DD HH:mm"
@@ -174,7 +173,6 @@ export const useExpenseSummaryStore = create<ExpenseSummaryState>()(
             folio: data.folio || "",
             amount: centsToPesos(data.amount),
             concept: data.concept || "Desconocido",
-            conceptGroup: data.conceptGroup || undefined,
             paymentType: data.paymentType || "Desconocido",
             financialAccountId: data.financialAccountId || undefined,
             expenseDate: data.expenseDate || "",
@@ -208,11 +206,10 @@ export const useExpenseSummaryStore = create<ExpenseSummaryState>()(
 
       fetched.forEach((exp) => {
         totalSpent += exp.amount;
-        const group = exp.conceptGroup || exp.concept;
-        if (!conceptRecords[group]) {
-          conceptRecords[group] = [];
+        if (!conceptRecords[exp.concept]) {
+          conceptRecords[exp.concept] = [];
         }
-        conceptRecords[group].push(exp);
+        conceptRecords[exp.concept].push(exp);
 
         const mm = exp.expenseDate.substring(5, 7);
         if (monthlyMap[mm] !== undefined) {
@@ -488,7 +485,6 @@ export const useExpenseSummaryStore = create<ExpenseSummaryState>()(
               folio: data.folio || "",
               amount: centsToPesos(data.amount),
               concept: data.concept || "Desconocido",
-              conceptGroup: data.conceptGroup || undefined,
               paymentType: data.paymentType || "Desconocido",
               financialAccountId: data.financialAccountId || undefined,
               expenseDate: data.expenseDate || "",
@@ -568,7 +564,6 @@ export const useExpenseSummaryStore = create<ExpenseSummaryState>()(
               folio: data.folio || "",
               amount: centsToPesos(data.amount),
               concept: data.concept || "Desconocido",
-              conceptGroup: data.conceptGroup || undefined,
               paymentType: data.paymentType || "Desconocido",
               financialAccountId: data.financialAccountId || undefined,
               expenseDate: data.expenseDate || "",
@@ -616,7 +611,6 @@ export const useExpenseSummaryStore = create<ExpenseSummaryState>()(
                 folio: data.folio || "",
                 amount: centsToPesos(data.amount),
                 concept: data.concept || "Desconocido",
-                conceptGroup: data.conceptGroup || undefined,
                 paymentType: data.paymentType || "Desconocido",
                 financialAccountId: data.financialAccountId || undefined,
                 expenseDate: data.expenseDate || "",

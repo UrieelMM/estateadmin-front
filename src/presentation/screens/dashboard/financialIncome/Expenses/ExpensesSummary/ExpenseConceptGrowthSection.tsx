@@ -23,11 +23,10 @@ const ExpenseConceptGrowthSection: React.FC = () => {
     const map: Record<string, Record<string, number>> = {};
     expenses.forEach((exp) => {
       const mm = exp.expenseDate.substring(5, 7);
-      const group = exp.conceptGroup || exp.concept;
-      if (!map[group]) {
-        map[group] = {};
+      if (!map[exp.concept]) {
+        map[exp.concept] = {};
       }
-      map[group][mm] = (map[group][mm] || 0) + exp.amount;
+      map[exp.concept][mm] = (map[exp.concept][mm] || 0) + exp.amount;
     });
     return map;
   }, [expenses]);

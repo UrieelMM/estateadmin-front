@@ -9,7 +9,9 @@ import {
   doc,
 } from "firebase/firestore";
 
-export interface CustomChargeConcept {
+export type ConceptKind = "charge" | "expense";
+
+export interface CustomConcept {
   id: string;
   name: string;
   normalizedName: string;
@@ -30,7 +32,7 @@ export const conceptKey = (value: string): string =>
     .replace(/[\u0300-\u036f]/g, "")
     .toLocaleLowerCase("es-MX");
 
-const conceptsCollection = async () => {
+const conceptsCollection = async (kind: ConceptKind) => {
   const user = getAuth().currentUser;
   if (!user) throw new Error("Usuario no autenticado");
   const claims = await getIdTokenResult(user);
@@ -39,12 +41,12 @@ const conceptsCollection = async () => {
   if (!clientId || !condominiumId) throw new Error("Selecciona un condominio");
   return collection(
     getFirestore(),
-    `clients/${clientId}/condominiums/${condominiumId}/customChargeConcepts`,
+    `clients/${clientId}/condominiums/${condominiumId}/${kind === "charge" ? "customChargeConcepts" : "customExpenseConcepts"}`,
   );
 };
 
-export const listCustomChargeConcepts = async (): Promise<CustomChargeConcept[]> => {
-  const snapshot = await getDocs(await conceptsCollection());
+export const listCustomConcepts = async (kind: ConceptKind): Promise<CustomConcept[]> => {
+  const snapshot = await getDocs(await conceptsCollection(kind));
   return snapshot.docs
     .map((item) => ({
       id: item.id,
@@ -55,9 +57,10 @@ export const listCustomChargeConcepts = async (): Promise<CustomChargeConcept[]>
     .sort((a, b) => a.name.localeCompare(b.name, "es-MX"));
 };
 
-export const saveCustomChargeConcept = async (
+export const saveCustomConcept = async (
+  kind: ConceptKind,
   rawName: string,
-  existing: CustomChargeConcept[],
+  existing: CustomConcept[],
   id?: string,
 ): Promise<string> => {
   const name = sanitizeConcept(rawName);
@@ -68,9 +71,9 @@ export const saveCustomChargeConcept = async (
   }
   const data = { name, normalizedName, updatedAt: serverTimestamp() };
   if (id) {
-    await updateDoc(doc(await conceptsCollection(), id), data);
+    await updateDoc(doc(await conceptsCollection(kind), id), data);
   } else {
-    await addDoc(await conceptsCollection(), { ...data, createdAt: serverTimestamp() });
+    await addDoc(await conceptsCollection(kind), { ...data, createdAt: serverTimestamp() });
   }
   return name;
 };
