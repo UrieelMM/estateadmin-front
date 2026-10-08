@@ -37,6 +37,7 @@ import ClientInvoicesTable from "../../client/invoices/ClientInvoicesTable";
 import AuditTrail from "../../audit/AuditTrail";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useCondominiumStore } from "../../../../../store/useCondominiumStore";
+import { LogoCropDialog } from "../../../../components/shared/LogoCropDialog";
 
 type ConfigTabId =
   | "config"
@@ -111,6 +112,7 @@ const ConfigForm = () => {
   const [ logoFile, setLogoFile ] = useState<File | null>( null );
   const [ signatureFile, setSignatureFile ] = useState<File | null>( null );
   const [ logoReportsFile, setLogoReportsFile ] = useState<File | null>( null );
+  const [ pendingLogo, setPendingLogo ] = useState<{ file: File; kind: "main" | "reports" } | null>( null );
   const [ logoPreviewUrl, setLogoPreviewUrl ] = useState<string | null>( null );
 
   // Estados para archivos existentes
@@ -766,16 +768,9 @@ const ConfigForm = () => {
                           type="file"
                           id="logo"
                           accept="image/png, image/jpeg"
-                          onChange={ async ( e ) => {
+                          onChange={ ( e ) => {
                             if ( e.target.files && e.target.files[ 0 ] ) {
-                              try {
-                                const compressed = await compressFile( e.target.files[ 0 ] );
-                                setLogoFile( compressed );
-                                toast.success( "Logo procesado y listo" );
-                              } catch ( error ) {
-                                console.error( error );
-                                setLogoFile( e.target.files[ 0 ] );
-                              }
+                              setPendingLogo( { file: e.target.files[ 0 ], kind: "main" } );
                             } else {
                               setLogoFile( null );
                             }
@@ -904,16 +899,9 @@ const ConfigForm = () => {
                           type="file"
                           id="logoReports"
                           accept="image/png, image/jpeg"
-                          onChange={ async ( e ) => {
+                          onChange={ ( e ) => {
                             if ( e.target.files && e.target.files[ 0 ] ) {
-                              try {
-                                const compressed = await compressFile( e.target.files[ 0 ] );
-                                setLogoReportsFile( compressed );
-                                toast.success( "Logo para reportes procesado y listo" );
-                              } catch ( error ) {
-                                console.error( error );
-                                setLogoReportsFile( e.target.files[ 0 ] );
-                              }
+                              setPendingLogo( { file: e.target.files[ 0 ], kind: "reports" } );
                             } else {
                               setLogoReportsFile( null );
                             }
@@ -1233,6 +1221,15 @@ const ConfigForm = () => {
           </div>
         </div>
       ) }
+      <LogoCropDialog file={ pendingLogo?.file || null }
+        aspect={ pendingLogo?.kind === "main" ? "square" : "wide" }
+        onClose={ () => setPendingLogo( null ) }
+        onConfirm={ async ( file ) => {
+          const compressed = await compressFile( file );
+          if ( pendingLogo?.kind === "main" ) setLogoFile( compressed );
+          else setLogoReportsFile( compressed );
+          toast.success( "Logo encuadrado y listo" );
+        } } />
     </div>
   );
 };

@@ -25,6 +25,7 @@ import {
   ExpenseCreateInput,
 } from "../../../../store/expenseStore";
 import { EXPENSE_CONCEPTS } from "../../../../utils/expensesList";
+import { sanitizeConcept } from "../../../../services/chargeConcepts";
 import { getFirestore, collection, getDocs } from "firebase/firestore";
 import { getAuth, getIdTokenResult } from "firebase/auth";
 import { useExpenseSummaryStore } from "../../../../store/expenseSummaryStore";
@@ -136,6 +137,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ open, setOpen }) => {
   const [amount, setAmount] = useState<string>("");
   const [amountDisplay, setAmountDisplay] = useState<string>("");
   const [concept, setConcept] = useState<string>("");
+  const [conceptGroup, setConceptGroup] = useState<string>("");
   const [paymentType, setPaymentType] = useState<string>("");
   const [expenseDate, setExpenseDate] = useState<string>("");
   const [description, setDescription] = useState<string>("");
@@ -148,9 +150,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ open, setOpen }) => {
   >([]);
   const [providerId, setProviderId] = useState<string>("");
   const [providerSearch, setProviderSearch] = useState<string>("");
-  const [conceptSearch, setConceptSearch] = useState<string>("");
   const providerComboboxButtonRef = useRef<HTMLButtonElement | null>(null);
-  const conceptComboboxButtonRef = useRef<HTMLButtonElement | null>(null);
   const { providers, fetchProviders } = useProviderStore();
   const { compressFile, isCompressing } = useFileCompression();
 
@@ -217,6 +217,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ open, setOpen }) => {
       setAmount("");
       setAmountDisplay("");
       setConcept("");
+      setConceptGroup("");
       setPaymentType("");
       setExpenseDate("");
       setDescription("");
@@ -226,7 +227,6 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ open, setOpen }) => {
       setFinancialAccountId("");
       setProviderId("");
       setProviderSearch("");
-      setConceptSearch("");
     }
   }, [open]);
 
@@ -240,15 +240,6 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ open, setOpen }) => {
       return providerName.includes(term) || providerService.includes(term);
     });
   }, [providers, providerSearch]);
-
-  const filteredExpenseConcepts = useMemo(() => {
-    const term = conceptSearch.trim().toLowerCase();
-    if (!term) return EXPENSE_CONCEPTS;
-
-    return EXPENSE_CONCEPTS.filter((expenseConcept) =>
-      expenseConcept.toLowerCase().includes(term)
-    );
-  }, [conceptSearch]);
 
   const selectableFinancialAccounts = useMemo(
     () =>
@@ -303,8 +294,8 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ open, setOpen }) => {
       setLoading(false);
       return;
     }
-    if (!concept) {
-      toast.error("Selecciona un concepto de egreso.");
+    if (!sanitizeConcept(concept)) {
+      toast.error("Escribe un concepto de egreso.");
       setLoading(false);
       return;
     }
@@ -324,7 +315,8 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ open, setOpen }) => {
 
       const dataToCreate: ExpenseCreateInput = {
         amount: amountInPesos,
-        concept,
+        concept: sanitizeConcept(concept),
+        conceptGroup: conceptGroup || undefined,
         paymentType,
         expenseDate,
         description,
@@ -611,87 +603,24 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ open, setOpen }) => {
                           <Field
                             label="Concepto de egreso"
                             htmlFor="concept"
-                            hint="Selecciona o busca entre los conceptos predefinidos."
+                            hint="Describe el gasto con tus propias palabras."
                           >
-                            <Combobox
-                              value={concept}
-                              onChange={(value: string) => {
-                                setConcept(value);
-                                setConceptSearch("");
-                              }}
-                            >
-                              <div className="relative">
-                                <ClipboardIcon className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                                <Combobox.Input
-                                  id="concept"
-                                  name="concept"
-                                  className={`${inputBase} pl-9 pr-10`}
-                                  displayValue={(value: string) => value}
-                                  onChange={(event) =>
-                                    setConceptSearch(event.target.value)
-                                  }
-                                  onFocus={() =>
-                                    conceptComboboxButtonRef.current?.click()
-                                  }
-                                  placeholder="Buscar concepto"
-                                />
-                                <Combobox.Button
-                                  ref={conceptComboboxButtonRef}
-                                  className="absolute inset-y-0 right-0 flex items-center pr-2"
-                                >
-                                  <ChevronUpDownIcon className="h-5 w-5 text-gray-400" />
-                                </Combobox.Button>
-                              </div>
-                              <Combobox.Options className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-lg bg-white py-1 text-sm shadow-lg ring-1 ring-black/5 focus:outline-none dark:bg-gray-800 dark:ring-white/[0.08]">
-                                <Combobox.Option
-                                  value=""
-                                  className={({ active }) =>
-                                    cn(
-                                      "relative cursor-default select-none px-3 py-1.5 text-[11px] italic",
-                                      active
-                                        ? "bg-indigo-50 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-300"
-                                        : "text-gray-500 dark:text-gray-400",
-                                    )
-                                  }
-                                >
-                                  Sin concepto
-                                </Combobox.Option>
-                                {filteredExpenseConcepts.length === 0 ? (
-                                  <div className="px-3 py-3 text-sm text-gray-500 dark:text-gray-400">
-                                    Sin resultados
-                                  </div>
-                                ) : (
-                                  filteredExpenseConcepts.map((expenseConcept) => (
-                                    <Combobox.Option
-                                      key={expenseConcept}
-                                      value={expenseConcept}
-                                      className={({ active }) =>
-                                        cn(
-                                          "relative cursor-default select-none px-2 py-1.5",
-                                          active && "bg-indigo-50 dark:bg-indigo-500/10",
-                                        )
-                                      }
-                                    >
-                                      <div className="flex items-center justify-between gap-2">
-                                        <span
-                                          className={cn(
-                                            "truncate text-sm",
-                                            concept === expenseConcept
-                                              ? "font-semibold text-indigo-700 dark:text-indigo-300"
-                                              : "text-gray-900 dark:text-gray-100",
-                                          )}
-                                        >
-                                          {expenseConcept}
-                                        </span>
-                                        {concept === expenseConcept && (
-                                          <CheckIcon className="h-4 w-4 shrink-0 text-indigo-600 dark:text-indigo-300" />
-                                        )}
-                                      </div>
-                                    </Combobox.Option>
-                                  ))
-                                )}
-                              </Combobox.Options>
-                            </Combobox>
+                            <div className="relative">
+                              <ClipboardIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                              <input id="concept" name="concept" value={concept}
+                                onChange={(event) => setConcept(event.target.value)}
+                                maxLength={100} required className={`${inputBase} pl-9 pr-3`}
+                                placeholder="Ej. Reparación de tubería del edificio" />
+                            </div>
+                          </Field>
+                          <Field label="Grupo de egreso" htmlFor="conceptGroup" optional
+                            hint="Úsalo para agrupar gastos en reportes; el concepto libre se conserva.">
+                            <select id="conceptGroup" value={conceptGroup}
+                              onChange={(event) => setConceptGroup(event.target.value)}
+                              className={`${inputBase} px-3`}>
+                              <option value="">Sin grupo</option>
+                              {EXPENSE_CONCEPTS.map((item) => <option key={item} value={item}>{item}</option>)}
+                            </select>
                           </Field>
                         </SectionCard>
 

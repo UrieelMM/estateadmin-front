@@ -1019,7 +1019,7 @@ const PaymentForm = ( { open, setOpen }: FormParcelReceptionProps ) => {
                                             >
                                               { user.name } { user.lastName || "" }
                                             </p>
-                                            <p
+                                            { String( user.tower || "" ).trim().length > 0 && <p
                                               className={ cn(
                                                 "text-[11px]",
                                                 active
@@ -1027,12 +1027,10 @@ const PaymentForm = ( { open, setOpen }: FormParcelReceptionProps ) => {
                                                   : "text-gray-500 dark:text-gray-400"
                                               ) }
                                             >
-                                              { String( user.tower || "" ).trim().length > 0
-                                                ? `Torre ${ String( user.tower || "" )
+                                              { `Torre ${ String( user.tower || "" )
                                                   .replace( /^torre\s*/i, "" )
-                                                  .trim() }`
-                                                : "Sin torre" }
-                                            </p>
+                                                  .trim() }` }
+                                            </p> }
                                           </div>
                                           { selectedRecipientUid === user.uid && (
                                             <CheckIcon className="mt-0.5 h-4 w-4 shrink-0 text-indigo-600 dark:text-indigo-300" />

@@ -142,10 +142,11 @@ const PDFExpenseReportGenerator: React.FC<PDFExpenseReportGeneratorProps> = ( {
     );
     const conceptTotals: { [ key: string ]: number; } = {};
     expensesForYear.forEach( ( exp: ExpenseRecord ) => {
-      if ( conceptTotals[ exp.concept ] ) {
-        conceptTotals[ exp.concept ] += exp.amount;
+      const group = exp.conceptGroup || exp.concept;
+      if ( conceptTotals[ group ] ) {
+        conceptTotals[ group ] += exp.amount;
       } else {
-        conceptTotals[ exp.concept ] = exp.amount;
+        conceptTotals[ group ] = exp.amount;
       }
     } );
     const conceptRows = Object.entries( conceptTotals )
@@ -163,7 +164,7 @@ const PDFExpenseReportGenerator: React.FC<PDFExpenseReportGeneratorProps> = ( {
 
     autoTable( doc, {
       startY: currentY,
-      head: [ [ "Concepto", "Total" ] ],
+      head: [ [ "Grupo / concepto", "Total" ] ],
       body: conceptTableRows,
       headStyles: {
         fillColor: [ 75, 68, 224 ],

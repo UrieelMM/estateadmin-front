@@ -23,7 +23,8 @@ export interface ExpenseRecord {
   id: string; // ID del documento en Firestore
   folio: string; // "EA-xxxxxx"
   amount: number; // Monto del egreso en pesos
-  concept: string; // Concepto (select con ~30 tipos)
+  concept: string; // Descripción libre del gasto
+  conceptGroup?: string; // Agrupación opcional del catálogo
   paymentType: string; // Tipo de pago (efectivo, transferencia, etc.)
   expenseDate: string; // Fecha del egreso (ej: "2025-06-30 14:00")
   registerDate: string; // Fecha/hora en que se registra (ej: "2025-06-30 14:55")
@@ -39,6 +40,7 @@ export interface ExpenseRecord {
 export interface ExpenseCreateInput {
   amount: number; // en pesos
   concept: string;
+  conceptGroup?: string;
   paymentType: string;
   expenseDate: string; // "YYYY-MM-DD HH:mm"
   description?: string;
@@ -54,6 +56,7 @@ export interface ExpenseCreateInput {
 export interface ExpenseUpdateInput {
   amount?: number; // en pesos
   concept?: string;
+  conceptGroup?: string;
   paymentType?: string;
   expenseDate?: string;
   description?: string;
@@ -155,6 +158,7 @@ export const useExpenseStore = create<ExpenseState>()((set, get) => ({
           // Convertir amount (que viene en centavos) a pesos
           amount: centsToPesos(data.amount),
           concept: data.concept ?? "",
+          conceptGroup: data.conceptGroup ?? undefined,
           paymentType: data.paymentType ?? "",
           expenseDate: data.expenseDate ?? "",
           registerDate: data.registerDate ?? "",
@@ -209,6 +213,7 @@ export const useExpenseStore = create<ExpenseState>()((set, get) => ({
         folio,
         amount: amountCents,
         concept: data.concept,
+        ...(data.conceptGroup ? { conceptGroup: data.conceptGroup } : {}),
         paymentType: data.paymentType,
         expenseDate: data.expenseDate,
         registerDate: new Date().toISOString(),
@@ -343,6 +348,7 @@ export const useExpenseStore = create<ExpenseState>()((set, get) => ({
         updateData.amount = Math.round(data.amount * 100);
       }
       if (data.concept !== undefined) updateData.concept = data.concept;
+      if (data.conceptGroup !== undefined) updateData.conceptGroup = data.conceptGroup;
       if (data.paymentType !== undefined) updateData.paymentType = data.paymentType;
       if (data.expenseDate !== undefined) updateData.expenseDate = data.expenseDate;
       if (data.description !== undefined) updateData.description = data.description;

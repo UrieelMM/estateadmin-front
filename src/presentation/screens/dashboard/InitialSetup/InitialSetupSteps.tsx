@@ -33,6 +33,7 @@ import {
 } from "@heroicons/react/24/solid";
 import { motion, AnimatePresence } from "framer-motion";
 import logo from "../../../../assets/logo.png";
+import { LogoCropDialog } from "../../../components/shared/LogoCropDialog";
 import {
   getFirestore,
   doc,
@@ -112,6 +113,7 @@ const InitialSetupSteps = ( { initialStep }: InitialSetupStepsProps ) => {
   const [ logoReportsFile, setLogoReportsFile ] = useState<File | null>( null );
   const [ signReportsFile, setSignReportsFile ] = useState<File | null>( null );
   const [ logoFile, setLogoFile ] = useState<File | null>( null );
+  const [ pendingLogo, setPendingLogo ] = useState<{ file: File; kind: "main" | "reports" } | null>( null );
   const [ logoReportsPreview, setLogoReportsPreview ] = useState<string | null>(
     null
   );
@@ -573,16 +575,7 @@ const InitialSetupSteps = ( { initialStep }: InitialSetupStepsProps ) => {
   // Handlers para archivos
   const handleLogoReportsChange = async ( e: React.ChangeEvent<HTMLInputElement> ) => {
     if ( e.target.files && e.target.files[ 0 ] ) {
-      try {
-        const compressed = await compressFile( e.target.files[ 0 ] );
-        setLogoReportsFile( compressed );
-        setLogoReportsPreview( URL.createObjectURL( compressed ) );
-        toast.success( "Logo para reportes procesado" );
-      } catch ( error ) {
-        console.error( error );
-        setLogoReportsFile( e.target.files[ 0 ] );
-        setLogoReportsPreview( URL.createObjectURL( e.target.files[ 0 ] ) );
-      }
+      setPendingLogo( { file: e.target.files[ 0 ], kind: "reports" } );
     }
   };
 
@@ -603,16 +596,7 @@ const InitialSetupSteps = ( { initialStep }: InitialSetupStepsProps ) => {
 
   const handleLogoChange = async ( e: React.ChangeEvent<HTMLInputElement> ) => {
     if ( e.target.files && e.target.files[ 0 ] ) {
-      try {
-        const compressed = await compressFile( e.target.files[ 0 ] );
-        setLogoFile( compressed );
-        setLogoPreview( URL.createObjectURL( compressed ) );
-        toast.success( "Logo procesado" );
-      } catch ( error ) {
-        console.error( error );
-        setLogoFile( e.target.files[ 0 ] );
-        setLogoPreview( URL.createObjectURL( e.target.files[ 0 ] ) );
-      }
+      setPendingLogo( { file: e.target.files[ 0 ], kind: "main" } );
     }
   };
 
@@ -1730,6 +1714,20 @@ const InitialSetupSteps = ( { initialStep }: InitialSetupStepsProps ) => {
           alt="Logo de la empresa"
           className="absolute bottom-4 left-8 h-[40px] w-[40px]"
         />
+        <LogoCropDialog file={ pendingLogo?.file || null }
+          aspect={ pendingLogo?.kind === "main" ? "square" : "wide" }
+          onClose={ () => setPendingLogo( null ) }
+          onConfirm={ async ( file ) => {
+            const compressed = await compressFile( file );
+            if ( pendingLogo?.kind === "main" ) {
+              setLogoFile( compressed );
+              setLogoPreview( URL.createObjectURL( compressed ) );
+            } else {
+              setLogoReportsFile( compressed );
+              setLogoReportsPreview( URL.createObjectURL( compressed ) );
+            }
+            toast.success( "Logo encuadrado y listo" );
+          } } />
       </div>
     </div>
   );

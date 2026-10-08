@@ -19,11 +19,12 @@ const ExpenseConceptAnalyticsAdvanced: React.FC = () => {
   const aggregatedData = useMemo(() => {
     const map: Record<string, { total: number; count: number }> = {};
     expenses.forEach((exp) => {
-      if (!map[exp.concept]) {
-        map[exp.concept] = { total: 0, count: 0 };
+      const group = exp.conceptGroup || exp.concept;
+      if (!map[group]) {
+        map[group] = { total: 0, count: 0 };
       }
-      map[exp.concept].total += exp.amount;
-      map[exp.concept].count += 1;
+      map[group].total += exp.amount;
+      map[group].count += 1;
     });
     return Object.entries(map).map(([concept, data]) => ({
       concept,

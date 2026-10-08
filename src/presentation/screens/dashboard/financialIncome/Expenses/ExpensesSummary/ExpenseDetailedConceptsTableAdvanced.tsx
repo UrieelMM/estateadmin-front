@@ -795,6 +795,12 @@ const ExpenseDetailedConceptsTableAdvanced: React.FC = () => {
                       {selectedExpense.concept || "N/A"}
                     </p>
                   </div>
+                  {selectedExpense.conceptGroup && <div>
+                    <p className="text-gray-500 dark:text-gray-400">Grupo</p>
+                    <p className="font-medium text-gray-900 dark:text-white">
+                      {selectedExpense.conceptGroup}
+                    </p>
+                  </div>}
                   <div>
                     <p className="text-gray-500 dark:text-gray-400">
                       Tipo de pago
