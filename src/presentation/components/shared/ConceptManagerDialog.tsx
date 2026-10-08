@@ -52,7 +52,7 @@ export const ConceptManagerDialog = ({
     }
   };
 
-  return <Dialog open={open} onClose={close} className="relative z-50">
+  return <Dialog open={open} onClose={close} className="relative z-[100]">
     <div className="fixed inset-0 bg-black/50" aria-hidden="true" />
     <div className="fixed inset-0 flex items-center justify-center overflow-y-auto p-4">
       <Dialog.Panel className="w-full max-w-lg rounded-2xl bg-white p-5 shadow-xl dark:bg-gray-900">

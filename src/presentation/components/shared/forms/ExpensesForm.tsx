@@ -801,18 +801,18 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ open, setOpen }) => {
                       </div>
                     </div>
                   </form>
-                  <ConceptManagerDialog open={conceptModalOpen} kind="expense"
-                    catalog={EXPENSE_CONCEPTS} concepts={customConcepts}
-                    onClose={() => setConceptModalOpen(false)}
-                    onSaved={async (name) => {
-                      setCustomConcepts(await listCustomConcepts("expense"));
-                      setConcept(name);
-                    }} />
                 </Dialog.Panel>
               </Transition.Child>
             </div>
           </div>
         </div>
+        <ConceptManagerDialog open={conceptModalOpen} kind="expense"
+          catalog={EXPENSE_CONCEPTS} concepts={customConcepts}
+          onClose={() => setConceptModalOpen(false)}
+          onSaved={async (name) => {
+            setCustomConcepts(await listCustomConcepts("expense"));
+            setConcept(name);
+          }} />
       </Dialog>
     </Transition.Root>
   );
