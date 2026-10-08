@@ -145,6 +145,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ open, setOpen }) => {
   const [concept, setConcept] = useState<string>("");
   const [customConcepts, setCustomConcepts] = useState<CustomConcept[]>([]);
   const [conceptModalOpen, setConceptModalOpen] = useState(false);
+  const [pendingConceptManager, setPendingConceptManager] = useState(false);
   const [paymentType, setPaymentType] = useState<string>("");
   const [expenseDate, setExpenseDate] = useState<string>("");
   const [description, setDescription] = useState<string>("");
@@ -228,6 +229,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ open, setOpen }) => {
       setAmountDisplay("");
       setConcept("");
       setConceptModalOpen(false);
+      setPendingConceptManager(false);
       setPaymentType("");
       setExpenseDate("");
       setDescription("");
@@ -357,8 +359,20 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ open, setOpen }) => {
     }
   };
 
+  const openConceptManager = () => {
+    setPendingConceptManager(true);
+    setOpen(false);
+  };
+
   return (
-    <Transition.Root show={open} as={Fragment}>
+    <>
+    <Transition.Root show={open} as={Fragment}
+      afterLeave={() => {
+        if (pendingConceptManager) {
+          setPendingConceptManager(false);
+          setConceptModalOpen(true);
+        }
+      }}>
       <Dialog as="div" className="relative z-10" onClose={setOpen}>
         <Transition.Child
           as={Fragment}
@@ -629,7 +643,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ open, setOpen }) => {
                                 {conceptOptions.map((item) => <option key={item} value={item}>{item}</option>)}
                               </select>
                             </div>
-                            <button type="button" onClick={() => setConceptModalOpen(true)}
+                            <button type="button" onClick={openConceptManager}
                               className="mt-2 text-xs font-semibold text-indigo-600 hover:underline dark:text-indigo-300">
                               Administrar conceptos personalizados
                             </button>
@@ -806,15 +820,15 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ open, setOpen }) => {
             </div>
           </div>
         </div>
-        <ConceptManagerDialog open={conceptModalOpen} kind="expense"
-          catalog={EXPENSE_CONCEPTS} concepts={customConcepts}
-          onClose={() => setConceptModalOpen(false)}
-          onSaved={async (name) => {
-            setCustomConcepts(await listCustomConcepts("expense"));
-            setConcept(name);
-          }} />
       </Dialog>
     </Transition.Root>
+    <ConceptManagerDialog open={conceptModalOpen} kind="expense"
+      catalog={EXPENSE_CONCEPTS} concepts={customConcepts}
+      onClose={() => setConceptModalOpen(false)}
+      onSaved={async () => {
+        setCustomConcepts(await listCustomConcepts("expense"));
+      }} />
+    </>
   );
 };
 
