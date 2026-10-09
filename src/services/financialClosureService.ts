@@ -21,6 +21,20 @@ export type LedgerSummary = {
   expenseCount: number;
   digest: string;
 };
+export type FinancialPeriodOverview = {
+  configuredInitialBalanceCents: number;
+  bankInitialBalanceCents: number;
+  historicalIncomeCents: number;
+  historicalExpenseCents: number;
+  balanceBeforePeriodCents: number;
+  balanceAtEndCents: number;
+  previousMonth: string;
+  previousMonthIncomeCents: number;
+  previousMonthExpenseCents: number;
+  previousMonthClosingBalanceCents: number;
+  previousMonthIsClosed: boolean;
+  accounts: { id: string; name: string; type: string; initialBalanceCents: number }[];
+};
 
 export type ClosureRecord = LedgerSummary & {
   id: string;
@@ -30,6 +44,10 @@ export type ClosureRecord = LedgerSummary & {
   status: "closed" | "open";
   openingBalanceCents: number;
   closingBalanceCents: number;
+  configuredInitialBalanceCents?: number;
+  bankInitialBalanceCents?: number;
+  historicalIncomeCents?: number;
+  historicalExpenseCents?: number;
   revision: number;
   closedAt?: { seconds: number };
 };
@@ -67,7 +85,7 @@ export const assertFinancialMonthOpen = async (dateValue: string): Promise<void>
 export const financialClosureService = {
   async movements(filters: { from: string; to: string; direction: "all" | "income" | "expense"; search: string; page: number; limit: number }) {
     const { tenant, http } = await api();
-    const { data } = await http.get<{ items: LedgerMovement[]; total: number; page: number; limit: number; summary: LedgerSummary }>("/financial-closures/movements", {
+    const { data } = await http.get<{ items: LedgerMovement[]; total: number; page: number; limit: number; summary: LedgerSummary; overview: FinancialPeriodOverview }>("/financial-closures/movements", {
       params: { clientId: tenant.clientId, condominiumId: tenant.condominiumId, ...filters },
     });
     return data;

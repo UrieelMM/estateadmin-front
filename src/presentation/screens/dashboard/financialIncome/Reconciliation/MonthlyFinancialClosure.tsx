@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import {
-  ClosureRecord, financialClosureError, financialClosureService,
+  ClosureRecord, FinancialPeriodOverview, financialClosureError, financialClosureService,
   LedgerMovement, LedgerSummary,
 } from "../../../../../services/financialClosureService";
 
@@ -11,11 +11,6 @@ const firstDay = (month: string) => `${month}-01`;
 const lastDay = (month: string) => {
   const [year, part] = month.split("-").map(Number);
   return `${month}-${String(new Date(year, part, 0).getDate()).padStart(2, "0")}`;
-};
-const previousMonth = (month: string) => {
-  const [year, part] = month.split("-").map(Number);
-  const date = new Date(year, part - 2, 1);
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
 };
 const money = (cents: number) => (Number(cents || 0) / 100).toLocaleString("es-MX", { style: "currency", currency: "MXN" });
 const dateLabel = (date: string) => date ? new Date(`${date}T12:00:00`).toLocaleDateString("es-MX", { day: "2-digit", month: "short", year: "numeric" }) : "—";
@@ -34,7 +29,7 @@ const MonthlyFinancialClosure = () => {
   const [summary, setSummary] = useState<LedgerSummary>(emptySummary);
   const [loading, setLoading] = useState(false);
   const [closing, setClosing] = useState(false);
-  const [openingBalance, setOpeningBalance] = useState("0.00");
+  const [overview, setOverview] = useState<FinancialPeriodOverview | null>(null);
   const [currentClosure, setCurrentClosure] = useState<ClosureRecord | null>(null);
   const [history, setHistory] = useState<ClosureRecord[]>([]);
   const [historyPage, setHistoryPage] = useState(1);
@@ -46,11 +41,21 @@ const MonthlyFinancialClosure = () => {
   const [sendingCode, setSendingCode] = useState(false);
   const [reopening, setReopening] = useState(false);
   const [activeView, setActiveView] = useState<"movements" | "history">("movements");
+  const movementRequestId = useRef(0);
 
   const month = from.slice(0, 7);
   const fullMonth = from === firstDay(month) && to === lastDay(month);
-  const openingCents = Math.round(Number(openingBalance || 0) * 100);
-  const balanceCents = openingCents + summary.incomeCents - summary.expenseCents;
+  const closedSnapshot = currentClosure?.status === "closed" && currentClosure.month === month && fullMonth ? currentClosure : null;
+  const openingCents = closedSnapshot?.openingBalanceCents ?? overview?.balanceBeforePeriodCents ?? 0;
+  const balanceCents = closedSnapshot?.closingBalanceCents ?? openingCents + summary.incomeCents - summary.expenseCents;
+  const configuredInitialCents = closedSnapshot?.configuredInitialBalanceCents ?? overview?.configuredInitialBalanceCents ?? 0;
+  const bankInitialCents = closedSnapshot?.bankInitialBalanceCents ?? overview?.bankInitialBalanceCents ?? 0;
+  const historicalIncomeCents = closedSnapshot?.historicalIncomeCents ?? overview?.historicalIncomeCents ?? 0;
+  const historicalExpenseCents = closedSnapshot?.historicalExpenseCents ?? overview?.historicalExpenseCents ?? 0;
+  const historicalDrift = !!closedSnapshot && !!overview && (
+    summary.digest !== closedSnapshot.digest ||
+    (closedSnapshot.configuredInitialBalanceCents !== undefined && overview.configuredInitialBalanceCents !== closedSnapshot.configuredInitialBalanceCents)
+  );
   const totalPages = Math.max(1, Math.ceil(total / 25));
   const historyPages = Math.max(1, Math.ceil(historyTotal / 10));
 
@@ -60,16 +65,32 @@ const MonthlyFinancialClosure = () => {
   }, [search]);
 
   const loadMovements = useCallback(async () => {
-    if (!from || !to || from > to) return;
+    if (!from || !to || from > to) {
+      movementRequestId.current += 1;
+      setRows([]);
+      setTotal(0);
+      setSummary(emptySummary);
+      setOverview(null);
+      setLoading(false);
+      return;
+    }
+    const requestId = ++movementRequestId.current;
     setLoading(true);
     try {
       const result = await financialClosureService.movements({ from, to, direction, search: debouncedSearch, page, limit: 25 });
+      if (requestId !== movementRequestId.current) return;
       setRows(result.items);
       setTotal(result.total);
       setSummary(result.summary);
+      setOverview(result.overview);
     } catch (error) {
+      if (requestId !== movementRequestId.current) return;
+      setRows([]);
+      setTotal(0);
+      setSummary(emptySummary);
+      setOverview(null);
       toast.error(financialClosureError(error));
-    } finally { setLoading(false); }
+    } finally { if (requestId === movementRequestId.current) setLoading(false); }
   }, [from, to, direction, debouncedSearch, page]);
 
   const loadHistory = useCallback(async () => {
@@ -88,13 +109,10 @@ const MonthlyFinancialClosure = () => {
     if (!/^\d{4}-\d{2}$/.test(month)) return;
     let cancelled = false;
     setCurrentClosure(null);
-    Promise.all([financialClosureService.get(month), financialClosureService.get(previousMonth(month))])
-      .then(([current, previous]) => {
+    financialClosureService.get(month)
+      .then((current) => {
         if (cancelled) return;
         setCurrentClosure(current);
-        if (current?.status === "closed") setOpeningBalance((current.openingBalanceCents / 100).toFixed(2));
-        else if (previous?.status === "closed" && from === firstDay(month)) setOpeningBalance((previous.closingBalanceCents / 100).toFixed(2));
-        else setOpeningBalance("0.00");
       })
       .catch((error) => { if (!cancelled) toast.error(financialClosureError(error)); });
     return () => { cancelled = true; };
@@ -102,7 +120,7 @@ const MonthlyFinancialClosure = () => {
 
   const onClose = async () => {
     if (!fullMonth) { toast.error("Selecciona el mes completo para cerrarlo."); return; }
-    if (!Number.isSafeInteger(openingCents)) { toast.error("Escribe un saldo inicial válido."); return; }
+    if (!overview || !Number.isSafeInteger(openingCents)) { toast.error("Espera a que se calculen los saldos del periodo."); return; }
     if (!window.confirm(`¿Cerrar ${month}? Se bloqueará el registro, edición y reversión de movimientos de ese mes.`)) return;
     setClosing(true);
     try {
@@ -152,11 +170,11 @@ const MonthlyFinancialClosure = () => {
   };
 
   const summaryCards = useMemo(() => [
-    { label: "Saldo inicial", value: money(openingCents), tone: "text-slate-800 dark:text-white" },
+    { label: "Saldo antes del rango", value: money(openingCents), tone: "text-slate-800 dark:text-white" },
     { label: "Ingresos del rango", value: money(summary.incomeCents), tone: "text-emerald-700 dark:text-emerald-300" },
     { label: "Egresos del rango", value: money(summary.expenseCents), tone: "text-rose-700 dark:text-rose-300" },
-    { label: "Saldo final estimado", value: money(balanceCents), tone: "text-indigo-700 dark:text-indigo-300" },
-  ], [openingCents, summary, balanceCents]);
+    { label: closedSnapshot ? "Saldo final confirmado" : "Saldo final calculado", value: money(balanceCents), tone: "text-indigo-700 dark:text-indigo-300" },
+  ], [openingCents, summary, balanceCents, closedSnapshot]);
 
   return <section className="mx-auto w-full max-w-7xl space-y-6 pb-10 text-slate-800 dark:text-slate-100">
     <div className="overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-indigo-950 to-indigo-900 p-6 text-white shadow-xl sm:p-8">
@@ -185,6 +203,38 @@ const MonthlyFinancialClosure = () => {
         </div>
       </div>
 
+      <div className="overflow-hidden rounded-2xl border border-indigo-200 bg-white shadow-sm dark:border-indigo-800 dark:bg-slate-800">
+        <div className="bg-gradient-to-r from-indigo-700 to-violet-700 px-5 py-4 text-white sm:px-6">
+          <h2 className="text-lg font-bold">Panorama de saldos</h2>
+          <p className="text-xs text-indigo-100">Base configurada, acumulado histórico y comparación con el mes anterior.</p>
+        </div>
+        <div className="grid gap-3 p-4 sm:grid-cols-3 sm:p-6">
+          <div className="rounded-xl bg-slate-50 p-4 dark:bg-slate-900/70">
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Saldo inicial de cuentas</p>
+            <strong className="mt-2 block text-xl text-slate-900 dark:text-white">{overview ? money(configuredInitialCents) : "—"}</strong>
+            <p className="mt-1 text-xs text-slate-500">De ese total, {money(bankInitialCents)} corresponde a cuentas bancarias.</p>
+          </div>
+          <div className="rounded-xl bg-indigo-50 p-4 dark:bg-indigo-950/40">
+            <p className="text-xs font-semibold uppercase tracking-wide text-indigo-600 dark:text-indigo-300">Saldo histórico al {dateLabel(to)}</p>
+            <strong className="mt-2 block text-xl text-indigo-800 dark:text-indigo-100">{overview ? money(balanceCents) : "—"}</strong>
+            <p className="mt-1 text-xs text-indigo-600 dark:text-indigo-300">Incluye el saldo inicial y todos los movimientos registrados hasta la fecha final.</p>
+          </div>
+          <div className="rounded-xl bg-emerald-50 p-4 dark:bg-emerald-950/30">
+            <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">{overview?.previousMonthIsClosed ? "Conciliación anterior" : "Mes anterior"} · {overview?.previousMonth || "—"}</p>
+            <strong className="mt-2 block text-xl text-emerald-800 dark:text-emerald-100">{overview ? money(overview.previousMonthClosingBalanceCents) : "—"}</strong>
+            <p className="mt-1 text-xs text-emerald-700 dark:text-emerald-300">{overview?.previousMonthIsClosed ? "Saldo confirmado en el cierre" : "Saldo calculado"} · +{money(overview?.previousMonthIncomeCents ?? 0)} / −{money(overview?.previousMonthExpenseCents ?? 0)}</p>
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-x-6 gap-y-2 border-t border-slate-100 px-5 py-4 text-xs text-slate-600 dark:border-slate-700 dark:text-slate-300 sm:px-6">
+          <span>Ingresos históricos: <strong className="text-emerald-700 dark:text-emerald-300">{money(historicalIncomeCents)}</strong></span>
+          <span>Egresos históricos: <strong className="text-rose-700 dark:text-rose-300">{money(historicalExpenseCents)}</strong></span>
+          <span>Variación del rango: <strong>{money(summary.incomeCents - summary.expenseCents)}</strong></span>
+        </div>
+        {!!overview?.accounts.length && <details className="border-t border-slate-100 px-5 py-3 text-xs dark:border-slate-700 sm:px-6"><summary className="cursor-pointer font-semibold text-indigo-700 dark:text-indigo-300">Ver saldos iniciales por cuenta (configuración actual)</summary><div className="mt-3 grid gap-2 sm:grid-cols-2">{overview.accounts.map((account) => <div key={account.id} className="flex items-center justify-between gap-3 rounded-lg bg-slate-50 px-3 py-2 dark:bg-slate-900"><span>{account.name}{account.type === "bank" ? " · Banco" : ""}</span><strong>{money(account.initialBalanceCents)}</strong></div>)}</div></details>}
+      </div>
+
+      {historicalDrift && <div role="alert" className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-200">Los movimientos o saldos iniciales actuales no coinciden con el cierre guardado. Se muestran los importes confirmados en el cierre.</div>}
+
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">{summaryCards.map((card) => <div key={card.label} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800 sm:p-5"><p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{card.label}</p><p className={`mt-3 text-lg font-bold sm:text-xl ${card.tone}`}>{card.value}</p></div>)}</div>
 
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
@@ -195,7 +245,7 @@ const MonthlyFinancialClosure = () => {
         <div className="flex items-center justify-between border-t border-slate-200 px-4 py-3 text-sm dark:border-slate-700 sm:px-6"><span>Página {page} de {totalPages}</span><div className="flex gap-2"><button type="button" disabled={page <= 1 || loading} onClick={() => setPage(page - 1)} className="rounded-lg border px-3 py-1.5 disabled:opacity-40">Anterior</button><button type="button" disabled={page >= totalPages || loading} onClick={() => setPage(page + 1)} className="rounded-lg border px-3 py-1.5 disabled:opacity-40">Siguiente</button></div></div>
       </div>
 
-      <div className="rounded-2xl border border-indigo-200 bg-indigo-50 p-5 dark:border-indigo-800 dark:bg-indigo-950/30 sm:p-6"><div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"><div><h2 className="text-lg font-semibold">Cerrar el mes</h2><p className="mt-1 max-w-xl text-sm text-slate-600 dark:text-slate-300">Al cerrar, no se podrán registrar, editar ni revertir pagos y egresos de ese mes hasta autorizar su reapertura por WhatsApp.</p></div><label className="text-sm font-medium">Saldo inicial (MXN)<input type="number" step="0.01" value={openingBalance} disabled={currentClosure?.status === "closed"} onChange={(event) => setOpeningBalance(event.target.value)} className="mt-2 block w-full rounded-xl border border-indigo-200 bg-white px-3 py-2.5 text-slate-900 dark:border-indigo-700 dark:bg-slate-900 dark:text-white sm:w-48" /></label></div>
+      <div className="rounded-2xl border border-indigo-200 bg-indigo-50 p-5 dark:border-indigo-800 dark:bg-indigo-950/30 sm:p-6"><div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"><div><h2 className="text-lg font-semibold">Cerrar el mes</h2><p className="mt-1 max-w-xl text-sm text-slate-600 dark:text-slate-300">Al cerrar, no se podrán registrar, editar ni revertir pagos y egresos de ese mes hasta autorizar su reapertura por WhatsApp.</p></div><div className="rounded-xl border border-indigo-200 bg-white px-4 py-3 dark:border-indigo-700 dark:bg-slate-900"><p className="text-xs text-slate-500">Saldo inicial calculado</p><strong className="mt-1 block text-lg text-indigo-800 dark:text-indigo-200">{money(openingCents)}</strong></div></div>
         {!fullMonth && <p className="mt-3 text-xs font-medium text-amber-700 dark:text-amber-300">Para cerrar, selecciona desde {firstDay(month)} hasta {lastDay(month)}.</p>}
         <div className="mt-5 flex flex-wrap items-center justify-between gap-3"><span className="text-xs text-slate-600 dark:text-slate-300">Saldo final: <strong>{money(balanceCents)}</strong></span><button type="button" onClick={onClose} disabled={closing || loading || !fullMonth || currentClosure?.status === "closed" || !summary.digest} className="rounded-xl bg-indigo-700 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-indigo-800 disabled:cursor-not-allowed disabled:opacity-50">{currentClosure?.status === "closed" ? "Mes cerrado" : closing ? "Cerrando..." : "Confirmar cierre"}</button></div>
       </div>

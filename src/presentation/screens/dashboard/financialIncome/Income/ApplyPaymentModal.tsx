@@ -120,14 +120,12 @@ const ApplyPaymentModal = ({
     fetchUserCharges,
     financialAccounts,
     fetchFinancialAccounts,
-    editUnidentifiedPayment, // <--- Función para editar pago no identificado
   } = usePaymentStore((state) => ({
     charges: state.charges,
     addMaintenancePayment: state.addMaintenancePayment,
     fetchUserCharges: state.fetchUserCharges,
     financialAccounts: state.financialAccounts,
     fetchFinancialAccounts: state.fetchFinancialAccounts,
-    editUnidentifiedPayment: state.editUnidentifiedPayment,
   }));
 
   const { fetchSummary, selectedYear } = usePaymentSummaryStore((state) => ({
@@ -343,6 +341,7 @@ const ApplyPaymentModal = ({
         creditUsed,
         attachmentPayment: finalAttachment,
         appliedToUser: "true",
+        sourceUnidentifiedPaymentId: propPaymentId,
         ...(String(selectedUser?.tower || "").trim().length > 0 && {
           towerSnapshot: String(selectedUser?.tower || "").trim(),
         }),
@@ -351,10 +350,8 @@ const ApplyPaymentModal = ({
       // (1) Crear el pago identificado para el usuario
       await addMaintenancePayment(paymentObj);
 
-      // (2) Si existe paymentId (pago no identificado), lo editamos
+      // El servidor marca el pago de origen como aplicado dentro de la operación protegida.
       if (propPaymentId) {
-        await editUnidentifiedPayment(propPaymentId);
-
         // Guardar trazabilidad adicional para mostrar en detalle de pagos no identificados
         try {
           const auth = getAuth();

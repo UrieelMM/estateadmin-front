@@ -69,6 +69,7 @@ export type MaintenancePayment = {
   id?: string;
 
   paymentGroupId?: string;
+  sourceUnidentifiedPaymentId?: string;
   towerSnapshot?: string;
 
   startAts?: string[];
@@ -387,6 +388,9 @@ export const usePaymentStore = create<MaintenancePaymentState>()(
           payment.paymentGroupId ||
           `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
         formData.append("paymentGroupId", paymentGroupId);
+        if (payment.sourceUnidentifiedPaymentId) {
+          formData.append("sourceUnidentifiedPaymentId", payment.sourceUnidentifiedPaymentId);
+        }
 
         formData.append(
           "useCreditBalance",
@@ -556,11 +560,6 @@ export const usePaymentStore = create<MaintenancePaymentState>()(
           formData,
           { headers: { "Content-Type": "multipart/form-data" } }
         );
-
-        // Si es un pago NO identificado que se está aplicando, llamamos updateUnidentifiedPayment
-        if (payment.isUnidentifiedPayment && payment.id) {
-          await get().updateUnidentifiedPayment(payment, payment.id);
-        }
 
         // Recargar cargos asociados al usuario
         await get().fetchUserCharges(payment.numberCondominium, payment.userId);
