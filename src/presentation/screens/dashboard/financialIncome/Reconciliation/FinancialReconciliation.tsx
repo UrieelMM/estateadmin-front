@@ -4,6 +4,7 @@ import * as XLSX from "xlsx";
 import PaymentReconciliation from "../Income/PaymentReconciliation";
 import ExpenseReconciliation from "./ExpenseReconciliation";
 import ReconciliationHistory from "./ReconciliationHistory";
+import MonthlyFinancialClosure from "./MonthlyFinancialClosure";
 
 const TEMPLATE_ROWS: Array<Record<string, string | number>> = [
   { Fecha: "2026-02-01", Descripcion: "SALDO INICIAL", Referencia: "", Cargo: 0, Abono: 0, Saldo: 11200.1 },
@@ -65,18 +66,40 @@ const FinancialReconciliation = () => {
   } | null>(null);
   const pathSegments = location.pathname.split("/").filter(Boolean);
   const tabSlug = pathSegments[2] || "";
+  const isChooser = !tabSlug;
+  const isMonthly = tabSlug === "monthly";
   const activeTab: ReconciliationTabId =
     RECONCILIATION_PATH_TO_TAB[tabSlug] || "income";
 
   useEffect(() => {
+    if (isChooser || isMonthly) return;
     const targetPath = RECONCILIATION_TAB_PATHS[activeTab];
     if (location.pathname !== targetPath) {
       navigate(targetPath, { replace: true, state: null });
     }
-  }, [activeTab, location.pathname, navigate]);
+  }, [activeTab, isChooser, isMonthly, location.pathname, navigate]);
+
+  if (isChooser) {
+    return <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
+      <div className="rounded-3xl bg-gradient-to-br from-slate-900 via-indigo-950 to-indigo-900 p-7 text-white shadow-xl sm:p-10">
+        <p className="text-xs font-bold uppercase tracking-[0.2em] text-indigo-200">Finanzas del condominio</p>
+        <h1 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">Conciliación bancaria</h1>
+        <p className="mt-3 max-w-2xl text-sm leading-6 text-indigo-100">Elige cómo revisar tus movimientos. Ambos métodos conservan su historial y se pueden consultar cuando lo necesites.</p>
+      </div>
+      <div className="mt-6 grid gap-5 md:grid-cols-2">
+        <button type="button" onClick={() => navigate(RECONCILIATION_TAB_PATHS.income)} className="group rounded-3xl border border-slate-200 bg-white p-6 text-left shadow-sm transition hover:-translate-y-1 hover:border-indigo-300 hover:shadow-lg dark:border-slate-700 dark:bg-slate-800 dark:hover:border-indigo-600 sm:p-8"><span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-100 text-2xl dark:bg-indigo-900/50">↔</span><h2 className="mt-5 text-xl font-bold text-slate-900 dark:text-white">Conciliación con archivo</h2><p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">Compara el estado de cuenta bancario con los movimientos registrados, identifica coincidencias y conserva tus conciliaciones previas.</p><span className="mt-6 inline-block text-sm font-semibold text-indigo-700 dark:text-indigo-300">Acceder →</span></button>
+        <button type="button" onClick={() => navigate("/dashboard/reconciliation/monthly")} className="group rounded-3xl border border-emerald-200 bg-white p-6 text-left shadow-sm transition hover:-translate-y-1 hover:border-emerald-400 hover:shadow-lg dark:border-emerald-900 dark:bg-slate-800 sm:p-8"><span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-100 text-2xl dark:bg-emerald-900/50">▦</span><h2 className="mt-5 text-xl font-bold text-slate-900 dark:text-white">Cierre mensual</h2><p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">Revisa ingresos, egresos y saldos por fecha; cierra el mes y protégelo contra cambios hasta su reapertura autorizada.</p><span className="mt-6 inline-block text-sm font-semibold text-emerald-700 dark:text-emerald-300">Acceder →</span></button>
+      </div>
+    </div>;
+  }
+
+  if (isMonthly) {
+    return <div className="px-4 py-5 sm:px-6 lg:px-8"><button type="button" onClick={() => navigate("/dashboard/reconciliation")} className="mb-5 text-sm font-semibold text-indigo-700 hover:underline dark:text-indigo-300">← Elegir tipo de conciliación</button><MonthlyFinancialClosure /></div>;
+  }
 
   return (
     <div className="px-4 shadow-lg rounded-md sm:px-6 pb-4 lg:px-8">
+      <button type="button" onClick={() => navigate("/dashboard/reconciliation")} className="mb-4 text-sm font-semibold text-indigo-700 hover:underline dark:text-indigo-300">← Elegir tipo de conciliación</button>
       <header className="bg-gray-50 font-medium shadow-lg flex w-full min-h-16 py-3 justify-between px-4 rounded-md items-center mb-6 dark:shadow-2xl dark:bg-gray-800 dark:text-gray-100 gap-4 flex-wrap">
         <div>
           <p className="text-md">Conciliación Financiera</p>

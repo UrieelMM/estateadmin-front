@@ -13,6 +13,7 @@ import {
 } from "firebase/firestore";
 import axios from "axios";
 import * as Sentry from "@sentry/react";
+import { assertFinancialMonthOpen } from "../services/financialClosureService";
 
 export type Charge = {
   id: string;
@@ -293,6 +294,7 @@ export const usePaymentStore = create<MaintenancePaymentState>()(
 
     updateUnidentifiedPayment: async (payment, paymentId) => {
       try {
+        await assertFinancialMonthOpen(payment.paymentDate || "");
         const auth = getAuth();
         const user = auth.currentUser;
         if (!user) throw new Error("Usuario no autenticado");
@@ -339,6 +341,7 @@ export const usePaymentStore = create<MaintenancePaymentState>()(
     addMaintenancePayment: async (payment) => {
       set({ loading: true, error: null });
       try {
+        await assertFinancialMonthOpen(payment.paymentDate || "");
         if (!payment.paymentType) {
           throw new Error("El campo tipo de pago es obligatorio.");
         }

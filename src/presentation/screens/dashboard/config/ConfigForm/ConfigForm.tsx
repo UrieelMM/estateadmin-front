@@ -125,6 +125,7 @@ const ConfigForm = () => {
   const [ condominiumName, setCondominiumName ] = useState( "" );
   const [ condominiumAddress, setCondominiumAddress ] = useState( "" );
   const [ condominiumManager, setCondominiumManager ] = useState( "" );
+  const [ reconciliationWhatsappPhone, setReconciliationWhatsappPhone ] = useState( "" );
   const [ condominiumUid, setCondominiumUid ] = useState( "" );
   const [ condominiumLimit, setCondominiumLimit ] = useState<number>( 0 );
   const [ condominiumCreatedDate, setCondominiumCreatedDate ] =
@@ -173,6 +174,7 @@ const ConfigForm = () => {
     setCondominiumName( condominiumConfig.name || "" );
     setCondominiumAddress( condominiumConfig.address || "" );
     setCondominiumManager( condominiumConfig.condominiumManager || "" );
+    setReconciliationWhatsappPhone( condominiumConfig.reconciliationWhatsappPhone || "" );
     setCondominiumUid( condominiumConfig.uid || "" );
     setCondominiumLimit( Number( condominiumConfig.condominiumLimit || 0 ) );
     setCondominiumCreatedDate( condominiumConfig.createdDate || null );
@@ -249,6 +251,11 @@ const ConfigForm = () => {
       toast.error( "El nombre del condominio es obligatorio." );
       return;
     }
+    const whatsappDigits = reconciliationWhatsappPhone.replace( /\D/g, "" );
+    if ( whatsappDigits && !/^\d{10,15}$/.test( whatsappDigits ) ) {
+      toast.error( "Escribe un número de WhatsApp con lada de país (10 a 15 dígitos)." );
+      return;
+    }
 
     try {
       setIsUpdatingCondominium( true );
@@ -256,6 +263,7 @@ const ConfigForm = () => {
         name: condominiumName.trim(),
         address: condominiumAddress.trim(),
         condominiumManager: condominiumManager.trim(),
+        reconciliationWhatsappPhone: whatsappDigits,
       } );
       await fetchCondominiumConfig();
       await fetchCondominiums();
@@ -615,6 +623,25 @@ const ConfigForm = () => {
                       Esta sección administra únicamente datos del condominio seleccionado, no de la empresa administradora.
                     </p>
                   </div>
+                </div>
+
+                <div className="mb-6 rounded-2xl border border-indigo-200 bg-indigo-50/70 p-4 dark:border-indigo-800 dark:bg-indigo-950/30 sm:p-5">
+                  <label htmlFor="reconciliationWhatsappPhone" className="block text-sm font-semibold text-gray-900 dark:text-gray-100">
+                    WhatsApp del administrador responsable de cierres
+                  </label>
+                  <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">
+                    Aquí se enviará el código para reabrir un mes cerrado. Incluye la lada de país.
+                  </p>
+                  <input
+                    id="reconciliationWhatsappPhone"
+                    type="tel"
+                    inputMode="tel"
+                    autoComplete="tel"
+                    value={ reconciliationWhatsappPhone }
+                    onChange={ ( event ) => setReconciliationWhatsappPhone( event.target.value ) }
+                    placeholder="Ej. 5215512345678"
+                    className="mt-3 w-full rounded-xl border border-indigo-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:border-indigo-700 dark:bg-gray-800 dark:text-white sm:max-w-md"
+                  />
                 </div>
 
                 <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-indigo-200 dark:border-indigo-800 shadow-sm space-y-6">

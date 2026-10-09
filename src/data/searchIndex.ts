@@ -157,6 +157,15 @@ export const SEARCH_INDEX: SearchItem[] = [
 
   // ─── Finanzas › Conciliación ───────────────────────────────────────────────
   {
+    id: "reconciliation-overview",
+    title: "Conciliación bancaria",
+    section: "Finanzas",
+    subsection: "Conciliación",
+    breadcrumb: "Finanzas › Conciliación",
+    href: "/dashboard/reconciliation",
+    keywords: ["conciliación", "cierre mensual", "saldo histórico", "banco"],
+  },
+  {
     id: "reconciliation-income",
     title: "Conciliación de ingresos",
     section: "Finanzas",

@@ -15,6 +15,7 @@ import {
 } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { emitDomainNotificationEvent } from "../services/notificationCenterService";
+import { assertFinancialMonthOpen } from "../services/financialClosureService";
 
 /**
  * Tipos de datos para un egreso
@@ -190,6 +191,7 @@ export const useExpenseStore = create<ExpenseState>()((set, get) => ({
       const clientId = tokenResult.claims["clientId"] as string;
       const condominiumId = localStorage.getItem("condominiumId");
       if (!condominiumId) throw new Error("Condominio no seleccionado");
+      await assertFinancialMonthOpen(data.expenseDate);
 
       const db = getFirestore();
       const expensesRef = collection(
@@ -324,6 +326,8 @@ export const useExpenseStore = create<ExpenseState>()((set, get) => ({
       }
 
       const currentData = currentSnap.data();
+      await assertFinancialMonthOpen(String(currentData.expenseDate || ""));
+      if (data.expenseDate) await assertFinancialMonthOpen(data.expenseDate);
       const folio = currentData.folio || expenseId;
 
       let invoiceUrl = data.invoiceUrl;
@@ -389,6 +393,7 @@ export const useExpenseStore = create<ExpenseState>()((set, get) => ({
 
       const currentSnap = await getDoc(expenseDocRef);
       if (currentSnap.exists()) {
+        await assertFinancialMonthOpen(String(currentSnap.data().expenseDate || ""));
         await deleteDoc(expenseDocRef);
       }
 

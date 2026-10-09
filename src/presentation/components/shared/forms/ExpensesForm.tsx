@@ -351,9 +351,9 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ open, setOpen }) => {
       // Cerrar el formulario después de agregar el egreso
       setOpen(false);
       toast.success("Egreso registrado correctamente");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error al crear egreso:", error);
-      toast.error("Ocurrió un error al registrar el egreso.");
+      toast.error(error?.message || "Ocurrió un error al registrar el egreso.");
     } finally {
       setLoading(false);
     }

@@ -30,7 +30,7 @@ export const navigation = [
       { name: "Ingresos", href: "/dashboard/income/summary" },
       { name: "Caja Chica", href: "/dashboard/pettycash/dashboard" },
       { name: "Egresos", href: "/dashboard/expenses/summary" },
-      { name: "Conciliación", href: "/dashboard/reconciliation/income" },
+      { name: "Conciliación", href: "/dashboard/reconciliation" },
       { name: "Balance General", href: "/dashboard/balance/summary" },
       { name: "Cargos", href: "/dashboard/charges" },
       {
