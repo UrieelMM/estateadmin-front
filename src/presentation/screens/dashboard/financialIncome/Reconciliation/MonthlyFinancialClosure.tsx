@@ -177,15 +177,15 @@ const MonthlyFinancialClosure = () => {
   ], [openingCents, summary, balanceCents, closedSnapshot]);
 
   return <section className="mx-auto w-full max-w-7xl space-y-6 pb-10 text-slate-800 dark:text-slate-100">
-    <div className="overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-indigo-950 to-indigo-900 p-6 text-white shadow-xl sm:p-8">
+    <div className="overflow-hidden rounded-3xl border border-indigo-100 bg-gradient-to-br from-white via-indigo-50 to-sky-50 p-6 text-slate-900 shadow-sm dark:border-indigo-900 dark:from-slate-900 dark:via-indigo-950 dark:to-indigo-900 dark:text-white dark:shadow-xl sm:p-8">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div><span className="rounded-full border border-white/25 px-3 py-1 text-xs font-semibold tracking-wide text-indigo-100">CIERRE MENSUAL</span>
+        <div><span className="rounded-full border border-indigo-200 bg-white/70 px-3 py-1 text-xs font-semibold tracking-wide text-indigo-700 dark:border-white/25 dark:bg-white/10 dark:text-indigo-100">CIERRE MENSUAL</span>
           <h1 className="mt-4 text-2xl font-bold tracking-tight sm:text-3xl">Movimientos y saldos del condominio</h1>
-          <p className="mt-2 max-w-2xl text-sm text-indigo-100">Consulta ingresos y egresos por fecha, revisa el detalle y cierra el mes cuando los saldos estén correctos.</p>
+          <p className="mt-2 max-w-2xl text-sm text-slate-600 dark:text-indigo-100">Consulta ingresos y egresos por fecha, revisa el detalle y cierra el mes cuando los saldos estén correctos.</p>
         </div>
-        <div className="flex rounded-xl bg-white/10 p-1 text-sm" role="tablist" aria-label="Secciones de cierre mensual">
-          <button type="button" onClick={() => setActiveView("movements")} className={`rounded-lg px-4 py-2 font-semibold ${activeView === "movements" ? "bg-white text-indigo-900" : "text-white hover:bg-white/10"}`}>Movimientos</button>
-          <button type="button" onClick={() => setActiveView("history")} className={`rounded-lg px-4 py-2 font-semibold ${activeView === "history" ? "bg-white text-indigo-900" : "text-white hover:bg-white/10"}`}>Cierres</button>
+        <div className="flex rounded-xl bg-indigo-100/70 p-1 text-sm dark:bg-white/10" role="tablist" aria-label="Secciones de cierre mensual">
+          <button type="button" onClick={() => setActiveView("movements")} className={`rounded-lg px-4 py-2 font-semibold ${activeView === "movements" ? "bg-white text-indigo-900 shadow-sm" : "text-indigo-700 hover:bg-white/70 dark:text-white dark:hover:bg-white/10"}`}>Movimientos</button>
+          <button type="button" onClick={() => setActiveView("history")} className={`rounded-lg px-4 py-2 font-semibold ${activeView === "history" ? "bg-white text-indigo-900 shadow-sm" : "text-indigo-700 hover:bg-white/70 dark:text-white dark:hover:bg-white/10"}`}>Cierres</button>
         </div>
       </div>
     </div>
