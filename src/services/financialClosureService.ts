@@ -113,7 +113,7 @@ export const financialClosureService = {
   },
   async requestReopen(month: string) {
     const { tenant, http } = await api();
-    const { data } = await http.post<{ sent: boolean; phoneLast4: string; expiresInSeconds: number }>(`/financial-closures/${month}/request-reopen`, {
+    const { data } = await http.post<{ sent: boolean; emailMasked: string; expiresInSeconds: number }>(`/financial-closures/${month}/request-reopen`, {
       clientId: tenant.clientId, condominiumId: tenant.condominiumId,
     });
     return data;

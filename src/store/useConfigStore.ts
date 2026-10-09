@@ -81,7 +81,7 @@ export type CondominiumConfig = {
   createdDate: Date | null;
   proFunctions: string[];
   condominiumManager?: string;
-  reconciliationWhatsappPhone?: string;
+  reconciliationAdminEmail?: string;
   hasMaintenanceApp?: boolean;
   maintenanceAppContractedAt?: Date | null;
 };
@@ -125,7 +125,7 @@ type ConfigState = {
     logoReportsFile?: File
   ) => Promise<void>;
   updateCondominiumConfig: (
-    data: Partial<Pick<CondominiumConfig, "name" | "address" | "condominiumManager" | "reconciliationWhatsappPhone">>
+    data: Partial<Pick<CondominiumConfig, "name" | "address" | "condominiumManager" | "reconciliationAdminEmail">>
   ) => Promise<void>;
   updatePaymentMessageInfo: (
     data: Omit<PaymentMessageInfo, "updatedAt">
@@ -378,7 +378,7 @@ export const useConfigStore = create<ConfigState>()((set, get) => ({
               data.administrator ||
               ""
           ),
-          reconciliationWhatsappPhone: String(data.reconciliationWhatsappPhone || ""),
+          reconciliationAdminEmail: String(data.reconciliationAdminEmail || ""),
           hasMaintenanceApp: Boolean(data.hasMaintenanceApp),
           maintenanceAppContractedAt:
             data.maintenanceAppContractedAt?.toDate &&
@@ -430,8 +430,8 @@ export const useConfigStore = create<ConfigState>()((set, get) => ({
       if (data.condominiumManager !== undefined) {
         updatePayload.condominiumManager = String(data.condominiumManager).trim();
       }
-      if (data.reconciliationWhatsappPhone !== undefined) {
-        updatePayload.reconciliationWhatsappPhone = String(data.reconciliationWhatsappPhone).replace(/\D/g, "");
+      if (data.reconciliationAdminEmail !== undefined) {
+        updatePayload.reconciliationAdminEmail = String(data.reconciliationAdminEmail).trim().toLowerCase();
       }
 
       if (Object.keys(updatePayload).length === 0) {
