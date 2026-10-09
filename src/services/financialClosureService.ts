@@ -12,9 +12,12 @@ export type LedgerMovement = {
   reference: string;
   accountId: string;
   description: string;
+  matched: boolean;
+  matchLocked: boolean;
 };
 export type MovementDirection = "income" | "expense";
 export type ClosureDirection = MovementDirection | "all";
+export type MatchStatus = "all" | "matched" | "unmatched";
 
 export type LedgerSummary = {
   incomeCents: number;
@@ -97,12 +100,18 @@ export const assertFinancialMonthOpen = async (dateValue: string, direction: Mov
 };
 
 export const financialClosureService = {
-  async movements(filters: { from: string; to: string; direction: ClosureDirection; search: string; page: number; limit: number }) {
+  async movements(filters: { from: string; to: string; direction: ClosureDirection; matchStatus: MatchStatus; search: string; page: number; limit: number }) {
     const { tenant, http } = await api();
-    const { data } = await http.get<{ items: LedgerMovement[]; total: number; page: number; limit: number; summary: LedgerSummary; overview: FinancialPeriodOverview }>("/financial-closures/movements", {
+    const { data } = await http.get<{ items: LedgerMovement[]; total: number; page: number; limit: number; summary: LedgerSummary; overview: FinancialPeriodOverview; matchSummary: { matched: number; unmatched: number } }>("/financial-closures/movements", {
       params: { clientId: tenant.clientId, condominiumId: tenant.condominiumId, ...filters },
     });
     return data;
+  },
+  async setMovementMatched(movementId: string, date: string, matched: boolean) {
+    const { tenant, http } = await api();
+    await http.post("/financial-closures/movements/match", {
+      clientId: tenant.clientId, condominiumId: tenant.condominiumId, movementId, date, matched,
+    });
   },
   async list(direction: ClosureDirection, page = 1, limit = 10) {
     const { tenant, http } = await api();

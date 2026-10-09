@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import {
   ClosureDirection, ClosureRecord, FinancialPeriodOverview, financialClosureError, financialClosureService,
-  LedgerMovement, LedgerSummary,
+  LedgerMovement, LedgerSummary, MatchStatus,
 } from "../../../../../services/financialClosureService";
 
 const today = new Date();
@@ -23,10 +23,13 @@ const MonthlyFinancialClosure = () => {
   const [direction, setDirection] = useState<ClosureDirection>("income");
   const [historyDirection, setHistoryDirection] = useState<ClosureDirection>("income");
   const [search, setSearch] = useState("");
+  const [matchStatus, setMatchStatus] = useState<MatchStatus>("all");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [page, setPage] = useState(1);
   const [rows, setRows] = useState<LedgerMovement[]>([]);
   const [total, setTotal] = useState(0);
+  const [matchSummary, setMatchSummary] = useState({ matched: 0, unmatched: 0 });
+  const [pendingMatches, setPendingMatches] = useState<Set<string>>(() => new Set());
   const [summary, setSummary] = useState<LedgerSummary>(emptySummary);
   const [loading, setLoading] = useState(false);
   const [closing, setClosing] = useState(false);
@@ -75,6 +78,7 @@ const MonthlyFinancialClosure = () => {
       movementRequestId.current += 1;
       setRows([]);
       setTotal(0);
+      setMatchSummary({ matched: 0, unmatched: 0 });
       setSummary(emptySummary);
       setOverview(null);
       setLoading(false);
@@ -83,21 +87,23 @@ const MonthlyFinancialClosure = () => {
     const requestId = ++movementRequestId.current;
     setLoading(true);
     try {
-      const result = await financialClosureService.movements({ from, to, direction, search: debouncedSearch, page, limit: 25 });
+      const result = await financialClosureService.movements({ from, to, direction, matchStatus, search: debouncedSearch, page, limit: 25 });
       if (requestId !== movementRequestId.current) return;
       setRows(result.items);
       setTotal(result.total);
+      setMatchSummary(result.matchSummary);
       setSummary(result.summary);
       setOverview(result.overview);
     } catch (error) {
       if (requestId !== movementRequestId.current) return;
       setRows([]);
       setTotal(0);
+      setMatchSummary({ matched: 0, unmatched: 0 });
       setSummary(emptySummary);
       setOverview(null);
       toast.error(financialClosureError(error));
     } finally { if (requestId === movementRequestId.current) setLoading(false); }
-  }, [from, to, direction, debouncedSearch, page]);
+  }, [from, to, direction, matchStatus, debouncedSearch, page]);
 
   const loadHistory = useCallback(async () => {
     const requestId = ++historyRequestId.current;
@@ -137,6 +143,7 @@ const MonthlyFinancialClosure = () => {
       toast.success(`${direction === "income" ? "Ingresos" : "Egresos"} de ${month} cerrados correctamente.`);
       const closure = await financialClosureService.get(month, direction);
       setCurrentClosure(closure);
+      await loadMovements();
       await loadHistory();
     } catch (error) { toast.error(financialClosureError(error)); }
     finally { setClosing(false); }
@@ -165,6 +172,7 @@ const MonthlyFinancialClosure = () => {
       }
       setReopenTarget(null);
       setReopenCode("");
+      await loadMovements();
       await loadHistory();
     } catch (error) { toast.error(financialClosureError(error)); }
     finally { setReopening(false); }
@@ -196,6 +204,21 @@ const MonthlyFinancialClosure = () => {
   const movementParty = (row: LedgerMovement) => row.type === "expense"
     ? overview?.accounts.find((account) => account.id === row.accountId)?.name || row.accountId || "—"
     : row.condominiumUnit || "—";
+  const toggleMatch = async (row: LedgerMovement) => {
+    if (row.matchLocked || pendingMatches.size > 0 || direction === "all") return;
+    const next = !row.matched;
+    setPendingMatches((current) => new Set(current).add(row.id));
+    setRows((current) => current.map((item) => item.id === row.id ? { ...item, matched: next } : item));
+    try {
+      await financialClosureService.setMovementMatched(row.id, row.date, next);
+      await loadMovements();
+    } catch (error) {
+      setRows((current) => current.map((item) => item.id === row.id ? { ...item, matched: row.matched } : item));
+      toast.error(financialClosureError(error));
+    } finally {
+      setPendingMatches((current) => { const updated = new Set(current); updated.delete(row.id); return updated; });
+    }
+  };
   const summaryCards = useMemo(() => direction === "all" ? [
     { label: "Saldo global antes del rango", value: money(openingCents), tone: "text-slate-800 dark:text-white" },
     { label: "Ingresos del rango", value: money(summary.incomeCents), tone: "text-emerald-700 dark:text-emerald-300" },
@@ -249,6 +272,11 @@ const MonthlyFinancialClosure = () => {
         {!!overview?.accounts.length && <details className="border-t border-slate-100 px-5 py-3 text-xs dark:border-slate-700 sm:px-6"><summary className="cursor-pointer font-semibold text-indigo-700 dark:text-indigo-300">Ver base inicial por cuenta</summary><div className="mt-3 grid gap-2 sm:grid-cols-2">{overview.accounts.map((account) => <div key={account.id} className="flex items-center justify-between gap-3 rounded-lg bg-slate-50 px-3 py-2 dark:bg-slate-900"><span>{account.name}{account.type === "bank" ? " · Banco" : ""}</span><strong>{money(account.initialBalanceCents)}</strong></div>)}</div></details>}
       </div>
 
+      <div className="space-y-5 rounded-3xl border-2 border-indigo-200 bg-indigo-50/40 p-4 shadow-sm dark:border-indigo-700 dark:bg-indigo-950/20 sm:p-6">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-indigo-200 pb-4 dark:border-indigo-700">
+        <div><p className="text-xs font-bold uppercase tracking-wider text-indigo-700 dark:text-indigo-300">Cierre actual · {selectedLabel}</p><p className="mt-1 text-sm text-slate-600 dark:text-slate-300">Del {dateLabel(from)} al {dateLabel(to)} · Cifras y movimientos de este periodo</p></div>
+        <span className={`rounded-full px-3 py-1 text-xs font-semibold ${periodClosure?.status === "closed" ? "bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-200" : "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200"}`}>{periodClosure?.status === "closed" ? "Periodo cerrado" : "En preparación"}</span>
+      </div>
       <div className="rounded-2xl border border-indigo-200 bg-indigo-50/70 p-5 dark:border-indigo-800 dark:bg-indigo-950/30 sm:p-6">
         <h2 className="text-lg font-bold">Conciliación de {selectedLabel}</h2>
         <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">{direction === "all" ? "Este cierre histórico combina ingresos y egresos. Los nuevos cierres se hacen por separado." : `Las siguientes cifras contienen únicamente ${selectedLabel}. El cierre guarda este acumulado y los movimientos de este tipo. La búsqueda solo filtra la tabla.`}</p>
@@ -263,9 +291,14 @@ const MonthlyFinancialClosure = () => {
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">{summaryCards.map((card) => <div key={card.label} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800 sm:p-5"><p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{card.label}</p><p className={`mt-3 text-lg font-bold sm:text-xl ${card.tone}`}>{card.value}</p></div>)}</div>
 
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 px-4 py-4 dark:border-slate-700 sm:px-6"><div><h2 className="font-semibold">Detalle de movimientos</h2><p className="text-xs text-slate-500 dark:text-slate-400">{direction === "all" ? `${summary.incomeCount} ingresos · ${summary.expenseCount} egresos` : `${direction === "income" ? summary.incomeCount : summary.expenseCount} ${selectedLabel}`} en el rango</p></div><span className="text-xs text-slate-500">{loading ? "Cargando..." : `${total} resultados`}</span></div>
-        <div className="hidden overflow-x-auto md:block"><table className="w-full min-w-[820px] text-left text-sm"><thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500 dark:bg-slate-900/60 dark:text-slate-400"><tr><th className="px-5 py-3">Fecha</th><th className="px-5 py-3">Tipo</th><th className="px-5 py-3">Concepto</th><th className="px-5 py-3">{unitLabel}</th><th className="px-5 py-3">Referencia</th><th className="px-5 py-3 text-right">Monto</th></tr></thead><tbody className="divide-y divide-slate-100 dark:divide-slate-700">{rows.map((row) => <tr key={row.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/40"><td className="whitespace-nowrap px-5 py-4">{dateLabel(row.date)}</td><td className="px-5 py-4"><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${row.type === "income" ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300" : "bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-300"}`}>{row.type === "income" ? "Ingreso" : "Egreso"}</span></td><td className="max-w-64 px-5 py-4"><span className="font-medium">{row.concept}</span>{row.description && <span className="mt-1 block truncate text-xs text-slate-500" title={row.description}>{row.description}</span>}</td><td className="px-5 py-4">{movementParty(row)}</td><td className="max-w-40 truncate px-5 py-4" title={row.reference}>{row.reference || "—"}</td><td className={`whitespace-nowrap px-5 py-4 text-right font-semibold ${row.type === "income" ? "text-emerald-700 dark:text-emerald-300" : "text-rose-700 dark:text-rose-300"}`}>{row.type === "income" ? "+" : "−"}{money(row.amount)}</td></tr>)}</tbody></table></div>
-        <div className="divide-y divide-slate-100 dark:divide-slate-700 md:hidden">{rows.map((row) => <article key={row.id} className="space-y-2 p-4"><div className="flex items-start justify-between gap-3"><div><p className="text-xs text-slate-500">{dateLabel(row.date)} · {row.type === "income" ? "Ingreso" : "Egreso"}</p><h3 className="mt-1 font-semibold">{row.concept}</h3></div><strong className={row.type === "income" ? "text-emerald-700 dark:text-emerald-300" : "text-rose-700 dark:text-rose-300"}>{row.type === "income" ? "+" : "−"}{money(row.amount)}</strong></div><p className="text-xs text-slate-500">{unitLabel}: {movementParty(row)} · Ref.: {row.reference || "—"}</p>{row.description && <p className="text-xs text-slate-500">{row.description}</p>}</article>)}</div>
+        <div className="flex flex-wrap items-end justify-between gap-3 border-b border-slate-200 px-4 py-4 dark:border-slate-700 sm:px-6">
+          <div><h2 className="font-semibold">Detalle de movimientos</h2><p className="text-xs text-slate-500 dark:text-slate-400">{direction === "all" ? `${summary.incomeCount} ingresos · ${summary.expenseCount} egresos` : `${direction === "income" ? summary.incomeCount : summary.expenseCount} ${selectedLabel}`} en el rango · {matchSummary.matched} de {matchSummary.matched + matchSummary.unmatched} cotejados con el estado de cuenta</p></div>
+          <div className="flex w-full flex-wrap items-end gap-3 sm:w-auto"><label className="text-xs font-semibold text-slate-600 dark:text-slate-300">Mostrar
+            <select value={matchStatus} onChange={(event) => { setMatchStatus(event.target.value as MatchStatus); setPage(1); }} className="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 dark:border-slate-600 dark:bg-slate-900 dark:text-white"><option value="all">Todos</option><option value="matched">Conciliados</option><option value="unmatched">Pendientes</option></select>
+          </label><span className="pb-2 text-xs text-slate-500">{loading ? "Cargando..." : `${total} resultados`}</span></div>
+        </div>
+        <div className="hidden overflow-x-auto md:block"><table className="w-full min-w-[920px] text-left text-sm"><thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500 dark:bg-slate-900/60 dark:text-slate-400"><tr><th className="px-5 py-3">Estado de cuenta</th><th className="px-5 py-3">Fecha</th><th className="px-5 py-3">Tipo</th><th className="px-5 py-3">Concepto</th><th className="px-5 py-3">{unitLabel}</th><th className="px-5 py-3">Referencia</th><th className="px-5 py-3 text-right">Monto</th></tr></thead><tbody className="divide-y divide-slate-100 dark:divide-slate-700">{rows.map((row) => <tr key={row.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/40"><td className="px-5 py-4"><label className="flex cursor-pointer items-center gap-2 text-xs font-medium"><input type="checkbox" checked={row.matched} disabled={row.matchLocked || direction === "all" || closing || pendingMatches.size > 0} onChange={() => void toggleMatch(row)} aria-label={`Cotejar ${row.concept} del ${dateLabel(row.date)} con el estado de cuenta`} className="h-4 w-4 rounded border-slate-300 accent-indigo-700 disabled:cursor-not-allowed" /><span>{pendingMatches.has(row.id) ? "Guardando..." : row.matched ? "Conciliado" : "Pendiente"}</span></label></td><td className="whitespace-nowrap px-5 py-4">{dateLabel(row.date)}</td><td className="px-5 py-4"><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${row.type === "income" ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300" : "bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-300"}`}>{row.type === "income" ? "Ingreso" : "Egreso"}</span></td><td className="max-w-64 px-5 py-4"><span className="font-medium">{row.concept}</span>{row.description && <span className="mt-1 block truncate text-xs text-slate-500" title={row.description}>{row.description}</span>}</td><td className="px-5 py-4">{movementParty(row)}</td><td className="max-w-40 truncate px-5 py-4" title={row.reference}>{row.reference || "—"}</td><td className={`whitespace-nowrap px-5 py-4 text-right font-semibold ${row.type === "income" ? "text-emerald-700 dark:text-emerald-300" : "text-rose-700 dark:text-rose-300"}`}>{row.type === "income" ? "+" : "−"}{money(row.amount)}</td></tr>)}</tbody></table></div>
+        <div className="divide-y divide-slate-100 dark:divide-slate-700 md:hidden">{rows.map((row) => <article key={row.id} className="space-y-2 p-4"><div className="flex items-start justify-between gap-3"><div><p className="text-xs text-slate-500">{dateLabel(row.date)} · {row.type === "income" ? "Ingreso" : "Egreso"}</p><h3 className="mt-1 font-semibold">{row.concept}</h3></div><strong className={row.type === "income" ? "text-emerald-700 dark:text-emerald-300" : "text-rose-700 dark:text-rose-300"}>{row.type === "income" ? "+" : "−"}{money(row.amount)}</strong></div><p className="text-xs text-slate-500">{unitLabel}: {movementParty(row)} · Ref.: {row.reference || "—"}</p>{row.description && <p className="text-xs text-slate-500">{row.description}</p>}<label className="flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-200"><input type="checkbox" checked={row.matched} disabled={row.matchLocked || direction === "all" || closing || pendingMatches.size > 0} onChange={() => void toggleMatch(row)} aria-label={`Cotejar ${row.concept} del ${dateLabel(row.date)} con el estado de cuenta`} className="h-4 w-4 rounded border-slate-300 accent-indigo-700 disabled:cursor-not-allowed" />{pendingMatches.has(row.id) ? "Guardando..." : row.matched ? "Conciliado con el estado de cuenta" : "Marcar como conciliado"}</label></article>)}</div>
         {!loading && rows.length === 0 && <p className="px-5 py-10 text-center text-sm text-slate-500">No hay movimientos de este tipo para estos filtros.</p>}
         <div className="flex items-center justify-between border-t border-slate-200 px-4 py-3 text-sm dark:border-slate-700 sm:px-6"><span>Página {page} de {totalPages}</span><div className="flex gap-2"><button type="button" disabled={page <= 1 || loading} onClick={() => setPage(page - 1)} className="rounded-lg border px-3 py-1.5 disabled:opacity-40">Anterior</button><button type="button" disabled={page >= totalPages || loading} onClick={() => setPage(page + 1)} className="rounded-lg border px-3 py-1.5 disabled:opacity-40">Siguiente</button></div></div>
       </div>
@@ -280,7 +313,8 @@ const MonthlyFinancialClosure = () => {
         </div>
         {!fullMonth && <p className="mt-3 text-xs font-medium text-amber-700 dark:text-amber-300">Para cerrar, selecciona desde {firstDay(month)} hasta {lastDay(month)}.</p>}
         {direction === "all" && <p className="mt-3 text-xs font-medium text-amber-700 dark:text-amber-300">Este cierre conjunto es histórico. Elige ingresos o egresos para crear un nuevo cierre.</p>}
-        <div className="mt-5 flex flex-wrap items-center justify-between gap-3"><span className="text-xs text-slate-600 dark:text-slate-300">Acumulado final de {selectedLabel}: <strong>{money(balanceCents)}</strong></span><button type="button" onClick={onClose} disabled={closing || loading || direction === "all" || !fullMonth || periodClosure?.status === "closed" || !summary.digest} className="rounded-xl bg-indigo-700 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-indigo-800 disabled:cursor-not-allowed disabled:opacity-50">{periodClosure?.status === "closed" ? "Periodo cerrado" : closing ? "Cerrando..." : `Cerrar ${selectedLabel}`}</button></div>
+        <div className="mt-5 flex flex-wrap items-center justify-between gap-3"><span className="text-xs text-slate-600 dark:text-slate-300">Acumulado final de {selectedLabel}: <strong>{money(balanceCents)}</strong></span><button type="button" onClick={onClose} disabled={closing || loading || pendingMatches.size > 0 || direction === "all" || !fullMonth || periodClosure?.status === "closed" || !summary.digest} className="rounded-xl bg-indigo-700 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-indigo-800 disabled:cursor-not-allowed disabled:opacity-50">{periodClosure?.status === "closed" ? "Periodo cerrado" : closing ? "Cerrando..." : `Cerrar ${selectedLabel}`}</button></div>
+      </div>
       </div>
     </> : <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
       <div className="flex flex-col gap-3 border-b border-slate-200 p-5 dark:border-slate-700 sm:flex-row sm:items-end sm:justify-between sm:p-6">
