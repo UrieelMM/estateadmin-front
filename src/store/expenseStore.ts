@@ -191,7 +191,7 @@ export const useExpenseStore = create<ExpenseState>()((set, get) => ({
       const clientId = tokenResult.claims["clientId"] as string;
       const condominiumId = localStorage.getItem("condominiumId");
       if (!condominiumId) throw new Error("Condominio no seleccionado");
-      await assertFinancialMonthOpen(data.expenseDate);
+      await assertFinancialMonthOpen(data.expenseDate, "expense");
 
       const db = getFirestore();
       const expensesRef = collection(
@@ -326,8 +326,8 @@ export const useExpenseStore = create<ExpenseState>()((set, get) => ({
       }
 
       const currentData = currentSnap.data();
-      await assertFinancialMonthOpen(String(currentData.expenseDate || ""));
-      if (data.expenseDate) await assertFinancialMonthOpen(data.expenseDate);
+      await assertFinancialMonthOpen(String(currentData.expenseDate || ""), "expense");
+      if (data.expenseDate) await assertFinancialMonthOpen(data.expenseDate, "expense");
       const folio = currentData.folio || expenseId;
 
       let invoiceUrl = data.invoiceUrl;
@@ -393,7 +393,7 @@ export const useExpenseStore = create<ExpenseState>()((set, get) => ({
 
       const currentSnap = await getDoc(expenseDocRef);
       if (currentSnap.exists()) {
-        await assertFinancialMonthOpen(String(currentSnap.data().expenseDate || ""));
+        await assertFinancialMonthOpen(String(currentSnap.data().expenseDate || ""), "expense");
         await deleteDoc(expenseDocRef);
       }
 
