@@ -9,6 +9,7 @@ import {
 } from "../../../../../store/paymentSummaryStore";
 import { useExpenseSummaryStore } from "../../../../../store/expenseSummaryStore";
 import useUserStore from "../../../../../store/UserDataStore";
+import { sumOpeningCreditUsed } from "../../../../../utils/paymentCreditAllocation";
 
 interface Condominium {
   number: string;
@@ -569,7 +570,8 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({
           totalCreditUsed;
 
         // 3. Saldo: Diferencia entre cargos y monto abonado
-        const balance = totalCharges - totalPaidWithCredit;
+        const balance =
+          totalCharges - totalPaidWithCredit - sumOpeningCreditUsed(monthRecords);
 
         // Calcular porcentajes de cumplimiento y morosidad
         const monthCharges = monthRecords.reduce(
@@ -624,7 +626,8 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({
           (monthCreditBalance > 0 ? monthCreditBalance : 0) -
           totalCreditUsed;
 
-        const balance = totalCharges - totalPaidWithCredit;
+        const balance =
+          totalCharges - totalPaidWithCredit - sumOpeningCreditUsed(monthRecords);
 
         totalPaidGlobal += totalPaidWithCredit;
         totalChargesGlobal += totalCharges;
@@ -795,7 +798,9 @@ const PDFReportGenerator: React.FC<PDFReportGeneratorProps> = ({
                 monthNames[m] || m,
                 formatCurrency(paid),
                 formatCurrency(totalCharges),
-                formatCurrency(totalCharges - paid),
+                formatCurrency(
+                  totalCharges - paid - sumOpeningCreditUsed(recordsForMonth)
+                ),
                 compliance.toFixed(2) + "%",
                 delinquency.toFixed(2) + "%",
               ];

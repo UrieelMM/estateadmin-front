@@ -22,6 +22,10 @@ const Income = React.lazy(
   () =>
     import("../presentation/screens/dashboard/financialIncome/Income/Income"),
 );
+const Movements = React.lazy(
+  () =>
+    import("../presentation/screens/dashboard/financialIncome/Movements/Movements"),
+);
 const FinancialReconciliation = React.lazy(
   () =>
     import("../presentation/screens/dashboard/financialIncome/Reconciliation/FinancialReconciliation"),
@@ -187,6 +191,13 @@ export const routesApp = [
     title: "Registro de gastos",
     description: "Gestión de gastos",
     component: <Expenses />,
+  },
+  {
+    to: "/dashboard/movements",
+    icon: "fa-solid fa-right-left",
+    title: "Movimientos",
+    description: "Ingresos y egresos juntos por periodo",
+    component: <Movements />,
   },
   {
     to: "/dashboard/reconciliation/*",

@@ -12,6 +12,11 @@ import {
   Timestamp,
 } from "firebase/firestore";
 import { getAuth, getIdTokenResult } from "firebase/auth";
+import {
+  CreditNormalizationEntry,
+  normalizeGroupCreditUsed,
+  paymentCreditGroupKey,
+} from "../utils/paymentCreditAllocation";
 
 // Función auxiliar para convertir una URL de imagen a base64
 async function getBase64FromUrl(url: string): Promise<string> {
@@ -36,6 +41,8 @@ export interface PaymentRecord {
   amountPending: number; // en pesos, float
   creditBalance: number; // en pesos, float
   creditUsed?: number; // NUEVO: crédito utilizado (en pesos, float)
+  /** Parte de creditUsed cubierta con saldo a favor inicial: cubre cargos sin ser ingreso. */
+  openingCreditUsed?: number;
   concept: string;
   paymentDate?: string;
   paymentDateISO?: string;
@@ -306,6 +313,10 @@ export const usePaymentHistoryStore = create<PaymentHistoryState>()((set) => ({
       }
 
       // 5. Ahora procesamos los pagos
+      const creditEntries: Array<{
+        record: PaymentRecord;
+        entry: CreditNormalizationEntry;
+      }> = [];
       for (const chargeDoc of chargesSnapshot.docs) {
         const chargeData = chargeDoc.data();
         if (!chargeData.startAt || typeof chargeData.startAt !== "string")
@@ -372,6 +383,7 @@ export const usePaymentHistoryStore = create<PaymentHistoryState>()((set) => ({
             creditUsed: paymentData.creditUsed
               ? centsToPesos(paymentData.creditUsed)
               : 0,
+            openingCreditUsed: centsToPesos(paymentData.openingCreditUsed || 0),
             concept: chargeData.concept || "Sin concepto",
             paymentDate: finalDateStr,
             paymentDateISO,
@@ -395,8 +407,26 @@ export const usePaymentHistoryStore = create<PaymentHistoryState>()((set) => ({
           };
 
           paymentRecords.push(record);
+          creditEntries.push({
+            record,
+            entry: {
+              key: paymentDoc.ref.path,
+              groupKey: paymentCreditGroupKey(paymentData),
+              order: String(chargeData.startAt || ""),
+              amountPaid: paymentData.amountPaid,
+              creditUsed: paymentData.creditUsed,
+              creditAllocation: paymentData.creditAllocation,
+            },
+          });
         });
       }
+
+      const normalizedCreditUsed = normalizeGroupCreditUsed(
+        creditEntries.map(({ entry }) => entry)
+      );
+      creditEntries.forEach(({ record, entry }) => {
+        record.creditUsed = centsToPesos(normalizedCreditUsed.get(entry.key) || 0);
+      });
 
       // 6. Agrupar por mes
       const detailed: Record<string, PaymentRecord[]> = {};

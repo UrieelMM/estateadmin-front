@@ -148,6 +148,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ open, setOpen }) => {
   const [pendingConceptManager, setPendingConceptManager] = useState(false);
   const [paymentType, setPaymentType] = useState<string>("");
   const [expenseDate, setExpenseDate] = useState<string>("");
+  const [expenseTime, setExpenseTime] = useState<string>("");
   const [description, setDescription] = useState<string>("");
   const [file, setFile] = useState<File | null>(null);
   const [fileName, setFileName] = useState<string>("");
@@ -232,6 +233,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ open, setOpen }) => {
       setPendingConceptManager(false);
       setPaymentType("");
       setExpenseDate("");
+      setExpenseTime("");
       setDescription("");
       setFile(null);
       setFileName("");
@@ -283,18 +285,23 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ open, setOpen }) => {
     [selectableFinancialAccounts, financialAccountId],
   );
 
+  // Sin hora se guarda la medianoche local para conservar el formato "YYYY-MM-DDTHH:mm"
+  // y evitar que `new Date("YYYY-MM-DD")` (UTC) muestre el día anterior en México.
+  const expenseDateTime = expenseDate
+    ? `${expenseDate}T${expenseTime || "00:00"}`
+    : "";
+
   const formattedExpenseDate = useMemo(() => {
-    if (!expenseDate) return "";
-    const parsed = new Date(expenseDate);
-    if (isNaN(parsed.getTime())) return expenseDate;
+    if (!expenseDateTime) return "";
+    const parsed = new Date(expenseDateTime);
+    if (isNaN(parsed.getTime())) return expenseDateTime;
     return parsed.toLocaleString("es-MX", {
       day: "numeric",
       month: "short",
       year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
+      ...(expenseTime ? { hour: "2-digit", minute: "2-digit" } : {}),
     });
-  }, [expenseDate]);
+  }, [expenseDateTime, expenseTime]);
 
   // Función para formatear a moneda mexicana (solo visual)
   const formatCurrency = (value: number) =>
@@ -335,7 +342,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ open, setOpen }) => {
         amount: amountInPesos,
         concept: sanitizeConcept(concept),
         paymentType,
-        expenseDate,
+        expenseDate: expenseDateTime,
         description,
         file: file || undefined,
         financialAccountId,
@@ -464,16 +471,32 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ open, setOpen }) => {
                               </div>
                             </Field>
 
-                            <Field label="Fecha del egreso" htmlFor="expenseDate">
-                              <div className="relative">
-                                <CalendarIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                            <Field
+                              label="Fecha del egreso"
+                              htmlFor="expenseDate"
+                              hint="La hora es opcional."
+                            >
+                              <div className="grid grid-cols-[minmax(0,1fr)_7.5rem] gap-2">
+                                <div className="relative">
+                                  <CalendarIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                                  <input
+                                    id="expenseDate"
+                                    name="expenseDate"
+                                    type="date"
+                                    className={`${inputBase} pl-9`}
+                                    value={expenseDate}
+                                    onChange={(e) => setExpenseDate(e.target.value)}
+                                  />
+                                </div>
                                 <input
-                                  id="expenseDate"
-                                  name="expenseDate"
-                                  type="datetime-local"
-                                  className={`${inputBase} pl-9`}
-                                  value={expenseDate}
-                                  onChange={(e) => setExpenseDate(e.target.value)}
+                                  id="expenseTime"
+                                  name="expenseTime"
+                                  type="time"
+                                  aria-label="Hora del egreso (opcional)"
+                                  title="Hora (opcional)"
+                                  className={`${inputBase} px-3`}
+                                  value={expenseTime}
+                                  onChange={(e) => setExpenseTime(e.target.value)}
                                 />
                               </div>
                             </Field>

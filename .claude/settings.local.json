@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir -p /Users/urieelmm/Documents/Code/estateadmin-front/video-tickets)",
+      "Bash(npx hyperframes *)"
+    ]
+  }
+}

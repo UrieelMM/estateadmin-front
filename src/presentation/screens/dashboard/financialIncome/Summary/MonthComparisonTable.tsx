@@ -5,6 +5,7 @@ import {
   usePaymentSummaryStore,
   MonthlyStat,
 } from "../../../../../store/paymentSummaryStore";
+import { sumOpeningCreditUsed } from "../../../../../utils/paymentCreditAllocation";
 
 const monthNames: Record<string, string> = {
   "01": "Enero",
@@ -76,8 +77,8 @@ const MonthComparisonTable: React.FC = React.memo(() => {
 
   // Calcular el saldo total
   const totalBalance = useMemo(() => {
-    return totals.charges - totalPaidWithCredit;
-  }, [totals.charges, totalPaidWithCredit]);
+    return totals.charges - totalPaidWithCredit - sumOpeningCreditUsed(payments);
+  }, [totals.charges, totalPaidWithCredit, payments]);
 
   // Calcular porcentajes globales
   const allRecords = useMemo(() => {
@@ -169,7 +170,8 @@ const MonthComparisonTable: React.FC = React.memo(() => {
                   row.charges -
                   (row.paid +
                     (monthCreditBalance > 0 ? monthCreditBalance : 0) -
-                    row.creditUsed);
+                    row.creditUsed) -
+                  sumOpeningCreditUsed(monthRecords);
 
                 return (
                   <tr

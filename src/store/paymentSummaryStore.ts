@@ -15,6 +15,10 @@ import {
   startAfter as firestoreStartAfter,
 } from "firebase/firestore";
 import { getAuth, getIdTokenResult, onAuthStateChanged, type User } from "firebase/auth";
+import {
+  normalizeGroupCreditUsed,
+  paymentCreditGroupKey,
+} from "../utils/paymentCreditAllocation";
 
 // Función auxiliar para convertir una URL de imagen a base64
 async function getBase64FromUrl(url: string): Promise<string> {
@@ -109,6 +113,8 @@ export interface PaymentRecord {
   paymentType?: string; // Tipo de pago (Transferencia, Efectivo, etc.)
   creditBalance: number; // en pesos
   creditUsed?: number; // crédito utilizado (en pesos)
+  /** Parte de creditUsed cubierta con saldo a favor inicial: cubre cargos sin ser ingreso. */
+  openingCreditUsed?: number;
   paid: boolean;
   financialAccountId: string;
   paymentDate?: string;
@@ -339,7 +345,7 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>()(
               `clients/${clientId}/condominiums/${condominiumId}/users/${userObj.id}/charges`
             );
             const chargesSnapshot = await getDocs(chargesRef);
-            const chargeRecords = await Promise.all(
+            const chargeEntries = await Promise.all(
               chargesSnapshot.docs.map(async (chargeDoc) => {
                 const chargeData = chargeDoc.data();
                 if (
@@ -369,11 +375,34 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>()(
                   `clients/${clientId}/condominiums/${condominiumId}/users/${userObj.id}/charges/${chargeDoc.id}/payments`
                 );
                 const paymentsSnapshot = await getDocs(paymentsRef);
-
+                return { chargeDoc, chargeData, monthCode, paymentsSnapshot };
+              })
+            );
+            const validChargeEntries = chargeEntries.filter(
+              (entry): entry is NonNullable<typeof entry> => entry !== null
+            );
+            const normalizedCreditUsed = normalizeGroupCreditUsed(
+              validChargeEntries.flatMap(({ chargeData, paymentsSnapshot }) =>
+                paymentsSnapshot.docs.map((paymentDoc) => {
+                  const paymentData = paymentDoc.data();
+                  return {
+                    key: paymentDoc.ref.path,
+                    groupKey: paymentCreditGroupKey(paymentData),
+                    order: String(chargeData.startAt || ""),
+                    amountPaid: paymentData.amountPaid,
+                    creditUsed: paymentData.creditUsed,
+                    creditAllocation: paymentData.creditAllocation,
+                  };
+                })
+              )
+            );
+            const chargeRecords = validChargeEntries.map(
+              ({ chargeDoc, chargeData, monthCode, paymentsSnapshot }) => {
                 let totalAmountPaid = 0;
                 let totalAmountPendingFromPayments = 0;
                 let totalCreditBalance = 0;
                 let totalCreditUsed = 0;
+                let totalOpeningCreditUsed = 0;
                 let accountId = "";
                 let formattedDate = "";
 
@@ -390,9 +419,11 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>()(
                     centsToPesos(paymentData.amountPending) || 0;
                   totalCreditBalance +=
                     centsToPesos(paymentData.creditBalance) || 0;
-                  totalCreditUsed += paymentData.creditUsed
-                    ? centsToPesos(paymentData.creditUsed)
-                    : 0;
+                  totalCreditUsed += centsToPesos(
+                    normalizedCreditUsed.get(paymentDoc.ref.path) || 0
+                  );
+                  totalOpeningCreditUsed +=
+                    centsToPesos(paymentData.openingCreditUsed) || 0;
 
                   if (!accountId && paymentData.financialAccountId) {
                     accountId = paymentData.financialAccountId;
@@ -493,6 +524,7 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>()(
                   paymentType: chargeData.paymentType,
                   creditBalance: parseFloat(totalCreditBalance.toFixed(2)),
                   creditUsed: parseFloat(totalCreditUsed.toFixed(2)),
+                  openingCreditUsed: parseFloat(totalOpeningCreditUsed.toFixed(2)),
                   paid: chargeData.paid === true,
                   financialAccountId: accountId || "N/A",
                   paymentDate: formattedDate,
@@ -505,11 +537,9 @@ export const usePaymentSummaryStore = create<PaymentSummaryState>()(
                   referenceAmount: parseFloat(referenceAmount.toFixed(2)),
                 };
                 return record;
-              })
+              }
             );
-            return chargeRecords.filter(
-              (record) => record !== null
-            ) as PaymentRecord[];
+            return chargeRecords;
           })
         );
         paymentRecords.push(...userRecordsArrays.flat());

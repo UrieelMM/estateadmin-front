@@ -2,6 +2,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { shallow } from "zustand/shallow";
 import { usePaymentSummaryStore } from "../../../../../store/paymentSummaryStore";
+import { sumOpeningCreditUsed } from "../../../../../utils/paymentCreditAllocation";
 import { useExpenseSummaryStore } from "../../../../../store/expenseSummaryStore";
 import useUserStore from "../../../../../store/UserDataStore";
 import { AnimatePresence, motion } from "framer-motion";
@@ -204,6 +205,7 @@ const PaymentSummary: React.FC = () => {
     paymentType: payment.paymentType,
     creditBalance: payment.creditBalance,
     creditUsed: payment.creditUsed,
+    openingCreditUsed: payment.openingCreditUsed,
     paid: payment.paid,
     paymentDate: payment.paymentDate,
     referenceAmount: payment.referenceAmount,
@@ -286,7 +288,7 @@ const PaymentSummary: React.FC = () => {
       totalPaid +
       ( totalCreditBalance > 0 ? totalCreditBalance : 0 ) -
       totalCreditUsed;
-    const saldo = totalCargos - montoAbonado;
+    const saldo = totalCargos - montoAbonado - sumOpeningCreditUsed( payments );
     const saldoInicialHistorico = totalInitialBalance;
     const ingresosPeriodo = montoAbonado;
     const totalEgresosPeriodo = totalSpentExpenses;

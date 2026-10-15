@@ -1,5 +1,5 @@
-import { Fragment, useEffect, useMemo, useRef, useState } from "react";
-import { Transition, Dialog, Combobox } from "@headlessui/react";
+import { Fragment, useEffect, useMemo, useState } from "react";
+import { Transition, Dialog } from "@headlessui/react";
 import {
   XMarkIcon,
   UserIcon,
@@ -14,10 +14,10 @@ import {
   IdentificationIcon,
   HashtagIcon,
   BuildingLibraryIcon,
+  WalletIcon,
 } from "@heroicons/react/24/outline";
 import {
   CheckIcon,
-  ChevronUpDownIcon,
   CheckCircleIcon,
   InformationCircleIcon,
 } from "@heroicons/react/20/solid";
@@ -30,6 +30,9 @@ import { usePaymentSummaryStore } from "../../../../store/paymentSummaryStore";
 import { useUnidentifiedPaymentsStore } from "../../../../store/useUnidentifiedPaymentsStore";
 import { useCondominiumStore } from "../../../../store/useCondominiumStore";
 import { useFileCompression } from "../../../../hooks/useFileCompression";
+import { getAuth, getIdTokenResult } from "firebase/auth";
+import OpeningCreditPanel from "./OpeningCreditPanel";
+import RecipientCombobox, { RecipientSortOrder } from "./RecipientCombobox";
 
 // ─── Helpers visuales (sin lógica de negocio) ────────────────────────────────
 const cn = (...classes: (string | boolean | undefined | null)[]) =>
@@ -209,12 +212,9 @@ const PaymentForm = ( { open, setOpen }: FormParcelReceptionProps ) => {
   // Campos del formulario
   const [ email, setEmail ] = useState<string>( "" );
   const [ numberCondominium, setNumberCondominium ] = useState<string>( "" );
-  const [ recipientSearch, setRecipientSearch ] = useState<string>( "" );
   const [ pendingRecipientRestoreUid, setPendingRecipientRestoreUid ] =
     useState<string>( "" );
-  const [ recipientSortOrder, setRecipientSortOrder ] = useState<"" | "asc" | "desc">( "" );
-  const recipientComboboxInputRef = useRef<HTMLInputElement | null>( null );
-  const recipientComboboxButtonRef = useRef<HTMLButtonElement | null>( null );
+  const [ recipientSortOrder, setRecipientSortOrder ] = useState<RecipientSortOrder>( "" );
 
   // Monto abonado: valor raw y su versión visual formateada
   const [ amountPaid, setAmountPaid ] = useState<string>( "" );
@@ -238,6 +238,10 @@ const PaymentForm = ( { open, setOpen }: FormParcelReceptionProps ) => {
   // Estado para pago NO identificado
   const [ isUnidentifiedPayment, setIsUnidentifiedPayment ] =
     useState<boolean>( false );
+
+  // Saldo a favor inicial (solo administrador)
+  const [ isOpeningCredit, setIsOpeningCredit ] = useState<boolean>( false );
+  const [ isAdminUser, setIsAdminUser ] = useState<boolean>( false );
 
   // Archivo adjunto
   const [ file, setFile ] = useState<File | File[] | null>( null );
@@ -298,10 +302,22 @@ const PaymentForm = ( { open, setOpen }: FormParcelReceptionProps ) => {
   );
 
   useEffect( () => {
+    if ( !open ) return;
+    setIsOpeningCredit( false );
+    const currentUser = getAuth().currentUser;
+    if ( !currentUser ) {
+      setIsAdminUser( false );
+      return;
+    }
+    getIdTokenResult( currentUser )
+      .then( ( result ) => setIsAdminUser( String( result.claims[ "role" ] || "" ) === "admin" ) )
+      .catch( () => setIsAdminUser( false ) );
+  }, [ open ] );
+
+  useEffect( () => {
     if ( open ) {
       fetchCondominiumsUsers();
       fetchFinancialAccounts();
-      setRecipientSearch( "" );
       const savedRecipientUid = localStorage.getItem( recipientStorageKey );
       setPendingRecipientRestoreUid( savedRecipientUid || "" );
       const savedSortOrder = localStorage.getItem( recipientSortStorageKey );
@@ -399,74 +415,6 @@ const PaymentForm = ( { open, setOpen }: FormParcelReceptionProps ) => {
     localStorage.removeItem( recipientSortStorageKey );
   }, [ open, recipientSortOrder, recipientSortStorageKey ] );
 
-  const filteredUsers = useMemo( () => {
-    const normalizeSearchText = ( value: string ) =>
-      String( value || "" )
-        .normalize( "NFD" )
-        .replace( /[\u0300-\u036f]/g, "" )
-        .toLowerCase()
-        .trim();
-    const compactSearchText = ( value: string ) =>
-      normalizeSearchText( value ).replace( /[^a-z0-9]/g, "" );
-    const normalizeTowerValue = ( value: string ) => {
-      const normalized = normalizeSearchText( value );
-      return normalized.replace( /^torre\s*/g, "" ).trim();
-    };
-    const term = normalizeSearchText( recipientSearch );
-    const compactTerm = compactSearchText( recipientSearch );
-    const towerTerm = normalizeTowerValue( recipientSearch );
-    const compactTowerTerm = compactSearchText( towerTerm );
-    const isTowerQuery = term.startsWith( "torre" ) && towerTerm.length > 0;
-
-    const usersFiltered = !term
-      ? availableUsers
-      : availableUsers.filter( ( user ) => {
-        const number = normalizeSearchText( user.number || "" );
-        const compactNumber = compactSearchText( user.number || "" );
-        const name = normalizeSearchText( user.name || "" );
-        const lastName = normalizeSearchText( user.lastName || "" );
-        const fullName = `${ name } ${ lastName }`.trim();
-        const compactName = compactSearchText( user.name || "" );
-        const compactLastName = compactSearchText( user.lastName || "" );
-        const compactFullName = `${ compactName }${ compactLastName }`;
-        const rawTower = String( user.tower || "" );
-        const tower = normalizeSearchText( rawTower );
-        const normalizedTower = normalizeTowerValue( rawTower );
-        const compactTower = compactSearchText( rawTower );
-        const compactNormalizedTower = compactSearchText( normalizedTower );
-        const towerMatches = isTowerQuery
-          ? normalizedTower === towerTerm ||
-            compactNormalizedTower === compactTowerTerm
-          : tower.includes( term ) ||
-            normalizedTower.includes( towerTerm ) ||
-            compactTower.includes( compactTerm ) ||
-            compactNormalizedTower.includes( compactTowerTerm );
-        return (
-          number.includes( term ) ||
-          compactNumber.includes( compactTerm ) ||
-          name.includes( term ) ||
-          fullName.includes( term ) ||
-          compactName.includes( compactTerm ) ||
-          compactFullName.includes( compactTerm ) ||
-          towerMatches
-        );
-      } );
-
-    if ( recipientSortOrder === "" ) return usersFiltered;
-
-    const sortedUsers = [ ...usersFiltered ].sort( ( a, b ) => {
-      const numberA = String( a.number || "" );
-      const numberB = String( b.number || "" );
-      const comparison = numberA.localeCompare( numberB, "es", {
-        numeric: true,
-        sensitivity: "base",
-      } );
-      return recipientSortOrder === "asc" ? comparison : -comparison;
-    } );
-
-    return sortedUsers;
-  }, [ availableUsers, recipientSearch, recipientSortOrder ] );
-
   const selectableFinancialAccounts = useMemo( () => {
     const normalize = ( value: string ) =>
       value
@@ -509,27 +457,6 @@ const PaymentForm = ( { open, setOpen }: FormParcelReceptionProps ) => {
   };
 
   const selectedRecipientUid = selectedUser?.uid || "";
-
-  const handleRecipientSortOrderChange = ( value: "" | "asc" | "desc" ) => {
-    setRecipientSortOrder( value );
-    if ( isUnidentifiedPayment ) return;
-    requestAnimationFrame( () => {
-      recipientComboboxInputRef.current?.focus();
-    } );
-  };
-
-  const getRecipientLabel = ( uid: string ) => {
-    const user = availableUsers.find( ( u ) => u.uid === uid );
-    if ( !user ) return "";
-    const towerValue = String( user.tower || "" ).trim();
-    const normalizedTowerLabel = towerValue
-      ? towerValue.replace( /^torre\s*/i, "" ).trim()
-      : "";
-    const towerLabel = normalizedTowerLabel
-      ? ` · Torre ${ normalizedTowerLabel }`
-      : "";
-    return `${ user.number || "-" } ${ user.name || "" }${ towerLabel }`.trim();
-  };
 
   const handleToggleCharge = ( chargeId: string, checked: boolean ) => {
     if ( checked ) {
@@ -602,6 +529,7 @@ const PaymentForm = ( { open, setOpen }: FormParcelReceptionProps ) => {
 
   const handleSubmit = async ( event: React.FormEvent<HTMLFormElement> ) => {
     event.preventDefault();
+    if ( isOpeningCredit ) return;
     setLoading( true );
 
     try {
@@ -761,7 +689,6 @@ const PaymentForm = ( { open, setOpen }: FormParcelReceptionProps ) => {
     setPaymentDate( null );
     setFinancialAccountId( "" );
     setIsUnidentifiedPayment( false );
-    setRecipientSearch( "" );
     // setAutoDownloadReceipt( false );
   };
 
@@ -795,6 +722,7 @@ const PaymentForm = ( { open, setOpen }: FormParcelReceptionProps ) => {
     useDropzone( dropzoneOptions );
 
   const handlePaymentTypeChange = ( isUnidentified: boolean ) => {
+    setIsOpeningCredit( false );
     setIsUnidentifiedPayment( isUnidentified );
 
     if ( isUnidentified ) {
@@ -860,8 +788,9 @@ const PaymentForm = ( { open, setOpen }: FormParcelReceptionProps ) => {
                             Registrar pago
                           </Dialog.Title>
                           <p className="mt-0.5 text-xs text-indigo-100">
-                            Captura un pago de mantenimiento aplicado a un condómino o
-                            como pago no identificado.
+                            { isOpeningCredit
+                              ? "Registra el saldo a favor que un departamento ya tenía al iniciar."
+                              : "Captura un pago de mantenimiento aplicado a un condómino o como pago no identificado." }
                           </p>
                         </div>
                       </div>
@@ -870,25 +799,45 @@ const PaymentForm = ( { open, setOpen }: FormParcelReceptionProps ) => {
                         <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-indigo-100/80">
                           Tipo de registro
                         </p>
-                        <div className="grid gap-2 sm:grid-cols-2">
+                        <div className={ cn( "grid gap-2", isAdminUser ? "sm:grid-cols-3" : "sm:grid-cols-2" ) }>
                           <PaymentTypeCard
-                            active={ !isUnidentifiedPayment }
+                            active={ !isOpeningCredit && !isUnidentifiedPayment }
                             title="Pago identificado"
                             description="Aplícalo a los cargos de un condómino específico."
                             icon={ <IdentificationIcon className="h-4 w-4" /> }
                             onClick={ () => handlePaymentTypeChange( false ) }
                           />
                           <PaymentTypeCard
-                            active={ isUnidentifiedPayment }
+                            active={ !isOpeningCredit && isUnidentifiedPayment }
                             title="Pago no identificado"
                             description="Regístralo y asígnalo más tarde a un condómino."
                             icon={ <BanknotesIcon className="h-4 w-4" /> }
                             onClick={ () => handlePaymentTypeChange( true ) }
                           />
+                          { isAdminUser && (
+                            <PaymentTypeCard
+                              active={ isOpeningCredit }
+                              title="Saldo a favor inicial"
+                              description="Crédito previo del departamento. No cuenta como ingreso."
+                              icon={ <WalletIcon className="h-4 w-4" /> }
+                              onClick={ () => setIsOpeningCredit( true ) }
+                            />
+                          ) }
                         </div>
                       </div>
                     </div>
 
+                    { isOpeningCredit && (
+                      <OpeningCreditPanel
+                        users={ availableUsers }
+                        sortOrder={ recipientSortOrder }
+                        onSortOrderChange={ setRecipientSortOrder }
+                        onClose={ () => setOpen( false ) }
+                      />
+                    ) }
+
+                    { !isOpeningCredit && (
+                    <>
                     <div className="h-0 flex-1 overflow-y-auto">
                       <div className="space-y-4 px-4 py-5 sm:px-6">
                         {/* ── Sección: Condómino ───────────────────────── */ }
@@ -902,147 +851,24 @@ const PaymentForm = ( { open, setOpen }: FormParcelReceptionProps ) => {
                           icon={ <UserIcon className="h-4 w-4" /> }
                           muted={ isUnidentifiedPayment }
                         >
-                          <Field
-                            label="Buscar condómino"
-                            htmlFor="nameRecipient"
-                            hint="Puedes buscar por nombre, número de unidad o torre."
-                            right={
-                              <div className="flex items-center gap-1.5">
-                                <label
-                                  htmlFor="recipientSortOrder"
-                                  className="text-[10px] font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400"
-                                >
-                                  Orden
-                                </label>
-                                <select
-                                  id="recipientSortOrder"
-                                  value={ recipientSortOrder }
-                                  onChange={ ( e ) =>
-                                    handleRecipientSortOrderChange(
-                                      e.target.value as "" | "asc" | "desc"
-                                    )
-                                  }
-                                  disabled={ isUnidentifiedPayment }
-                                  className="rounded-md border border-gray-200 bg-white px-2 py-0.5 text-[11px] text-gray-700 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:cursor-not-allowed disabled:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:disabled:bg-gray-700"
-                                >
-                                  <option value="">Sin orden</option>
-                                  <option value="asc">Asc</option>
-                                  <option value="desc">Desc</option>
-                                </select>
-                              </div>
-                            }
-                          >
-                            <Combobox
-                              value={ selectedRecipientUid }
-                              onChange={ ( uid: string ) => {
-                                if ( !uid ) {
-                                  localStorage.removeItem( recipientStorageKey );
-                                  setSelectedUser( null );
-                                  setEmail( "" );
-                                  setNumberCondominium( "" );
-                                  setSelectedCharges( [] );
-                                  return;
-                                }
-                                setRecipientSearch( "" );
-                                handleRecipientSelection( uid );
-                              } }
-                              disabled={ isUnidentifiedPayment }
-                            >
-                              <div className="relative">
-                                <UserIcon className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                                <Combobox.Input
-                                  ref={ recipientComboboxInputRef }
-                                  id="nameRecipient"
-                                  name="nameRecipient"
-                                  className={ `${ inputBase } pl-9 pr-10` }
-                                  displayValue={ ( uid: string ) =>
-                                    getRecipientLabel( uid )
-                                  }
-                                  onChange={ ( event ) =>
-                                    setRecipientSearch( event.target.value )
-                                  }
-                                  onFocus={ () =>
-                                    recipientComboboxButtonRef.current?.click()
-                                  }
-                                  placeholder="Buscar por nombre, número o torre"
-                                />
-                                <Combobox.Button
-                                  ref={ recipientComboboxButtonRef }
-                                  className="absolute inset-y-0 right-0 flex items-center pr-2"
-                                >
-                                  <ChevronUpDownIcon className="h-5 w-5 text-gray-400" />
-                                </Combobox.Button>
-                              </div>
-
-                              <Combobox.Options className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-lg bg-white py-1 text-sm shadow-lg ring-1 ring-black/5 focus:outline-none dark:bg-gray-800 dark:ring-white/[0.08]">
-                                <Combobox.Option
-                                  value=""
-                                  className={ ( { active } ) =>
-                                    `relative cursor-default select-none px-3 py-1.5 text-[11px] italic ${ active
-                                      ? "bg-indigo-50 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-300"
-                                      : "text-gray-500 dark:text-gray-400"
-                                    }`
-                                  }
-                                >
-                                  Sin selección
-                                </Combobox.Option>
-
-                                { filteredUsers.length === 0 ? (
-                                  <div className="px-3 py-3 text-sm text-gray-500 dark:text-gray-400">
-                                    Sin resultados
-                                  </div>
-                                ) : (
-                                  filteredUsers.map( ( user ) => (
-                                    <Combobox.Option
-                                      key={ user.uid }
-                                      value={ user.uid }
-                                      className={ ( { active } ) =>
-                                        `relative cursor-default select-none px-2 py-1.5 ${ active
-                                          ? "bg-indigo-50 dark:bg-indigo-500/10"
-                                          : ""
-                                        }`
-                                      }
-                                    >
-                                      { ( { active } ) => (
-                                        <div className="flex items-start gap-2.5">
-                                          <span className="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-indigo-100 text-[10px] font-bold text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-200">
-                                            { String( user.number || "?" ).slice( 0, 3 ) }
-                                          </span>
-                                          <div className="min-w-0 flex-1">
-                                            <p
-                                              className={ cn(
-                                                "truncate text-sm font-semibold",
-                                                selectedRecipientUid === user.uid
-                                                  ? "text-indigo-700 dark:text-indigo-300"
-                                                  : "text-gray-900 dark:text-gray-100"
-                                              ) }
-                                            >
-                                              { user.name } { user.lastName || "" }
-                                            </p>
-                                            { String( user.tower || "" ).trim().length > 0 && <p
-                                              className={ cn(
-                                                "text-[11px]",
-                                                active
-                                                  ? "text-indigo-700/80 dark:text-indigo-200/70"
-                                                  : "text-gray-500 dark:text-gray-400"
-                                              ) }
-                                            >
-                                              { `Torre ${ String( user.tower || "" )
-                                                  .replace( /^torre\s*/i, "" )
-                                                  .trim() }` }
-                                            </p> }
-                                          </div>
-                                          { selectedRecipientUid === user.uid && (
-                                            <CheckIcon className="mt-0.5 h-4 w-4 shrink-0 text-indigo-600 dark:text-indigo-300" />
-                                          ) }
-                                        </div>
-                                      ) }
-                                    </Combobox.Option>
-                                  ) )
-                                ) }
-                              </Combobox.Options>
-                            </Combobox>
-                          </Field>
+                          <RecipientCombobox
+                            users={ availableUsers }
+                            value={ selectedRecipientUid }
+                            onChange={ ( uid: string ) => {
+                              if ( !uid ) {
+                                localStorage.removeItem( recipientStorageKey );
+                                setSelectedUser( null );
+                                setEmail( "" );
+                                setNumberCondominium( "" );
+                                setSelectedCharges( [] );
+                                return;
+                              }
+                              handleRecipientSelection( uid );
+                            } }
+                            sortOrder={ recipientSortOrder }
+                            onSortOrderChange={ setRecipientSortOrder }
+                            disabled={ isUnidentifiedPayment }
+                          />
 
                           { /* Resumen del condómino seleccionado */ }
                           { selectedUser && !isUnidentifiedPayment && (
@@ -1568,6 +1394,8 @@ const PaymentForm = ( { open, setOpen }: FormParcelReceptionProps ) => {
                         </button>
                       </div>
                     </div>
+                    </>
+                    ) }
                   </form>
                 </Dialog.Panel>
               </Transition.Child>

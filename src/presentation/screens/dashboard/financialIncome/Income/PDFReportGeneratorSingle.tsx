@@ -5,6 +5,7 @@ import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import { DocumentChartBarIcon } from "@heroicons/react/20/solid";
 import { useSignaturesStore } from "../../../../../store/useSignaturesStore";
+import { sumOpeningCreditUsed } from "../../../../../utils/paymentCreditAllocation";
 
 // Ajusta esta interfaz a como tengas tu PaymentRecord realmente.
 // Se agregó la propiedad opcional creditUsed.
@@ -13,6 +14,7 @@ export interface PaymentRecord {
   amountPending: number;
   creditBalance: number;
   creditUsed?: number;
+  openingCreditUsed?: number;
   referenceAmount: number; // Monto original del cargo que no se modifica con los pagos
   // Podría ser un string o arreglo de strings
   paymentDate?: string | string[];
@@ -244,7 +246,8 @@ const PDFReportGeneratorSingle: React.FC<PDFReportGeneratorSingleProps> = ( {
         totalPaid - totalCreditUsed + ( totalCredit > 0 ? totalCredit : 0 );
 
       // El saldo es la diferencia entre cargos y pagos (incluyendo créditos)
-      const balance = totalCharges - totalPaidWithCredit;
+      const balance =
+        totalCharges - totalPaidWithCredit - sumOpeningCreditUsed( records );
 
       totalPaidGeneral += totalPaidWithCredit;
       totalChargesGeneral += totalCharges;
@@ -369,7 +372,8 @@ const PDFReportGeneratorSingle: React.FC<PDFReportGeneratorSingleProps> = ( {
           totalPaid - totalCreditUsed + ( totalCredit > 0 ? totalCredit : 0 );
 
         // El saldo es la diferencia entre cargos y pagos (incluyendo créditos)
-        const balance = totalCharges - totalPaidWithCredit;
+        const balance =
+          totalCharges - totalPaidWithCredit - sumOpeningCreditUsed( records );
 
         totalPaidConcept += totalPaidWithCredit;
         totalChargesConcept += totalCharges;

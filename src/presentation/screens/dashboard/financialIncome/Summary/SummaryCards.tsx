@@ -3,6 +3,7 @@ import React from "react";
 import { Card } from "@heroui/react";
 import { usePaymentSummaryStore } from "../../../../../store/paymentSummaryStore";
 import { shallow } from "zustand/shallow";
+import { sumOpeningCreditUsed } from "../../../../../utils/paymentCreditAllocation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   BanknotesIcon,
@@ -74,7 +75,8 @@ const SummaryCards: React.FC = React.memo(() => {
     totalCreditUsed;
 
   // Calcular el saldo (diferencia entre cargos y monto abonado)
-  const balance = totalCharges - totalPaidWithCredit;
+  const balance =
+    totalCharges - totalPaidWithCredit - sumOpeningCreditUsed(payments);
 
   const formatCurrency = (value: number): string =>
     "$" +

@@ -7,6 +7,7 @@ import {
 } from "../../../../../store/paymentSummaryStore";
 import PDFReportGenerator from "../Income/PDFReportGenerator";
 import useUserStore from "../../../../../store/UserDataStore";
+import { sumOpeningCreditUsed } from "../../../../../utils/paymentCreditAllocation";
 // Add CSS animation keyframes
 import "./DetailedConceptsTable.css";
 
@@ -215,7 +216,8 @@ const DetailedConceptsTable: React.FC<DetailedConceptsTableProps> = React.memo(
                           0
                         );
                         // Saldo es la diferencia entre cargos y monto abonado
-                        const balance = monthCharges - paid;
+                        const balance =
+                          monthCharges - paid - sumOpeningCreditUsed( recs );
 
                         totalPaid += paid;
                         totalPend += pending;

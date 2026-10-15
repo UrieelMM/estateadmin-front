@@ -5,18 +5,25 @@ import {
   ExpenseRecord,
 } from "../../../../../../store/expenseSummaryStore";
 import {
+  ArrowUturnLeftIcon,
   EyeIcon,
   EyeSlashIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   MagnifyingGlassIcon,
+  PencilSquareIcon,
   XMarkIcon,
 } from "@heroicons/react/24/solid";
 import dayjs from "dayjs";
+import toast from "react-hot-toast";
 import { FunnelIcon } from "@heroicons/react/24/solid";
 import LoadingApp from "../../../../../../presentation/components/shared/loaders/LoadingApp";
-import { getAuth, getIdTokenResult } from "firebase/auth";
+import { getAuth, getIdTokenResult, onAuthStateChanged } from "firebase/auth";
 import { collection, getDocs, getFirestore, query, where } from "firebase/firestore";
+import ExpenseReversalModal from "./ExpenseReversalModal";
+import ExpenseReversalHistory from "./ExpenseReversalHistory";
+import ExpenseEditModal from "./ExpenseEditModal";
+import type { ExpenseEditCommitResponse } from "../../../../../../services/expenseEditService";
 
 // Función para truncar la descripción a 120 caracteres
 const truncate = (text: string, maxLength = 120): string =>
@@ -112,6 +119,10 @@ const ExpenseDetailedConceptsTableAdvanced: React.FC = () => {
   const [financialAccountNames, setFinancialAccountNames] = useState<
     Record<string, string>
   >({});
+  const [isAdminUser, setIsAdminUser] = useState(false);
+  const [viewMode, setViewMode] = useState<"expenses" | "reversals">("expenses");
+  const [reversalTarget, setReversalTarget] = useState<ExpenseRecord | null>(null);
+  const [editTarget, setEditTarget] = useState<ExpenseRecord | null>(null);
 
   const {
     completedExpenses,
@@ -119,6 +130,8 @@ const ExpenseDetailedConceptsTableAdvanced: React.FC = () => {
     resetExpensesState,
     loadingExpenses: _storeLoadingExpenses,
     searchExpenseByFolio,
+    fetchSummary,
+    selectedYear,
   } = useExpenseSummaryStore((state) => ({
     completedExpenses: state.completedExpenses,
     lastExpenseDoc: state.lastExpenseDoc,
@@ -126,7 +139,66 @@ const ExpenseDetailedConceptsTableAdvanced: React.FC = () => {
     resetExpensesState: state.resetExpensesState,
     loadingExpenses: state.loadingExpenses,
     searchExpenseByFolio: state.searchExpenseByFolio,
+    fetchSummary: state.fetchSummary,
+    selectedYear: state.selectedYear,
   }));
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(getAuth(), async (user) => {
+      if (!user) {
+        setIsAdminUser(false);
+        return;
+      }
+      const tokenResult = await getIdTokenResult(user).catch(() => null);
+      setIsAdminUser(String(tokenResult?.claims["role"] || "") === "admin");
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const handleExpenseReversed = async () => {
+    const reversedId = reversalTarget?.id;
+    setReversalTarget(null);
+    setSelectedExpense(null);
+    setSearchResults((prev) => prev.filter((item) => item.id !== reversedId));
+    setLoadingExpenses(true);
+    try {
+      resetExpensesState();
+      const count = await fetchExpenseHistory(ITEMS_PER_PAGE, null, filters);
+      setHasMore(count === ITEMS_PER_PAGE);
+      const updatedLastDoc = useExpenseSummaryStore.getState().lastExpenseDoc;
+      setPageCursors(updatedLastDoc ? [null, updatedLastDoc] : [null]);
+      setCurrentPage(1);
+      await fetchSummary(selectedYear, true);
+    } catch {
+      toast.error("El egreso se revirtió, pero no se pudo actualizar la lista. Recarga la página.");
+    } finally {
+      setLoadingExpenses(false);
+    }
+  };
+
+  const handleExpenseEdited = async (result: ExpenseEditCommitResponse) => {
+    const patch = (item: ExpenseRecord): ExpenseRecord =>
+      item.id === result.expenseId
+        ? {
+            ...item,
+            amount: result.expense.amount,
+            description: result.expense.description,
+            invoiceUrl: result.expense.invoiceUrl || undefined,
+          }
+        : item;
+    setEditTarget(null);
+    setSelectedExpense((prev) => (prev ? patch(prev) : prev));
+    setSearchResults((prev) => prev.map(patch));
+    useExpenseSummaryStore.setState((state) => ({
+      completedExpenses: state.completedExpenses.map(patch),
+    }));
+    if (!result.changedFields.includes("amount")) return;
+    try {
+      await fetchSummary(selectedYear, true);
+    } catch {
+      toast.error("El egreso se actualizó, pero no se pudo recalcular el resumen. Recarga la página.");
+    }
+  };
 
   // Cargar la primera página al montar
   useEffect(() => {
@@ -332,6 +404,7 @@ const ExpenseDetailedConceptsTableAdvanced: React.FC = () => {
             Lista de todos los egresos registrados en el sistema
           </p>
         </div>
+        {viewMode === "expenses" && (
         <div className="mt-4 sm:ml-16 sm:mt-0 sm:flex gap-4">
           {/* Barra de búsqueda por folio */}
           <div className="relative">
@@ -372,8 +445,37 @@ const ExpenseDetailedConceptsTableAdvanced: React.FC = () => {
             Filtros
           </button>
         </div>
+        )}
       </div>
 
+      {isAdminUser && (
+        <div className="mt-4 flex flex-wrap gap-2 rounded-lg border border-gray-200 bg-white p-2 dark:border-gray-700 dark:bg-gray-800">
+          {(
+            [
+              ["expenses", "Historial de egresos"],
+              ["reversals", "Egresos revertidos"],
+            ] as const
+          ).map(([mode, label]) => (
+            <button
+              key={mode}
+              type="button"
+              onClick={() => setViewMode(mode)}
+              className={`rounded-md px-3 py-2 text-sm font-semibold transition-colors ${
+                viewMode === mode
+                  ? "bg-indigo-600 text-white"
+                  : "text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {viewMode === "reversals" && isAdminUser ? (
+        <ExpenseReversalHistory />
+      ) : (
+      <>
       {/* Filtros */}
       {showFilters && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -642,6 +744,8 @@ const ExpenseDetailedConceptsTableAdvanced: React.FC = () => {
           </div>
         </div>
       )}
+      </>
+      )}
 
       {/* Modal de búsqueda por folio */}
       {showSearchModal && (
@@ -865,7 +969,27 @@ const ExpenseDetailedConceptsTableAdvanced: React.FC = () => {
                     )}
                   </div>
                 </div>
-                <div className="mt-6 flex justify-end">
+                <div className="mt-6 flex flex-wrap items-center justify-end gap-2">
+                  {isAdminUser && (
+                    <button
+                      type="button"
+                      onClick={() => setEditTarget(selectedExpense)}
+                      className="inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
+                    >
+                      <PencilSquareIcon className="mr-1.5 h-4 w-4" />
+                      Editar egreso
+                    </button>
+                  )}
+                  {isAdminUser && (
+                    <button
+                      type="button"
+                      onClick={() => setReversalTarget(selectedExpense)}
+                      className="inline-flex items-center rounded-md bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-700"
+                    >
+                      <ArrowUturnLeftIcon className="mr-1.5 h-4 w-4" />
+                      Revertir egreso
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={() => setSelectedExpense(null)}
@@ -878,6 +1002,37 @@ const ExpenseDetailedConceptsTableAdvanced: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {reversalTarget && (
+        <ExpenseReversalModal
+          expense={reversalTarget}
+          accountName={
+            financialAccountNames[reversalTarget.financialAccountId || ""] ||
+            reversalTarget.financialAccountId ||
+            ""
+          }
+          onClose={() => setReversalTarget(null)}
+          onReversed={handleExpenseReversed}
+        />
+      )}
+
+      {editTarget && (
+        <ExpenseEditModal
+          expense={editTarget}
+          accountName={
+            financialAccountNames[editTarget.financialAccountId || ""] ||
+            editTarget.financialAccountId ||
+            ""
+          }
+          onClose={() => setEditTarget(null)}
+          onEdited={handleExpenseEdited}
+          onRequestReversal={() => {
+            const target = editTarget;
+            setEditTarget(null);
+            setReversalTarget(target);
+          }}
+        />
       )}
     </div>
   );

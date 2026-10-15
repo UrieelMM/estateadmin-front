@@ -144,6 +144,17 @@ export const SEARCH_INDEX: SearchItem[] = [
     keywords: ["proveedor", "egresos", "gastos proveedor"],
   },
 
+  // ─── Finanzas › Movimientos ────────────────────────────────────────────────
+  {
+    id: "movements",
+    title: "Movimientos (ingresos y egresos)",
+    section: "Finanzas",
+    subsection: "Movimientos",
+    breadcrumb: "Finanzas › Movimientos",
+    href: "/dashboard/movements",
+    keywords: ["movimientos", "ingresos y egresos", "libro", "periodo", "rango de fechas", "historial"],
+  },
+
   // ─── Finanzas › Caja Chica ─────────────────────────────────────────────────
   {
     id: "pettycash",

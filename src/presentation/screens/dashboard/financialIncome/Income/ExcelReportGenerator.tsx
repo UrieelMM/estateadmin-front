@@ -6,6 +6,7 @@ import {
   usePaymentSummaryStore,
 } from "../../../../../store/paymentSummaryStore";
 import useUserStore from "../../../../../store/UserDataStore";
+import { sumOpeningCreditUsed } from "../../../../../utils/paymentCreditAllocation";
 
 interface Condominium {
   number: string;
@@ -120,7 +121,8 @@ const ExcelReportGenerator: React.FC<ExcelReportGeneratorProps> = ({
       totalPaid +
       (totalCreditBalance > 0 ? totalCreditBalance : 0) -
       totalCreditUsed;
-    const canonicalBalance = totalCharges - canonicalIncome;
+    const canonicalBalance =
+      totalCharges - canonicalIncome - sumOpeningCreditUsed(payments);
     const unidentifiedPaymentsTotal = monthlyStats.reduce(
       (acc, stat) => acc + stat.unidentifiedPayments,
       0
@@ -688,7 +690,8 @@ const ExcelReportGenerator: React.FC<ExcelReportGeneratorProps> = ({
           totalPaid + (totalCredit > 0 ? totalCredit : 0) - totalCreditUsed;
 
         // Acumular el saldo de cada mes
-        totalBalance += totalCharges - totalPaidWithCredit;
+        totalBalance +=
+          totalCharges - totalPaidWithCredit - sumOpeningCreditUsed(monthRecords);
       });
 
       generalInfo.push(
@@ -1033,7 +1036,8 @@ const ExcelReportGenerator: React.FC<ExcelReportGeneratorProps> = ({
         const totalCredit = totalCreditBalance - totalCreditUsed;
         const totalPaidWithCredit =
           totalPaid + (totalCredit > 0 ? totalCredit : 0) - totalCreditUsed;
-        const balance = totalCharges - totalPaidWithCredit;
+        const balance =
+          totalCharges - totalPaidWithCredit - sumOpeningCreditUsed(monthRecords);
         const monthPaidInFull = monthRecords
           .filter((rec) => rec.amountPending === 0)
           .reduce((sum, rec) => sum + rec.referenceAmount, 0);
@@ -1076,7 +1080,8 @@ const ExcelReportGenerator: React.FC<ExcelReportGeneratorProps> = ({
         const totalCredit = totalCreditBalance - totalCreditUsed;
         const totalPaidWithCredit =
           totalPaid + (totalCredit > 0 ? totalCredit : 0) - totalCreditUsed;
-        const balance = totalCharges - totalPaidWithCredit;
+        const balance =
+          totalCharges - totalPaidWithCredit - sumOpeningCreditUsed(monthRecords);
 
         totalPaidGlobal += totalPaidWithCredit;
         totalChargesGlobal += totalCharges;
@@ -1602,7 +1607,9 @@ const ExcelReportGenerator: React.FC<ExcelReportGeneratorProps> = ({
               monthNames[m] || m,
               formatCurrency(paid),
               formatCurrency(totalCharges),
-              formatCurrency(totalCharges - paid),
+              formatCurrency(
+                totalCharges - paid - sumOpeningCreditUsed(recordsForMonth)
+              ),
               compliance.toFixed(2) + "%",
               delinquency.toFixed(2) + "%",
             ];
